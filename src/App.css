@@ -1,0 +1,190 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-layout {
+  width: min(1180px, 100% - 32px);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.site-brand {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 0;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.nav-link,
+.nav-action {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 999px;
+}
+
+.nav-action {
+  background: var(--primary);
+  color: white;
+}
+
+.nav-link:hover,
+.nav-action:hover {
+  opacity: 0.9;
+}
+
+.hero-banner {
+  border: 1px solid #dbe6f4;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #eef7ff 0%, #f8fbff 100%);
+  padding: 36px;
+  display: grid;
+  gap: 18px;
+}
+
+.hero-banner p {
+  color: var(--text-muted);
+  max-width: 62ch;
+}
+
+.card-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid #dbe6f4;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.preview-list,
+.marketplace-list {
+  display: grid;
+  gap: 16px;
+}
+
+.preview-card,
+.marketplace-card,
+.listing-card,
+.analysis-card,
+.member-card,
+.event-card,
+.match-card {
+  background: var(--surface);
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 22px;
+}
+
+.preview-card h3,
+.listing-card h3,
+.analysis-card h3,
+.member-card h3,
+.event-card h3,
+.match-card h3 {
+  margin: 0 0 10px;
+}
+
+.preview-card p,
+.listing-card p,
+.analysis-card p,
+.member-card p,
+.event-card p,
+.match-card p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.stat-item {
+  background: var(--surface);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.stat-item strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.action-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.action-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.action-card button {
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .nav-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-banner {
+    padding: 24px;
+  }
+}
