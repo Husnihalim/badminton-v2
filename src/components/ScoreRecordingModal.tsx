@@ -1,10 +1,12 @@
-import { useState } from 'react'
-import { sampleClubs, sampleMembers } from '../data/mock'
+import { useEffect, useState } from 'react'
+import { createMatch, getClubMembers } from '../lib/api'
+import type { Membership } from '../types'
 
 interface ScoreRecordingModalProps {
   isOpen: boolean
   onClose: () => void
   clubId?: string
+  onScoreRecorded?: () => void
 }
 
 type PlayerField = {
@@ -16,24 +18,24 @@ function createPlayerField(): PlayerField {
   return { memberId: '', customName: '' }
 }
 
-function getPlayerName(field: PlayerField): string {
+function getPlayerName(field: PlayerField, members: Membership[]): string {
   if (field.customName.trim()) return field.customName.trim()
   if (field.memberId) {
-    const member = sampleMembers.find((m) => m.id === field.memberId)
-    if (member) return member.name
+    const member = members.find((m) => m.user_id === field.memberId)
+    if (member) return member.name || 'Unknown'
   }
   return ''
 }
 
 function isPlayerValid(field: PlayerField): boolean {
-  return Boolean(getPlayerName(field))
+  return Boolean(field.memberId || field.customName.trim())
 }
 
-export default function ScoreRecordingModal({ isOpen, onClose, clubId }: ScoreRecordingModalProps) {
+export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRecorded }: ScoreRecordingModalProps) {
+  // User is not needed directly - recorded_by is set server-side
   const [matchTitle, setMatchTitle] = useState('')
   const [sport, setSport] = useState('badminton')
   const [matchType, setMatchType] = useState('singles')
-  const [selectedClubId, setSelectedClubId] = useState<string>(clubId ?? sampleClubs[0]?.id ?? '')
   const [player1A, setPlayer1A] = useState<PlayerField>(createPlayerField())
   const [player1B, setPlayer1B] = useState<PlayerField>(createPlayerField())
   const [player2A, setPlayer2A] = useState<PlayerField>(createPlayerField())
@@ -42,14 +44,26 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId }: ScoreRe
   const [score2, setScore2] = useState('')
   const [toast, setToast] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [members, setMembers] = useState<Membership[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (isOpen && clubId) {
+      loadMembers()
+    }
+  }, [isOpen, clubId])
+
+  const loadMembers = async () => {
+    if (!clubId) return
+    try {
+      const data = await getClubMembers(clubId)
+      setMembers(data)
+    } catch (err) {
+      console.error('Error loading members:', err)
+    }
+  }
 
   if (!isOpen) return null
-
-  const selectedClub = clubId ? sampleClubs.find((c) => c.id === clubId) : sampleClubs.find((c) => c.id === selectedClubId)
-  const clubs = sampleClubs
-
-  // Filter members by selected club (fallback to all for demo)
-  const availableMembers = sampleMembers
 
   const showToast = (message: string) => {
     setToast(message)
@@ -82,10 +96,10 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId }: ScoreRe
 
     // Check for duplicate players
     const names = [
-      getPlayerName(player1A),
-      matchType === 'doubles' ? getPlayerName(player1B) : null,
-      getPlayerName(player2A),
-      matchType === 'doubles' ? getPlayerName(player2B) : null,
+      getPlayerName(player1A, members),
+      matchType === 'doubles' ? getPlayerName(player1B, members) : null,
+      getPlayerName(player2A, members),
+      matchType === 'doubles' ? getPlayerName(player2B, members) : null,
     ].filter(Boolean) as string[]
     if (new Set(names).size !== names.length) {
       nextErrors.duplicate = 'Each player must be unique.'
@@ -95,29 +109,65 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId }: ScoreRe
     return Object.keys(nextErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validate()) return
+    if (!validate() || !clubId) return
 
-    const teamA = matchType === 'doubles'
-      ? `${getPlayerName(player1A)} + ${getPlayerName(player1B)}`
-      : getPlayerName(player1A)
-    const teamB = matchType === 'doubles'
-      ? `${getPlayerName(player2A)} + ${getPlayerName(player2B)}`
-      : getPlayerName(player2A)
+    setIsSubmitting(true)
 
-    showToast(`Score recorded: ${teamA} ${score1}-${score2} ${teamB}`)
+    try {
+      const participants: {
+        team: 1 | 2
+        userId?: string
+        isGuest: boolean
+        guestName?: string
+      }[] = [
+        { team: 1, userId: player1A.memberId || undefined, isGuest: !player1A.memberId, guestName: player1A.customName || undefined },
+        { team: 2, userId: player2A.memberId || undefined, isGuest: !player2A.memberId, guestName: player2A.customName || undefined },
+      ]
 
-    // Reset form
-    setMatchTitle('')
-    setScore1('')
-    setScore2('')
-    setPlayer1A(createPlayerField())
-    setPlayer1B(createPlayerField())
-    setPlayer2A(createPlayerField())
-    setPlayer2B(createPlayerField())
-    setErrors({})
-    onClose()
+      if (matchType === 'doubles') {
+        participants.push(
+          { team: 1, userId: player1B.memberId || undefined, isGuest: !player1B.memberId, guestName: player1B.customName || undefined },
+          { team: 2, userId: player2B.memberId || undefined, isGuest: !player2B.memberId, guestName: player2B.customName || undefined }
+        )
+      }
+
+      await createMatch({
+        club_id: clubId,
+        title: matchTitle,
+        sport,
+        match_type: matchType as 'singles' | 'doubles',
+        participants: participants.map(p => ({
+          team: p.team,
+          user_id: p.userId || undefined,
+          is_guest: p.isGuest,
+          guest_name: p.guestName || undefined,
+        })),
+        score_sets: [
+          { set_number: 1, team1_score: Number(score1), team2_score: Number(score2) }
+        ],
+      })
+
+      showToast(`Score recorded: ${score1}-${score2}`)
+
+      // Reset form
+      setMatchTitle('')
+      setScore1('')
+      setScore2('')
+      setPlayer1A(createPlayerField())
+      setPlayer1B(createPlayerField())
+      setPlayer2A(createPlayerField())
+      setPlayer2B(createPlayerField())
+      setErrors({})
+      
+      onClose()
+      onScoreRecorded?.()
+    } catch (err: any) {
+      setErrors({ submit: err.message || 'Failed to record score' })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const renderPlayerField = (
@@ -130,19 +180,19 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId }: ScoreRe
       <label>{label}</label>
       <select
         value={field.memberId}
-        onChange={(e) => setField({ ...field, memberId: e.target.value })}
+        onChange={(e) => setField({ memberId: e.target.value, customName: '' })}
         className="form-input"
       >
         <option value="">Select member</option>
-        {availableMembers.map((m) => (
-          <option key={m.id} value={m.id}>{m.name}</option>
+        {members.map((m) => (
+          <option key={m.user_id} value={m.user_id}>{m.name || 'Unknown'}</option>
         ))}
       </select>
       <input
         type="text"
-        placeholder="Or enter custom name"
+        placeholder="Or enter custom name (guest)"
         value={field.customName}
-        onChange={(e) => setField({ ...field, customName: e.target.value })}
+        onChange={(e) => setField({ memberId: '', customName: e.target.value })}
         className="form-input"
         style={{ marginTop: '8px' }}
       />
@@ -157,28 +207,10 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId }: ScoreRe
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
           <h2>Record match score</h2>
+          {errors.submit && (
+            <p style={{ color: '#dc2626', marginBottom: '12px' }}>{errors.submit}</p>
+          )}
           <form onSubmit={handleSubmit} noValidate>
-            {/* Club selection */}
-            {!clubId ? (
-              <div className="modal-form-group">
-                <label>Club</label>
-                <select
-                  value={selectedClubId}
-                  onChange={(e) => setSelectedClubId(e.target.value)}
-                  className="form-input"
-                >
-                  {clubs.map((club) => (
-                    <option key={club.id} value={club.id}>{club.name}</option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="modal-form-group">
-                <label>Club</label>
-                <div className="modal-readonly-field">{selectedClub?.name ?? 'Selected club'}</div>
-              </div>
-            )}
-
             {/* Sport selection */}
             <div className="modal-form-group">
               <label>Sport</label>
@@ -284,11 +316,11 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId }: ScoreRe
 
             {/* Buttons */}
             <div className="modal-actions">
-              <button type="button" className="small-button" onClick={onClose}>
+              <button type="button" className="small-button" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </button>
-              <button type="submit" className="brand-button">
-                Record score
+              <button type="submit" className="brand-button" disabled={isSubmitting}>
+                {isSubmitting ? 'Recording...' : 'Record score'}
               </button>
             </div>
           </form>

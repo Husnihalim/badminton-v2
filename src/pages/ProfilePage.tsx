@@ -1,24 +1,85 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { sampleClubs } from '../data/mock'
+import { getMyClubs, createClub } from '../lib/api'
+import type { Club } from '../types'
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
+  const navigate = useNavigate()
+  const [clubs, setClubs] = useState<Club[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [showCreateClubModal, setShowCreateClubModal] = useState(false)
   const [clubName, setClubName] = useState('')
+  const [clubDescription, setClubDescription] = useState('')
+  const [clubCity, setClubCity] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+  const [error, setError] = useState('')
 
-  // Simulated: clubs owned/managed by this user
-  const userClubs = sampleClubs.filter((club) => {
-    // In a real app, this would check club ownership
-    return club.id === 'club-1' || club.id === 'club-3'
-  })
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login')
+      return
+    }
 
-  const handleCreateClub = (e: React.FormEvent) => {
+    if (user) {
+      loadMyClubs()
+    }
+  }, [user, authLoading, navigate])
+
+  const loadMyClubs = async () => {
+    try {
+      setIsLoading(true)
+      const myClubs = await getMyClubs()
+      setClubs(myClubs)
+    } catch (err) {
+      console.error('Error loading clubs:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCreateClub = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, this would create a new club via API
-    alert(`Club "${clubName}" created! (Demo mode)`)
-    setClubName('')
-    setShowCreateClubModal(false)
+    setError('')
+    
+    if (!clubName.trim()) {
+      setError('Club name is required')
+      return
+    }
+
+    try {
+      setIsCreating(true)
+      const newClub = await createClub({
+        name: clubName.trim(),
+        description: clubDescription.trim(),
+        city: clubCity.trim(),
+        sport_focus: ['badminton'],
+        open_join: true,
+        approval_required: false,
+      })
+      
+      if (newClub) {
+        setClubName('')
+        setClubDescription('')
+        setClubCity('')
+        setShowCreateClubModal(false)
+        await loadMyClubs()
+        navigate(`/club/${newClub.id}`)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to create club')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  if (authLoading || isLoading) {
+    return (
+      <section className="section-card" style={{ textAlign: 'center' }}>
+        <p>Loading...</p>
+      </section>
+    )
   }
 
   return (
@@ -46,21 +107,26 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {userClubs.length ? (
+        {clubs.length ? (
           <div className="card-grid">
-            {userClubs.map((club) => (
-              <div key={club.id} className="listing-card">
-                <h3>{club.name}</h3>
-                <p>{club.description}</p>
-                <div className="meta-row" style={{ marginTop: '12px' }}>
-                  <span>{club.city}</span>
-                  <span>{club.membersCount} members</span>
+            {clubs.map((club) => (
+              <Link 
+                key={club.id} 
+                to={`/club/${club.id}`}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <div className="listing-card">
+                  <h3>{club.name}</h3>
+                  <p>{club.description}</p>
+                  <div className="meta-row" style={{ marginTop: '12px' }}>
+                    <span>{club.city}</span>
+                    <span>{club.membersCount} members</span>
+                  </div>
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                    <span className="tag-pill">{(club as any).role || 'member'}</span>
+                  </div>
                 </div>
-                <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
-                  <button className="small-button">Manage</button>
-                  <button className="small-button">Settings</button>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
@@ -75,24 +141,61 @@ export default function ProfilePage() {
 
       {/* Create Club Modal */}
       {showCreateClubModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '32px', maxWidth: '400px', width: '90%' }}>
+        <div className="modal-overlay" onClick={() => setShowCreateClubModal(false)}>
+          <div className="modal-panel modal-panel-sm" onClick={(e) => e.stopPropagation()}>
             <h2>Create new club</h2>
+            {error && (
+              <div style={{ color: '#dc2626', marginBottom: '12px', fontSize: '14px' }}>
+                {error}
+              </div>
+            )}
             <form onSubmit={handleCreateClub}>
-              <input
-                type="text"
-                placeholder="Club name"
-                value={clubName}
-                onChange={(e) => setClubName(e.target.value)}
-                required
-                style={{ marginTop: '16px', marginBottom: '12px' }}
-              />
-              <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-                <button type="button" className="small-button" onClick={() => setShowCreateClubModal(false)}>
+              <div className="modal-form-group">
+                <label>Club name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Ace Smash Badminton Club"
+                  value={clubName}
+                  onChange={(e) => setClubName(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="modal-form-group">
+                <label>Description</label>
+                <input
+                  type="text"
+                  placeholder="What is your club about?"
+                  value={clubDescription}
+                  onChange={(e) => setClubDescription(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              <div className="modal-form-group">
+                <label>City</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Kuala Lumpur"
+                  value={clubCity}
+                  onChange={(e) => setClubCity(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="small-button" 
+                  onClick={() => setShowCreateClubModal(false)}
+                  disabled={isCreating}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="brand-button">
-                  Create club
+                <button 
+                  type="submit" 
+                  className="brand-button"
+                  disabled={isCreating}
+                >
+                  {isCreating ? 'Creating...' : 'Create club'}
                 </button>
               </div>
             </form>

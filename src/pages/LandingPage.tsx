@@ -1,8 +1,31 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ClubCard from '../components/ClubCard'
-import { sampleClubs } from '../data/mock'
+import { getClubs } from '../lib/api'
+import type { Club } from '../types'
 
 export default function LandingPage() {
+  const [clubs, setClubs] = useState<Club[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadClubs()
+  }, [])
+
+  const loadClubs = async () => {
+    try {
+      setIsLoading(true)
+      const data = await getClubs()
+      // Show first 4 clubs on landing page
+      setClubs(data.slice(0, 4))
+    } catch (err) {
+      console.error('Error loading clubs:', err)
+      // Fallback to empty array - error is silent
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <section>
       <div className="hero-banner">
@@ -45,12 +68,23 @@ export default function LandingPage() {
       </div>
 
       <div className="section-card">
-        <h2>Featured demo clubs</h2>
-        <div className="preview-list">
-          {sampleClubs.map((club) => (
-            <ClubCard key={club.id} club={club} />
-          ))}
-        </div>
+        <h2>Featured clubs</h2>
+        {isLoading ? (
+          <p style={{ color: '#64748b' }}>Loading clubs...</p>
+        ) : clubs.length > 0 ? (
+          <div className="preview-list">
+            {clubs.map((club) => (
+              <ClubCard key={club.id} club={club} />
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: '#64748b', padding: '24px' }}>
+            <p>No clubs yet. Be the first to create one!</p>
+            <Link to="/register" className="brand-button" style={{ marginTop: '12px', display: 'inline-block' }}>
+              Get started
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="section-card">

@@ -16,7 +16,7 @@ export default function ClubCard({ club }: ClubCardProps) {
           <span>{club.membersCount} members</span>
         </div>
         <div className="hero-actions" style={{ marginTop: '14px' }}>
-          {club.sportFocus.map((sport) => (
+          {club.sport_focus?.map((sport: string) => (
             <span key={sport} className="tag-pill">
               {sport}
             </span>

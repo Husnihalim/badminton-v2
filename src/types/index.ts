@@ -7,6 +7,12 @@ export interface User {
   role: UserRole
 }
 
+// Extended User with metadata
+export interface UserProfile extends User {
+  createdAt?: string
+  avatarUrl?: string
+}
+
 export type SportType =
   | 'badminton'
   | 'tennis'
@@ -15,47 +21,119 @@ export type SportType =
   | 'table tennis'
   | 'racquetball'
 
+// Database Club type (snake_case from Supabase)
 export interface Club {
   id: string
   name: string
-  description: string
-  location: string
-  city: string
-  sportFocus: SportType[]
-  openJoin: boolean
-  approvalRequired: boolean
-  membersCount: number
+  description: string | null
+  location: string | null
+  city: string | null
+  sport_focus: string[]
+  open_join: boolean
+  approval_required: boolean
+  invite_code: string | null
+  owner_id: string
+  created_at: string
+  updated_at: string
+  // Computed/joined fields
+  membersCount?: number
+  role?: string
 }
 
-export interface Member {
+// Database Membership type
+export interface Membership {
   id: string
-  name: string
-  role: UserRole
-  joinedAt: string
+  club_id: string
+  user_id: string
+  role: 'owner' | 'admin' | 'member'
+  status: 'active' | 'inactive' | 'banned'
+  joined_at: string
+  approved_by: string | null
+  // Joined fields
+  name?: string
+  email?: string
 }
 
+// Database ClubEvent type
 export interface ClubEvent {
   id: string
-  clubId: string
+  club_id: string
   title: string
-  date: string
-  location: string
-  signupOpen: boolean
+  event_date: string
+  location: string | null
+  max_participants: number | null
+  signup_open: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+  // Joined fields
+  clubName?: string
 }
 
-export interface MatchSummary {
+// Database Match type
+export interface Match {
   id: string
-  clubId: string
-  title: string
-  sport: SportType
-  result: string
-  recordedBy: string
-  date: string
-  participants: string[]
+  club_id: string
+  title: string | null
+  sport: string
+  match_type: 'singles' | 'doubles'
+  recorded_by: string
+  match_date: string
+  created_at: string
+}
+
+export interface MatchParticipant {
+  id: string
+  match_id: string
+  user_id: string | null
+  team: 1 | 2
+  is_guest: boolean
+  guest_name: string | null
+  // Joined fields
+  name?: string
+}
+
+export interface ScoreSet {
+  id: string
+  match_id: string
+  set_number: number
+  team1_score: number
+  team2_score: number
+}
+
+export interface MatchWithDetails extends Match {
+  participants: MatchParticipant[]
+  score_sets: ScoreSet[]
+  // Joined fields
+  clubName?: string
 }
 
 export interface AnalyticsCard {
   title: string
   value: string
   description: string
+}
+
+// Additional types for Supabase integration
+export interface JoinRequest {
+  id: string
+  club_id: string
+  user_id: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  updated_at: string
+  // Joined fields
+  name?: string
+  email?: string
+}
+
+export interface EventRsvp {
+  id: string
+  event_id: string
+  user_id: string
+  status: 'going' | 'maybe' | 'not_going'
+  created_at: string
+  updated_at: string
+  // Joined fields
+  name?: string
 }
