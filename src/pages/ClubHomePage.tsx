@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useParams, Navigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
@@ -7,7 +7,12 @@ import { sampleClubs, sampleEvents, sampleMatches } from '../data/mock'
 export default function ClubHomePage() {
   const { clubId } = useParams()
   const { user } = useAuth()
-  const club = sampleClubs.find((item) => item.id === clubId) ?? sampleClubs[0]
+  const club = sampleClubs.find((item) => item.id === clubId)
+
+  if (!club) {
+    return <Navigate to="/not-found" replace />
+  }
+
   const events = sampleEvents.filter((item) => item.clubId === club.id)
   const matches = sampleMatches.filter((item) => item.clubId === club.id)
   

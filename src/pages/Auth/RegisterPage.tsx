@@ -17,7 +17,7 @@ export default function RegisterPage() {
     }
   }, [user, navigate])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!email || !name || !password) {
       setError('Name, email, and password are required.')
@@ -27,7 +27,7 @@ export default function RegisterPage() {
       setError('Passwords do not match.')
       return
     }
-    const success = register(email, name, password)
+    const success = await register(email, name, password)
     if (!success) {
       setError('An account already exists with this email.')
       return
