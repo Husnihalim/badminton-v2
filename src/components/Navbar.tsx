@@ -1,29 +1,44 @@
 import { Link } from 'react-router-dom'
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/club/club-1', label: 'Club Home' },
-  { href: '/login', label: 'Log in' },
-]
+import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
+  const { user, logout } = useAuth()
+
   return (
     <nav className="nav-bar">
-      <div className="site-brand">RacketScore</div>
+      <div className="site-brand">KelabSukan</div>
       <div className="nav-links">
-        {navItems.slice(0, 2).map((item) => (
-          <Link key={item.href} className="nav-link" to={item.href}>
-            {item.label}
+        <Link className="nav-link" to="/">
+          Home
+        </Link>
+        <Link className="nav-link" to="/dashboard">
+          Dashboard
+        </Link>
+        {user && (
+          <Link className="nav-link" to="/profile">
+            Profile
           </Link>
-        ))}
+        )}
       </div>
       <div className="nav-links">
-        <Link className="nav-link" to="/register">
-          Sign up
-        </Link>
-        <Link className="nav-action" to="/login">
-          Log in
-        </Link>
+        {user ? (
+          <>
+            <span className="nav-link">Hello, {user.name}</span>
+            {user.role === 'superadmin' ? <span className="user-badge">Super admin</span> : null}
+            <button type="button" className="nav-action" onClick={logout}>
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <Link className="nav-link" to="/register">
+              Sign up
+            </Link>
+            <Link className="nav-action" to="/login">
+              Log in
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   )

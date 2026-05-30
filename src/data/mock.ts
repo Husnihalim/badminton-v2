@@ -23,12 +23,36 @@ export const sampleClubs: Club[] = [
     approvalRequired: true,
     membersCount: 18,
   },
+  {
+    id: 'club-3',
+    name: 'Rally Court Collective',
+    description: 'Open community for coed racket sports, coaching sessions and social leagues.',
+    location: 'Harbor View Gym',
+    city: 'San Diego',
+    sportFocus: ['badminton', 'pickleball', 'tennis'],
+    openJoin: true,
+    approvalRequired: false,
+    membersCount: 42,
+  },
+  {
+    id: 'club-4',
+    name: 'Smash Point Academy',
+    description: 'High-energy training club with regular drills, tournaments, and clinics.',
+    location: 'Eastside Sports Hub',
+    city: 'Austin',
+    sportFocus: ['badminton', 'table tennis'],
+    openJoin: false,
+    approvalRequired: true,
+    membersCount: 34,
+  },
 ]
 
 export const sampleMembers: Member[] = [
   { id: 'member-1', name: 'Aisha K.', role: 'owner', joinedAt: '2026-01-06' },
   { id: 'member-2', name: 'Leo T.', role: 'admin', joinedAt: '2026-02-11' },
   { id: 'member-3', name: 'Nina R.', role: 'member', joinedAt: '2026-03-22' },
+  { id: 'member-4', name: 'Samir P.', role: 'admin', joinedAt: '2026-04-05' },
+  { id: 'member-5', name: 'Maya L.', role: 'member', joinedAt: '2026-05-12' },
 ]
 
 export const sampleEvents: ClubEvent[] = [
@@ -47,6 +71,22 @@ export const sampleEvents: ClubEvent[] = [
     date: '2026-06-06 10:00',
     location: 'Court 1',
     signupOpen: false,
+  },
+  {
+    id: 'event-3',
+    clubId: 'club-3',
+    title: 'Friday Mixed Practice',
+    date: '2026-06-05 19:00',
+    location: 'Main Hall',
+    signupOpen: true,
+  },
+  {
+    id: 'event-4',
+    clubId: 'club-4',
+    title: 'Saturday Tournament Warm-up',
+    date: '2026-06-08 09:30',
+    location: 'Court 4',
+    signupOpen: true,
   },
 ]
 

@@ -1,5 +1,12 @@
 export type UserRole = 'superadmin' | 'owner' | 'admin' | 'member'
 
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+}
+
 export type SportType =
   | 'badminton'
   | 'tennis'
