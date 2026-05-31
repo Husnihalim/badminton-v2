@@ -10,6 +10,7 @@ import {
   getMyMembership, 
   createEvent,
   requestJoinClub,
+  joinOpenClub,
   getClubJoinRequests,
   approveJoinRequest,
   rejectJoinRequest,
@@ -148,11 +149,9 @@ export default function ClubHomePage() {
 
     try {
       if (club?.open_join && !club?.approval_required) {
-        // Auto-join
-        await requestJoinClub(clubId)
+        await joinOpenClub(clubId)
         setSuccessMessage('You have joined the club!')
       } else {
-        // Request to join
         await requestJoinClub(clubId)
         setSuccessMessage('Join request sent! Waiting for approval.')
       }

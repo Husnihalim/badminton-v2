@@ -174,6 +174,47 @@ export async function requestJoinClub(clubId: string): Promise<JoinRequest | nul
   return data as JoinRequest
 }
 
+export async function joinOpenClub(clubId: string): Promise<Membership | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    throw new Error('Must be authenticated to join a club')
+  }
+
+  const { data: existingMembership } = await supabase
+    .from('memberships')
+    .select('*')
+    .eq('club_id', clubId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (existingMembership) {
+    if ((existingMembership as Membership).status === 'active') {
+      throw new Error('You are already a member of this club')
+    }
+    throw new Error('Your membership is not active. Please contact a club admin.')
+  }
+
+  const { data, error } = await supabase
+    .from('memberships')
+    .insert({
+      club_id: clubId,
+      user_id: user.id,
+      role: 'member',
+      status: 'active',
+      approved_by: null,
+    } as any)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error joining club:', error)
+    throw error
+  }
+
+  return data as Membership
+}
+
 export async function getClubJoinRequests(clubId: string): Promise<JoinRequest[]> {
   const { data, error } = await supabase
     .from('join_requests')
@@ -194,6 +235,54 @@ export async function getClubJoinRequests(clubId: string): Promise<JoinRequest[]
 }
 
 export async function approveJoinRequest(requestId: string): Promise<void> {
+  const { data: { user: approver } } = await supabase.auth.getUser()
+
+  if (!approver) {
+    throw new Error('Must be authenticated to approve join requests')
+  }
+
+  const { data: request, error: requestError } = await supabase
+    .from('join_requests')
+    .select('*')
+    .eq('id', requestId)
+    .single()
+
+  if (requestError || !request) {
+    console.error('Error fetching join request:', requestError)
+    throw requestError || new Error('Join request not found')
+  }
+
+  const joinRequest = request as JoinRequest
+
+  const { data: existingMembership, error: membershipSelectError } = await supabase
+    .from('memberships')
+    .select('*')
+    .eq('club_id', joinRequest.club_id)
+    .eq('user_id', joinRequest.user_id)
+    .maybeSingle()
+
+  if (membershipSelectError) {
+    console.error('Error checking existing membership:', membershipSelectError)
+    throw membershipSelectError
+  }
+
+  if (!existingMembership) {
+    const { error: membershipError } = await supabase
+      .from('memberships')
+      .insert({
+        club_id: joinRequest.club_id,
+        user_id: joinRequest.user_id,
+        role: 'member',
+        status: 'active',
+        approved_by: approver.id,
+      } as any)
+
+    if (membershipError) {
+      console.error('Error creating approved membership:', membershipError)
+      throw membershipError
+    }
+  }
+
   const { error } = await supabase
     .from('join_requests')
     .update({ status: 'approved' } as any)

@@ -13,9 +13,57 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+type ProfileRow = {
+  id: string
+  email: string
+  name: string
+  role: User['role']
+}
+
+function getRoleForUser(email: string, name: string): User['role'] {
+  const normalizedEmail = email.trim().toLowerCase()
+  const normalizedName = name.trim().toLowerCase()
+
+  if (normalizedEmail === 'mohdhusni@gmail.com' || normalizedName === 'husni halim') {
+    return 'superadmin'
+  }
+
+  return 'member'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  const fetchUserProfile = useCallback(async (userId: string): Promise<User | null> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error || !data) {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        return {
+          id: authUser.id,
+          email: authUser.email || '',
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+          role: authUser.user_metadata?.role || 'member',
+        }
+      }
+      return null
+    }
+
+    const profile = data as ProfileRow
+
+    return {
+      id: profile.id,
+      email: profile.email,
+      name: profile.name,
+      role: profile.role,
+    }
+  }, [])
 
   // Check for existing session on mount
   useEffect(() => {
@@ -47,56 +95,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
-
-  const fetchUserProfile = async (userId: string): Promise<User | null> => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (error || !data) {
-      // Fallback: create basic user from auth metadata
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        return {
-          id: authUser.id,
-          email: authUser.email || '',
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-          role: authUser.user_metadata?.role || 'member',
-        }
-      }
-      return null
-    }
-
-    return {
-      id: (data as any).id,
-      email: (data as any).email,
-      name: (data as any).name,
-      role: (data as any).role,
-    }
-  }
-
-  const getRoleForUser = (email: string, name: string): User['role'] => {
-    const normalizedEmail = email.trim().toLowerCase()
-    const normalizedName = name.trim().toLowerCase()
-
-    if (normalizedEmail === 'mohdhusni@gmail.com' || normalizedName === 'husni halim') {
-      return 'superadmin'
-    }
-
-    return 'member'
-  }
+  }, [fetchUserProfile])
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    console.log('AuthContext: attempting login for', email)
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     })
-
-    console.log('AuthContext: login response', { data, error })
 
     if (error || !data.user) {
       console.error('Login error:', error?.message)
@@ -118,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.user.user_metadata?.role || 'member',
     })
     return true
-  }, [])
+  }, [fetchUserProfile])
 
   const register = useCallback(async (email: string, name: string, password: string): Promise<boolean> => {
     const normalizedEmail = email.trim().toLowerCase()

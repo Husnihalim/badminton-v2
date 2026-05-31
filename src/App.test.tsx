@@ -20,12 +20,15 @@ const createMockChain = (returnValue: any = { data: [], error: null }): any => {
 
 // Mock Supabase
 vi.mock('./lib/supabase', () => ({
+  isSupabaseConfigured: true,
   supabase: {
     auth: {
       getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
       getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
       signUp: vi.fn(),
       signInWithPassword: vi.fn(),
+      resetPasswordForEmail: vi.fn(),
+      updateUser: vi.fn(),
       signOut: vi.fn(),
       onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
     },
@@ -104,6 +107,29 @@ describe('KelabSukan App - Core Features', () => {
       expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument()
+    })
+
+    it('renders forgot password page with reset form', async () => {
+      renderApp('/forgot-password')
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /reset password/i })).toBeInTheDocument()
+      })
+      
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /send reset link/i })).toBeInTheDocument()
+    })
+
+    it('renders reset password page with new password form', async () => {
+      renderApp('/reset-password')
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /set new password/i })).toBeInTheDocument()
+      })
+      
+      expect(screen.getByLabelText(/^new password$/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/confirm new password/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /update password/i })).toBeInTheDocument()
     })
 
     it('navigates between pages', async () => {

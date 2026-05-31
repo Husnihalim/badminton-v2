@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { isSupabaseConfigured } from '../../lib/supabase'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -27,6 +28,10 @@ export default function RegisterPage() {
       setError('Passwords do not match.')
       return
     }
+    if (!isSupabaseConfigured) {
+      setError('Supabase is not configured for this environment yet.')
+      return
+    }
     const success = await register(email, name, password)
     if (!success) {
       setError('An account already exists with this email.')
@@ -45,6 +50,11 @@ export default function RegisterPage() {
         {error && (
           <div style={{ color: '#b91c1c', marginBottom: '16px' }}>{error}</div>
         )}
+        {!isSupabaseConfigured && !error && (
+          <div style={{ color: '#b91c1c', marginBottom: '16px' }}>
+            Supabase is not configured for this environment yet.
+          </div>
+        )}
         <div style={{ marginBottom: '16px' }}>
           <label htmlFor="name">Name</label>
           <input
@@ -54,6 +64,7 @@ export default function RegisterPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Aisha K."
+            disabled={!isSupabaseConfigured}
             style={{
               width: '100%',
               marginTop: '8px',
@@ -72,6 +83,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
+            disabled={!isSupabaseConfigured}
             style={{
               width: '100%',
               marginTop: '8px',
@@ -90,6 +102,7 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Create a password"
+            disabled={!isSupabaseConfigured}
             style={{
               width: '100%',
               marginTop: '8px',
@@ -108,6 +121,7 @@ export default function RegisterPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Re-enter your password"
+            disabled={!isSupabaseConfigured}
             style={{
               width: '100%',
               marginTop: '8px',
@@ -117,7 +131,7 @@ export default function RegisterPage() {
             }}
           />
         </div>
-        <button type="submit" className="brand-button" style={{ width: '100%' }}>
+        <button type="submit" className="brand-button" style={{ width: '100%' }} disabled={!isSupabaseConfigured}>
           Sign up
         </button>
       </form>

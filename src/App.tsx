@@ -8,6 +8,8 @@ import ClubSettingsPage from './pages/ClubSettingsPage'
 import ClubMembersPage from './pages/ClubMembersPage'
 import LoginPage from './pages/Auth/LoginPage'
 import RegisterPage from './pages/Auth/RegisterPage'
+import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/Auth/ResetPasswordPage'
 import NotFoundPage from './pages/NotFoundPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
@@ -25,6 +27,8 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/club/:clubId" element={<ClubHomePage />} />

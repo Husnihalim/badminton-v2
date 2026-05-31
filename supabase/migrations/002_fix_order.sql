@@ -81,6 +81,7 @@ CREATE TABLE memberships (
     role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member')),
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'banned')),
     joined_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     approved_by UUID REFERENCES auth.users(id),
     UNIQUE(club_id, user_id)
 );
