@@ -22,13 +22,16 @@ export default function DashboardPage() {
   const [isJoining, setIsJoining] = useState(false)
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) {
       return
     }
 
-    if (user) {
-      loadDashboardData()
+    if (!authLoading && !user) {
+      setIsLoading(false)
+      return
     }
+
+    loadDashboardData()
     
     // Safety timeout to prevent infinite loading
     const timeout = setTimeout(() => {

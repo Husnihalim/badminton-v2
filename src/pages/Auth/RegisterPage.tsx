@@ -32,9 +32,9 @@ export default function RegisterPage() {
       setError('Supabase is not configured for this environment yet.')
       return
     }
-    const success = await register(email, name, password)
-    if (!success) {
-      setError('An account already exists with this email.')
+    const result = await register(email, name, password)
+    if (!result.success) {
+      setError(result.error || 'Could not create account. Please try again.')
       return
     }
     navigate('/dashboard')

@@ -633,48 +633,16 @@ export async function joinClubByInviteCode(inviteCode: string): Promise<Membersh
     throw new Error('Must be authenticated to join a club')
   }
 
-  // Find club by invite code
-  const { data: club, error: clubError } = await supabase
-    .from('clubs')
-    .select('*')
-    .eq('invite_code', inviteCode)
-    .single()
+  const { data, error } = await supabase.rpc('join_club_by_invite_code', {
+    invite_code_input: inviteCode,
+  })
 
-  if (clubError || !club) {
-    throw new Error('Invalid invite code')
+  if (error) {
+    console.error('Error joining club by invite code:', error)
+    throw error
   }
 
-  // Check if already a member
-  const { data: existingMembership } = await supabase
-    .from('memberships')
-    .select('*')
-    .eq('club_id', club.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (existingMembership) {
-    throw new Error('You are already a member of this club')
-  }
-
-  // Create membership directly (invite code bypasses approval)
-  const { data: membership, error: membershipError } = await supabase
-    .from('memberships')
-    .insert({
-      club_id: club.id,
-      user_id: user.id,
-      role: 'member',
-      status: 'active',
-      approved_by: null,
-    } as any)
-    .select()
-    .single()
-
-  if (membershipError) {
-    console.error('Error joining club:', membershipError)
-    throw membershipError
-  }
-
-  return membership as Membership
+  return data as Membership
 }
 
 export async function regenerateInviteCode(clubId: string): Promise<string | null> {

@@ -7,7 +7,7 @@ type AuthContextType = {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
-  register: (email: string, name: string, password: string) => Promise<boolean>
+  register: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
 }
 
@@ -18,6 +18,15 @@ type ProfileRow = {
   email: string
   name: string
   role: User['role']
+}
+
+type AuthUserFallback = {
+  id: string
+  email?: string
+  user_metadata?: {
+    name?: string
+    role?: User['role']
+  }
 }
 
 function getRoleForUser(email: string, name: string): User['role'] {
@@ -35,7 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchUserProfile = useCallback(async (userId: string): Promise<User | null> => {
+  const fetchUserProfile = useCallback(async (
+    userId: string,
+    authUser?: AuthUserFallback
+  ): Promise<User | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -43,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single()
 
     if (error || !data) {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
         return {
           id: authUser.id,
@@ -68,27 +79,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id)
-        setUser(userProfile)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          const userProfile = await fetchUserProfile(session.user.id, session.user)
+          setUser(userProfile)
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Session check error:', error)
+        setUser(null)
+      } finally {
+        setIsLoading(false)
       }
-      
-      setIsLoading(false)
     }
 
     checkSession()
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          const userProfile = await fetchUserProfile(session.user.id)
-          setUser(userProfile)
-        } else {
-          setUser(null)
-        }
+      (_event, session) => {
+        setTimeout(async () => {
+          if (session?.user) {
+            const userProfile = await fetchUserProfile(session.user.id, session.user)
+            setUser(userProfile)
+          } else {
+            setUser(null)
+          }
+          setIsLoading(false)
+        }, 0)
       }
     )
 
@@ -110,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Wait a moment for the profile trigger to create the profile
     await new Promise(resolve => setTimeout(resolve, 500))
-    const userProfile = await fetchUserProfile(data.user.id)
+    const userProfile = await fetchUserProfile(data.user.id, data.user)
     if (userProfile) {
       setUser(userProfile)
       return true
@@ -125,7 +146,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true
   }, [fetchUserProfile])
 
-  const register = useCallback(async (email: string, name: string, password: string): Promise<boolean> => {
+  const register = useCallback(async (
+    email: string,
+    name: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
     const normalizedEmail = email.trim().toLowerCase()
     const role = getRoleForUser(normalizedEmail, name)
 
@@ -142,7 +167,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error || !data.user) {
       console.error('Registration error:', error?.message)
-      return false
+      return {
+        success: false,
+        error: error?.message || 'Could not create account. Please try again.',
+      }
     }
 
     // Profile is created automatically by the database trigger
@@ -157,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setUser(userProfile)
-    return true
+    return { success: true }
   }, [])
 
   const logout = useCallback(async (): Promise<void> => {
