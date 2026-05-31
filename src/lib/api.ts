@@ -7,7 +7,9 @@ import type {
   MatchParticipant, 
   ScoreSet, 
   ClubEvent, 
-  EventRsvp 
+  EventRsvp,
+  Notification,
+  ClubActivity
 } from '../types'
 
 // ============================================
@@ -505,4 +507,206 @@ export async function updateProfile(userId: string, updates: { name?: string }) 
   }
 
   return data
+}
+
+// ============================================
+// CLUB SETTINGS & INVITES
+// ============================================
+
+export async function updateClub(clubId: string, updates: {
+  name?: string
+  description?: string
+  location?: string
+  city?: string
+  open_join?: boolean
+  approval_required?: boolean
+  invite_code?: string | null
+}): Promise<Club | null> {
+  const { data, error } = await supabase
+    .from('clubs')
+    .update(updates as any)
+    .eq('id', clubId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating club:', error)
+    throw error
+  }
+
+  return data as Club
+}
+
+export async function joinClubByInviteCode(inviteCode: string): Promise<Membership | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    throw new Error('Must be authenticated to join a club')
+  }
+
+  // Find club by invite code
+  const { data: club, error: clubError } = await supabase
+    .from('clubs')
+    .select('*')
+    .eq('invite_code', inviteCode)
+    .single()
+
+  if (clubError || !club) {
+    throw new Error('Invalid invite code')
+  }
+
+  // Check if already a member
+  const { data: existingMembership } = await supabase
+    .from('memberships')
+    .select('*')
+    .eq('club_id', club.id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (existingMembership) {
+    throw new Error('You are already a member of this club')
+  }
+
+  // Create membership directly (invite code bypasses approval)
+  const { data: membership, error: membershipError } = await supabase
+    .from('memberships')
+    .insert({
+      club_id: club.id,
+      user_id: user.id,
+      role: 'member',
+      status: 'active',
+      approved_by: null,
+    } as any)
+    .select()
+    .single()
+
+  if (membershipError) {
+    console.error('Error joining club:', membershipError)
+    throw membershipError
+  }
+
+  return membership as Membership
+}
+
+export async function regenerateInviteCode(clubId: string): Promise<string | null> {
+  const newCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+  
+  const { data, error } = await supabase
+    .from('clubs')
+    .update({ invite_code: newCode } as any)
+    .eq('id', clubId)
+    .select('invite_code')
+    .single()
+
+  if (error) {
+    console.error('Error regenerating invite code:', error)
+    throw error
+  }
+
+  return data?.invite_code || null
+}
+
+// ============================================
+// MEMBER MANAGEMENT
+// ============================================
+
+export async function updateMemberRole(clubId: string, userId: string, role: 'owner' | 'admin' | 'member'): Promise<void> {
+  const { error } = await supabase
+    .from('memberships')
+    .update({ role } as any)
+    .eq('club_id', clubId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('Error updating member role:', error)
+    throw error
+  }
+}
+
+export async function removeMember(clubId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('memberships')
+    .delete()
+    .eq('club_id', clubId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('Error removing member:', error)
+    throw error
+  }
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+export async function getNotifications(): Promise<Notification[]> {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (error) {
+    console.error('Error fetching notifications:', error)
+    return []
+  }
+
+  return (data as Notification[]) || []
+}
+
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true } as any)
+    .eq('id', notificationId)
+
+  if (error) {
+    console.error('Error marking notification read:', error)
+    throw error
+  }
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true } as any)
+    .eq('user_id', user.id)
+    .eq('read', false)
+
+  if (error) {
+    console.error('Error marking all notifications read:', error)
+    throw error
+  }
+}
+
+// ============================================
+// CLUB ACTIVITY FEED
+// ============================================
+
+export async function getClubActivity(clubId: string): Promise<ClubActivity[]> {
+  const { data, error } = await supabase
+    .from('club_activities')
+    .select('*')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (error) {
+    console.error('Error fetching club activity:', error)
+    return []
+  }
+
+  return (data as ClubActivity[]) || []
 }

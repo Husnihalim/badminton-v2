@@ -137,3 +137,24 @@ export interface EventRsvp {
   // Joined fields
   name?: string
 }
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: 'join_request' | 'join_approved' | 'event_reminder' | 'score_recorded' | 'announcement'
+  title: string
+  message: string
+  data?: Record<string, any>
+  read: boolean
+  created_at: string
+}
+
+export interface ClubActivity {
+  id: string
+  club_id: string
+  type: 'match_recorded' | 'member_joined' | 'event_created' | 'announcement'
+  title: string
+  description: string
+  actor_name: string
+  created_at: string
+}

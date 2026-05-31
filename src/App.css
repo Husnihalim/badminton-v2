@@ -215,6 +215,35 @@
   gap: 12px;
 }
 
+.brand-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: var(--primary, #2563eb);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  text-decoration: none;
+}
+
+.brand-button:hover {
+  background: var(--primary-hover, #1d4ed8);
+  transform: translateY(-1px);
+}
+
+.brand-button:active {
+  transform: translateY(0);
+}
+
+.brand-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .button-panel .brand-button {
   min-width: 160px;
 }

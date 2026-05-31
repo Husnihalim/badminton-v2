@@ -2,18 +2,24 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
-import { getMyClubs, getClubEvents, getClubMatches } from '../lib/api'
+import { useNotifications } from '../context/NotificationsContext'
+import { getMyClubs, getClubEvents, getClubMatches, joinClubByInviteCode } from '../lib/api'
 import type { Club, ClubEvent, MatchWithDetails } from '../types'
 
 export default function DashboardPage() {
   const [showScoreModal, setShowScoreModal] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
+  const { showToast } = useNotifications()
   const navigate = useNavigate()
   
   const [clubs, setClubs] = useState<Club[]>([])
   const [events, setEvents] = useState<ClubEvent[]>([])
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Invite code
+  const [inviteCode, setInviteCode] = useState('')
+  const [isJoining, setIsJoining] = useState(false)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -23,12 +29,18 @@ export default function DashboardPage() {
     if (user) {
       loadDashboardData()
     }
+    
+    // Safety timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      setIsLoading(false)
+    }, 5000)
+    
+    return () => clearTimeout(timeout)
   }, [user, authLoading])
 
   const loadDashboardData = async () => {
+    setIsLoading(true)
     try {
-      setIsLoading(true)
-      
       // Get user's clubs
       const myClubs = await getMyClubs()
       setClubs(myClubs)
@@ -38,14 +50,18 @@ export default function DashboardPage() {
       const allMatches: MatchWithDetails[] = []
       
       for (const club of myClubs) {
-        const [clubEvents, clubMatches] = await Promise.all([
-          getClubEvents(club.id),
-          getClubMatches(club.id),
-        ])
-        
-        // Add club name to events for display
-        allEvents.push(...clubEvents.map(e => ({ ...e, clubName: club.name })))
-        allMatches.push(...clubMatches.map(m => ({ ...m, clubName: club.name })))
+        try {
+          const [clubEvents, clubMatches] = await Promise.all([
+            getClubEvents(club.id),
+            getClubMatches(club.id),
+          ])
+          
+          // Add club name to events for display
+          allEvents.push(...clubEvents.map(e => ({ ...e, clubName: club.name })))
+          allMatches.push(...clubMatches.map(m => ({ ...m, clubName: club.name })))
+        } catch (clubErr) {
+          console.error(`Error loading data for club ${club.id}:`, clubErr)
+        }
       }
       
       // Sort events by date (upcoming first)
@@ -58,6 +74,7 @@ export default function DashboardPage() {
       setMatches(allMatches.slice(0, 5))
     } catch (err) {
       console.error('Error loading dashboard data:', err)
+      showToast('Failed to load dashboard data', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -95,6 +112,23 @@ export default function DashboardPage() {
   const upcomingEvents = events.filter(e => new Date(e.event_date) > new Date()).length
   const clubCount = clubs.length
 
+  const handleJoinByInviteCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!inviteCode.trim()) return
+
+    try {
+      setIsJoining(true)
+      await joinClubByInviteCode(inviteCode.trim().toUpperCase())
+      showToast('Successfully joined club!', 'success')
+      setInviteCode('')
+      await loadDashboardData()
+    } catch (err: any) {
+      showToast(err.message || 'Failed to join club', 'error')
+    } finally {
+      setIsJoining(false)
+    }
+  }
+
   return (
     <section>
       <div className="section-card">
@@ -131,6 +165,32 @@ export default function DashboardPage() {
           <span className="stat-value">{totalMatches}</span>
           <p>Across all your clubs</p>
         </div>
+      </div>
+
+      {/* Join by Invite Code */}
+      <div className="section-card" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bfdbfe' }}>
+        <h3>Have an invite code?</h3>
+        <p style={{ color: '#64748b', marginBottom: '16px' }}>
+          Enter a club invite code to join instantly
+        </p>
+        <form onSubmit={handleJoinByInviteCode} style={{ display: 'flex', gap: '12px' }}>
+          <input
+            type="text"
+            placeholder="Enter code (e.g., ABC123XY)"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+            className="form-input"
+            style={{ maxWidth: '250px', fontFamily: 'monospace', letterSpacing: '1px' }}
+            maxLength={10}
+          />
+          <button 
+            type="submit" 
+            className="brand-button"
+            disabled={isJoining || !inviteCode.trim()}
+          >
+            {isJoining ? 'Joining...' : 'Join Club'}
+          </button>
+        </form>
       </div>
 
       <div className="section-card">

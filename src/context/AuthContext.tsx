@@ -90,10 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    console.log('AuthContext: attempting login for', email)
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     })
+
+    console.log('AuthContext: login response', { data, error })
 
     if (error || !data.user) {
       console.error('Login error:', error?.message)

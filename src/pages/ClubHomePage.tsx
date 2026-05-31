@@ -1,12 +1,28 @@
-import { useParams, Navigate } from 'react-router-dom'
+import { useParams, Navigate, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
-import { getClub, getClubMembers, getClubEvents, getClubMatches, getMyMembership, createEvent } from '../lib/api'
-import type { Club, ClubEvent, MatchWithDetails, Membership } from '../types'
+import { 
+  getClub, 
+  getClubMembers, 
+  getClubEvents, 
+  getClubMatches, 
+  getMyMembership, 
+  createEvent,
+  requestJoinClub,
+  getClubJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
+  rsvpToEvent,
+  getEventRsvps,
+  getMyEventRsvps,
+  getClubActivity
+} from '../lib/api'
+import type { Club, ClubEvent, MatchWithDetails, Membership, JoinRequest, EventRsvp, ClubActivity } from '../types'
 
 export default function ClubHomePage() {
   const { clubId } = useParams()
+  const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   
   const [club, setClub] = useState<Club | null>(null)
@@ -16,16 +32,29 @@ export default function ClubHomePage() {
   const [myMembership, setMyMembership] = useState<Membership | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   const [showEventModal, setShowEventModal] = useState(false)
   const [showScoreModal, setShowScoreModal] = useState(false)
   const [showMemberScoreModal, setShowMemberScoreModal] = useState(false)
+  const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false)
   
   // Event creation form
   const [eventTitle, setEventTitle] = useState('')
   const [eventDate, setEventDate] = useState('')
   const [eventLocation, setEventLocation] = useState('')
   const [isCreatingEvent, setIsCreatingEvent] = useState(false)
+
+  // Join requests
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false)
+
+  // RSVPs
+  const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
+  const [eventRsvpCounts, setEventRsvpCounts] = useState<Record<string, number>>({})
+
+  // Activity feed
+  const [activities, setActivities] = useState<ClubActivity[]>([])
 
   useEffect(() => {
     if (clubId) {
@@ -58,6 +87,24 @@ export default function ClubHomePage() {
       setEvents(eventsData)
       setMatches(matchesData)
       setMyMembership(membershipData)
+
+      // Load user's RSVPs
+      if (user) {
+        const rsvps = await getMyEventRsvps()
+        setMyRsvps(rsvps)
+      }
+
+      // Load RSVP counts for each event
+      const rsvpCounts: Record<string, number> = {}
+      for (const event of eventsData) {
+        const eventRsvps = await getEventRsvps(event.id)
+        rsvpCounts[event.id] = eventRsvps.filter(r => r.status === 'going').length
+      }
+      setEventRsvpCounts(rsvpCounts)
+
+      // Load activity feed
+      const activityData = await getClubActivity(clubId)
+      setActivities(activityData)
     } catch (err: any) {
       setError(err.message || 'Failed to load club data')
     } finally {
@@ -87,15 +134,144 @@ export default function ClubHomePage() {
       // Reload events
       const eventsData = await getClubEvents(clubId)
       setEvents(eventsData)
+      setSuccessMessage('Event created successfully!')
+      setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err: any) {
-      alert('Failed to create event: ' + err.message)
+      setError(err.message || 'Failed to create event')
     } finally {
       setIsCreatingEvent(false)
     }
   }
 
+  const handleJoinClub = async () => {
+    if (!clubId || !user) return
+
+    try {
+      if (club?.open_join && !club?.approval_required) {
+        // Auto-join
+        await requestJoinClub(clubId)
+        setSuccessMessage('You have joined the club!')
+      } else {
+        // Request to join
+        await requestJoinClub(clubId)
+        setSuccessMessage('Join request sent! Waiting for approval.')
+      }
+      setTimeout(() => setSuccessMessage(''), 3000)
+      await loadClubData()
+    } catch (err: any) {
+      setError(err.message || 'Failed to join club')
+    }
+  }
+
+  const handleRsvp = async (eventId: string, status: 'going' | 'maybe' | 'not_going') => {
+    if (!user) return
+
+    try {
+      await rsvpToEvent(eventId, status)
+      setSuccessMessage(`RSVP updated: ${status}`)
+      setTimeout(() => setSuccessMessage(''), 3000)
+      
+      // Reload RSVPs
+      const rsvps = await getMyEventRsvps()
+      setMyRsvps(rsvps)
+      
+      // Update count
+      const eventRsvps = await getEventRsvps(eventId)
+      setEventRsvpCounts(prev => ({
+        ...prev,
+        [eventId]: eventRsvps.filter(r => r.status === 'going').length
+      }))
+    } catch (err: any) {
+      setError(err.message || 'Failed to RSVP')
+    }
+  }
+
+  const loadJoinRequests = async () => {
+    if (!clubId || !isAdmin) return
+    
+    try {
+      setIsLoadingRequests(true)
+      const requests = await getClubJoinRequests(clubId)
+      setJoinRequests(requests)
+    } catch (err) {
+      console.error('Failed to load join requests:', err)
+    } finally {
+      setIsLoadingRequests(false)
+    }
+  }
+
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      await approveJoinRequest(requestId)
+      setSuccessMessage('Request approved!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+      await loadJoinRequests()
+      await loadClubData()
+    } catch (err: any) {
+      setError(err.message || 'Failed to approve request')
+    }
+  }
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      await rejectJoinRequest(requestId)
+      setSuccessMessage('Request rejected')
+      setTimeout(() => setSuccessMessage(''), 3000)
+      await loadJoinRequests()
+    } catch (err: any) {
+      setError(err.message || 'Failed to reject request')
+    }
+  }
+
+  const getLeaderboard = () => {
+    // Calculate wins/losses from matches
+    const stats: Record<string, { name: string; wins: number; losses: number; points: number }> = {}
+    
+    matches.forEach(match => {
+      if (!match.score_sets || match.score_sets.length === 0) return
+      
+      // Get total scores
+      let team1Total = 0
+      let team2Total = 0
+      
+      match.score_sets.forEach(set => {
+        if (set.team1_score > set.team2_score) team1Total++
+        else team2Total++
+      })
+      
+      const team1Won = team1Total > team2Total
+      
+      // Update stats for each participant
+      match.participants?.forEach((p: any) => {
+        const name = p.name || p.guest_name || 'Unknown'
+        if (!stats[name]) {
+          stats[name] = { name, wins: 0, losses: 0, points: 0 }
+        }
+        
+        if (p.team === 1) {
+          if (team1Won) {
+            stats[name].wins++
+            stats[name].points += 3
+          } else {
+            stats[name].losses++
+          }
+        } else {
+          if (!team1Won) {
+            stats[name].wins++
+            stats[name].points += 3
+          } else {
+            stats[name].losses++
+          }
+        }
+      })
+    })
+    
+    return Object.values(stats).sort((a, b) => b.points - a.points)
+  }
+
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = !!myMembership
+  const canJoin = user && !isMember && club?.open_join !== false
 
   if (isLoading || authLoading) {
     return (
@@ -109,8 +285,14 @@ export default function ClubHomePage() {
     return <Navigate to="/not-found" replace />
   }
 
+  const leaderboard = getLeaderboard()
+
   return (
     <section>
+      {successMessage && (
+        <div className="modal-toast">{successMessage}</div>
+      )}
+
       <div className="section-card">
         <div className="hero-header">
           <div className="hero-copy">
@@ -121,16 +303,26 @@ export default function ClubHomePage() {
               <span>{club.city}</span>
               <span>{members.length} members</span>
             </div>
+            {club.invite_code && (
+              <div style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}>
+                Invite code: <strong>{club.invite_code}</strong>
+              </div>
+            )}
             {isAdmin && (
               <div style={{ marginTop: '16px', padding: '8px 12px', backgroundColor: '#dbeafe', borderRadius: '6px', fontSize: '12px', color: '#1e40af', display: 'inline-block' }}>
                 ⚙️ You are a club admin
               </div>
             )}
-            {!isMember && user && (
+            {canJoin && (
               <div style={{ marginTop: '16px' }}>
-                <button className="brand-button">
-                  Join club
+                <button className="brand-button" onClick={handleJoinClub}>
+                  {club.approval_required ? 'Request to join' : 'Join club'}
                 </button>
+              </div>
+            )}
+            {myMembership?.status === 'active' && (
+              <div style={{ marginTop: '16px' }}>
+                <span className="tag-pill">✓ Member ({myMembership.role})</span>
               </div>
             )}
           </div>
@@ -151,8 +343,15 @@ export default function ClubHomePage() {
             <button className="small-button" onClick={() => setShowScoreModal(true)}>
               Record score
             </button>
-            <button className="small-button">Manage members</button>
-            <button className="small-button">Club settings</button>
+            <button className="small-button" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true); }}>
+              Join requests {joinRequests.length > 0 && `(${joinRequests.length})`}
+            </button>
+            <button className="small-button" onClick={() => navigate(`/club/${clubId}/settings`)}>
+              Club settings
+            </button>
+            <button className="small-button" onClick={() => navigate(`/club/${clubId}/members`)}>
+              Manage members
+            </button>
           </div>
         </div>
       )}
@@ -162,21 +361,46 @@ export default function ClubHomePage() {
           <div className="event-card">
             <h3>Upcoming game days</h3>
             {events.length ? (
-              events.map((event) => (
-                <div key={event.id} style={{ marginTop: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
-                  <strong>{event.title}</strong>
-                  <p>{new Date(event.event_date).toLocaleString()}</p>
-                  <p>{event.location}</p>
-                  <p style={{ marginTop: '8px', fontSize: '12px', color: event.signup_open ? '#059669' : '#dc2626' }}>
-                    {event.signup_open ? '✓ Open for signup' : '✗ Closed'}
-                  </p>
-                  {isMember && event.signup_open && (
-                    <button className="small-button" style={{ marginTop: '8px' }}>
-                      Sign up
-                    </button>
-                  )}
-                </div>
-              ))
+              events.map((event) => {
+                const myRsvp = myRsvps.find(r => r.event_id === event.id)
+                const rsvpCount = eventRsvpCounts[event.id] || 0
+                const isFull = event.max_participants && rsvpCount >= event.max_participants
+                
+                return (
+                  <div key={event.id} style={{ marginTop: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
+                    <strong>{event.title}</strong>
+                    <p>{new Date(event.event_date).toLocaleString()}</p>
+                    <p>{event.location}</p>
+                    <p style={{ marginTop: '8px', fontSize: '12px', color: event.signup_open ? '#059669' : '#dc2626' }}>
+                      {event.signup_open ? '✓ Open for signup' : '✗ Closed'}
+                      {event.max_participants && ` • ${rsvpCount}/${event.max_participants} going`}
+                    </p>
+                    {isMember && event.signup_open && !isFull && (
+                      <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                        <button 
+                          className={`small-button ${myRsvp?.status === 'going' ? 'brand-button' : ''}`}
+                          onClick={() => handleRsvp(event.id, 'going')}
+                        >
+                          {myRsvp?.status === 'going' ? '✓ Going' : 'Going'}
+                        </button>
+                        <button 
+                          className={`small-button ${myRsvp?.status === 'maybe' ? 'brand-button' : ''}`}
+                          onClick={() => handleRsvp(event.id, 'maybe')}
+                        >
+                          {myRsvp?.status === 'maybe' ? '✓ Maybe' : 'Maybe'}
+                        </button>
+                        <button 
+                          className={`small-button ${myRsvp?.status === 'not_going' ? 'brand-button' : ''}`}
+                          onClick={() => handleRsvp(event.id, 'not_going')}
+                        >
+                          {myRsvp?.status === 'not_going' ? '✓ Not going' : 'Can\'t go'}
+                        </button>
+                      </div>
+                    )}
+                    {isFull && <p style={{ color: '#dc2626', fontSize: '12px' }}>Event full</p>}
+                  </div>
+                )
+              })
             ) : (
               <p className="empty-state">No upcoming game days yet.</p>
             )}
@@ -203,10 +427,97 @@ export default function ClubHomePage() {
         </div>
       </div>
 
+      {/* Leaderboard Section */}
+      <div className="section-card">
+        <h2>Club Leaderboard</h2>
+        {leaderboard.length > 0 ? (
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {leaderboard.slice(0, 10).map((player, index) => (
+                <div 
+                  key={player.name} 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    backgroundColor: index < 3 ? '#f0f9ff' : '#f8fafc',
+                    borderRadius: '12px',
+                    border: index < 3 ? '1px solid #bfdbfe' : '1px solid #e2e8f0'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ 
+                      fontSize: '20px', 
+                      fontWeight: 'bold',
+                      color: index === 0 ? '#f59e0b' : index === 1 ? '#64748b' : index === 2 ? '#b45309' : '#94a3b8'
+                    }}>
+                      #{index + 1}
+                    </span>
+                    <span style={{ fontWeight: 600 }}>{player.name}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '14px' }}>
+                    <span style={{ color: '#059669' }}>{player.wins}W</span>
+                    <span style={{ color: '#dc2626' }}>{player.losses}L</span>
+                    <span style={{ fontWeight: 'bold', color: '#2563eb' }}>{player.points} pts</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="empty-state">No matches recorded yet. Start playing to see the leaderboard!</p>
+        )}
+      </div>
+
+      {/* Activity Feed */}
+      <div className="section-card">
+        <h2>Community Activity</h2>
+        {activities.length > 0 ? (
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {activities.slice(0, 10).map((activity) => (
+              <div
+                key={activity.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '16px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <div style={{ fontSize: '24px' }}>
+                  {activity.type === 'match_recorded' && '🏆'}
+                  {activity.type === 'member_joined' && '👋'}
+                  {activity.type === 'event_created' && '📅'}
+                  {activity.type === 'announcement' && '📢'}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontWeight: 500 }}>{activity.title}</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748b' }}>
+                    {activity.description}
+                  </p>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                    by {activity.actor_name} • {new Date(activity.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No recent activity. Start playing to see updates!</p>
+        )}
+      </div>
+
       <div className="section-card">
         <div className="grid-2">
           <div className="analysis-card">
-            <h3>Club members</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Club members</h3>
+              <Link to={`/club/${clubId}/members`} className="small-button">View all</Link>
+            </div>
             {members.length ? (
               <div style={{ marginTop: '12px' }}>
                 {members.slice(0, 5).map((member) => (
@@ -292,7 +603,52 @@ export default function ClubHomePage() {
         </div>
       )}
 
-      {/* Score Recording Modal - Available to all members */}
+      {/* Join Requests Modal */}
+      {showJoinRequestsModal && isAdmin && (
+        <div className="modal-overlay" onClick={() => setShowJoinRequestsModal(false)}>
+          <div className="modal-panel modal-panel-sm" onClick={(e) => e.stopPropagation()}>
+            <h2>Join Requests</h2>
+            {isLoadingRequests ? (
+              <p>Loading...</p>
+            ) : joinRequests.length === 0 ? (
+              <p className="empty-state">No pending join requests.</p>
+            ) : (
+              <div style={{ marginTop: '16px' }}>
+                {joinRequests.map((request) => (
+                  <div key={request.id} style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '12px',
+                    borderBottom: '1px solid #e2e8f0'
+                  }}>
+                    <div>
+                      <strong>{(request as any).name}</strong>
+                      <p style={{ fontSize: '14px', color: '#64748b' }}>{(request as any).email}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        className="small-button brand-button"
+                        onClick={() => handleApproveRequest(request.id)}
+                      >
+                        Approve
+                      </button>
+                      <button 
+                        className="small-button"
+                        onClick={() => handleRejectRequest(request.id)}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Score Recording Modal */}
       <ScoreRecordingModal 
         isOpen={showMemberScoreModal} 
         onClose={() => setShowMemberScoreModal(false)} 
