@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarDays, ClipboardPenLine, Club as ClubIcon, Plus, Trophy, Users } from 'lucide-react'
+import { CalendarDays, ClipboardPenLine, Club as ClubIcon, Link2, Trophy, Users } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
-import { getMyClubs, getClubEvents, getClubMatches, joinClubByInviteCode } from '../lib/api'
+import { getMyClubs, getClubEvents, getClubMatches } from '../lib/api'
 import type { Club, ClubEvent, MatchWithDetails } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
-import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
 
 type DashboardClub = Club & { role?: string }
@@ -27,10 +26,6 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<DashboardMatch[]>([])
   const [isLoading, setIsLoading] = useState(false)
   
-  // Invite code
-  const [inviteCode, setInviteCode] = useState('')
-  const [isJoining, setIsJoining] = useState(false)
-
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -125,24 +120,6 @@ export default function DashboardPage() {
   const upcomingEvents = events.filter(e => new Date(e.event_date) > new Date()).length
   const clubCount = clubs.length
 
-  const handleJoinByInviteCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inviteCode.trim()) return
-
-    try {
-      setIsJoining(true)
-      await joinClubByInviteCode(inviteCode.trim().toUpperCase())
-      showToast('Successfully joined club!', 'success')
-      setInviteCode('')
-      await loadDashboardData()
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to join club'
-      showToast(message, 'error')
-    } finally {
-      setIsJoining(false)
-    }
-  }
-
   return (
     <Page>
       <PageHeader
@@ -170,25 +147,16 @@ export default function DashboardPage() {
       </div>
 
       <Card>
-        <CardContent className="space-y-3 pt-4 sm:pt-5">
+        <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
+          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <Link2 size={18} aria-hidden="true" />
+          </span>
           <div className="space-y-1">
-            <h2 className="text-base font-bold text-slate-950">Have an invite code?</h2>
-            <p className="text-sm text-slate-600">Enter a club invite code to join instantly.</p>
+            <h2 className="text-base font-bold text-slate-950">Have an invite link?</h2>
+            <p className="text-sm leading-6 text-slate-600">
+              Open the club invite link from your friend. It will add the club directly after you log in.
+            </p>
           </div>
-          <form className="grid gap-2 sm:grid-cols-[minmax(0,260px)_auto]" onSubmit={handleJoinByInviteCode}>
-            <Input
-              type="text"
-              placeholder="LEPBC2026"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-              className="font-mono tracking-wide"
-              maxLength={10}
-            />
-            <Button type="submit" disabled={isJoining || !inviteCode.trim()}>
-              <Plus size={17} aria-hidden="true" />
-              {isJoining ? 'Joining...' : 'Join Club'}
-            </Button>
-          </form>
         </CardContent>
       </Card>
 

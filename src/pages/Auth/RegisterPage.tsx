@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { isSupabaseConfigured } from '../../lib/supabase'
@@ -15,12 +15,14 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const { user, register } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectTo = getSafeRedirect(searchParams.get('redirect'))
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard')
+      navigate(redirectTo)
     }
-  }, [user, navigate])
+  }, [user, navigate, redirectTo])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -41,7 +43,7 @@ export default function RegisterPage() {
       setError(result.error || 'Could not create account. Please try again.')
       return
     }
-    navigate('/dashboard')
+    navigate(redirectTo)
   }
 
   return (
@@ -120,10 +122,15 @@ export default function RegisterPage() {
             </Button>
           </form>
           <p className="mt-5 text-sm text-slate-600">
-            Already have an account? <Link className="font-semibold text-emerald-700" to="/login">Log in</Link>
+            Already have an account? <Link className="font-semibold text-emerald-700" to={`/login?redirect=${encodeURIComponent(redirectTo)}`}>Log in</Link>
           </p>
         </CardContent>
       </Card>
     </section>
   )
+}
+
+function getSafeRedirect(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/dashboard'
+  return value
 }

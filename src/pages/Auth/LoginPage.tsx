@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { isSupabaseConfigured } from '../../lib/supabase'
@@ -14,12 +14,14 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { user, isLoading, login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectTo = getSafeRedirect(searchParams.get('redirect'))
 
   useEffect(() => {
     if (!isLoading && user) {
-      navigate('/dashboard')
+      navigate(redirectTo)
     }
-  }, [isLoading, user, navigate])
+  }, [isLoading, user, navigate, redirectTo])
 
   if (isLoading) {
     return (
@@ -53,7 +55,7 @@ export default function LoginPage() {
         return
       }
 
-      navigate('/dashboard')
+      navigate(redirectTo)
     } finally {
       setIsSubmitting(false)
     }
@@ -117,11 +119,16 @@ export default function LoginPage() {
               <Link className="font-semibold text-emerald-700" to="/forgot-password">Forgot password?</Link>
             </p>
             <p>
-              New here? <Link className="font-semibold text-emerald-700" to="/register">Create account</Link>
+              New here? <Link className="font-semibold text-emerald-700" to={`/register?redirect=${encodeURIComponent(redirectTo)}`}>Create account</Link>
             </p>
           </div>
         </CardContent>
       </Card>
     </section>
   )
+}
+
+function getSafeRedirect(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/dashboard'
+  return value
 }

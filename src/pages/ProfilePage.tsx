@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Building2, MapPin, Plus, UserRound, Users, X } from 'lucide-react'
+import { Building2, Lock, MapPin, Plus, Save, UserRound, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { createClub, getMyClubs } from '../lib/api'
+import { createClub, getMyClubs, updateProfile } from '../lib/api'
 import type { Club } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
+import { Select } from '../components/ui/select'
+import { Textarea } from '../components/ui/textarea'
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
 }
 
 export default function ProfilePage() {
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, isLoading: authLoading, refreshUser } = useAuth()
   const navigate = useNavigate()
   const [clubs, setClubs] = useState<Club[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -25,6 +27,14 @@ export default function ProfilePage() {
   const [clubCity, setClubCity] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState('')
+  const [profileMessage, setProfileMessage] = useState('')
+  const [profileError, setProfileError] = useState('')
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [displayName, setDisplayName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [city, setCity] = useState('')
+  const [preferredSport, setPreferredSport] = useState('badminton')
+  const [bio, setBio] = useState('')
 
   const loadMyClubs = useCallback(async () => {
     try {
@@ -46,6 +56,11 @@ export default function ProfilePage() {
 
     if (user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDisplayName(user.display_name || user.name || '')
+      setPhone(user.phone || '')
+      setCity(user.city || '')
+      setPreferredSport(user.preferred_sport || 'badminton')
+      setBio(user.bio || '')
       loadMyClubs()
     }
   }, [user, authLoading, navigate, loadMyClubs])
@@ -67,7 +82,7 @@ export default function ProfilePage() {
         city: clubCity.trim(),
         sport_focus: ['badminton'],
         open_join: true,
-        approval_required: false,
+        approval_required: true,
       })
       
       if (newClub) {
@@ -82,6 +97,31 @@ export default function ProfilePage() {
       setError(getErrorMessage(err, 'Failed to create club'))
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  const handleSaveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!user) return
+
+    try {
+      setIsSavingProfile(true)
+      setProfileError('')
+      setProfileMessage('')
+      await updateProfile(user.id, {
+        display_name: displayName.trim() || null,
+        phone: phone.trim() || null,
+        city: city.trim() || null,
+        preferred_sport: preferredSport || null,
+        bio: bio.trim() || null,
+      })
+      await refreshUser()
+      setProfileMessage('Profile saved.')
+      setTimeout(() => setProfileMessage(''), 3000)
+    } catch (err) {
+      setProfileError(getErrorMessage(err, 'Failed to save profile'))
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
@@ -108,15 +148,80 @@ export default function ProfilePage() {
       />
 
       <Card>
-        <CardContent className="flex items-start gap-4 pt-4 sm:pt-5">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-            <UserRound size={22} aria-hidden="true" />
-          </span>
-          <div className="min-w-0 space-y-2">
-            <h2 className="text-lg font-bold text-slate-950">{user?.name}</h2>
-            <p className="break-words text-sm text-slate-600">{user?.email}</p>
-            {user?.role ? <Badge>{user.role}</Badge> : null}
+        <CardContent className="space-y-5 pt-4 sm:pt-5">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+              <UserRound size={22} aria-hidden="true" />
+            </span>
+            <div className="min-w-0 space-y-2">
+              <h2 className="text-lg font-bold text-slate-950">{user?.display_name || user?.name}</h2>
+              <p className="break-words text-sm text-slate-600">{user?.email}</p>
+              <div className="flex flex-wrap gap-2">
+                {user?.role ? <Badge>{user.role}</Badge> : null}
+                <Badge className="border-slate-200 bg-slate-50 text-slate-700">
+                  <Lock size={13} aria-hidden="true" />
+                  Username and email locked
+                </Badge>
+              </div>
+            </div>
           </div>
+
+          <form className="space-y-4" onSubmit={handleSaveProfile}>
+            {profileError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{profileError}</p> : null}
+            {profileMessage ? <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{profileMessage}</p> : null}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>Username</span>
+                <Input value={user?.name || ''} disabled />
+              </label>
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>Email</span>
+                <Input value={user?.email || ''} disabled />
+              </label>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>Display name</span>
+                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="How you want members to see you" />
+              </label>
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>Phone</span>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+60..." />
+              </label>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>City</span>
+                <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Kuala Lumpur" />
+              </label>
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>Preferred sport</span>
+                <Select value={preferredSport} onChange={(e) => setPreferredSport(e.target.value)}>
+                  <option value="badminton">Badminton</option>
+                  <option value="tennis">Tennis</option>
+                  <option value="squash">Squash</option>
+                  <option value="pickleball">Pickleball</option>
+                  <option value="table tennis">Table tennis</option>
+                  <option value="racquetball">Racquetball</option>
+                </Select>
+              </label>
+            </div>
+
+            <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+              <span>Bio</span>
+              <Textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Short note about your playing level, availability, or club interests." />
+            </label>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSavingProfile}>
+                <Save size={17} aria-hidden="true" />
+                {isSavingProfile ? 'Saving...' : 'Save profile'}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
 

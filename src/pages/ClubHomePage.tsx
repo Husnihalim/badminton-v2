@@ -18,6 +18,7 @@ import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
 import {
   approveJoinRequest,
+  buildInviteUrl,
   createEvent,
   getClub,
   getClubActivity,
@@ -28,7 +29,6 @@ import {
   getEventRsvps,
   getMyEventRsvps,
   getMyMembership,
-  joinOpenClub,
   rejectJoinRequest,
   requestJoinClub,
   rsvpToEvent,
@@ -90,6 +90,7 @@ export default function ClubHomePage() {
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = !!myMembership
   const canJoin = user && !isMember && club?.open_join !== false
+  const inviteUrl = club?.invite_code ? buildInviteUrl(club.invite_code) : ''
 
   const loadClubData = useCallback(async () => {
     if (!clubId) return
@@ -177,18 +178,20 @@ export default function ClubHomePage() {
     if (!clubId || !user) return
 
     try {
-      if (club?.open_join && !club?.approval_required) {
-        await joinOpenClub(clubId)
-        setSuccessMessage('You have joined the club.')
-      } else {
-        await requestJoinClub(clubId)
-        setSuccessMessage('Join request sent. Waiting for approval.')
-      }
+      await requestJoinClub(clubId)
+      setSuccessMessage('Join request sent. Waiting for admin approval.')
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadClubData()
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to join club'))
     }
+  }
+
+  const handleCopyInviteLink = async () => {
+    if (!inviteUrl) return
+    await navigator.clipboard.writeText(inviteUrl)
+    setSuccessMessage('Invite link copied.')
+    setTimeout(() => setSuccessMessage(''), 3000)
   }
 
   const handleRsvp = async (eventId: string, status: 'going' | 'maybe' | 'not_going') => {
@@ -307,7 +310,7 @@ export default function ClubHomePage() {
             {canJoin ? (
               <Button onClick={handleJoinClub}>
                 <UserPlus size={17} aria-hidden="true" />
-                {club.approval_required ? 'Request to join' : 'Join club'}
+                Request to join
               </Button>
             ) : null}
             {isAdmin ? (
@@ -329,9 +332,9 @@ export default function ClubHomePage() {
             {myMembership?.status === 'active' ? <Badge>{myMembership.role}</Badge> : null}
             {isAdmin ? <Badge className="border-blue-200 bg-blue-50 text-blue-800">Admin</Badge> : null}
           </div>
-          {club.invite_code ? (
+          {club.invite_code && isAdmin ? (
             <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-              Invite code: <strong className="font-mono tracking-wide text-slate-950">{club.invite_code}</strong>
+              Invite link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
             </p>
           ) : null}
         </CardContent>
@@ -344,7 +347,7 @@ export default function ClubHomePage() {
               <ShieldCheck size={18} aria-hidden="true" />
               <h2 className="font-bold">Admin controls</h2>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               <Button onClick={() => setShowEventModal(true)}>
                 <CalendarDays size={17} aria-hidden="true" />
                 Create event
@@ -352,6 +355,10 @@ export default function ClubHomePage() {
               <Button variant="secondary" onClick={() => setShowScoreModal(true)}>
                 <ClipboardPenLine size={17} aria-hidden="true" />
                 Record score
+              </Button>
+              <Button variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
+                <UserPlus size={17} aria-hidden="true" />
+                Copy invite
               </Button>
               <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
                 <UserPlus size={17} aria-hidden="true" />

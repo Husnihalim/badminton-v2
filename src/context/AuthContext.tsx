@@ -8,6 +8,7 @@ type AuthContextType = {
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
   register: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>
+  refreshUser: () => Promise<User | null>
   logout: () => Promise<void>
 }
 
@@ -18,6 +19,11 @@ type ProfileRow = {
   email: string
   name: string
   role: User['role']
+  display_name?: string | null
+  phone?: string | null
+  city?: string | null
+  bio?: string | null
+  preferred_sport?: string | null
 }
 
 type AuthUserFallback = {
@@ -61,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: authUser.email || '',
           name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
           role: authUser.user_metadata?.role || 'member',
+          display_name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
         }
       }
       return null
@@ -73,8 +80,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: profile.email,
       name: profile.name,
       role: profile.role,
+      display_name: profile.display_name,
+      phone: profile.phone,
+      city: profile.city,
+      bio: profile.bio,
+      preferred_sport: profile.preferred_sport,
     }
   }, [])
+
+  const refreshUser = useCallback(async (): Promise<User | null> => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
+      setUser(null)
+      return null
+    }
+
+    const userProfile = await fetchUserProfile(authUser.id, authUser)
+    setUser(userProfile)
+    return userProfile
+  }, [fetchUserProfile])
 
   // Check for existing session on mount
   useEffect(() => {
@@ -142,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: data.user.email || email,
       name: data.user.user_metadata?.name || email.split('@')[0],
       role: data.user.user_metadata?.role || 'member',
+      display_name: data.user.user_metadata?.name || email.split('@')[0],
     })
     return true
   }, [fetchUserProfile])
@@ -182,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: normalizedEmail,
       name,
       role,
+      display_name: name,
     }
 
     setUser(userProfile)
@@ -198,12 +224,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     login,
     register,
+    refreshUser,
     logout,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {

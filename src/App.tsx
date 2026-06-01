@@ -6,6 +6,7 @@ import ProfilePage from './pages/ProfilePage'
 import ClubHomePage from './pages/ClubHomePage'
 import ClubSettingsPage from './pages/ClubSettingsPage'
 import ClubMembersPage from './pages/ClubMembersPage'
+import InviteJoinPage from './pages/InviteJoinPage'
 import LoginPage from './pages/Auth/LoginPage'
 import RegisterPage from './pages/Auth/RegisterPage'
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage'
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/join/:inviteCode" element={<InviteJoinPage />} />
                 <Route path="/club/:clubId" element={<ClubHomePage />} />
                 <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
                 <Route path="/club/:clubId/members" element={<ClubMembersPage />} />

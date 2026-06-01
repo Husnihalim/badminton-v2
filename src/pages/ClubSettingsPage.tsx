@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getClub, getMyMembership, regenerateInviteCode, updateClub } from '../lib/api'
+import { buildInviteUrl, getClub, getMyMembership, regenerateInviteCode, updateClub } from '../lib/api'
 import type { Club, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -32,7 +32,7 @@ export default function ClubSettingsPage() {
   const [location, setLocation] = useState('')
   const [city, setCity] = useState('')
   const [openJoin, setOpenJoin] = useState(true)
-  const [approvalRequired, setApprovalRequired] = useState(false)
+  const [approvalRequired, setApprovalRequired] = useState(true)
   const [inviteCode, setInviteCode] = useState('')
 
   const loadClubData = useCallback(async () => {
@@ -101,13 +101,15 @@ export default function ClubSettingsPage() {
     }
   }
 
+  const inviteUrl = inviteCode ? buildInviteUrl(inviteCode) : ''
+
   const handleRegenerateCode = async () => {
     if (!clubId) return
     
     try {
       const newCode = await regenerateInviteCode(clubId)
       setInviteCode(newCode || '')
-      setSuccessMessage('New invite code generated.')
+      setSuccessMessage('New invite link generated.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to generate new code'))
@@ -115,8 +117,8 @@ export default function ClubSettingsPage() {
   }
 
   const handleCopyCode = async () => {
-    await navigator.clipboard.writeText(inviteCode)
-    setSuccessMessage('Invite code copied.')
+    await navigator.clipboard.writeText(inviteUrl)
+    setSuccessMessage('Invite link copied.')
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
@@ -140,7 +142,7 @@ export default function ClubSettingsPage() {
       <PageHeader
         eyebrow="Club admin"
         title="Club settings"
-        description={`Manage ${club.name} details, joining rules, and invite code.`}
+        description={`Manage ${club.name} details, approval rules, and invite link.`}
         actions={
           <Button variant="secondary" onClick={() => navigate(`/club/${clubId}`)}>
             <ArrowLeft size={17} aria-hidden="true" />
@@ -193,14 +195,14 @@ export default function ClubSettingsPage() {
                   <input className="mt-1 h-4 w-4 accent-emerald-700" type="checkbox" checked={openJoin} onChange={(e) => setOpenJoin(e.target.checked)} />
                   <span>
                     <span className="block text-sm font-semibold text-slate-900">Allow new members to join</span>
-                    <span className="text-sm text-slate-600">When disabled, only invite codes work.</span>
+                    <span className="text-sm text-slate-600">Strangers can request to join, then admins approve.</span>
                   </span>
                 </label>
                 <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
                   <input className="mt-1 h-4 w-4 accent-emerald-700" type="checkbox" checked={approvalRequired} onChange={(e) => setApprovalRequired(e.target.checked)} disabled={!openJoin} />
                   <span>
-                    <span className="block text-sm font-semibold text-slate-900">Require approval</span>
-                    <span className="text-sm text-slate-600">Admins approve each join request.</span>
+                    <span className="block text-sm font-semibold text-slate-900">Require approval for strangers</span>
+                    <span className="text-sm text-slate-600">Invite links still let friends join directly.</span>
                   </span>
                 </label>
               </CardContent>
@@ -209,14 +211,14 @@ export default function ClubSettingsPage() {
             <Card>
               <CardContent className="space-y-3 pt-4 sm:pt-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold text-slate-950">Invite code</h2>
+                  <h2 className="text-lg font-bold text-slate-950">Invite link</h2>
                   <Badge>Instant join</Badge>
                 </div>
-                <Input value={inviteCode} readOnly className="font-mono tracking-widest" />
+                <Input value={inviteUrl} readOnly className="font-mono text-sm" />
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="secondary" onClick={handleCopyCode} disabled={!inviteCode}>
+                  <Button type="button" variant="secondary" onClick={handleCopyCode} disabled={!inviteUrl}>
                     <Copy size={17} aria-hidden="true" />
-                    Copy
+                    Copy link
                   </Button>
                   <Button type="button" variant="secondary" onClick={handleRegenerateCode}>
                     <RefreshCw size={17} aria-hidden="true" />

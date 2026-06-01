@@ -5,6 +5,11 @@ export interface User {
   name: string
   email: string
   role: UserRole
+  display_name?: string | null
+  phone?: string | null
+  city?: string | null
+  bio?: string | null
+  preferred_sport?: string | null
 }
 
 // Extended User with metadata

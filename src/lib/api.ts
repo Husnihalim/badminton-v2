@@ -174,45 +174,8 @@ export async function requestJoinClub(clubId: string): Promise<JoinRequest | nul
   return data as JoinRequest
 }
 
-export async function joinOpenClub(clubId: string): Promise<Membership | null> {
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    throw new Error('Must be authenticated to join a club')
-  }
-
-  const { data: existingMembership } = await supabase
-    .from('memberships')
-    .select('*')
-    .eq('club_id', clubId)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (existingMembership) {
-    if ((existingMembership as Membership).status === 'active') {
-      throw new Error('You are already a member of this club')
-    }
-    throw new Error('Your membership is not active. Please contact a club admin.')
-  }
-
-  const { data, error } = await supabase
-    .from('memberships')
-    .insert({
-      club_id: clubId,
-      user_id: user.id,
-      role: 'member',
-      status: 'active',
-      approved_by: null,
-    } as any)
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error joining club:', error)
-    throw error
-  }
-
-  return data as Membership
+export async function joinOpenClub(clubId: string): Promise<JoinRequest | null> {
+  return requestJoinClub(clubId)
 }
 
 export async function getClubJoinRequests(clubId: string): Promise<JoinRequest[]> {
@@ -582,7 +545,15 @@ export async function getProfile(userId: string) {
   return data
 }
 
-export async function updateProfile(userId: string, updates: { name?: string }) {
+export type ProfileUpdates = {
+  display_name?: string | null
+  phone?: string | null
+  city?: string | null
+  bio?: string | null
+  preferred_sport?: string | null
+}
+
+export async function updateProfile(userId: string, updates: ProfileUpdates) {
   const { data, error } = await supabase
     .from('profiles')
     .update(updates as any)
@@ -643,6 +614,16 @@ export async function joinClubByInviteCode(inviteCode: string): Promise<Membersh
   }
 
   return data as Membership
+}
+
+export function buildInvitePath(inviteCode: string): string {
+  return `/join/${encodeURIComponent(inviteCode.trim().toUpperCase())}`
+}
+
+export function buildInviteUrl(inviteCode: string): string {
+  const path = buildInvitePath(inviteCode)
+  if (typeof window === 'undefined') return path
+  return `${window.location.origin}${path}`
 }
 
 export async function regenerateInviteCode(clubId: string): Promise<string | null> {

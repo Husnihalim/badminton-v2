@@ -100,7 +100,7 @@ export default function LandingPage() {
           <FeatureCard icon={<Users size={18} />} title="Club management" text="Track members, approvals, social links, and club activity." />
           <FeatureCard icon={<Trophy size={18} />} title="Score capture" text="Record singles and doubles results with clean score history." />
           <FeatureCard icon={<CalendarDays size={18} />} title="Events" text="Create game days, manage RSVPs, and see attendance quickly." />
-          <FeatureCard icon={<ShieldCheck size={18} />} title="Admin controls" text="Keep settings, invite codes, and access controls organized." />
+          <FeatureCard icon={<ShieldCheck size={18} />} title="Admin controls" text="Keep settings, invite links, and access approvals organized." />
         </div>
       </section>
     </Page>
