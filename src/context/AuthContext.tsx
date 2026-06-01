@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import type { User } from '../types'
 import { supabase } from '../lib/supabase'
+import { ensureCurrentUserProfile } from '../lib/api'
 
 type AuthContextType = {
   user: User | null
@@ -62,6 +63,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error || !data) {
       if (authUser) {
+        try {
+          await ensureCurrentUserProfile()
+          const { data: repairedProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single()
+
+          if (repairedProfile) {
+            const profile = repairedProfile as ProfileRow
+            return {
+              id: profile.id,
+              email: profile.email,
+              name: profile.name,
+              role: profile.role,
+              display_name: profile.display_name,
+              phone: profile.phone,
+              city: profile.city,
+              bio: profile.bio,
+              preferred_sport: profile.preferred_sport,
+            }
+          }
+        } catch (profileError) {
+          console.error('Missing profile repair failed:', profileError)
+        }
+
         return {
           id: authUser.id,
           email: authUser.email || '',

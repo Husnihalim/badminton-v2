@@ -12,6 +12,45 @@ import type {
   ClubActivity
 } from '../types'
 
+export async function ensureCurrentUserProfile(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Must be authenticated')
+  }
+
+  const { data: existingProfile, error: selectError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (selectError) {
+    console.error('Error checking profile:', selectError)
+    throw selectError
+  }
+
+  if (existingProfile) return
+
+  const email = user.email || ''
+  const name = user.user_metadata?.name || email.split('@')[0] || 'Member'
+  const role = user.user_metadata?.role || 'member'
+
+  const { error: insertError } = await supabase
+    .from('profiles')
+    .insert({
+      id: user.id,
+      email,
+      name,
+      role,
+    } as any)
+
+  if (insertError) {
+    console.error('Error creating missing profile:', insertError)
+    throw insertError
+  }
+}
+
 // ============================================
 // CLUBS
 // ============================================
@@ -155,6 +194,8 @@ export async function requestJoinClub(clubId: string): Promise<JoinRequest | nul
   if (!user) {
     throw new Error('Must be authenticated to join a club')
   }
+
+  await ensureCurrentUserProfile()
 
   const { data, error } = await supabase
     .from('join_requests')
@@ -637,6 +678,8 @@ export async function joinClubByInviteLinkToken(inviteToken: string): Promise<Me
   if (!user) {
     throw new Error('Must be authenticated to join a club')
   }
+
+  await ensureCurrentUserProfile()
 
   const { data, error } = await supabase.rpc('join_club_by_invite_code', {
     invite_code_input: inviteToken,
