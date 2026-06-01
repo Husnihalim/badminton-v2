@@ -165,3 +165,15 @@ export interface ClubActivity {
   actor_name: string
   created_at: string
 }
+
+export interface ClubMessage {
+  id: string
+  club_id: string
+  title: string
+  message: string
+  created_by: string
+  created_at: string
+  updated_at: string
+  // Joined fields
+  authorName?: string
+}

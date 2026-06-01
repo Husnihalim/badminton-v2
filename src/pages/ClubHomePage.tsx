@@ -24,11 +24,14 @@ import {
   buildInviteUrl,
   createClubAnnouncement,
   createEvent,
+  deleteClubMessage,
+  deleteEvent,
   getClub,
   getClubActivity,
   getClubEvents,
   getClubJoinRequests,
   getClubMatches,
+  getClubMessages,
   getClubMembers,
   getEventRsvps,
   getMyEventRsvps,
@@ -36,8 +39,10 @@ import {
   rejectJoinRequest,
   requestJoinClub,
   rsvpToEvent,
+  updateClubMessage,
+  updateEvent,
 } from '../lib/api'
-import type { Club, ClubActivity, ClubEvent, EventRsvp, JoinRequest, MatchParticipant, MatchWithDetails, Membership } from '../types'
+import type { Club, ClubActivity, ClubEvent, ClubMessage, EventRsvp, JoinRequest, MatchParticipant, MatchWithDetails, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -71,6 +76,14 @@ function formatEventCost(event: ClubEvent) {
 
 function getClubMapQuery(club: Club) {
   return [club.location, club.city].filter(Boolean).join(', ')
+}
+
+function toDatetimeLocal(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60 * 1000)
+  return local.toISOString().slice(0, 16)
 }
 
 function getRsvpLabel(status: EventRsvp['status']) {
@@ -108,6 +121,8 @@ export default function ClubHomePage() {
   const [announcementTitle, setAnnouncementTitle] = useState('')
   const [announcementMessage, setAnnouncementMessage] = useState('')
   const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<ClubEvent | null>(null)
+  const [editingMessage, setEditingMessage] = useState<ClubMessage | null>(null)
 
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
   const [isLoadingRequests, setIsLoadingRequests] = useState(false)
@@ -115,6 +130,7 @@ export default function ClubHomePage() {
   const [eventRsvpCounts, setEventRsvpCounts] = useState<Record<string, number>>({})
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [activities, setActivities] = useState<ClubActivity[]>([])
+  const [messages, setMessages] = useState<ClubMessage[]>([])
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = !!myMembership
@@ -129,12 +145,13 @@ export default function ClubHomePage() {
       setPageError('')
       setActionError('')
       
-      const [clubData, membersData, eventsData, matchesData, membershipData] = await Promise.all([
+      const [clubData, membersData, eventsData, matchesData, membershipData, messageData] = await Promise.all([
         getClub(clubId),
         getClubMembers(clubId),
         getClubEvents(clubId),
         getClubMatches(clubId),
         user ? getMyMembership(clubId) : Promise.resolve(null),
+        getClubMessages(clubId),
       ])
 
       if (!clubData) {
@@ -147,6 +164,7 @@ export default function ClubHomePage() {
       setEvents(eventsData)
       setMatches(matchesData)
       setMyMembership(membershipData)
+      setMessages(messageData)
 
       if (user) {
         const rsvps = await getMyEventRsvps()
@@ -185,29 +203,70 @@ export default function ClubHomePage() {
 
     try {
       setIsCreatingEvent(true)
-      await createEvent({
-        club_id: clubId,
+      const payload = {
         title: eventTitle,
         event_date: new Date(eventDate).toISOString(),
-        location: eventLocation,
+        location: eventLocation.trim() || null,
         cost_amount: eventCostAmount ? Number(eventCostAmount) : null,
         cost_note: eventCostNote.trim() || null,
         signup_open: true,
-      })
+      }
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, payload)
+      } else {
+        await createEvent({
+          club_id: clubId,
+          ...payload,
+        })
+      }
       
       setEventTitle('')
       setEventDate('')
       setEventLocation('')
       setEventCostAmount('')
       setEventCostNote('')
+      setEditingEvent(null)
       setShowEventModal(false)
       await loadClubData()
-      setSuccessMessage('Event created.')
+      setSuccessMessage(editingEvent ? 'Event updated.' : 'Event created.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setActionError(getErrorMessage(err, 'Failed to create event'))
+      setActionError(getErrorMessage(err, editingEvent ? 'Failed to update event' : 'Failed to create event'))
     } finally {
       setIsCreatingEvent(false)
+    }
+  }
+
+  const openCreateEventModal = () => {
+    setEditingEvent(null)
+    setEventTitle('')
+    setEventDate('')
+    setEventLocation('')
+    setEventCostAmount('')
+    setEventCostNote('')
+    setShowEventModal(true)
+  }
+
+  const openEditEventModal = (event: ClubEvent) => {
+    setEditingEvent(event)
+    setEventTitle(event.title)
+    setEventDate(toDatetimeLocal(event.event_date))
+    setEventLocation(event.location || '')
+    setEventCostAmount(event.cost_amount != null ? String(event.cost_amount) : '')
+    setEventCostNote(event.cost_note || '')
+    setShowEventModal(true)
+  }
+
+  const handleDeleteEvent = async (event: ClubEvent) => {
+    if (!window.confirm(`Delete ${event.title}? Members will be notified that the session is cancelled.`)) return
+
+    try {
+      await deleteEvent(event)
+      await loadClubData()
+      setSuccessMessage('Event deleted.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Failed to delete event'))
     }
   }
 
@@ -220,6 +279,7 @@ export default function ClubHomePage() {
       await createClubAnnouncement(clubId, announcementTitle.trim(), announcementMessage.trim())
       setAnnouncementTitle('')
       setAnnouncementMessage('')
+      setEditingMessage(null)
       setShowAnnouncementModal(false)
       await loadClubData()
       setSuccessMessage('Announcement sent to members.')
@@ -228,6 +288,54 @@ export default function ClubHomePage() {
       setActionError(getErrorMessage(err, 'Failed to send announcement'))
     } finally {
       setIsSendingAnnouncement(false)
+    }
+  }
+
+  const openCreateMessageModal = () => {
+    setEditingMessage(null)
+    setAnnouncementTitle('')
+    setAnnouncementMessage('')
+    setShowAnnouncementModal(true)
+  }
+
+  const openEditMessageModal = (message: ClubMessage) => {
+    setEditingMessage(message)
+    setAnnouncementTitle(message.title)
+    setAnnouncementMessage(message.message)
+    setShowAnnouncementModal(true)
+  }
+
+  const handleUpdateMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingMessage || !announcementTitle.trim() || !announcementMessage.trim()) return
+
+    try {
+      setIsSendingAnnouncement(true)
+      await updateClubMessage(editingMessage.id, announcementTitle.trim(), announcementMessage.trim())
+      setAnnouncementTitle('')
+      setAnnouncementMessage('')
+      setEditingMessage(null)
+      setShowAnnouncementModal(false)
+      await loadClubData()
+      setSuccessMessage('Message updated.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Failed to update message'))
+    } finally {
+      setIsSendingAnnouncement(false)
+    }
+  }
+
+  const handleDeleteMessage = async (message: ClubMessage) => {
+    if (!window.confirm(`Delete ${message.title}? This removes the message and related notifications.`)) return
+
+    try {
+      await deleteClubMessage(message.id)
+      await loadClubData()
+      setSuccessMessage('Message deleted.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Failed to delete message'))
     }
   }
 
@@ -444,7 +552,7 @@ export default function ClubHomePage() {
               <h2 className="font-bold">Admin controls</h2>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              <Button onClick={() => setShowEventModal(true)}>
+              <Button onClick={openCreateEventModal}>
                 <CalendarDays size={17} aria-hidden="true" />
                 Create event
               </Button>
@@ -456,7 +564,7 @@ export default function ClubHomePage() {
                 <UserPlus size={17} aria-hidden="true" />
                 Copy invite
               </Button>
-              <Button variant="secondary" onClick={() => setShowAnnouncementModal(true)}>
+              <Button variant="secondary" onClick={openCreateMessageModal}>
                 <Megaphone size={17} aria-hidden="true" />
                 Notify
               </Button>
@@ -494,15 +602,27 @@ export default function ClubHomePage() {
                   
                   return (
                     <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <div className="space-y-1">
-                        <h3 className="font-bold text-slate-950">{event.title}</h3>
-                        <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
-                        {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
-                        {formatEventCost(event) ? (
-                          <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
-                            <DollarSign size={15} aria-hidden="true" />
-                            {formatEventCost(event)}
-                          </p>
+                      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                        <div className="space-y-1">
+                          <h3 className="font-bold text-slate-950">{event.title}</h3>
+                          <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
+                          {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
+                          {formatEventCost(event) ? (
+                            <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
+                              <DollarSign size={15} aria-hidden="true" />
+                              {formatEventCost(event)}
+                            </p>
+                          ) : null}
+                        </div>
+                        {isAdmin ? (
+                          <div className="grid grid-cols-2 gap-2 sm:flex">
+                            <Button type="button" size="sm" variant="secondary" onClick={() => openEditEventModal(event)}>
+                              Edit
+                            </Button>
+                            <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteEvent(event)}>
+                              Delete
+                            </Button>
+                          </div>
                         ) : null}
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -632,6 +752,47 @@ export default function ClubHomePage() {
 
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-slate-950">Messages</h2>
+              {isAdmin ? (
+                <Button type="button" size="sm" variant="secondary" onClick={openCreateMessageModal}>
+                  <Megaphone size={16} aria-hidden="true" />
+                  New
+                </Button>
+              ) : null}
+            </div>
+            {messages.length ? (
+              <div className="space-y-3">
+                {messages.slice(0, 6).map((message) => (
+                  <div key={message.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-950">{message.title}</p>
+                        <p className="text-sm leading-6 text-slate-600">{message.message}</p>
+                        <p className="mt-1 text-xs text-slate-500">by {message.authorName || 'Club admin'} • {new Date(message.created_at).toLocaleString()}</p>
+                      </div>
+                      {isAdmin ? (
+                        <div className="grid grid-cols-2 gap-2 sm:flex">
+                          <Button type="button" size="sm" variant="secondary" onClick={() => openEditMessageModal(message)}>
+                            Edit
+                          </Button>
+                          <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteMessage(message)}>
+                            Delete
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600">No messages yet.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
             <h2 className="text-lg font-bold text-slate-950">Community activity</h2>
             {activities.length ? (
               <div className="space-y-3">
@@ -656,15 +817,15 @@ export default function ClubHomePage() {
       </div>
 
       {showEventModal && isAdmin ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowEventModal(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => { setShowEventModal(false); setEditingEvent(null) }}>
           <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
             <CardContent className="space-y-4 pt-4 sm:pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950">Create new event</h2>
-                  <p className="text-sm text-slate-600">Add the next game day for members.</p>
+                  <h2 className="text-xl font-bold text-slate-950">{editingEvent ? 'Edit event' : 'Create new event'}</h2>
+                  <p className="text-sm text-slate-600">{editingEvent ? 'Update the session details members see.' : 'Add the next game day for members.'}</p>
                 </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setShowEventModal(false)} aria-label="Close">
+                <Button type="button" variant="ghost" size="icon" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} aria-label="Close">
                   <X size={18} aria-hidden="true" />
                 </Button>
               </div>
@@ -692,8 +853,10 @@ export default function ClubHomePage() {
                   </label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="secondary" onClick={() => setShowEventModal(false)} disabled={isCreatingEvent}>Cancel</Button>
-                  <Button type="submit" disabled={isCreatingEvent}>{isCreatingEvent ? 'Creating...' : 'Create event'}</Button>
+                  <Button type="button" variant="secondary" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} disabled={isCreatingEvent}>Cancel</Button>
+                  <Button type="submit" disabled={isCreatingEvent}>
+                    {isCreatingEvent ? 'Saving...' : editingEvent ? 'Save event' : 'Create event'}
+                  </Button>
                 </div>
               </form>
             </CardContent>
@@ -702,19 +865,19 @@ export default function ClubHomePage() {
       ) : null}
 
       {showAnnouncementModal && isAdmin ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowAnnouncementModal(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }}>
           <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
             <CardContent className="space-y-4 pt-4 sm:pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950">Notify members</h2>
-                  <p className="text-sm text-slate-600">Send news or updates to all active club members.</p>
+                  <h2 className="text-xl font-bold text-slate-950">{editingMessage ? 'Edit message' : 'Notify members'}</h2>
+                  <p className="text-sm text-slate-600">{editingMessage ? 'Update the message and member notifications.' : 'Send news or updates to all active club members.'}</p>
                 </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setShowAnnouncementModal(false)} aria-label="Close">
+                <Button type="button" variant="ghost" size="icon" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} aria-label="Close">
                   <X size={18} aria-hidden="true" />
                 </Button>
               </div>
-              <form className="space-y-4" onSubmit={handleSendAnnouncement}>
+              <form className="space-y-4" onSubmit={editingMessage ? handleUpdateMessage : handleSendAnnouncement}>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>Title *</span>
                   <Input type="text" placeholder="e.g. Court changed this Friday" value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} required />
@@ -724,8 +887,10 @@ export default function ClubHomePage() {
                   <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} required />
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="secondary" onClick={() => setShowAnnouncementModal(false)} disabled={isSendingAnnouncement}>Cancel</Button>
-                  <Button type="submit" disabled={isSendingAnnouncement}>{isSendingAnnouncement ? 'Sending...' : 'Send'}</Button>
+                  <Button type="button" variant="secondary" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} disabled={isSendingAnnouncement}>Cancel</Button>
+                  <Button type="submit" disabled={isSendingAnnouncement}>
+                    {isSendingAnnouncement ? 'Saving...' : editingMessage ? 'Save message' : 'Send'}
+                  </Button>
                 </div>
               </form>
             </CardContent>

@@ -9,7 +9,8 @@ import type {
   ClubEvent, 
   EventRsvp,
   Notification,
-  ClubActivity
+  ClubActivity,
+  ClubMessage
 } from '../types'
 
 export async function ensureCurrentUserProfile(): Promise<void> {
@@ -485,10 +486,10 @@ export async function createEvent(event: {
   club_id: string
   title: string
   event_date: string
-  location?: string
+  location?: string | null
   cost_amount?: number | null
   cost_note?: string | null
-  max_participants?: number
+  max_participants?: number | null
   signup_open?: boolean
 }): Promise<ClubEvent | null> {
   const { data: { user } } = await supabase.auth.getUser()
@@ -526,6 +527,69 @@ export async function createEvent(event: {
   })
 
   return createdEvent
+}
+
+export async function updateEvent(eventId: string, updates: {
+  title?: string
+  event_date?: string
+  location?: string | null
+  cost_amount?: number | null
+  cost_note?: string | null
+  max_participants?: number | null
+  signup_open?: boolean
+}): Promise<ClubEvent> {
+  const { data, error } = await supabase
+    .from('events')
+    .update(updates as any)
+    .eq('id', eventId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating event:', error)
+    throw error
+  }
+
+  const updatedEvent = data as ClubEvent
+  notifyClubMembers({
+    clubId: updatedEvent.club_id,
+    type: 'event_created',
+    title: 'Session updated',
+    message: `${updatedEvent.title} has been updated. Please check the latest details.`,
+    data: { clubId: updatedEvent.club_id, eventId: updatedEvent.id },
+    activityTitle: 'Session updated',
+    activityDescription: `${updatedEvent.title} details were updated.`,
+    actorFallback: 'Club admin',
+  }).catch((notificationError) => {
+    console.error('Error sending event update notifications:', notificationError)
+  })
+
+  return updatedEvent
+}
+
+export async function deleteEvent(event: ClubEvent): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', event.id)
+
+  if (error) {
+    console.error('Error deleting event:', error)
+    throw error
+  }
+
+  notifyClubMembers({
+    clubId: event.club_id,
+    type: 'event_created',
+    title: 'Session cancelled',
+    message: `${event.title} has been cancelled.`,
+    data: { clubId: event.club_id },
+    activityTitle: 'Session cancelled',
+    activityDescription: `${event.title} was removed from the schedule.`,
+    actorFallback: 'Club admin',
+  }).catch((notificationError) => {
+    console.error('Error sending event cancellation notifications:', notificationError)
+  })
 }
 
 // ============================================
@@ -898,22 +962,115 @@ async function notifyEventRsvpUpdate(eventId: string, status: 'going' | 'maybe' 
   })
 }
 
-export async function createClubAnnouncement(clubId: string, title: string, message: string): Promise<void> {
+export async function createClubAnnouncement(clubId: string, title: string, message: string): Promise<ClubMessage> {
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Must be authenticated to send a message')
+  }
+
+  const { data, error } = await supabase
+    .from('club_messages')
+    .insert({
+      club_id: clubId,
+      title,
+      message,
+      created_by: user.id,
+    } as any)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating club message:', error)
+    throw error
+  }
+
+  const clubMessage = data as ClubMessage
   await notifyClubMembers({
     clubId,
     type: 'announcement',
     title,
     message,
-    data: { clubId },
+    data: { clubId, messageId: clubMessage.id },
     activityTitle: title,
     activityDescription: message,
     actorFallback: 'Club admin',
   })
+
+  return clubMessage
 }
 
 // ============================================
 // CLUB ACTIVITY FEED
 // ============================================
+
+export async function getClubMessages(clubId: string): Promise<ClubMessage[]> {
+  const { data, error } = await supabase
+    .from('club_messages')
+    .select('*, profiles(name, display_name)')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (error) {
+    console.error('Error fetching club messages:', error)
+    return []
+  }
+
+  return ((data || []) as any[]).map((message) => ({
+    ...message,
+    authorName: message.profiles?.display_name || message.profiles?.name || 'Club admin',
+  }))
+}
+
+export async function updateClubMessage(messageId: string, title: string, message: string): Promise<ClubMessage> {
+  const { data, error } = await supabase
+    .from('club_messages')
+    .update({ title, message } as any)
+    .eq('id', messageId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating club message:', error)
+    throw error
+  }
+
+  const updatedMessage = data as ClubMessage
+  const { error: notificationError } = await supabase
+    .from('notifications')
+    .update({ title, message } as any)
+    .eq('type', 'announcement')
+    .eq('data->>messageId', messageId)
+
+  if (notificationError) {
+    console.error('Error updating message notifications:', notificationError)
+  }
+
+  return updatedMessage
+}
+
+export async function deleteClubMessage(messageId: string): Promise<void> {
+  const { error } = await supabase
+    .from('club_messages')
+    .delete()
+    .eq('id', messageId)
+
+  if (error) {
+    console.error('Error deleting club message:', error)
+    throw error
+  }
+
+  const { error: notificationError } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('type', 'announcement')
+    .eq('data->>messageId', messageId)
+
+  if (notificationError) {
+    console.error('Error deleting message notifications:', notificationError)
+  }
+}
 
 export async function getClubActivity(clubId: string): Promise<ClubActivity[]> {
   const { data, error } = await supabase
