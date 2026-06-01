@@ -1,25 +1,62 @@
-import { useParams, Navigate, useNavigate, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import {
+  Activity,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  ClipboardPenLine,
+  MapPin,
+  Settings,
+  ShieldCheck,
+  Trophy,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
-import { 
-  getClub, 
-  getClubMembers, 
-  getClubEvents, 
-  getClubMatches, 
-  getMyMembership, 
-  createEvent,
-  requestJoinClub,
-  joinOpenClub,
-  getClubJoinRequests,
+import { useAuth } from '../context/AuthContext'
+import {
   approveJoinRequest,
-  rejectJoinRequest,
-  rsvpToEvent,
+  createEvent,
+  getClub,
+  getClubActivity,
+  getClubEvents,
+  getClubJoinRequests,
+  getClubMatches,
+  getClubMembers,
   getEventRsvps,
   getMyEventRsvps,
-  getClubActivity
+  getMyMembership,
+  joinOpenClub,
+  rejectJoinRequest,
+  requestJoinClub,
+  rsvpToEvent,
 } from '../lib/api'
-import type { Club, ClubEvent, MatchWithDetails, Membership, JoinRequest, EventRsvp, ClubActivity } from '../types'
+import type { Club, ClubActivity, ClubEvent, EventRsvp, JoinRequest, MatchParticipant, MatchWithDetails, Membership } from '../types'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Page, PageHeader } from '../components/ui/page'
+
+type LeaderboardRow = {
+  name: string
+  wins: number
+  losses: number
+  points: number
+}
+
+function getErrorMessage(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback
+}
+
+function activityIcon(type: ClubActivity['type']) {
+  if (type === 'match_recorded') return <Trophy size={17} aria-hidden="true" />
+  if (type === 'member_joined') return <UserPlus size={17} aria-hidden="true" />
+  if (type === 'event_created') return <CalendarDays size={17} aria-hidden="true" />
+  return <Activity size={17} aria-hidden="true" />
+}
 
 export default function ClubHomePage() {
   const { clubId } = useParams()
@@ -37,33 +74,24 @@ export default function ClubHomePage() {
 
   const [showEventModal, setShowEventModal] = useState(false)
   const [showScoreModal, setShowScoreModal] = useState(false)
-  const [showMemberScoreModal, setShowMemberScoreModal] = useState(false)
   const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false)
   
-  // Event creation form
   const [eventTitle, setEventTitle] = useState('')
   const [eventDate, setEventDate] = useState('')
   const [eventLocation, setEventLocation] = useState('')
   const [isCreatingEvent, setIsCreatingEvent] = useState(false)
 
-  // Join requests
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
   const [isLoadingRequests, setIsLoadingRequests] = useState(false)
-
-  // RSVPs
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpCounts, setEventRsvpCounts] = useState<Record<string, number>>({})
-
-  // Activity feed
   const [activities, setActivities] = useState<ClubActivity[]>([])
 
-  useEffect(() => {
-    if (clubId) {
-      loadClubData()
-    }
-  }, [clubId, user])
+  const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
+  const isMember = !!myMembership
+  const canJoin = user && !isMember && club?.open_join !== false
 
-  const loadClubData = async () => {
+  const loadClubData = useCallback(async () => {
     if (!clubId) return
     
     try {
@@ -89,29 +117,33 @@ export default function ClubHomePage() {
       setMatches(matchesData)
       setMyMembership(membershipData)
 
-      // Load user's RSVPs
       if (user) {
         const rsvps = await getMyEventRsvps()
         setMyRsvps(rsvps)
       }
 
-      // Load RSVP counts for each event
       const rsvpCounts: Record<string, number> = {}
       for (const event of eventsData) {
         const eventRsvps = await getEventRsvps(event.id)
-        rsvpCounts[event.id] = eventRsvps.filter(r => r.status === 'going').length
+        rsvpCounts[event.id] = eventRsvps.filter((r) => r.status === 'going').length
       }
       setEventRsvpCounts(rsvpCounts)
 
-      // Load activity feed
       const activityData = await getClubActivity(clubId)
       setActivities(activityData)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load club data')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to load club data'))
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [clubId, user])
+
+  useEffect(() => {
+    if (clubId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadClubData()
+    }
+  }, [clubId, loadClubData])
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,14 +163,11 @@ export default function ClubHomePage() {
       setEventDate('')
       setEventLocation('')
       setShowEventModal(false)
-      
-      // Reload events
-      const eventsData = await getClubEvents(clubId)
-      setEvents(eventsData)
-      setSuccessMessage('Event created successfully!')
+      await loadClubData()
+      setSuccessMessage('Event created.')
       setTimeout(() => setSuccessMessage(''), 3000)
-    } catch (err: any) {
-      setError(err.message || 'Failed to create event')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to create event'))
     } finally {
       setIsCreatingEvent(false)
     }
@@ -150,15 +179,15 @@ export default function ClubHomePage() {
     try {
       if (club?.open_join && !club?.approval_required) {
         await joinOpenClub(clubId)
-        setSuccessMessage('You have joined the club!')
+        setSuccessMessage('You have joined the club.')
       } else {
         await requestJoinClub(clubId)
-        setSuccessMessage('Join request sent! Waiting for approval.')
+        setSuccessMessage('Join request sent. Waiting for approval.')
       }
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadClubData()
-    } catch (err: any) {
-      setError(err.message || 'Failed to join club')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to join club'))
     }
   }
 
@@ -167,21 +196,19 @@ export default function ClubHomePage() {
 
     try {
       await rsvpToEvent(eventId, status)
-      setSuccessMessage(`RSVP updated: ${status}`)
+      setSuccessMessage(`RSVP updated: ${status.replace('_', ' ')}.`)
       setTimeout(() => setSuccessMessage(''), 3000)
       
-      // Reload RSVPs
       const rsvps = await getMyEventRsvps()
       setMyRsvps(rsvps)
       
-      // Update count
       const eventRsvps = await getEventRsvps(eventId)
-      setEventRsvpCounts(prev => ({
+      setEventRsvpCounts((prev) => ({
         ...prev,
-        [eventId]: eventRsvps.filter(r => r.status === 'going').length
+        [eventId]: eventRsvps.filter((r) => r.status === 'going').length
       }))
-    } catch (err: any) {
-      setError(err.message || 'Failed to RSVP')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to RSVP'))
     }
   }
 
@@ -202,65 +229,52 @@ export default function ClubHomePage() {
   const handleApproveRequest = async (requestId: string) => {
     try {
       await approveJoinRequest(requestId)
-      setSuccessMessage('Request approved!')
+      setSuccessMessage('Request approved.')
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadJoinRequests()
       await loadClubData()
-    } catch (err: any) {
-      setError(err.message || 'Failed to approve request')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to approve request'))
     }
   }
 
   const handleRejectRequest = async (requestId: string) => {
     try {
       await rejectJoinRequest(requestId)
-      setSuccessMessage('Request rejected')
+      setSuccessMessage('Request rejected.')
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadJoinRequests()
-    } catch (err: any) {
-      setError(err.message || 'Failed to reject request')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to reject request'))
     }
   }
 
-  const getLeaderboard = () => {
-    // Calculate wins/losses from matches
-    const stats: Record<string, { name: string; wins: number; losses: number; points: number }> = {}
+  const getLeaderboard = (): LeaderboardRow[] => {
+    const stats: Record<string, LeaderboardRow> = {}
     
-    matches.forEach(match => {
+    matches.forEach((match) => {
       if (!match.score_sets || match.score_sets.length === 0) return
       
-      // Get total scores
       let team1Total = 0
       let team2Total = 0
       
-      match.score_sets.forEach(set => {
-        if (set.team1_score > set.team2_score) team1Total++
-        else team2Total++
+      match.score_sets.forEach((set) => {
+        if (set.team1_score > set.team2_score) team1Total += 1
+        else team2Total += 1
       })
       
       const team1Won = team1Total > team2Total
       
-      // Update stats for each participant
-      match.participants?.forEach((p: any) => {
-        const name = p.name || p.guest_name || 'Unknown'
-        if (!stats[name]) {
-          stats[name] = { name, wins: 0, losses: 0, points: 0 }
-        }
+      match.participants?.forEach((participant: MatchParticipant) => {
+        const name = participant.name || participant.guest_name || 'Unknown'
+        if (!stats[name]) stats[name] = { name, wins: 0, losses: 0, points: 0 }
         
-        if (p.team === 1) {
-          if (team1Won) {
-            stats[name].wins++
-            stats[name].points += 3
-          } else {
-            stats[name].losses++
-          }
+        const won = participant.team === 1 ? team1Won : !team1Won
+        if (won) {
+          stats[name].wins += 1
+          stats[name].points += 3
         } else {
-          if (!team1Won) {
-            stats[name].wins++
-            stats[name].points += 3
-          } else {
-            stats[name].losses++
-          }
+          stats[name].losses += 1
         }
       })
     })
@@ -268,413 +282,324 @@ export default function ClubHomePage() {
     return Object.values(stats).sort((a, b) => b.points - a.points)
   }
 
-  const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
-  const isMember = !!myMembership
-  const canJoin = user && !isMember && club?.open_join !== false
-
   if (isLoading || authLoading) {
     return (
-      <section className="section-card" style={{ textAlign: 'center' }}>
-        <p>Loading...</p>
-      </section>
+      <Card className="mx-auto mt-6 max-w-sm">
+        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading...</CardContent>
+      </Card>
     )
   }
 
-  if (error || !club) {
-    return <Navigate to="/not-found" replace />
-  }
+  if (error || !club) return <Navigate to="/not-found" replace />
 
   const leaderboard = getLeaderboard()
 
   return (
-    <section>
-      {successMessage && (
-        <div className="modal-toast">{successMessage}</div>
-      )}
+    <Page>
+      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
 
-      <div className="section-card">
-        <div className="hero-header">
-          <div className="hero-copy">
-            <h1 className="page-title">{club.name}</h1>
-            <p>{club.description}</p>
-            <div className="meta-row" style={{ marginTop: '16px' }}>
-              <span>{club.location}</span>
-              <span>{club.city}</span>
-              <span>{members.length} members</span>
+      <PageHeader
+        eyebrow="Club"
+        title={club.name}
+        description={club.description || 'Club workspace for events, members, scores, and activity.'}
+        actions={
+          <>
+            {canJoin ? (
+              <Button onClick={handleJoinClub}>
+                <UserPlus size={17} aria-hidden="true" />
+                {club.approval_required ? 'Request to join' : 'Join club'}
+              </Button>
+            ) : null}
+            {isAdmin ? (
+              <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
+                <Settings size={17} aria-hidden="true" />
+                Settings
+              </Button>
+            ) : null}
+          </>
+        }
+      />
+
+      <Card>
+        <CardContent className="space-y-4 pt-4 sm:pt-5">
+          <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+            {club.location ? <span className="inline-flex items-center gap-1"><MapPin size={15} aria-hidden="true" />{club.location}</span> : null}
+            {club.city ? <span>{club.city}</span> : null}
+            <span className="inline-flex items-center gap-1"><Users size={15} aria-hidden="true" />{members.length} members</span>
+            {myMembership?.status === 'active' ? <Badge>{myMembership.role}</Badge> : null}
+            {isAdmin ? <Badge className="border-blue-200 bg-blue-50 text-blue-800">Admin</Badge> : null}
+          </div>
+          {club.invite_code ? (
+            <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+              Invite code: <strong className="font-mono tracking-wide text-slate-950">{club.invite_code}</strong>
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      {isAdmin ? (
+        <Card className="border-blue-200 bg-blue-50/60">
+          <CardContent className="space-y-3 pt-4 sm:pt-5">
+            <div className="flex items-center gap-2 text-blue-800">
+              <ShieldCheck size={18} aria-hidden="true" />
+              <h2 className="font-bold">Admin controls</h2>
             </div>
-            {club.invite_code && (
-              <div style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}>
-                Invite code: <strong>{club.invite_code}</strong>
-              </div>
-            )}
-            {isAdmin && (
-              <div style={{ marginTop: '16px', padding: '8px 12px', backgroundColor: '#dbeafe', borderRadius: '6px', fontSize: '12px', color: '#1e40af', display: 'inline-block' }}>
-                ⚙️ You are a club admin
-              </div>
-            )}
-            {canJoin && (
-              <div style={{ marginTop: '16px' }}>
-                <button className="brand-button" onClick={handleJoinClub}>
-                  {club.approval_required ? 'Request to join' : 'Join club'}
-                </button>
-              </div>
-            )}
-            {myMembership?.status === 'active' && (
-              <div style={{ marginTop: '16px' }}>
-                <span className="tag-pill">✓ Member ({myMembership.role})</span>
-              </div>
-            )}
-          </div>
-          <div className="hero-visual">
-            <span>🏆</span>
-          </div>
-        </div>
-      </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              <Button onClick={() => setShowEventModal(true)}>
+                <CalendarDays size={17} aria-hidden="true" />
+                Create event
+              </Button>
+              <Button variant="secondary" onClick={() => setShowScoreModal(true)}>
+                <ClipboardPenLine size={17} aria-hidden="true" />
+                Record score
+              </Button>
+              <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
+                <UserPlus size={17} aria-hidden="true" />
+                Requests
+              </Button>
+              <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/members`)}>
+                <Users size={17} aria-hidden="true" />
+                Members
+              </Button>
+              <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
+                <Settings size={17} aria-hidden="true" />
+                Settings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
-      {/* Admin Action Panel */}
-      {isAdmin && (
-        <div className="section-card" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bfdbfe' }}>
-          <h3 style={{ marginBottom: '16px' }}>Admin controls</h3>
-          <div className="button-panel">
-            <button className="brand-button" onClick={() => setShowEventModal(true)}>
-              Create event
-            </button>
-            <button className="small-button" onClick={() => setShowScoreModal(true)}>
-              Record score
-            </button>
-            <button className="small-button" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true); }}>
-              Join requests {joinRequests.length > 0 && `(${joinRequests.length})`}
-            </button>
-            <button className="small-button" onClick={() => navigate(`/club/${clubId}/settings`)}>
-              Club settings
-            </button>
-            <button className="small-button" onClick={() => navigate(`/club/${clubId}/members`)}>
-              Manage members
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="section-card">
-        <div className="grid-2">
-          <div className="event-card">
-            <h3>Upcoming game days</h3>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
             {events.length ? (
-              events.map((event) => {
-                const myRsvp = myRsvps.find(r => r.event_id === event.id)
-                const rsvpCount = eventRsvpCounts[event.id] || 0
-                const isFull = event.max_participants && rsvpCount >= event.max_participants
-                
-                return (
-                  <div key={event.id} style={{ marginTop: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
-                    <strong>{event.title}</strong>
-                    <p>{new Date(event.event_date).toLocaleString()}</p>
-                    <p>{event.location}</p>
-                    <p style={{ marginTop: '8px', fontSize: '12px', color: event.signup_open ? '#059669' : '#dc2626' }}>
-                      {event.signup_open ? '✓ Open for signup' : '✗ Closed'}
-                      {event.max_participants && ` • ${rsvpCount}/${event.max_participants} going`}
-                    </p>
-                    {isMember && event.signup_open && !isFull && (
-                      <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-                        <button 
-                          className={`small-button ${myRsvp?.status === 'going' ? 'brand-button' : ''}`}
-                          onClick={() => handleRsvp(event.id, 'going')}
-                        >
-                          {myRsvp?.status === 'going' ? '✓ Going' : 'Going'}
-                        </button>
-                        <button 
-                          className={`small-button ${myRsvp?.status === 'maybe' ? 'brand-button' : ''}`}
-                          onClick={() => handleRsvp(event.id, 'maybe')}
-                        >
-                          {myRsvp?.status === 'maybe' ? '✓ Maybe' : 'Maybe'}
-                        </button>
-                        <button 
-                          className={`small-button ${myRsvp?.status === 'not_going' ? 'brand-button' : ''}`}
-                          onClick={() => handleRsvp(event.id, 'not_going')}
-                        >
-                          {myRsvp?.status === 'not_going' ? '✓ Not going' : 'Can\'t go'}
-                        </button>
+              <div className="space-y-3">
+                {events.map((event) => {
+                  const myRsvp = myRsvps.find((r) => r.event_id === event.id)
+                  const rsvpCount = eventRsvpCounts[event.id] || 0
+                  const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
+                  
+                  return (
+                    <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="space-y-1">
+                        <h3 className="font-bold text-slate-950">{event.title}</h3>
+                        <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
+                        {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
                       </div>
-                    )}
-                    {isFull && <p style={{ color: '#dc2626', fontSize: '12px' }}>Event full</p>}
-                  </div>
-                )
-              })
+                      <div className="flex flex-wrap gap-2">
+                        <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+                          {event.signup_open ? 'Open' : 'Closed'}
+                        </Badge>
+                        {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
+                      </div>
+                      {isMember && event.signup_open && !isFull ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            ['going', 'Going'],
+                            ['maybe', 'Maybe'],
+                            ['not_going', "Can't go"],
+                          ].map(([status, label]) => (
+                            <Button
+                              key={status}
+                              type="button"
+                              size="sm"
+                              variant={myRsvp?.status === status ? 'primary' : 'secondary'}
+                              onClick={() => handleRsvp(event.id, status as 'going' | 'maybe' | 'not_going')}
+                            >
+                              {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
+                              {label}
+                            </Button>
+                          ))}
+                        </div>
+                      ) : null}
+                      {isFull ? <p className="text-sm font-semibold text-red-600">Event full</p> : null}
+                    </div>
+                  )
+                })}
+              </div>
             ) : (
-              <p className="empty-state">No upcoming game days yet.</p>
+              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No upcoming game days yet.</p>
             )}
-          </div>
-          <div className="match-card">
-            <h3>Recent scores</h3>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <h2 className="text-lg font-bold text-slate-950">Recent scores</h2>
             {matches.length ? (
-              matches.map((match) => (
-                <div key={match.id} style={{ marginTop: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
-                  <strong>{match.title || `${match.sport} match`}</strong>
-                  <p>{match.sport} • {match.match_type}</p>
-                  <p style={{ fontSize: '14px', fontWeight: 500, color: '#1e40af' }}>
-                    {match.score_sets?.map((s: any) => `${s.team1_score}-${s.team2_score}`).join(', ')}
-                  </p>
-                  <p style={{ fontSize: '12px', color: '#64748b' }}>
-                    {new Date(match.match_date).toLocaleDateString()}
-                  </p>
-                </div>
-              ))
+              <div className="space-y-3">
+                {matches.map((match) => (
+                  <div key={match.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
+                    <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
+                    <p className="mt-2 font-semibold text-emerald-700">
+                      {match.score_sets?.map((set) => `${set.team1_score}-${set.team2_score}`).join(', ')}
+                    </p>
+                    <p className="text-xs text-slate-500">{new Date(match.match_date).toLocaleDateString()}</p>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <p className="empty-state">No results recorded yet.</p>
+              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No results recorded yet.</p>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Leaderboard Section */}
-      <div className="section-card">
-        <h2>Club Leaderboard</h2>
-        {leaderboard.length > 0 ? (
-          <div style={{ marginTop: '16px' }}>
-            <div style={{ display: 'grid', gap: '12px' }}>
+      <Card>
+        <CardContent className="space-y-4 pt-4 sm:pt-5">
+          <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
+          {leaderboard.length ? (
+            <div className="space-y-2">
               {leaderboard.slice(0, 10).map((player, index) => (
-                <div 
-                  key={player.name} 
-                  style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    backgroundColor: index < 3 ? '#f0f9ff' : '#f8fafc',
-                    borderRadius: '12px',
-                    border: index < 3 ? '1px solid #bfdbfe' : '1px solid #e2e8f0'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ 
-                      fontSize: '20px', 
-                      fontWeight: 'bold',
-                      color: index === 0 ? '#f59e0b' : index === 1 ? '#64748b' : index === 2 ? '#b45309' : '#94a3b8'
-                    }}>
-                      #{index + 1}
-                    </span>
-                    <span style={{ fontWeight: 600 }}>{player.name}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '16px', fontSize: '14px' }}>
-                    <span style={{ color: '#059669' }}>{player.wins}W</span>
-                    <span style={{ color: '#dc2626' }}>{player.losses}L</span>
-                    <span style={{ fontWeight: 'bold', color: '#2563eb' }}>{player.points} pts</span>
+                <div key={player.name} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <span className="font-mono text-sm font-bold text-slate-500">#{index + 1}</span>
+                  <span className="min-w-0 truncate font-semibold text-slate-950">{player.name}</span>
+                  <div className="flex gap-3 text-sm">
+                    <span className="font-semibold text-emerald-700">{player.wins}W</span>
+                    <span className="font-semibold text-red-600">{player.losses}L</span>
+                    <span className="font-bold text-slate-950">{player.points} pts</span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        ) : (
-          <p className="empty-state">No matches recorded yet. Start playing to see the leaderboard!</p>
-        )}
-      </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No matches recorded yet.</p>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Activity Feed */}
-      <div className="section-card">
-        <h2>Community Activity</h2>
-        {activities.length > 0 ? (
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {activities.slice(0, 10).map((activity) => (
-              <div
-                key={activity.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  padding: '16px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                }}
-              >
-                <div style={{ fontSize: '24px' }}>
-                  {activity.type === 'match_recorded' && '🏆'}
-                  {activity.type === 'member_joined' && '👋'}
-                  {activity.type === 'event_created' && '📅'}
-                  {activity.type === 'announcement' && '📢'}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontWeight: 500 }}>{activity.title}</p>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748b' }}>
-                    {activity.description}
-                  </p>
-                  <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
-                    by {activity.actor_name} • {new Date(activity.created_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="empty-state">No recent activity. Start playing to see updates!</p>
-        )}
-      </div>
-
-      <div className="section-card">
-        <div className="grid-2">
-          <div className="analysis-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>Club members</h3>
-              <Link to={`/club/${clubId}/members`} className="small-button">View all</Link>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-slate-950">Members</h2>
+              <Link to={`/club/${clubId}/members`} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                View all <ArrowRight size={15} aria-hidden="true" />
+              </Link>
             </div>
             {members.length ? (
-              <div style={{ marginTop: '12px' }}>
+              <div className="space-y-2">
                 {members.slice(0, 5).map((member) => (
-                  <div key={member.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #e2e8f0' }}>
-                    <span>{(member as any).name}</span>
-                    <span className="tag-pill">{member.role}</span>
+                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
+                    <span className="min-w-0 truncate font-semibold text-slate-950">{member.name || 'Unknown member'}</span>
+                    <Badge>{member.role}</Badge>
                   </div>
                 ))}
-                {members.length > 5 && (
-                  <p style={{ marginTop: '12px', color: '#64748b', fontSize: '14px' }}>
-                    +{members.length - 5} more members
-                  </p>
-                )}
               </div>
             ) : (
-              <p className="empty-state">No members yet.</p>
+              <p className="text-sm text-slate-600">No members yet.</p>
             )}
-          </div>
-          <div className="analysis-card">
-            <h3>Club location</h3>
-            <p>{club.location}</p>
-            <p>{club.city}</p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <h2 className="text-lg font-bold text-slate-950">Community activity</h2>
+            {activities.length ? (
+              <div className="space-y-3">
+                {activities.slice(0, 8).map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700">
+                      {activityIcon(activity.type)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-950">{activity.title}</p>
+                      <p className="text-sm leading-6 text-slate-600">{activity.description}</p>
+                      <p className="mt-1 text-xs text-slate-500">by {activity.actor_name} • {new Date(activity.created_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600">No recent activity yet.</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Create Event Modal */}
-      {showEventModal && isAdmin && (
-        <div className="modal-overlay" onClick={() => setShowEventModal(false)}>
-          <div className="modal-panel modal-panel-sm" onClick={(e) => e.stopPropagation()}>
-            <h2>Create new event</h2>
-            <form onSubmit={handleCreateEvent}>
-              <div className="modal-form-group">
-                <label>Event title *</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g., Wednesday Singles Night"
-                  value={eventTitle}
-                  onChange={(e) => setEventTitle(e.target.value)}
-                  required 
-                  className="form-input"
-                />
+      {showEventModal && isAdmin ? (
+        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowEventModal(false)}>
+          <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
+            <CardContent className="space-y-4 pt-4 sm:pt-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-950">Create new event</h2>
+                  <p className="text-sm text-slate-600">Add the next game day for members.</p>
+                </div>
+                <Button type="button" variant="ghost" size="icon" onClick={() => setShowEventModal(false)} aria-label="Close">
+                  <X size={18} aria-hidden="true" />
+                </Button>
               </div>
-              <div className="modal-form-group">
-                <label>Date & Time *</label>
-                <input 
-                  type="datetime-local" 
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  required 
-                  className="form-input"
-                />
-              </div>
-              <div className="modal-form-group">
-                <label>Location</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g., Court 2"
-                  value={eventLocation}
-                  onChange={(e) => setEventLocation(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="modal-actions">
-                <button 
-                  type="button" 
-                  className="small-button" 
-                  onClick={() => setShowEventModal(false)}
-                  disabled={isCreatingEvent}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="brand-button"
-                  disabled={isCreatingEvent}
-                >
-                  {isCreatingEvent ? 'Creating...' : 'Create event'}
-                </button>
-              </div>
-            </form>
-          </div>
+              <form className="space-y-4" onSubmit={handleCreateEvent}>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Event title *</span>
+                  <Input type="text" placeholder="e.g. Wednesday Singles Night" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} required />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Date & time *</span>
+                  <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Location</span>
+                  <Input type="text" placeholder="e.g. Court 2" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="secondary" onClick={() => setShowEventModal(false)} disabled={isCreatingEvent}>Cancel</Button>
+                  <Button type="submit" disabled={isCreatingEvent}>{isCreatingEvent ? 'Creating...' : 'Create event'}</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      ) : null}
 
-      {/* Join Requests Modal */}
-      {showJoinRequestsModal && isAdmin && (
-        <div className="modal-overlay" onClick={() => setShowJoinRequestsModal(false)}>
-          <div className="modal-panel modal-panel-sm" onClick={(e) => e.stopPropagation()}>
-            <h2>Join Requests</h2>
-            {isLoadingRequests ? (
-              <p>Loading...</p>
-            ) : joinRequests.length === 0 ? (
-              <p className="empty-state">No pending join requests.</p>
-            ) : (
-              <div style={{ marginTop: '16px' }}>
-                {joinRequests.map((request) => (
-                  <div key={request.id} style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    padding: '12px',
-                    borderBottom: '1px solid #e2e8f0'
-                  }}>
-                    <div>
-                      <strong>{(request as any).name}</strong>
-                      <p style={{ fontSize: '14px', color: '#64748b' }}>{(request as any).email}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button 
-                        className="small-button brand-button"
-                        onClick={() => handleApproveRequest(request.id)}
-                      >
-                        Approve
-                      </button>
-                      <button 
-                        className="small-button"
-                        onClick={() => handleRejectRequest(request.id)}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
+      {showJoinRequestsModal && isAdmin ? (
+        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowJoinRequestsModal(false)}>
+          <Card className="max-h-[92vh] w-full overflow-auto rounded-b-none sm:max-w-lg sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
+            <CardContent className="space-y-4 pt-4 sm:pt-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-950">Join requests</h2>
+                  <p className="text-sm text-slate-600">Approve or reject pending member requests.</p>
+                </div>
+                <Button type="button" variant="ghost" size="icon" onClick={() => setShowJoinRequestsModal(false)} aria-label="Close">
+                  <X size={18} aria-hidden="true" />
+                </Button>
               </div>
-            )}
-          </div>
+              {isLoadingRequests ? (
+                <p className="text-sm text-slate-600">Loading...</p>
+              ) : joinRequests.length ? (
+                <div className="space-y-3">
+                  {joinRequests.map((request) => (
+                    <div key={request.id} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                      <div className="min-w-0">
+                        <h3 className="truncate font-bold text-slate-950">{request.name || 'Unknown member'}</h3>
+                        <p className="break-words text-sm text-slate-600">{request.email}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button size="sm" type="button" onClick={() => handleApproveRequest(request.id)}>Approve</Button>
+                        <Button size="sm" variant="secondary" type="button" onClick={() => handleRejectRequest(request.id)}>Reject</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No pending join requests.</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
+      ) : null}
 
-      {/* Score Recording Modal */}
-      <ScoreRecordingModal 
-        isOpen={showMemberScoreModal} 
-        onClose={() => setShowMemberScoreModal(false)} 
+      <ScoreRecordingModal
+        isOpen={showScoreModal}
+        onClose={() => setShowScoreModal(false)}
         clubId={club.id}
         onScoreRecorded={loadClubData}
       />
-
-      {/* Record Score Modal for admins */}
-      {showScoreModal && isAdmin && (
-        <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
-          <div className="modal-panel modal-panel-sm" onClick={(e) => e.stopPropagation()}>
-            <h2>Record match score</h2>
-            <p style={{ color: '#64748b', marginBottom: '16px' }}>
-              Use the full score recording form for detailed match entry.
-            </p>
-            <button 
-              className="brand-button" 
-              onClick={() => {
-                setShowScoreModal(false)
-                setShowMemberScoreModal(true)
-              }}
-            >
-              Open score recorder
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
+    </Page>
   )
 }
