@@ -73,6 +73,12 @@ function getClubMapQuery(club: Club) {
   return [club.location, club.city].filter(Boolean).join(', ')
 }
 
+function getRsvpLabel(status: EventRsvp['status']) {
+  if (status === 'going') return 'Accepted'
+  if (status === 'maybe') return 'Holding'
+  return 'Rejected'
+}
+
 export default function ClubHomePage() {
   const { clubId } = useParams()
   const navigate = useNavigate()
@@ -107,6 +113,7 @@ export default function ClubHomePage() {
   const [isLoadingRequests, setIsLoadingRequests] = useState(false)
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpCounts, setEventRsvpCounts] = useState<Record<string, number>>({})
+  const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [activities, setActivities] = useState<ClubActivity[]>([])
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
@@ -147,11 +154,14 @@ export default function ClubHomePage() {
       }
 
       const rsvpCounts: Record<string, number> = {}
+      const rsvpMap: Record<string, EventRsvp[]> = {}
       for (const event of eventsData) {
         const eventRsvps = await getEventRsvps(event.id)
+        rsvpMap[event.id] = eventRsvps
         rsvpCounts[event.id] = eventRsvps.filter((r) => r.status === 'going').length
       }
       setEventRsvpCounts(rsvpCounts)
+      setEventRsvpsByEvent(rsvpMap)
 
       const activityData = await getClubActivity(clubId)
       setActivities(activityData)
@@ -254,6 +264,10 @@ export default function ClubHomePage() {
       setMyRsvps(rsvps)
       
       const eventRsvps = await getEventRsvps(eventId)
+      setEventRsvpsByEvent((prev) => ({
+        ...prev,
+        [eventId]: eventRsvps,
+      }))
       setEventRsvpCounts((prev) => ({
         ...prev,
         [eventId]: eventRsvps.filter((r) => r.status === 'going').length
@@ -471,7 +485,11 @@ export default function ClubHomePage() {
               <div className="space-y-3">
                 {events.map((event) => {
                   const myRsvp = myRsvps.find((r) => r.event_id === event.id)
-                  const rsvpCount = eventRsvpCounts[event.id] || 0
+                  const eventRsvps = eventRsvpsByEvent[event.id] || []
+                  const acceptedRsvps = eventRsvps.filter((r) => r.status === 'going')
+                  const holdingRsvps = eventRsvps.filter((r) => r.status === 'maybe')
+                  const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
+                  const rsvpCount = eventRsvpCounts[event.id] || acceptedRsvps.length
                   const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
                   
                   return (
@@ -493,18 +511,19 @@ export default function ClubHomePage() {
                         </Badge>
                         {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
                       </div>
-                      {isMember && event.signup_open && !isFull ? (
+                      {isMember && event.signup_open ? (
                         <div className="grid grid-cols-3 gap-2">
                           {[
-                            ['going', 'Going'],
-                            ['maybe', 'Maybe'],
-                            ['not_going', "Can't go"],
+                            ['going', 'Accept'],
+                            ['maybe', 'Hold'],
+                            ['not_going', 'Reject'],
                           ].map(([status, label]) => (
                             <Button
                               key={status}
                               type="button"
                               size="sm"
                               variant={myRsvp?.status === status ? 'primary' : 'secondary'}
+                              disabled={status === 'going' && isFull && myRsvp?.status !== 'going'}
                               onClick={() => handleRsvp(event.id, status as 'going' | 'maybe' | 'not_going')}
                             >
                               {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
@@ -513,7 +532,24 @@ export default function ClubHomePage() {
                           ))}
                         </div>
                       ) : null}
-                      {isFull ? <p className="text-sm font-semibold text-red-600">Event full</p> : null}
+                      {myRsvp ? (
+                        <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p>
+                      ) : null}
+                      {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
+                      <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+                        <div className="flex flex-wrap gap-2">
+                          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
+                          <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
+                          <Badge className="border-slate-200 bg-slate-50 text-slate-700">{rejectedRsvps.length} rejected</Badge>
+                        </div>
+                        {acceptedRsvps.length ? (
+                          <p className="text-sm leading-6 text-slate-700">
+                            Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
+                          </p>
+                        ) : (
+                          <p className="text-sm text-slate-500">No accepted members yet.</p>
+                        )}
+                      </div>
                     </div>
                   )
                 })}

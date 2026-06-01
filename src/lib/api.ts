@@ -545,7 +545,7 @@ export async function rsvpToEvent(eventId: string, status: 'going' | 'maybe' | '
       event_id: eventId,
       user_id: user.id,
       status,
-    } as any)
+    } as any, { onConflict: 'event_id,user_id' })
     .select()
     .single()
 
@@ -587,7 +587,7 @@ export async function getMyEventRsvps(): Promise<EventRsvp[]> {
 export async function getEventRsvps(eventId: string): Promise<EventRsvp[]> {
   const { data, error } = await supabase
     .from('event_rsvps')
-    .select('*, profiles(name)')
+    .select('*, profiles(name, display_name)')
     .eq('event_id', eventId)
 
   if (error) {
@@ -597,7 +597,7 @@ export async function getEventRsvps(eventId: string): Promise<EventRsvp[]> {
 
   return ((data || []) as any[]).map((r) => ({
     ...r,
-    name: r.profiles?.name || 'Unknown',
+    name: r.profiles?.display_name || r.profiles?.name || 'Unknown',
   }))
 }
 

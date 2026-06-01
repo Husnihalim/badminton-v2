@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarDays, ClipboardPenLine, Club as ClubIcon, Link2, Trophy, Users } from 'lucide-react'
+import { CalendarDays, Check, ClipboardPenLine, Club as ClubIcon, Link2, Trophy, Users } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
-import { getMyClubs, getClubEvents, getClubMatches } from '../lib/api'
-import type { Club, ClubEvent, MatchWithDetails } from '../types'
+import { getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
+import type { Club, ClubEvent, EventRsvp, MatchWithDetails } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -21,6 +21,12 @@ function formatEventCost(event: DashboardEvent) {
   return [amount, event.cost_note].filter(Boolean).join(' · ')
 }
 
+function getRsvpLabel(status: EventRsvp['status']) {
+  if (status === 'going') return 'Accepted'
+  if (status === 'maybe') return 'Holding'
+  return 'Rejected'
+}
+
 export default function DashboardPage() {
   const [showScoreModal, setShowScoreModal] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
@@ -30,6 +36,8 @@ export default function DashboardPage() {
   const [clubs, setClubs] = useState<DashboardClub[]>([])
   const [events, setEvents] = useState<DashboardEvent[]>([])
   const [matches, setMatches] = useState<DashboardMatch[]>([])
+  const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
+  const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [isLoading, setIsLoading] = useState(false)
   
   const loadDashboardData = useCallback(async () => {
@@ -64,8 +72,18 @@ export default function DashboardPage() {
       // Sort matches by date (most recent first)
       allMatches.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       
-      setEvents(allEvents.slice(0, 5))
+      const visibleEvents = allEvents.slice(0, 5)
+      setEvents(visibleEvents)
       setMatches(allMatches.slice(0, 5))
+
+      const myEventRsvps = await getMyEventRsvps()
+      setMyRsvps(myEventRsvps)
+
+      const eventRsvpMap: Record<string, EventRsvp[]> = {}
+      for (const event of visibleEvents) {
+        eventRsvpMap[event.id] = await getEventRsvps(event.id)
+      }
+      setEventRsvpsByEvent(eventRsvpMap)
     } catch (err) {
       console.error('Error loading dashboard data:', err)
       showToast('Failed to load dashboard data', 'error')
@@ -73,6 +91,26 @@ export default function DashboardPage() {
       setIsLoading(false)
     }
   }, [showToast])
+
+  const handleRsvp = async (eventId: string, status: EventRsvp['status']) => {
+    try {
+      await rsvpToEvent(eventId, status)
+      showToast(`Session response updated: ${getRsvpLabel(status)}.`, 'success')
+
+      const [updatedMyRsvps, updatedEventRsvps] = await Promise.all([
+        getMyEventRsvps(),
+        getEventRsvps(eventId),
+      ])
+      setMyRsvps(updatedMyRsvps)
+      setEventRsvpsByEvent((prev) => ({
+        ...prev,
+        [eventId]: updatedEventRsvps,
+      }))
+    } catch (err) {
+      console.error('Error updating dashboard RSVP:', err)
+      showToast('Failed to update session response', 'error')
+    }
+  }
 
   useEffect(() => {
     if (authLoading || !user) {
@@ -213,9 +251,18 @@ export default function DashboardPage() {
         <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
         {events.length ? (
           <div className="grid gap-3">
-            {events.map((event) => (
+            {events.map((event) => {
+              const myRsvp = myRsvps.find((r) => r.event_id === event.id)
+              const eventRsvps = eventRsvpsByEvent[event.id] || []
+              const acceptedRsvps = eventRsvps.filter((r) => r.status === 'going')
+              const holdingRsvps = eventRsvps.filter((r) => r.status === 'maybe')
+              const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
+              const isFull = Boolean(event.max_participants && acceptedRsvps.length >= event.max_participants)
+
+              return (
               <Card key={event.id}>
-                <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
+                <CardContent className="space-y-4 pt-4 sm:pt-5">
+                  <div className="flex items-start gap-3">
                   <CalendarDays className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
                   <div className="min-w-0 space-y-1">
                     <h3 className="font-bold text-slate-950">{event.title}</h3>
@@ -227,9 +274,47 @@ export default function DashboardPage() {
                       {event.signup_open ? 'Open for signup' : 'Closed'}
                     </Badge>
                   </div>
+                  </div>
+                  {event.signup_open ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        ['going', 'Accept'],
+                        ['maybe', 'Hold'],
+                        ['not_going', 'Reject'],
+                      ].map(([status, label]) => (
+                        <Button
+                          key={status}
+                          type="button"
+                          size="sm"
+                          variant={myRsvp?.status === status ? 'primary' : 'secondary'}
+                          disabled={status === 'going' && isFull && myRsvp?.status !== 'going'}
+                          onClick={() => handleRsvp(event.id, status as EventRsvp['status'])}
+                        >
+                          {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {myRsvp ? <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p> : null}
+                  <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
+                      <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
+                      <Badge className="border-slate-200 bg-white text-slate-700">{rejectedRsvps.length} rejected</Badge>
+                    </div>
+                    {acceptedRsvps.length ? (
+                      <p className="text-sm leading-6 text-slate-700">
+                        Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-slate-500">No accepted members yet.</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="empty-state">No upcoming events.</p>
