@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { UserPlus } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { isSupabaseConfigured } from '../../lib/supabase'
+import { Button } from '../../components/ui/button'
+import { Card, CardContent, CardHeader } from '../../components/ui/card'
+import { Input } from '../../components/ui/input'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -41,103 +45,85 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="section-card">
-      <h1 className="page-title">Create account</h1>
-      <p style={{ marginTop: 0, color: '#475569' }}>
-        Keep signup simple for now—just your name and email to get started.
-      </p>
-      <form onSubmit={handleSubmit}>
-        {error && (
-          <div style={{ color: '#b91c1c', marginBottom: '16px' }}>{error}</div>
-        )}
-        {!isSupabaseConfigured && !error && (
-          <div style={{ color: '#b91c1c', marginBottom: '16px' }}>
-            Supabase is not configured for this environment yet.
-          </div>
-        )}
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="name">Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Aisha K."
-            disabled={!isSupabaseConfigured}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              padding: '12px 14px',
-              borderRadius: '14px',
-              border: '1px solid #d1d5db',
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
-            disabled={!isSupabaseConfigured}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              padding: '12px 14px',
-              borderRadius: '14px',
-              border: '1px solid #d1d5db',
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create a password"
-            disabled={!isSupabaseConfigured}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              padding: '12px 14px',
-              borderRadius: '14px',
-              border: '1px solid #d1d5db',
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="confirmPassword">Confirm password</label>
-          <input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Re-enter your password"
-            disabled={!isSupabaseConfigured}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              padding: '12px 14px',
-              borderRadius: '14px',
-              border: '1px solid #d1d5db',
-            }}
-          />
-        </div>
-        <button type="submit" className="brand-button" style={{ width: '100%' }} disabled={!isSupabaseConfigured}>
-          Sign up
-        </button>
-      </form>
-      <p style={{ marginTop: '18px', color: '#64748b' }}>
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
+    <section className="mx-auto mt-4 max-w-md sm:mt-10">
+      <Card>
+        <CardHeader>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">New member</p>
+          <h1 className="text-2xl font-bold leading-tight text-slate-950">Create account</h1>
+          <p className="text-sm leading-6 text-slate-600">
+            Set up your account so you can join clubs, RSVP, and record scores.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {(error || !isSupabaseConfigured) && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error || 'Supabase is not configured for this environment yet.'}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="name">Name</label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Aisha K."
+                disabled={!isSupabaseConfigured}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="email">Email</label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                disabled={!isSupabaseConfigured}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="password">Password</label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a password"
+                disabled={!isSupabaseConfigured}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="confirmPassword">Confirm password</label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your password"
+                disabled={!isSupabaseConfigured}
+              />
+            </div>
+
+            <Button type="submit" fullWidth disabled={!isSupabaseConfigured}>
+              <UserPlus size={17} aria-hidden="true" />
+              Sign up
+            </Button>
+          </form>
+          <p className="mt-5 text-sm text-slate-600">
+            Already have an account? <Link className="font-semibold text-emerald-700" to="/login">Log in</Link>
+          </p>
+        </CardContent>
+      </Card>
     </section>
   )
 }

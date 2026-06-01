@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { KeyRound } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
+import { Button } from '../../components/ui/button'
+import { Card, CardContent, CardHeader } from '../../components/ui/card'
+import { Input } from '../../components/ui/input'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -57,71 +61,72 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <section className="section-card" style={{ maxWidth: '440px', margin: '40px auto' }}>
-      <h1 className="page-title">Set new password</h1>
-      <p style={{ marginTop: 0, color: '#475569' }}>
-        Enter a new password for your KelabSukan account.
-      </p>
+    <section className="mx-auto mt-4 max-w-md sm:mt-10">
+      <Card>
+        <CardHeader>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Account recovery</p>
+          <h1 className="text-2xl font-bold leading-tight text-slate-950">Set new password</h1>
+          <p className="text-sm leading-6 text-slate-600">
+            Enter a new password for your KelabSukan account.
+          </p>
+        </CardHeader>
 
-      <form onSubmit={handleSubmit}>
-        {(!isSupabaseConfigured || error || message) && (
-          <div
-            role="status"
-            style={{
-              color: message ? '#047857' : '#b91c1c',
-              background: message ? '#d1fae5' : '#fee2e2',
-              borderRadius: '12px',
-              padding: '12px 14px',
-              marginBottom: '16px',
-            }}
-          >
-            {message || error || 'Supabase is not configured for this environment yet.'}
-          </div>
-        )}
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {(!isSupabaseConfigured || error || message) && (
+              <div
+                role="status"
+                className={
+                  message
+                    ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
+                    : 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
+                }
+              >
+                {message || error || 'Supabase is not configured for this environment yet.'}
+              </div>
+            )}
 
-        <div className="modal-form-group">
-          <label htmlFor="new-password">New password</label>
-          <input
-            id="new-password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="new-password"
-            className="form-input"
-            placeholder="Enter a new password"
-            disabled={isSubmitting || !isSupabaseConfigured}
-          />
-        </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="new-password">New password</label>
+              <Input
+                id="new-password"
+                name="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="new-password"
+                placeholder="Enter a new password"
+                disabled={isSubmitting || !isSupabaseConfigured}
+              />
+            </div>
 
-        <div className="modal-form-group">
-          <label htmlFor="confirm-new-password">Confirm new password</label>
-          <input
-            id="confirm-new-password"
-            name="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            autoComplete="new-password"
-            className="form-input"
-            placeholder="Re-enter the new password"
-            disabled={isSubmitting || !isSupabaseConfigured}
-          />
-        </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="confirm-new-password">
+                Confirm new password
+              </label>
+              <Input
+                id="confirm-new-password"
+                name="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                placeholder="Re-enter the new password"
+                disabled={isSubmitting || !isSupabaseConfigured}
+              />
+            </div>
 
-        <button
-          type="submit"
-          className="brand-button"
-          style={{ width: '100%', marginTop: '12px' }}
-          disabled={isSubmitting || !isSupabaseConfigured}
-        >
-          {isSubmitting ? 'Updating...' : 'Update password'}
-        </button>
-      </form>
+            <Button type="submit" fullWidth disabled={isSubmitting || !isSupabaseConfigured}>
+              <KeyRound size={17} aria-hidden="true" />
+              {isSubmitting ? 'Updating...' : 'Update password'}
+            </Button>
+          </form>
 
-      <p style={{ marginTop: '18px', color: '#64748b' }}>
-        Back to <Link to="/login">log in</Link>
-      </p>
+          <p className="mt-5 text-sm text-slate-600">
+            Back to <Link className="font-semibold text-emerald-700" to="/login">log in</Link>
+          </p>
+        </CardContent>
+      </Card>
     </section>
   )
 }

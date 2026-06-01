@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import NotificationsPanel from './NotificationsPanel'
@@ -12,16 +13,21 @@ export default function Navbar() {
   return (
     <>
       <nav className="nav-bar">
-        <div className="site-brand">KelabSukan</div>
+        <Link className="site-brand" to="/">
+          KelabSukan
+        </Link>
         <div className="nav-links">
           <Link className="nav-link" to="/">
+            <Home size={16} aria-hidden="true" />
             Home
           </Link>
           <Link className="nav-link" to="/dashboard">
+            <LayoutDashboard size={16} aria-hidden="true" />
             Dashboard
           </Link>
           {user && (
             <Link className="nav-link" to="/profile">
+              <User size={16} aria-hidden="true" />
               Profile
             </Link>
           )}
@@ -35,8 +41,9 @@ export default function Navbar() {
                 className="nav-action"
                 onClick={() => setIsNotificationsOpen(true)}
                 style={{ position: 'relative' }}
+                aria-label="Open notifications"
               >
-                🔔
+                <Bell size={17} aria-hidden="true" />
                 {unreadCount > 0 && (
                   <span
                     style={{
@@ -60,18 +67,21 @@ export default function Navbar() {
                 )}
               </button>
               
-              <span className="nav-link">Hello, {user.name}</span>
+              <span className="nav-link">Hi, {user.name}</span>
               {user.role === 'superadmin' ? <span className="user-badge">Super admin</span> : null}
               <button type="button" className="nav-action" onClick={logout}>
+                <LogOut size={16} aria-hidden="true" />
                 Log out
               </button>
             </>
           ) : (
             <>
               <Link className="nav-link" to="/register">
+                <UserPlus size={16} aria-hidden="true" />
                 Sign up
               </Link>
               <Link className="nav-action" to="/login">
+                <LogIn size={16} aria-hidden="true" />
                 Log in
               </Link>
             </>

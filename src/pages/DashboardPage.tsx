@@ -1,10 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { CalendarDays, ClipboardPenLine, Club as ClubIcon, Plus, Trophy, Users } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import { getMyClubs, getClubEvents, getClubMatches, joinClubByInviteCode } from '../lib/api'
 import type { Club, ClubEvent, MatchWithDetails } from '../types'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Page, PageHeader } from '../components/ui/page'
+
+type DashboardClub = Club & { role?: string }
+type DashboardEvent = ClubEvent & { clubName?: string }
+type DashboardMatch = MatchWithDetails & { clubName?: string }
 
 export default function DashboardPage() {
   const [showScoreModal, setShowScoreModal] = useState(false)
@@ -12,36 +22,16 @@ export default function DashboardPage() {
   const { showToast } = useNotifications()
   const navigate = useNavigate()
   
-  const [clubs, setClubs] = useState<Club[]>([])
-  const [events, setEvents] = useState<ClubEvent[]>([])
-  const [matches, setMatches] = useState<MatchWithDetails[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [clubs, setClubs] = useState<DashboardClub[]>([])
+  const [events, setEvents] = useState<DashboardEvent[]>([])
+  const [matches, setMatches] = useState<DashboardMatch[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   
   // Invite code
   const [inviteCode, setInviteCode] = useState('')
   const [isJoining, setIsJoining] = useState(false)
 
-  useEffect(() => {
-    if (authLoading) {
-      return
-    }
-
-    if (!authLoading && !user) {
-      setIsLoading(false)
-      return
-    }
-
-    loadDashboardData()
-    
-    // Safety timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      setIsLoading(false)
-    }, 5000)
-    
-    return () => clearTimeout(timeout)
-  }, [user, authLoading])
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setIsLoading(true)
     try {
       // Get user's clubs
@@ -49,8 +39,8 @@ export default function DashboardPage() {
       setClubs(myClubs)
       
       // Get events and matches from all user's clubs
-      const allEvents: ClubEvent[] = []
-      const allMatches: MatchWithDetails[] = []
+      const allEvents: DashboardEvent[] = []
+      const allMatches: DashboardMatch[] = []
       
       for (const club of myClubs) {
         try {
@@ -81,32 +71,52 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [showToast])
 
-  if (authLoading || isLoading) {
+  useEffect(() => {
+    if (authLoading || !user) {
+      return
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadDashboardData()
+    
+    // Safety timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      setIsLoading(false)
+    }, 5000)
+    
+    return () => clearTimeout(timeout)
+  }, [user, authLoading, loadDashboardData])
+
+  if (authLoading || (user && isLoading)) {
     return (
-      <section className="section-card" style={{ textAlign: 'center' }}>
-        <p>Loading...</p>
-      </section>
+      <Card className="mx-auto mt-6 max-w-sm">
+        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading...</CardContent>
+      </Card>
     )
   }
 
   if (!user) {
     return (
-      <section className="section-card" style={{ textAlign: 'center' }}>
-        <h1 className="page-title">Welcome to KelabSukan</h1>
-        <p style={{ color: '#64748b', marginBottom: '24px' }}>
-          Please log in to view your dashboard and record match scores.
-        </p>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button className="brand-button" onClick={() => navigate('/login')}>
-            Log in
-          </button>
-          <button className="small-button" onClick={() => navigate('/register')}>
-            Sign up
-          </button>
-        </div>
-      </section>
+      <Card className="mx-auto mt-6 max-w-md">
+        <CardContent className="space-y-4 pt-5 text-center">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-slate-950">Welcome to KelabSukan</h1>
+            <p className="text-sm leading-6 text-slate-600">
+              Log in to view your dashboard, clubs, events, and match scores.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => navigate('/login')}>
+              Log in
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/register')}>
+              Sign up
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -125,26 +135,27 @@ export default function DashboardPage() {
       showToast('Successfully joined club!', 'success')
       setInviteCode('')
       await loadDashboardData()
-    } catch (err: any) {
-      showToast(err.message || 'Failed to join club', 'error')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to join club'
+      showToast(message, 'error')
     } finally {
       setIsJoining(false)
     }
   }
 
   return (
-    <section>
-      <div className="section-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 className="page-title">Welcome back</h1>
-            <p>Your racket sport hub: view clubs, upcoming events, and match results all in one place.</p>
-          </div>
-          <button className="brand-button" onClick={() => setShowScoreModal(true)} style={{ height: 'fit-content' }}>
+    <Page>
+      <PageHeader
+        eyebrow="Dashboard"
+        title={`Welcome back, ${user.name.split(' ')[0]}`}
+        description="Your clubs, sessions, and recent match results in one place."
+        actions={
+          <Button onClick={() => setShowScoreModal(true)}>
+            <ClipboardPenLine size={17} aria-hidden="true" />
             Record score
-          </button>
-        </div>
-      </div>
+          </Button>
+        }
+      />
 
       <ScoreRecordingModal 
         isOpen={showScoreModal} 
@@ -152,128 +163,142 @@ export default function DashboardPage() {
         onScoreRecorded={loadDashboardData}
       />
 
-      <div className="stat-row">
-        <div className="stat-item">
-          <strong>Your clubs</strong>
-          <span className="stat-value">{clubCount}</span>
-          <p>Clubs you're a member of</p>
-        </div>
-        <div className="stat-item">
-          <strong>Upcoming events</strong>
-          <span className="stat-value">{upcomingEvents}</span>
-          <p>Game days and sessions</p>
-        </div>
-        <div className="stat-item">
-          <strong>Matches recorded</strong>
-          <span className="stat-value">{totalMatches}</span>
-          <p>Across all your clubs</p>
-        </div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <StatCard icon={<Users size={17} />} label="Clubs" value={clubCount} />
+        <StatCard icon={<CalendarDays size={17} />} label="Events" value={upcomingEvents} />
+        <StatCard icon={<Trophy size={17} />} label="Matches" value={totalMatches} />
       </div>
 
-      {/* Join by Invite Code */}
-      <div className="section-card" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bfdbfe' }}>
-        <h3>Have an invite code?</h3>
-        <p style={{ color: '#64748b', marginBottom: '16px' }}>
-          Enter a club invite code to join instantly
-        </p>
-        <form onSubmit={handleJoinByInviteCode} style={{ display: 'flex', gap: '12px' }}>
-          <input
-            type="text"
-            placeholder="Enter code (e.g., ABC123XY)"
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-            className="form-input"
-            style={{ maxWidth: '250px', fontFamily: 'monospace', letterSpacing: '1px' }}
-            maxLength={10}
-          />
-          <button 
-            type="submit" 
-            className="brand-button"
-            disabled={isJoining || !inviteCode.trim()}
-          >
-            {isJoining ? 'Joining...' : 'Join Club'}
-          </button>
-        </form>
-      </div>
+      <Card>
+        <CardContent className="space-y-3 pt-4 sm:pt-5">
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-slate-950">Have an invite code?</h2>
+            <p className="text-sm text-slate-600">Enter a club invite code to join instantly.</p>
+          </div>
+          <form className="grid gap-2 sm:grid-cols-[minmax(0,260px)_auto]" onSubmit={handleJoinByInviteCode}>
+            <Input
+              type="text"
+              placeholder="LEPBC2026"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              className="font-mono tracking-wide"
+              maxLength={10}
+            />
+            <Button type="submit" disabled={isJoining || !inviteCode.trim()}>
+              <Plus size={17} aria-hidden="true" />
+              {isJoining ? 'Joining...' : 'Join Club'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <div className="section-card">
-        <h2>Your clubs</h2>
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-slate-950">Your clubs</h2>
         {clubs.length ? (
-          <div className="card-grid">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {clubs.map((club) => (
               <Link 
                 key={club.id} 
                 to={`/club/${club.id}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
+                className="block"
               >
-                <div className="listing-card">
-                  <h3>{club.name}</h3>
-                  <p>{club.description}</p>
-                  <div className="meta-row" style={{ marginTop: '12px' }}>
+                <Card className="h-full transition hover:border-emerald-300 hover:shadow-md">
+                  <CardContent className="space-y-3 pt-4 sm:pt-5">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                        <ClubIcon size={18} aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="truncate text-base font-bold text-slate-950">{club.name}</h3>
+                        <p className="line-clamp-2 text-sm leading-6 text-slate-600">{club.description}</p>
+                      </div>
+                    </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
                     <span>{club.city}</span>
                     <span>{club.membersCount} members</span>
                   </div>
-                  <div style={{ marginTop: '12px' }}>
-                    <span className="tag-pill">{(club as any).role || 'member'}</span>
-                  </div>
-                </div>
+                    <Badge>{club.role || 'member'}</Badge>
+                  </CardContent>
+                </Card>
               </Link>
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
-            <p>You haven't joined any clubs yet.</p>
-            <Link to="/" className="brand-button" style={{ marginTop: '12px', display: 'inline-block' }}>
-              Find clubs
-            </Link>
-          </div>
+          <Card>
+            <CardContent className="space-y-3 pt-5 text-center">
+              <p className="text-sm text-slate-600">You have not joined any clubs yet.</p>
+              <Link to="/" className="brand-button">
+                Find clubs
+              </Link>
+            </CardContent>
+          </Card>
         )}
-      </div>
+      </section>
 
-      <div className="section-card">
-        <h2>Upcoming game days</h2>
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
         {events.length ? (
-          <div className="preview-list">
+          <div className="grid gap-3">
             {events.map((event) => (
-              <div key={event.id} className="event-card">
-                <h3>{event.title}</h3>
-                <p style={{ color: '#64748b', fontSize: '14px' }}>
-                  {(event as any).clubName}
-                </p>
-                <p>{new Date(event.event_date).toLocaleString()}</p>
-                <p>{event.location}</p>
-                <p style={{ marginTop: '10px', color: event.signup_open ? '#059669' : '#dc2626' }}>
-                  {event.signup_open ? '✓ Open for signup' : '✗ Closed'}
-                </p>
-              </div>
+              <Card key={event.id}>
+                <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
+                  <CalendarDays className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="font-bold text-slate-950">{event.title}</h3>
+                    <p className="text-sm text-slate-500">{event.clubName}</p>
+                    <p className="text-sm text-slate-700">{new Date(event.event_date).toLocaleString()}</p>
+                    <p className="text-sm text-slate-600">{event.location}</p>
+                    <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+                      {event.signup_open ? 'Open for signup' : 'Closed'}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         ) : (
           <p className="empty-state">No upcoming events.</p>
         )}
-      </div>
+      </section>
 
-      <div className="section-card">
-        <h2>Recent match results</h2>
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-slate-950">Recent match results</h2>
         {matches.length ? (
-          <div className="preview-list">
+          <div className="grid gap-3">
             {matches.map((match) => (
-              <div key={match.id} className="match-card">
-                <h3>{match.title || `${match.sport} match`}</h3>
-                <p style={{ color: '#64748b', fontSize: '14px' }}>
-                  {(match as any).clubName}
-                </p>
-                <p>{match.sport} • {match.match_type}</p>
-                <p style={{ fontWeight: 600, color: '#2563eb' }}>
-                  {match.score_sets?.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')}
-                </p>
-              </div>
+              <Card key={match.id}>
+                <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
+                  <Trophy className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
+                    <p className="text-sm text-slate-500">{match.clubName}</p>
+                    <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
+                    <p className="font-semibold text-emerald-700">
+                      {match.score_sets?.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         ) : (
           <p className="empty-state">No matches recorded yet.</p>
         )}
-      </div>
-    </section>
+      </section>
+    </Page>
+  )
+}
+
+function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
+  return (
+    <Card>
+      <CardContent className="space-y-2 p-3 sm:p-4">
+        <div className="flex items-center justify-between gap-2 text-slate-500">
+          <span className="text-xs font-semibold sm:text-sm">{label}</span>
+          <span className="text-emerald-700">{icon}</span>
+        </div>
+        <p className="text-2xl font-bold leading-none text-slate-950 sm:text-3xl">{value}</p>
+      </CardContent>
+    </Card>
   )
 }

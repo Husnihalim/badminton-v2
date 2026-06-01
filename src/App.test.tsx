@@ -3,18 +3,22 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 
+type MockResult = { data: unknown[]; error: null }
+type MockCallback = (value: MockResult) => unknown
+type MockChain = Record<string, unknown>
+
 // Create a mock chain that returns itself for chaining
-const createMockChain = (returnValue: any = { data: [], error: null }): any => {
-  const chain: any = {
-    select: vi.fn(() => chain),
-    insert: vi.fn(() => chain),
-    update: vi.fn(() => chain),
-    delete: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    order: vi.fn(() => Promise.resolve(returnValue)),
-    single: vi.fn(() => Promise.resolve(returnValue)),
-    then: vi.fn((cb: any) => Promise.resolve(cb(returnValue))),
-  }
+const createMockChain = (returnValue: MockResult = { data: [], error: null }): MockChain => {
+  const chain = {} as MockChain
+  chain.select = vi.fn(() => chain)
+  chain.insert = vi.fn(() => chain)
+  chain.update = vi.fn(() => chain)
+  chain.delete = vi.fn(() => chain)
+  chain.eq = vi.fn(() => chain)
+  chain.order = vi.fn(() => Promise.resolve(returnValue))
+  chain.single = vi.fn(() => Promise.resolve(returnValue))
+  chain.then = vi.fn((cb: MockCallback) => Promise.resolve(cb(returnValue)))
+
   return chain
 }
 
@@ -52,7 +56,7 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run your racket sport club/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /run badminton clubs, events, scores, and members/i })).toBeInTheDocument()
       })
       
       expect(screen.getAllByRole('link', { name: /get started/i }).length).toBeGreaterThan(0)
@@ -62,11 +66,11 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByText(/trusted by clubs/i)).toBeInTheDocument()
+        expect(screen.getByText(/club-ready/i)).toBeInTheDocument()
       })
       
-      expect(screen.getAllByText(/fast setup/i).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/mobile-first/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/fast scoring/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/phone-first/i).length).toBeGreaterThan(0)
     })
   })
 
@@ -136,7 +140,7 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run your racket sport club/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /run badminton clubs, events, scores, and members/i })).toBeInTheDocument()
       })
 
       const loginLinks = screen.getAllByRole('link', { name: /log in/i })
