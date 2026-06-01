@@ -511,9 +511,14 @@ export default function ClubHomePage() {
             {isAdmin ? <Badge className="border-blue-200 bg-blue-50 text-blue-800">Admin</Badge> : null}
           </div>
           {club.invite_code && isAdmin ? (
-            <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-              Invite link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
-            </p>
+            <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
+              <p className="min-w-0">
+                Invite link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
+              </p>
+              <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink}>
+                Copy
+              </Button>
+            </div>
           ) : null}
         </CardContent>
       </Card>

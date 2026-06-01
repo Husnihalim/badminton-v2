@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from '../../lib/supabase'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
+import { PasswordInput } from '../../components/ui/password-input'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -111,10 +112,9 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="password">Password</label>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a password"
@@ -124,10 +124,9 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="confirmPassword">Confirm password</label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter your password"

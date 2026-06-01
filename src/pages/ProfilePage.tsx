@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Building2, Lock, MapPin, Plus, Save, UserRound, Users, X } from 'lucide-react'
+import { Building2, Camera, Lock, MapPin, Plus, Save, UserRound, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { createClub, getMyClubs, updateProfile } from '../lib/api'
+import { createClub, getMyClubs, updateProfile, uploadProfilePhoto } from '../lib/api'
 import type { Club } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -35,6 +35,8 @@ export default function ProfilePage() {
   const [city, setCity] = useState('')
   const [preferredSport, setPreferredSport] = useState('badminton')
   const [bio, setBio] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
 
   const loadMyClubs = useCallback(async () => {
     try {
@@ -61,6 +63,7 @@ export default function ProfilePage() {
       setCity(user.city || '')
       setPreferredSport(user.preferred_sport || 'badminton')
       setBio(user.bio || '')
+      setAvatarUrl(user.avatar_url || null)
       loadMyClubs()
     }
   }, [user, authLoading, navigate, loadMyClubs])
@@ -97,6 +100,27 @@ export default function ProfilePage() {
       setError(getErrorMessage(err, 'Failed to create club'))
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  const handleProfilePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      setIsUploadingPhoto(true)
+      setProfileError('')
+      const publicUrl = await uploadProfilePhoto(user.id, file)
+      setAvatarUrl(publicUrl)
+      await refreshUser()
+      setProfileMessage('Profile photo updated.')
+      setTimeout(() => setProfileMessage(''), 3000)
+    } catch (err) {
+      setProfileError(getErrorMessage(err, 'Failed to upload profile photo'))
+    } finally {
+      setIsUploadingPhoto(false)
+      event.target.value = ''
     }
   }
 
@@ -150,12 +174,31 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="space-y-5 pt-4 sm:pt-5">
           <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-              <UserRound size={22} aria-hidden="true" />
-            </span>
+            <div className="relative h-16 w-16 shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
+              ) : (
+                <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                  <UserRound size={24} aria-hidden="true" />
+                </span>
+              )}
+              <label className="absolute -bottom-2 -right-2 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm">
+                <Camera size={16} aria-hidden="true" />
+                <span className="sr-only">Change profile photo</span>
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleProfilePhotoChange}
+                  disabled={isUploadingPhoto}
+                />
+              </label>
+            </div>
             <div className="min-w-0 space-y-2">
               <h2 className="text-lg font-bold text-slate-950">{user?.display_name || user?.name}</h2>
               <p className="break-words text-sm text-slate-600">{user?.email}</p>
+              {isUploadingPhoto ? <p className="text-sm font-semibold text-emerald-700">Uploading photo...</p> : null}
               <div className="flex flex-wrap gap-2">
                 {user?.role ? <Badge>{user.role}</Badge> : null}
                 <Badge className="border-slate-200 bg-slate-50 text-slate-700">

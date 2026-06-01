@@ -6,16 +6,25 @@ import { isSupabaseConfigured } from '../../lib/supabase'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
+import { PasswordInput } from '../../components/ui/password-input'
+
+const rememberedEmailKey = 'kelabsukan.rememberedEmail'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberEmail, setRememberEmail] = useState(true)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { user, isLoading, login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectTo = getSafeRedirect(searchParams.get('redirect') || window.localStorage.getItem('kelabsukan.postLoginRedirect'))
+
+  useEffect(() => {
+    const rememberedEmail = window.localStorage.getItem(rememberedEmailKey)
+    if (rememberedEmail) setEmail(rememberedEmail)
+  }, [])
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -55,6 +64,11 @@ export default function LoginPage() {
         return
       }
 
+      if (rememberEmail) {
+        window.localStorage.setItem(rememberedEmailKey, email.trim().toLowerCase())
+      } else {
+        window.localStorage.removeItem(rememberedEmailKey)
+      }
       window.localStorage.removeItem('kelabsukan.postLoginRedirect')
       navigate(redirectTo)
     } finally {
@@ -97,10 +111,9 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="login-password">Password</label>
-              <Input
+              <PasswordInput
                 id="login-password"
                 name="password"
-                type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
@@ -108,6 +121,16 @@ export default function LoginPage() {
                 disabled={isSubmitting || !isSupabaseConfigured}
               />
             </div>
+
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-emerald-700"
+                checked={rememberEmail}
+                onChange={(event) => setRememberEmail(event.target.checked)}
+              />
+              Remember me on this device
+            </label>
 
             <Button type="submit" fullWidth disabled={isSubmitting || !isSupabaseConfigured}>
               <LogIn size={17} aria-hidden="true" />

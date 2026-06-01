@@ -25,6 +25,7 @@ type ProfileRow = {
   city?: string | null
   bio?: string | null
   preferred_sport?: string | null
+  avatar_url?: string | null
 }
 
 type AuthUserFallback = {
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               city: profile.city,
               bio: profile.bio,
               preferred_sport: profile.preferred_sport,
+              avatar_url: profile.avatar_url,
             }
           }
         } catch (profileError) {
@@ -95,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
           role: authUser.user_metadata?.role || 'member',
           display_name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+          avatar_url: null,
         }
       }
       return null
@@ -112,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       city: profile.city,
       bio: profile.bio,
       preferred_sport: profile.preferred_sport,
+      avatar_url: profile.avatar_url,
     }
   }, [])
 
@@ -194,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: data.user.user_metadata?.name || email.split('@')[0],
       role: data.user.user_metadata?.role || 'member',
       display_name: data.user.user_metadata?.name || email.split('@')[0],
+      avatar_url: null,
     })
     return true
   }, [fetchUserProfile])
@@ -235,6 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name,
       role,
       display_name: name,
+      avatar_url: null,
     }
 
     setUser(userProfile)

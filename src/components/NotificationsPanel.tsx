@@ -10,6 +10,10 @@ interface NotificationsPanelProps {
 export default function NotificationsPanel({ isOpen, onClose }: NotificationsPanelProps) {
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useNotifications()
   const [isMarkingAll, setIsMarkingAll] = useState(false)
+  const [permission, setPermission] = useState(
+    typeof window !== 'undefined' && 'Notification' in window ? window.Notification.permission : 'default'
+  )
+  const supportsBrowserAlerts = typeof window !== 'undefined' && 'Notification' in window
 
   const handleMarkAllRead = async () => {
     try {
@@ -18,6 +22,12 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
     } finally {
       setIsMarkingAll(false)
     }
+  }
+
+  const handleEnablePhoneAlerts = async () => {
+    if (!supportsBrowserAlerts) return
+    const result = await window.Notification.requestPermission()
+    setPermission(result)
   }
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -97,6 +107,14 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
             )}
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
+            {supportsBrowserAlerts && permission !== 'granted' && (
+              <button
+                className="small-button"
+                onClick={handleEnablePhoneAlerts}
+              >
+                Enable alerts
+              </button>
+            )}
             {unreadCount > 0 && (
               <button
                 className="small-button"

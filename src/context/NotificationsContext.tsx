@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/api'
 import type { Notification } from '../types'
@@ -21,19 +21,49 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
+  const seenNotificationIds = useRef<Set<string>>(new Set())
+  const hasLoadedNotifications = useRef(false)
+  const activeUserId = useRef<string | null>(null)
 
   const unreadCount = notifications.filter(n => !n.read).length
 
   const fetchNotifications = useCallback(async () => {
     if (!user) {
       setNotifications([])
+      seenNotificationIds.current.clear()
+      hasLoadedNotifications.current = false
+      activeUserId.current = null
       return
     }
 
     try {
       setIsLoading(true)
+      if (activeUserId.current !== user.id) {
+        seenNotificationIds.current.clear()
+        hasLoadedNotifications.current = false
+        activeUserId.current = user.id
+      }
+
       const data = await getNotifications()
+      const newUnreadNotifications = data.filter((notification) => (
+        hasLoadedNotifications.current && !notification.read && !seenNotificationIds.current.has(notification.id)
+      ))
       setNotifications(data)
+      data.forEach((notification) => seenNotificationIds.current.add(notification.id))
+      hasLoadedNotifications.current = true
+
+      if (newUnreadNotifications.length && typeof window !== 'undefined') {
+        const latest = newUnreadNotifications[0]
+        if ('Notification' in window && window.Notification.permission === 'granted') {
+          new window.Notification(latest.title, {
+            body: latest.message,
+            tag: latest.id,
+          })
+        }
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate([120, 80, 120])
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch notifications:', err)
     } finally {

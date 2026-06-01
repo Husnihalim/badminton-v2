@@ -10,6 +10,7 @@ export interface User {
   city?: string | null
   bio?: string | null
   preferred_sport?: string | null
+  avatar_url?: string | null
 }
 
 // Extended User with metadata

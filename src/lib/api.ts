@@ -690,6 +690,7 @@ export type ProfileUpdates = {
   city?: string | null
   bio?: string | null
   preferred_sport?: string | null
+  avatar_url?: string | null
 }
 
 export async function updateProfile(userId: string, updates: ProfileUpdates) {
@@ -706,6 +707,30 @@ export async function updateProfile(userId: string, updates: ProfileUpdates) {
   }
 
   return data
+}
+
+export async function uploadProfilePhoto(userId: string, file: File): Promise<string> {
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const filePath = `${userId}/avatar-${Date.now()}.${extension}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('profile-photos')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.error('Error uploading profile photo:', uploadError)
+    throw uploadError
+  }
+
+  const { data } = supabase.storage
+    .from('profile-photos')
+    .getPublicUrl(filePath)
+
+  await updateProfile(userId, { avatar_url: data.publicUrl })
+  return data.publicUrl
 }
 
 // ============================================

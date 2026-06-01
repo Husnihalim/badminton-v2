@@ -4,7 +4,7 @@ import { KeyRound } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader } from '../../components/ui/card'
-import { Input } from '../../components/ui/input'
+import { PasswordInput } from '../../components/ui/password-input'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -88,10 +88,9 @@ export default function ResetPasswordPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="new-password">New password</label>
-              <Input
+              <PasswordInput
                 id="new-password"
                 name="password"
-                type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="new-password"
@@ -104,10 +103,9 @@ export default function ResetPasswordPage() {
               <label className="text-sm font-semibold text-slate-700" htmlFor="confirm-new-password">
                 Confirm new password
               </label>
-              <Input
+              <PasswordInput
                 id="confirm-new-password"
                 name="confirmPassword"
-                type="password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 autoComplete="new-password"
