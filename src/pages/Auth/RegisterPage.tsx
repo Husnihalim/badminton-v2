@@ -47,7 +47,7 @@ export default function RegisterPage() {
     if (result.emailVerificationRequired) {
       window.localStorage.setItem('kelabsukan.postLoginRedirect', redirectTo)
       setSuccessMessage(
-        redirectTo.startsWith('/join/')
+        redirectTo.startsWith('/invite/') || redirectTo.startsWith('/join/')
           ? 'Account created. Please verify your email, then log in. We will finish joining the club from your invite link.'
           : 'Account created. Please verify your email, then log in to continue.'
       )
