@@ -13,6 +13,51 @@ import type {
   ClubMessage
 } from '../types'
 
+type ProfileSummary = {
+  name?: string | null
+  email?: string | null
+  display_name?: string | null
+}
+
+type ClubMembershipRow = {
+  role: string
+  clubs: Club | null
+}
+
+type MembershipProfileRow = Membership & {
+  profiles?: ProfileSummary | null
+}
+
+type JoinRequestProfileRow = JoinRequest & {
+  profiles?: ProfileSummary | null
+}
+
+type EventRsvpProfileRow = EventRsvp & {
+  profiles?: ProfileSummary | null
+  events?: ClubEvent | null
+}
+
+type MatchParticipantQueryRow = MatchParticipant & {
+  guest_name: string | null
+  profiles?: ProfileSummary | null
+}
+
+type MatchQueryRow = Match & {
+  match_participants?: MatchParticipantQueryRow[] | null
+  score_sets?: ScoreSet[] | null
+}
+
+type ClubMessageProfileRow = ClubMessage & {
+  profiles?: ProfileSummary | null
+}
+
+export type ClubLeaderboardRow = {
+  name: string
+  wins: number
+  losses: number
+  points: number
+}
+
 export async function ensureCurrentUserProfile(): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -35,7 +80,6 @@ export async function ensureCurrentUserProfile(): Promise<void> {
 
   const email = user.email || ''
   const name = user.user_metadata?.name || email.split('@')[0] || 'Member'
-  const role = user.user_metadata?.role || 'member'
 
   const { error: insertError } = await supabase
     .from('profiles')
@@ -43,8 +87,8 @@ export async function ensureCurrentUserProfile(): Promise<void> {
       id: user.id,
       email,
       name,
-      role,
-    } as any)
+      role: 'member',
+    } as never)
 
   if (insertError) {
     console.error('Error creating missing profile:', insertError)
@@ -105,7 +149,7 @@ export async function createClub(club: {
     .insert({
       ...club,
       owner_id: user.id,
-    } as any)
+    } as never)
     .select()
     .single()
 
@@ -139,7 +183,7 @@ export async function getMyClubs(): Promise<(Club & { role: string })[]> {
     return []
   }
 
-  return ((data || []) as any[]).map((m) => ({
+  return ((data || []) as unknown as ClubMembershipRow[]).map((m) => ({
     ...(m.clubs as Club),
     role: m.role,
   }))
@@ -157,7 +201,7 @@ export async function getClubMembers(clubId: string): Promise<Membership[]> {
     return []
   }
 
-  return ((data || []) as any[]).map((m) => ({
+  return ((data || []) as unknown as MembershipProfileRow[]).map((m) => ({
     ...m,
     name: m.profiles?.name || 'Unknown',
     email: m.profiles?.email || '',
@@ -204,7 +248,7 @@ export async function requestJoinClub(clubId: string): Promise<JoinRequest | nul
       club_id: clubId,
       user_id: user.id,
       status: 'pending',
-    } as any)
+    } as never)
     .select()
     .single()
 
@@ -232,7 +276,7 @@ export async function getClubJoinRequests(clubId: string): Promise<JoinRequest[]
     return []
   }
 
-  return ((data || []) as any[]).map((r) => ({
+  return ((data || []) as unknown as JoinRequestProfileRow[]).map((r) => ({
     ...r,
     name: r.profiles?.name || 'Unknown',
     email: r.profiles?.email || '',
@@ -240,58 +284,9 @@ export async function getClubJoinRequests(clubId: string): Promise<JoinRequest[]
 }
 
 export async function approveJoinRequest(requestId: string): Promise<void> {
-  const { data: { user: approver } } = await supabase.auth.getUser()
-
-  if (!approver) {
-    throw new Error('Must be authenticated to approve join requests')
-  }
-
-  const { data: request, error: requestError } = await supabase
-    .from('join_requests')
-    .select('*')
-    .eq('id', requestId)
-    .single()
-
-  if (requestError || !request) {
-    console.error('Error fetching join request:', requestError)
-    throw requestError || new Error('Join request not found')
-  }
-
-  const joinRequest = request as JoinRequest
-
-  const { data: existingMembership, error: membershipSelectError } = await supabase
-    .from('memberships')
-    .select('*')
-    .eq('club_id', joinRequest.club_id)
-    .eq('user_id', joinRequest.user_id)
-    .maybeSingle()
-
-  if (membershipSelectError) {
-    console.error('Error checking existing membership:', membershipSelectError)
-    throw membershipSelectError
-  }
-
-  if (!existingMembership) {
-    const { error: membershipError } = await supabase
-      .from('memberships')
-      .insert({
-        club_id: joinRequest.club_id,
-        user_id: joinRequest.user_id,
-        role: 'member',
-        status: 'active',
-        approved_by: approver.id,
-      } as any)
-
-    if (membershipError) {
-      console.error('Error creating approved membership:', membershipError)
-      throw membershipError
-    }
-  }
-
-  const { error } = await supabase
-    .from('join_requests')
-    .update({ status: 'approved' } as any)
-    .eq('id', requestId)
+  const { error } = await supabase.rpc('approve_join_request', {
+    target_request_id: requestId,
+  })
 
   if (error) {
     console.error('Error approving join request:', error)
@@ -300,10 +295,9 @@ export async function approveJoinRequest(requestId: string): Promise<void> {
 }
 
 export async function rejectJoinRequest(requestId: string): Promise<void> {
-  const { error } = await supabase
-    .from('join_requests')
-    .update({ status: 'rejected' } as any)
-    .eq('id', requestId)
+  const { error } = await supabase.rpc('reject_join_request', {
+    target_request_id: requestId,
+  })
 
   if (error) {
     console.error('Error rejecting join request:', error)
@@ -341,62 +335,28 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
     throw new Error('Must be authenticated to record a match')
   }
 
-  // Create the match
-  const { data: match, error: matchError } = await supabase
-    .from('matches')
-    .insert({
-      club_id: data.club_id,
-      title: data.title,
-      sport: data.sport,
-      match_type: data.match_type,
-      recorded_by: user.id,
-      match_date: data.match_date || new Date().toISOString().split('T')[0],
-    } as any)
-    .select()
-    .single()
+  const { data: match, error: matchError } = await supabase.rpc('create_match_with_details', {
+    match_club_id: data.club_id,
+    match_title: data.title || null,
+    match_sport: data.sport,
+    match_type_input: data.match_type,
+    match_date_input: data.match_date || new Date().toISOString().split('T')[0],
+    participants_input: data.participants.map((p) => ({
+      team: p.team,
+      user_id: p.user_id || null,
+      is_guest: p.is_guest,
+      guest_name: p.guest_name || null,
+    })),
+    score_sets_input: data.score_sets.map((s) => ({
+      set_number: s.set_number,
+      team1_score: s.team1_score,
+      team2_score: s.team2_score,
+    })),
+  })
 
   if (matchError || !match) {
     console.error('Error creating match:', matchError)
     throw matchError
-  }
-
-  const matchId = (match as any).id
-
-  // Create participants
-  if (data.participants.length > 0) {
-    const { error: participantsError } = await supabase
-      .from('match_participants')
-      .insert(
-        data.participants.map(p => ({
-          match_id: matchId,
-          user_id: p.user_id || null,
-          team: p.team,
-          is_guest: p.is_guest,
-          guest_name: p.guest_name || null,
-        })) as any
-      )
-
-    if (participantsError) {
-      console.error('Error creating match participants:', participantsError)
-    }
-  }
-
-  // Create score sets
-  if (data.score_sets.length > 0) {
-    const { error: scoresError } = await supabase
-      .from('score_sets')
-      .insert(
-        data.score_sets.map(s => ({
-          match_id: matchId,
-          set_number: s.set_number,
-          team1_score: s.team1_score,
-          team2_score: s.team2_score,
-        })) as any
-      )
-
-    if (scoresError) {
-      console.error('Error creating score sets:', scoresError)
-    }
   }
 
   const createdMatch = match as Match
@@ -424,7 +384,7 @@ export async function getClubMatches(clubId: string): Promise<(Match & {
     .from('matches')
     .select(`
       *,
-      match_participants(*),
+      match_participants(*, profiles(name, display_name)),
       score_sets(*)
     `)
     .eq('club_id', clubId)
@@ -436,31 +396,34 @@ export async function getClubMatches(clubId: string): Promise<(Match & {
   }
 
   // Fetch user names for participants
-  const matches = await Promise.all(
-    ((data || []) as any[]).map(async (match) => {
-      const participants = await Promise.all(
-        (match.match_participants || []).map(async (p: any) => {
-          if (p.user_id && !p.is_guest) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('name')
-              .eq('id', p.user_id)
-              .single()
-            return { ...p, name: profile?.name || 'Unknown' } as MatchParticipant
-          }
-          return { ...p, name: p.guest_name || 'Guest' } as MatchParticipant
-        })
-      )
-
+  const matches = ((data || []) as unknown as MatchQueryRow[]).map((match) => {
+      const participants = (match.match_participants || []).map((p) => ({
+        ...p,
+        name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
+      })) as MatchParticipant[]
       return {
         ...(match as Match),
         participants,
         score_sets: (match.score_sets || []) as ScoreSet[],
       }
-    })
+    }
   )
 
   return matches
+}
+
+export async function getClubLeaderboard(clubId: string, limit = 10): Promise<ClubLeaderboardRow[]> {
+  const { data, error } = await supabase.rpc('get_club_leaderboard', {
+    target_club_id: clubId,
+    row_limit: limit,
+  })
+
+  if (error) {
+    console.error('Error fetching leaderboard:', error)
+    return []
+  }
+
+  return (data as ClubLeaderboardRow[]) || []
 }
 
 // ============================================
@@ -503,7 +466,7 @@ export async function createEvent(event: {
     .insert({
       ...event,
       created_by: user.id,
-    } as any)
+    } as never)
     .select()
     .single()
 
@@ -540,7 +503,7 @@ export async function updateEvent(eventId: string, updates: {
 }): Promise<ClubEvent> {
   const { data, error } = await supabase
     .from('events')
-    .update(updates as any)
+    .update(updates as never)
     .eq('id', eventId)
     .select()
     .single()
@@ -609,7 +572,7 @@ export async function rsvpToEvent(eventId: string, status: 'going' | 'maybe' | '
       event_id: eventId,
       user_id: user.id,
       status,
-    } as any, { onConflict: 'event_id,user_id' })
+    } as never, { onConflict: 'event_id,user_id' })
     .select()
     .single()
 
@@ -642,7 +605,7 @@ export async function getMyEventRsvps(): Promise<EventRsvp[]> {
     return []
   }
 
-  return ((data || []) as any[]).map((r) => ({
+  return ((data || []) as unknown as EventRsvpProfileRow[]).map((r) => ({
     ...r,
     event: r.events,
   }))
@@ -659,7 +622,7 @@ export async function getEventRsvps(eventId: string): Promise<EventRsvp[]> {
     return []
   }
 
-  return ((data || []) as any[]).map((r) => ({
+  return ((data || []) as unknown as EventRsvpProfileRow[]).map((r) => ({
     ...r,
     name: r.profiles?.display_name || r.profiles?.name || 'Unknown',
   }))
@@ -696,7 +659,7 @@ export type ProfileUpdates = {
 export async function updateProfile(userId: string, updates: ProfileUpdates) {
   const { data, error } = await supabase
     .from('profiles')
-    .update(updates as any)
+    .update(updates as never)
     .eq('id', userId)
     .select()
     .single()
@@ -748,7 +711,7 @@ export async function updateClub(clubId: string, updates: {
 }): Promise<Club | null> {
   const { data, error } = await supabase
     .from('clubs')
-    .update(updates as any)
+    .update(updates as never)
     .eq('id', clubId)
     .select()
     .single()
@@ -793,21 +756,16 @@ export function buildInviteUrl(inviteToken: string): string {
 }
 
 export async function regenerateInviteLink(clubId: string): Promise<string | null> {
-  const newToken = Math.random().toString(36).substring(2, 10).toUpperCase()
-  
-  const { data, error } = await supabase
-    .from('clubs')
-    .update({ invite_code: newToken } as any)
-    .eq('id', clubId)
-    .select('invite_code')
-    .single()
+  const { data, error } = await supabase.rpc('regenerate_club_invite_code', {
+    target_club_id: clubId,
+  })
 
   if (error) {
     console.error('Error regenerating invite link:', error)
     throw error
   }
 
-  return data?.invite_code || null
+  return data || null
 }
 
 // ============================================
@@ -817,7 +775,7 @@ export async function regenerateInviteLink(clubId: string): Promise<string | nul
 export async function updateMemberRole(clubId: string, userId: string, role: 'owner' | 'admin' | 'member'): Promise<void> {
   const { error } = await supabase
     .from('memberships')
-    .update({ role } as any)
+    .update({ role } as never)
     .eq('club_id', clubId)
     .eq('user_id', userId)
 
@@ -828,11 +786,10 @@ export async function updateMemberRole(clubId: string, userId: string, role: 'ow
 }
 
 export async function removeMember(clubId: string, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('memberships')
-    .delete()
-    .eq('club_id', clubId)
-    .eq('user_id', userId)
+  const { error } = await supabase.rpc('remove_club_member', {
+    target_club_id: clubId,
+    target_user_id: userId,
+  })
 
   if (error) {
     console.error('Error removing member:', error)
@@ -869,7 +826,7 @@ export async function getNotifications(): Promise<Notification[]> {
 export async function markNotificationRead(notificationId: string): Promise<void> {
   const { error } = await supabase
     .from('notifications')
-    .update({ read: true } as any)
+    .update({ read: true } as never)
     .eq('id', notificationId)
 
   if (error) {
@@ -885,7 +842,7 @@ export async function markAllNotificationsRead(): Promise<void> {
 
   const { error } = await supabase
     .from('notifications')
-    .update({ read: true } as any)
+    .update({ read: true } as never)
     .eq('user_id', user.id)
     .eq('read', false)
 
@@ -921,45 +878,22 @@ async function getCurrentProfileName(fallback = 'Club member'): Promise<string> 
 }
 
 async function notifyClubMembers(input: ClubNotificationInput): Promise<void> {
-  const { data: members, error } = await supabase
-    .from('memberships')
-    .select('user_id')
-    .eq('club_id', input.clubId)
-    .eq('status', 'active')
+  const actorName = input.activityTitle && input.activityDescription
+    ? await getCurrentProfileName(input.actorFallback)
+    : input.actorFallback || null
+
+  const { error } = await supabase.rpc('create_club_notifications', {
+    target_club_id: input.clubId,
+    notification_type: input.type,
+    notification_title: input.title,
+    notification_message: input.message,
+    notification_data: input.data || {},
+    activity_title: input.activityTitle || null,
+    activity_description: input.activityDescription || null,
+    actor_name: actorName,
+  })
 
   if (error) throw error
-
-  const notifications = ((members || []) as { user_id: string }[]).map((member) => ({
-    user_id: member.user_id,
-    type: input.type,
-    title: input.title,
-    message: input.message,
-    data: input.data || {},
-    read: false,
-  }))
-
-  if (notifications.length) {
-    const { error: notificationError } = await supabase
-      .from('notifications')
-      .insert(notifications as any)
-
-    if (notificationError) throw notificationError
-  }
-
-  if (input.activityTitle && input.activityDescription) {
-    const actorName = await getCurrentProfileName(input.actorFallback)
-    const { error: activityError } = await supabase
-      .from('club_activities')
-      .insert({
-        club_id: input.clubId,
-        type: input.type === 'event_created' || input.type === 'rsvp_update' ? input.type : 'announcement',
-        title: input.activityTitle,
-        description: input.activityDescription,
-        actor_name: actorName,
-      } as any)
-
-    if (activityError) throw activityError
-  }
 }
 
 async function notifyEventRsvpUpdate(eventId: string, status: 'going' | 'maybe' | 'not_going'): Promise<void> {
@@ -1001,7 +935,7 @@ export async function createClubAnnouncement(clubId: string, title: string, mess
       title,
       message,
       created_by: user.id,
-    } as any)
+    } as never)
     .select()
     .single()
 
@@ -1042,7 +976,7 @@ export async function getClubMessages(clubId: string): Promise<ClubMessage[]> {
     return []
   }
 
-  return ((data || []) as any[]).map((message) => ({
+  return ((data || []) as unknown as ClubMessageProfileRow[]).map((message) => ({
     ...message,
     authorName: message.profiles?.display_name || message.profiles?.name || 'Club admin',
   }))
@@ -1051,7 +985,7 @@ export async function getClubMessages(clubId: string): Promise<ClubMessage[]> {
 export async function updateClubMessage(messageId: string, title: string, message: string): Promise<ClubMessage> {
   const { data, error } = await supabase
     .from('club_messages')
-    .update({ title, message } as any)
+    .update({ title, message } as never)
     .eq('id', messageId)
     .select()
     .single()
@@ -1064,7 +998,7 @@ export async function updateClubMessage(messageId: string, title: string, messag
   const updatedMessage = data as ClubMessage
   const { error: notificationError } = await supabase
     .from('notifications')
-    .update({ title, message } as any)
+    .update({ title, message } as never)
     .eq('type', 'announcement')
     .eq('data->>messageId', messageId)
 

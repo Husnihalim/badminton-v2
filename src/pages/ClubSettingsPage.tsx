@@ -166,22 +166,22 @@ export default function ClubSettingsPage() {
 
               <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                 <span>Club name *</span>
-                <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+                <Input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
               </label>
 
               <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                 <span>Description</span>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is your club about?" />
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="What is your club about?" />
               </label>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>Location</span>
-                  <Input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Community Center Court" />
+                  <Input type="text" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="e.g. Community Center Court" />
                 </label>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>City</span>
-                  <Input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Kuala Lumpur" />
+                  <Input type="text" value={city} onChange={(e) => setCity(e.target.value)} maxLength={120} placeholder="e.g. Kuala Lumpur" />
                 </label>
               </div>
             </CardContent>

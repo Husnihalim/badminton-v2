@@ -1,16 +1,16 @@
-// Simple Database type for Supabase client
-// Using 'any' for now to avoid complex type issues during development
+// Simple Database type for Supabase client.
+// Replace this with generated Supabase types when the project schema is stable.
 
 export interface Database {
   public: {
     Tables: {
-      [key: string]: any
+      [key: string]: unknown
     }
     Views: {
-      [key: string]: any
+      [key: string]: unknown
     }
     Functions: {
-      [key: string]: any
+      [key: string]: unknown
     }
   }
 }

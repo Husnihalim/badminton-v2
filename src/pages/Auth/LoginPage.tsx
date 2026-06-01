@@ -11,7 +11,7 @@ import { PasswordInput } from '../../components/ui/password-input'
 const rememberedEmailKey = 'kelabsukan.rememberedEmail'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => window.localStorage.getItem(rememberedEmailKey) || '')
   const [password, setPassword] = useState('')
   const [rememberEmail, setRememberEmail] = useState(true)
   const [error, setError] = useState('')
@@ -20,11 +20,6 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectTo = getSafeRedirect(searchParams.get('redirect') || window.localStorage.getItem('kelabsukan.postLoginRedirect'))
-
-  useEffect(() => {
-    const rememberedEmail = window.localStorage.getItem(rememberedEmailKey)
-    if (rememberedEmail) setEmail(rememberedEmail)
-  }, [])
 
   useEffect(() => {
     if (!isLoading && user) {

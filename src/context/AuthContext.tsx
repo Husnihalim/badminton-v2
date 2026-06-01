@@ -33,19 +33,7 @@ type AuthUserFallback = {
   email?: string
   user_metadata?: {
     name?: string
-    role?: User['role']
   }
-}
-
-function getRoleForUser(email: string, name: string): User['role'] {
-  const normalizedEmail = email.trim().toLowerCase()
-  const normalizedName = name.trim().toLowerCase()
-
-  if (normalizedEmail === 'mohdhusni@gmail.com' || normalizedName === 'husni halim') {
-    return 'superadmin'
-  }
-
-  return 'member'
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -95,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: authUser.id,
           email: authUser.email || '',
           name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-          role: authUser.user_metadata?.role || 'member',
+          role: 'member',
           display_name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
           avatar_url: null,
         }
@@ -196,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: data.user.id,
       email: data.user.email || email,
       name: data.user.user_metadata?.name || email.split('@')[0],
-      role: data.user.user_metadata?.role || 'member',
+      role: 'member',
       display_name: data.user.user_metadata?.name || email.split('@')[0],
       avatar_url: null,
     })
@@ -209,7 +197,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string
   ): Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase()
-    const role = getRoleForUser(normalizedEmail, name)
 
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
@@ -217,7 +204,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: {
         data: {
           name,
-          role,
         },
       },
     })
@@ -238,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: data.user.id,
       email: normalizedEmail,
       name,
-      role,
+      role: 'member',
       display_name: name,
       avatar_url: null,
     }

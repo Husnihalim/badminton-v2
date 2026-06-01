@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/api'
+import { supabase } from '../lib/supabase'
 import type { Notification } from '../types'
 
 interface NotificationsContextType {
@@ -100,18 +101,41 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   // Fetch notifications on mount and when user changes
   useEffect(() => {
-    fetchNotifications()
+    const timeout = window.setTimeout(() => {
+      void fetchNotifications()
+    }, 0)
+
+    return () => window.clearTimeout(timeout)
   }, [fetchNotifications])
 
-  // Poll for new notifications every 30 seconds
+  // Realtime handles normal notification updates; the interval is a slow fallback.
   useEffect(() => {
     if (!user) return
-    
-    const interval = setInterval(() => {
-      fetchNotifications()
-    }, 30000)
 
-    return () => clearInterval(interval)
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void fetchNotifications()
+        }
+      )
+      .subscribe()
+
+    const fallbackInterval = window.setInterval(() => {
+      void fetchNotifications()
+    }, 120000)
+
+    return () => {
+      window.clearInterval(fallbackInterval)
+      void supabase.removeChannel(channel)
+    }
   }, [user, fetchNotifications])
 
   return (
@@ -154,6 +178,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNotifications() {
   const context = useContext(NotificationsContext)
   if (context === undefined) {

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '../context/NotificationsContext'
 import type { Notification } from '../types'
 
@@ -8,6 +9,7 @@ interface NotificationsPanelProps {
 }
 
 export default function NotificationsPanel({ isOpen, onClose }: NotificationsPanelProps) {
+  const navigate = useNavigate()
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useNotifications()
   const [isMarkingAll, setIsMarkingAll] = useState(false)
   const [permission, setPermission] = useState(
@@ -35,9 +37,9 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
       await markAsRead(notification.id)
     }
     
-    // Navigate based on notification type
-    if (notification.data?.clubId) {
-      window.location.href = `/club/${notification.data.clubId}`
+    const clubId = notification.data?.clubId
+    if (typeof clubId === 'string') {
+      navigate(`/club/${clubId}`)
     }
     onClose()
   }

@@ -227,18 +227,18 @@ export default function ProfilePage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                 <span>Display name</span>
-                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="How you want members to see you" />
+                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={120} placeholder="How you want members to see you" />
               </label>
               <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                 <span>Phone</span>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+60..." />
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={40} placeholder="+60..." />
               </label>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                 <span>City</span>
-                <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Kuala Lumpur" />
+                <Input value={city} onChange={(e) => setCity(e.target.value)} maxLength={120} placeholder="Kuala Lumpur" />
               </label>
               <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                 <span>Preferred sport</span>
@@ -255,7 +255,7 @@ export default function ProfilePage() {
 
             <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
               <span>Bio</span>
-              <Textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Short note about your playing level, availability, or club interests." />
+              <Textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={1000} placeholder="Short note about your playing level, availability, or club interests." />
             </label>
 
             <div className="flex justify-end">
@@ -342,6 +342,7 @@ export default function ProfilePage() {
                     placeholder="e.g. Ace Smash Badminton Club"
                     value={clubName}
                     onChange={(e) => setClubName(e.target.value)}
+                    maxLength={120}
                     required
                   />
                 </label>
@@ -352,6 +353,7 @@ export default function ProfilePage() {
                     placeholder="What is your club about?"
                     value={clubDescription}
                     onChange={(e) => setClubDescription(e.target.value)}
+                    maxLength={1000}
                   />
                 </label>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
@@ -361,6 +363,7 @@ export default function ProfilePage() {
                     placeholder="e.g. Kuala Lumpur"
                     value={clubCity}
                     onChange={(e) => setClubCity(e.target.value)}
+                    maxLength={120}
                   />
                 </label>
                 <div className="grid grid-cols-2 gap-2 pt-2">

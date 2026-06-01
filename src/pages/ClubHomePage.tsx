@@ -29,6 +29,7 @@ import {
   getClub,
   getClubActivity,
   getClubEvents,
+  getClubLeaderboard,
   getClubJoinRequests,
   getClubMatches,
   getClubMessages,
@@ -41,21 +42,15 @@ import {
   rsvpToEvent,
   updateClubMessage,
   updateEvent,
+  type ClubLeaderboardRow,
 } from '../lib/api'
-import type { Club, ClubActivity, ClubEvent, ClubMessage, EventRsvp, JoinRequest, MatchParticipant, MatchWithDetails, Membership } from '../types'
+import type { Club, ClubActivity, ClubEvent, ClubMessage, EventRsvp, JoinRequest, MatchWithDetails, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
 import { Textarea } from '../components/ui/textarea'
-
-type LeaderboardRow = {
-  name: string
-  wins: number
-  losses: number
-  points: number
-}
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
@@ -133,6 +128,7 @@ export default function ClubHomePage() {
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [activities, setActivities] = useState<ClubActivity[]>([])
   const [messages, setMessages] = useState<ClubMessage[]>([])
+  const [leaderboard, setLeaderboard] = useState<ClubLeaderboardRow[]>([])
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = !!myMembership
@@ -153,6 +149,7 @@ export default function ClubHomePage() {
       setActivities([])
       setEvents([])
       setMessages([])
+      setLeaderboard([])
       setMyRsvps([])
       setEventRsvpCounts({})
       setEventRsvpsByEvent({})
@@ -188,27 +185,31 @@ export default function ClubHomePage() {
         }
       }
 
+      const rsvpResults = await Promise.allSettled(
+        visibleEvents.map((event) => getEventRsvps(event.id))
+      )
       const rsvpCounts: Record<string, number> = {}
       const rsvpMap: Record<string, EventRsvp[]> = {}
-      for (const event of visibleEvents) {
-        try {
-          const eventRsvps = await getEventRsvps(event.id)
-          rsvpMap[event.id] = eventRsvps
-          rsvpCounts[event.id] = eventRsvps.filter((r) => r.status === 'going').length
-        } catch (err) {
-          console.error(`Failed to load RSVPs for event ${event.id}:`, err)
+      rsvpResults.forEach((result, index) => {
+        const event = visibleEvents[index]
+        if (result.status === 'fulfilled') {
+          rsvpMap[event.id] = result.value
+          rsvpCounts[event.id] = result.value.filter((r) => r.status === 'going').length
+        } else {
+          console.error(`Failed to load RSVPs for event ${event.id}:`, result.reason)
           setSectionErrors((prev) => ({ ...prev, rsvps: 'Some session attendance details could not be loaded.' }))
         }
-      }
+      })
       setEventRsvpCounts(rsvpCounts)
       setEventRsvpsByEvent(rsvpMap)
       setIsLoading(false)
 
       setIsSecondaryLoading(true)
-      const [membersResult, matchesResult, activityResult] = await Promise.allSettled([
+      const [membersResult, matchesResult, activityResult, leaderboardResult] = await Promise.allSettled([
         getClubMembers(clubId),
         getClubMatches(clubId),
         getClubActivity(clubId),
+        getClubLeaderboard(clubId, 10),
       ])
 
       if (membersResult.status === 'fulfilled') {
@@ -230,6 +231,13 @@ export default function ClubHomePage() {
       } else {
         console.error('Failed to load activity:', activityResult.reason)
         setSectionErrors((prev) => ({ ...prev, activity: 'Could not load community activity.' }))
+      }
+
+      if (leaderboardResult.status === 'fulfilled') {
+        setLeaderboard(leaderboardResult.value)
+      } else {
+        console.error('Failed to load leaderboard:', leaderboardResult.reason)
+        setSectionErrors((prev) => ({ ...prev, leaderboard: 'Could not load leaderboard.' }))
       }
     } catch (err) {
       setPageError(getErrorMessage(err, 'Failed to load club data'))
@@ -471,39 +479,6 @@ export default function ClubHomePage() {
     }
   }
 
-  const getLeaderboard = (): LeaderboardRow[] => {
-    const stats: Record<string, LeaderboardRow> = {}
-    
-    matches.forEach((match) => {
-      if (!match.score_sets || match.score_sets.length === 0) return
-      
-      let team1Total = 0
-      let team2Total = 0
-      
-      match.score_sets.forEach((set) => {
-        if (set.team1_score > set.team2_score) team1Total += 1
-        else team2Total += 1
-      })
-      
-      const team1Won = team1Total > team2Total
-      
-      match.participants?.forEach((participant: MatchParticipant) => {
-        const name = participant.name || participant.guest_name || 'Unknown'
-        if (!stats[name]) stats[name] = { name, wins: 0, losses: 0, points: 0 }
-        
-        const won = participant.team === 1 ? team1Won : !team1Won
-        if (won) {
-          stats[name].wins += 1
-          stats[name].points += 3
-        } else {
-          stats[name].losses += 1
-        }
-      })
-    })
-    
-    return Object.values(stats).sort((a, b) => b.points - a.points)
-  }
-
   if (isLoading || authLoading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
@@ -514,7 +489,6 @@ export default function ClubHomePage() {
 
   if (pageError || !club) return <Navigate to="/not-found" replace />
 
-  const leaderboard = getLeaderboard()
   const locationQuery = getClubLocationQuery(club)
   const mapUrl = locationQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}` : ''
   const memberCount = members.length || club.membersCount || 0
@@ -818,7 +792,7 @@ export default function ClubHomePage() {
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
             <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
-            {sectionErrors.scores ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Leaderboard is unavailable while scores cannot load.</p> : null}
+            {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
             {leaderboard.length ? (
               <div className="space-y-2">
                 {leaderboard.slice(0, 10).map((player, index) => (
@@ -884,7 +858,7 @@ export default function ClubHomePage() {
               <form className="space-y-4" onSubmit={handleCreateEvent}>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>Event title *</span>
-                  <Input type="text" placeholder="e.g. Wednesday Singles Night" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} required />
+                  <Input type="text" placeholder="e.g. Wednesday Singles Night" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} maxLength={120} required />
                 </label>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>Date & time *</span>
@@ -892,7 +866,7 @@ export default function ClubHomePage() {
                 </label>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>Location</span>
-                  <Input type="text" placeholder="e.g. Court 2" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} />
+                  <Input type="text" placeholder="e.g. Court 2" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} maxLength={200} />
                 </label>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
@@ -901,7 +875,7 @@ export default function ClubHomePage() {
                   </label>
                   <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                     <span>Cost note</span>
-                    <Input type="text" placeholder="Court + shuttle" value={eventCostNote} onChange={(e) => setEventCostNote(e.target.value)} />
+                    <Input type="text" placeholder="Court + shuttle" value={eventCostNote} onChange={(e) => setEventCostNote(e.target.value)} maxLength={200} />
                   </label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -932,11 +906,11 @@ export default function ClubHomePage() {
               <form className="space-y-4" onSubmit={editingMessage ? handleUpdateMessage : handleSendAnnouncement}>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>Title *</span>
-                  <Input type="text" placeholder="e.g. Court changed this Friday" value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} required />
+                  <Input type="text" placeholder="e.g. Court changed this Friday" value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} maxLength={120} required />
                 </label>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
                   <span>Message *</span>
-                  <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} required />
+                  <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} maxLength={1000} required />
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button type="button" variant="secondary" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} disabled={isSendingAnnouncement}>Cancel</Button>

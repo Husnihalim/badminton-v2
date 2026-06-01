@@ -152,7 +152,7 @@ export interface Notification {
   type: 'join_request' | 'join_approved' | 'event_reminder' | 'event_created' | 'rsvp_update' | 'score_recorded' | 'announcement'
   title: string
   message: string
-  data?: Record<string, any>
+  data?: Record<string, unknown>
   read: boolean
   created_at: string
 }

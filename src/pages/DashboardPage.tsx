@@ -49,17 +49,23 @@ export default function DashboardPage() {
       
       const allEvents: DashboardEvent[] = []
       const allMatches: DashboardMatch[] = []
-      let pendingAdminRequests = 0
-      
-      for (const club of myClubs) {
-        try {
+      const clubResults = await Promise.allSettled(
+        myClubs.map(async (club) => {
           const isClubAdmin = club.role === 'owner' || club.role === 'admin' || user?.role === 'superadmin'
           const [clubEvents, clubMatches, joinRequests] = await Promise.all([
             getClubEvents(club.id),
             getClubMatches(club.id),
             isClubAdmin ? getClubJoinRequests(club.id) : Promise.resolve([]),
           ])
-          
+
+          return { club, clubEvents, clubMatches, joinRequests }
+        })
+      )
+
+      let pendingAdminRequests = 0
+      clubResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          const { club, clubEvents, clubMatches, joinRequests } = result.value
           const now = Date.now()
           allEvents.push(
             ...clubEvents
@@ -68,10 +74,10 @@ export default function DashboardPage() {
           )
           allMatches.push(...clubMatches.map(m => ({ ...m, clubName: club.name })))
           pendingAdminRequests += joinRequests.filter((request) => request.status === 'pending').length
-        } catch (clubErr) {
-          console.error(`Error loading data for club ${club.id}:`, clubErr)
+        } else {
+          console.error(`Error loading data for club ${myClubs[index]?.id}:`, result.reason)
         }
-      }
+      })
       
       // Sort events by date (upcoming first)
       allEvents.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
@@ -87,10 +93,15 @@ export default function DashboardPage() {
       const myEventRsvps = await getMyEventRsvps()
       setMyRsvps(myEventRsvps)
 
+      const eventRsvpResults = await Promise.allSettled(
+        visibleEvents.map((event) => getEventRsvps(event.id))
+      )
       const eventRsvpMap: Record<string, EventRsvp[]> = {}
-      for (const event of visibleEvents) {
-        eventRsvpMap[event.id] = await getEventRsvps(event.id)
-      }
+      eventRsvpResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          eventRsvpMap[visibleEvents[index].id] = result.value
+        }
+      })
       setEventRsvpsByEvent(eventRsvpMap)
     } catch (err) {
       console.error('Error loading dashboard data:', err)
