@@ -15,6 +15,12 @@ type DashboardClub = Club & { role?: string }
 type DashboardEvent = ClubEvent & { clubName?: string }
 type DashboardMatch = MatchWithDetails & { clubName?: string }
 
+function formatEventCost(event: DashboardEvent) {
+  if (event.cost_amount == null && !event.cost_note) return null
+  const amount = event.cost_amount != null ? `RM ${Number(event.cost_amount).toFixed(2)}` : null
+  return [amount, event.cost_note].filter(Boolean).join(' · ')
+}
+
 export default function DashboardPage() {
   const [showScoreModal, setShowScoreModal] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
@@ -216,6 +222,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-slate-500">{event.clubName}</p>
                     <p className="text-sm text-slate-700">{new Date(event.event_date).toLocaleString()}</p>
                     <p className="text-sm text-slate-600">{event.location}</p>
+                    {formatEventCost(event) ? <p className="text-sm font-semibold text-slate-800">{formatEventCost(event)}</p> : null}
                     <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
                       {event.signup_open ? 'Open for signup' : 'Closed'}
                     </Badge>

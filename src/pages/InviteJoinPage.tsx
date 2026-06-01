@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader } from '../components/ui/card'
 
 const pendingInviteKey = 'kelabsukan.pendingInviteCode'
+const postLoginRedirectKey = 'kelabsukan.postLoginRedirect'
 
 function getInviteRedirect(inviteCode: string) {
   return `/join/${encodeURIComponent(inviteCode)}`
@@ -25,6 +26,7 @@ export default function InviteJoinPage() {
 
     if (!isLoading && !user) {
       window.localStorage.setItem(pendingInviteKey, normalizedCode)
+      window.localStorage.setItem(postLoginRedirectKey, getInviteRedirect(normalizedCode))
     }
   }, [normalizedCode, isLoading, user])
 
@@ -36,6 +38,7 @@ export default function InviteJoinPage() {
         setStatus('joining')
         await joinClubByInviteCode(normalizedCode)
         window.localStorage.removeItem(pendingInviteKey)
+        window.localStorage.removeItem(postLoginRedirectKey)
         setStatus('joined')
         setMessage('You joined the club from the invite link.')
         setTimeout(() => navigate('/dashboard'), 1200)

@@ -7,7 +7,7 @@ type AuthContextType = {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
-  register: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>
+  register: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }>
   refreshUser: () => Promise<User | null>
   logout: () => Promise<void>
 }
@@ -175,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     name: string,
     password: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase()
     const role = getRoleForUser(normalizedEmail, name)
 
@@ -198,9 +198,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Profile is created automatically by the database trigger
-    // Wait a moment for the trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 500))
+    if (!data.session) {
+      return { success: true, emailVerificationRequired: true }
+    }
     
     const userProfile: User = {
       id: data.user.id,

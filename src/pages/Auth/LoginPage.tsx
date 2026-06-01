@@ -15,7 +15,7 @@ export default function LoginPage() {
   const { user, isLoading, login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const redirectTo = getSafeRedirect(searchParams.get('redirect'))
+  const redirectTo = getSafeRedirect(searchParams.get('redirect') || window.localStorage.getItem('kelabsukan.postLoginRedirect'))
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -55,6 +55,7 @@ export default function LoginPage() {
         return
       }
 
+      window.localStorage.removeItem('kelabsukan.postLoginRedirect')
       navigate(redirectTo)
     } finally {
       setIsSubmitting(false)

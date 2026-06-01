@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const { user, register } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -43,6 +44,16 @@ export default function RegisterPage() {
       setError(result.error || 'Could not create account. Please try again.')
       return
     }
+    if (result.emailVerificationRequired) {
+      window.localStorage.setItem('kelabsukan.postLoginRedirect', redirectTo)
+      setSuccessMessage(
+        redirectTo.startsWith('/join/')
+          ? 'Account created. Please verify your email, then log in. We will finish joining the club from your invite link.'
+          : 'Account created. Please verify your email, then log in to continue.'
+      )
+      setError('')
+      return
+    }
     navigate(redirectTo)
   }
 
@@ -61,6 +72,14 @@ export default function RegisterPage() {
             {(error || !isSupabaseConfigured) && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {error || 'Supabase is not configured for this environment yet.'}
+              </div>
+            )}
+            {successMessage && (
+              <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
+                <p>{successMessage}</p>
+                <Link className="inline-flex font-semibold text-emerald-900" to={`/login?redirect=${encodeURIComponent(redirectTo)}`}>
+                  Go to login
+                </Link>
               </div>
             )}
 

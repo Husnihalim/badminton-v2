@@ -6,7 +6,10 @@ import {
   CalendarDays,
   Check,
   ClipboardPenLine,
+  DollarSign,
+  ExternalLink,
   MapPin,
+  Megaphone,
   Settings,
   ShieldCheck,
   Trophy,
@@ -19,6 +22,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   approveJoinRequest,
   buildInviteUrl,
+  createClubAnnouncement,
   createEvent,
   getClub,
   getClubActivity,
@@ -39,6 +43,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
+import { Textarea } from '../components/ui/textarea'
 
 type LeaderboardRow = {
   name: string
@@ -58,6 +63,16 @@ function activityIcon(type: ClubActivity['type']) {
   return <Activity size={17} aria-hidden="true" />
 }
 
+function formatEventCost(event: ClubEvent) {
+  if (event.cost_amount == null && !event.cost_note) return null
+  const amount = event.cost_amount != null ? `RM ${Number(event.cost_amount).toFixed(2)}` : null
+  return [amount, event.cost_note].filter(Boolean).join(' · ')
+}
+
+function getClubMapQuery(club: Club) {
+  return [club.location, club.city].filter(Boolean).join(', ')
+}
+
 export default function ClubHomePage() {
   const { clubId } = useParams()
   const navigate = useNavigate()
@@ -69,17 +84,24 @@ export default function ClubHomePage() {
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [myMembership, setMyMembership] = useState<Membership | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [pageError, setPageError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   const [showEventModal, setShowEventModal] = useState(false)
   const [showScoreModal, setShowScoreModal] = useState(false)
   const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false)
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   
   const [eventTitle, setEventTitle] = useState('')
   const [eventDate, setEventDate] = useState('')
   const [eventLocation, setEventLocation] = useState('')
+  const [eventCostAmount, setEventCostAmount] = useState('')
+  const [eventCostNote, setEventCostNote] = useState('')
   const [isCreatingEvent, setIsCreatingEvent] = useState(false)
+  const [announcementTitle, setAnnouncementTitle] = useState('')
+  const [announcementMessage, setAnnouncementMessage] = useState('')
+  const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false)
 
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
   const [isLoadingRequests, setIsLoadingRequests] = useState(false)
@@ -97,7 +119,8 @@ export default function ClubHomePage() {
     
     try {
       setIsLoading(true)
-      setError('')
+      setPageError('')
+      setActionError('')
       
       const [clubData, membersData, eventsData, matchesData, membershipData] = await Promise.all([
         getClub(clubId),
@@ -108,7 +131,7 @@ export default function ClubHomePage() {
       ])
 
       if (!clubData) {
-        setError('Club not found')
+        setPageError('Club not found')
         return
       }
 
@@ -133,7 +156,7 @@ export default function ClubHomePage() {
       const activityData = await getClubActivity(clubId)
       setActivities(activityData)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to load club data'))
+      setPageError(getErrorMessage(err, 'Failed to load club data'))
     } finally {
       setIsLoading(false)
     }
@@ -157,20 +180,44 @@ export default function ClubHomePage() {
         title: eventTitle,
         event_date: new Date(eventDate).toISOString(),
         location: eventLocation,
+        cost_amount: eventCostAmount ? Number(eventCostAmount) : null,
+        cost_note: eventCostNote.trim() || null,
         signup_open: true,
       })
       
       setEventTitle('')
       setEventDate('')
       setEventLocation('')
+      setEventCostAmount('')
+      setEventCostNote('')
       setShowEventModal(false)
       await loadClubData()
       setSuccessMessage('Event created.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to create event'))
+      setActionError(getErrorMessage(err, 'Failed to create event'))
     } finally {
       setIsCreatingEvent(false)
+    }
+  }
+
+  const handleSendAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!clubId || !announcementTitle.trim() || !announcementMessage.trim()) return
+
+    try {
+      setIsSendingAnnouncement(true)
+      await createClubAnnouncement(clubId, announcementTitle.trim(), announcementMessage.trim())
+      setAnnouncementTitle('')
+      setAnnouncementMessage('')
+      setShowAnnouncementModal(false)
+      await loadClubData()
+      setSuccessMessage('Announcement sent to members.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Failed to send announcement'))
+    } finally {
+      setIsSendingAnnouncement(false)
     }
   }
 
@@ -179,11 +226,12 @@ export default function ClubHomePage() {
 
     try {
       await requestJoinClub(clubId)
-      setSuccessMessage('Join request sent. Waiting for admin approval.')
+      setActionError('')
+      setSuccessMessage('Join request sent. A club admin will review it and you will be notified after approval.')
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadClubData()
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to join club'))
+      setActionError(getErrorMessage(err, 'Failed to send join request. Please try again.'))
     }
   }
 
@@ -211,7 +259,7 @@ export default function ClubHomePage() {
         [eventId]: eventRsvps.filter((r) => r.status === 'going').length
       }))
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to RSVP'))
+      setActionError(getErrorMessage(err, 'Failed to RSVP'))
     }
   }
 
@@ -237,7 +285,7 @@ export default function ClubHomePage() {
       await loadJoinRequests()
       await loadClubData()
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to approve request'))
+      setActionError(getErrorMessage(err, 'Failed to approve request'))
     }
   }
 
@@ -248,7 +296,7 @@ export default function ClubHomePage() {
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadJoinRequests()
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to reject request'))
+      setActionError(getErrorMessage(err, 'Failed to reject request'))
     }
   }
 
@@ -293,13 +341,21 @@ export default function ClubHomePage() {
     )
   }
 
-  if (error || !club) return <Navigate to="/not-found" replace />
+  if (pageError || !club) return <Navigate to="/not-found" replace />
 
   const leaderboard = getLeaderboard()
+  const mapQuery = getClubMapQuery(club)
+  const mapUrl = mapQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}` : ''
+  const mapEmbedUrl = mapQuery ? `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed` : ''
 
   return (
     <Page>
       {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
+      {actionError ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {actionError}
+        </div>
+      ) : null}
 
       <PageHeader
         eyebrow="Club"
@@ -340,6 +396,32 @@ export default function ClubHomePage() {
         </CardContent>
       </Card>
 
+      {mapQuery ? (
+        <Card>
+          <CardContent className="space-y-3 pt-4 sm:pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-slate-950">Base location</h2>
+                <p className="text-sm leading-6 text-slate-600">{mapQuery}</p>
+              </div>
+              <a className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50" href={mapUrl} target="_blank" rel="noreferrer">
+                <ExternalLink size={16} aria-hidden="true" />
+                Map
+              </a>
+            </div>
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+              <iframe
+                title={`${club.name} base location map`}
+                src={mapEmbedUrl}
+                className="h-56 w-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {isAdmin ? (
         <Card className="border-blue-200 bg-blue-50/60">
           <CardContent className="space-y-3 pt-4 sm:pt-5">
@@ -359,6 +441,10 @@ export default function ClubHomePage() {
               <Button variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
                 <UserPlus size={17} aria-hidden="true" />
                 Copy invite
+              </Button>
+              <Button variant="secondary" onClick={() => setShowAnnouncementModal(true)}>
+                <Megaphone size={17} aria-hidden="true" />
+                Notify
               </Button>
               <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
                 <UserPlus size={17} aria-hidden="true" />
@@ -394,6 +480,12 @@ export default function ClubHomePage() {
                         <h3 className="font-bold text-slate-950">{event.title}</h3>
                         <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
                         {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
+                        {formatEventCost(event) ? (
+                          <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
+                            <DollarSign size={15} aria-hidden="true" />
+                            {formatEventCost(event)}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
@@ -553,9 +645,51 @@ export default function ClubHomePage() {
                   <span>Location</span>
                   <Input type="text" placeholder="e.g. Court 2" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} />
                 </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Cost per member (RM)</span>
+                    <Input type="number" min="0" step="0.01" placeholder="15.00" value={eventCostAmount} onChange={(e) => setEventCostAmount(e.target.value)} />
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Cost note</span>
+                    <Input type="text" placeholder="Court + shuttle" value={eventCostNote} onChange={(e) => setEventCostNote(e.target.value)} />
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Button type="button" variant="secondary" onClick={() => setShowEventModal(false)} disabled={isCreatingEvent}>Cancel</Button>
                   <Button type="submit" disabled={isCreatingEvent}>{isCreatingEvent ? 'Creating...' : 'Create event'}</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      {showAnnouncementModal && isAdmin ? (
+        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowAnnouncementModal(false)}>
+          <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
+            <CardContent className="space-y-4 pt-4 sm:pt-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-950">Notify members</h2>
+                  <p className="text-sm text-slate-600">Send news or updates to all active club members.</p>
+                </div>
+                <Button type="button" variant="ghost" size="icon" onClick={() => setShowAnnouncementModal(false)} aria-label="Close">
+                  <X size={18} aria-hidden="true" />
+                </Button>
+              </div>
+              <form className="space-y-4" onSubmit={handleSendAnnouncement}>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Title *</span>
+                  <Input type="text" placeholder="e.g. Court changed this Friday" value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} required />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Message *</span>
+                  <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} required />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="secondary" onClick={() => setShowAnnouncementModal(false)} disabled={isSendingAnnouncement}>Cancel</Button>
+                  <Button type="submit" disabled={isSendingAnnouncement}>{isSendingAnnouncement ? 'Sending...' : 'Send'}</Button>
                 </div>
               </form>
             </CardContent>

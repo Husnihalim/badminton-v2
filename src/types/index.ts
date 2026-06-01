@@ -66,6 +66,8 @@ export interface ClubEvent {
   title: string
   event_date: string
   location: string | null
+  cost_amount?: number | null
+  cost_note?: string | null
   max_participants: number | null
   signup_open: boolean
   created_by: string
@@ -146,7 +148,7 @@ export interface EventRsvp {
 export interface Notification {
   id: string
   user_id: string
-  type: 'join_request' | 'join_approved' | 'event_reminder' | 'score_recorded' | 'announcement'
+  type: 'join_request' | 'join_approved' | 'event_reminder' | 'event_created' | 'rsvp_update' | 'score_recorded' | 'announcement'
   title: string
   message: string
   data?: Record<string, any>
@@ -157,7 +159,7 @@ export interface Notification {
 export interface ClubActivity {
   id: string
   club_id: string
-  type: 'match_recorded' | 'member_joined' | 'event_created' | 'announcement'
+  type: 'match_recorded' | 'member_joined' | 'event_created' | 'rsvp_update' | 'announcement'
   title: string
   description: string
   actor_name: string

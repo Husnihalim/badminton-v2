@@ -357,7 +357,21 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
     }
   }
 
-  return match as Match
+  const createdMatch = match as Match
+  notifyClubMembers({
+    clubId: data.club_id,
+    type: 'score_recorded',
+    title: 'New match score recorded',
+    message: `${createdMatch.title || `${createdMatch.sport} match`} score was added.`,
+    data: { clubId: data.club_id, matchId: createdMatch.id },
+    activityTitle: 'New match score recorded',
+    activityDescription: `${createdMatch.title || `${createdMatch.sport} match`} score was added.`,
+    actorFallback: 'Club member',
+  }).catch((notificationError) => {
+    console.error('Error sending score notifications:', notificationError)
+  })
+
+  return createdMatch
 }
 
 export async function getClubMatches(clubId: string): Promise<(Match & { 
@@ -431,6 +445,8 @@ export async function createEvent(event: {
   title: string
   event_date: string
   location?: string
+  cost_amount?: number | null
+  cost_note?: string | null
   max_participants?: number
   signup_open?: boolean
 }): Promise<ClubEvent | null> {
@@ -454,7 +470,21 @@ export async function createEvent(event: {
     throw error
   }
 
-  return data as ClubEvent
+  const createdEvent = data as ClubEvent
+  notifyClubMembers({
+    clubId: event.club_id,
+    type: 'event_created',
+    title: 'New game session scheduled',
+    message: `${createdEvent.title} is scheduled for ${new Date(createdEvent.event_date).toLocaleString()}.`,
+    data: { clubId: event.club_id, eventId: createdEvent.id },
+    activityTitle: 'New game session scheduled',
+    activityDescription: `${createdEvent.title} was added to the club schedule.`,
+    actorFallback: 'Club admin',
+  }).catch((notificationError) => {
+    console.error('Error sending event notifications:', notificationError)
+  })
+
+  return createdEvent
 }
 
 // ============================================
@@ -482,6 +512,10 @@ export async function rsvpToEvent(eventId: string, status: 'going' | 'maybe' | '
     console.error('Error creating RSVP:', error)
     throw error
   }
+
+  notifyEventRsvpUpdate(eventId, status).catch((notificationError) => {
+    console.error('Error sending RSVP notifications:', notificationError)
+  })
 
   return data as EventRsvp
 }
@@ -727,6 +761,111 @@ export async function markAllNotificationsRead(): Promise<void> {
     console.error('Error marking all notifications read:', error)
     throw error
   }
+}
+
+type ClubNotificationInput = {
+  clubId: string
+  type: Notification['type']
+  title: string
+  message: string
+  data?: Record<string, unknown>
+  activityTitle?: string
+  activityDescription?: string
+  actorFallback?: string
+}
+
+async function getCurrentProfileName(fallback = 'Club member'): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return fallback
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('display_name, name')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const profile = data as { display_name?: string | null; name?: string | null } | null
+  return profile?.display_name || profile?.name || fallback
+}
+
+async function notifyClubMembers(input: ClubNotificationInput): Promise<void> {
+  const { data: members, error } = await supabase
+    .from('memberships')
+    .select('user_id')
+    .eq('club_id', input.clubId)
+    .eq('status', 'active')
+
+  if (error) throw error
+
+  const notifications = ((members || []) as { user_id: string }[]).map((member) => ({
+    user_id: member.user_id,
+    type: input.type,
+    title: input.title,
+    message: input.message,
+    data: input.data || {},
+    read: false,
+  }))
+
+  if (notifications.length) {
+    const { error: notificationError } = await supabase
+      .from('notifications')
+      .insert(notifications as any)
+
+    if (notificationError) throw notificationError
+  }
+
+  if (input.activityTitle && input.activityDescription) {
+    const actorName = await getCurrentProfileName(input.actorFallback)
+    const { error: activityError } = await supabase
+      .from('club_activities')
+      .insert({
+        club_id: input.clubId,
+        type: input.type === 'event_created' || input.type === 'rsvp_update' ? input.type : 'announcement',
+        title: input.activityTitle,
+        description: input.activityDescription,
+        actor_name: actorName,
+      } as any)
+
+    if (activityError) throw activityError
+  }
+}
+
+async function notifyEventRsvpUpdate(eventId: string, status: 'going' | 'maybe' | 'not_going'): Promise<void> {
+  const { data: event } = await supabase
+    .from('events')
+    .select('id, club_id, title')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  const eventRow = event as { id: string; club_id: string; title: string } | null
+  if (!eventRow) return
+
+  const actorName = await getCurrentProfileName('A member')
+  const readableStatus = status === 'not_going' ? 'not going' : status
+
+  await notifyClubMembers({
+    clubId: eventRow.club_id,
+    type: 'rsvp_update',
+    title: 'Session RSVP updated',
+    message: `${actorName} is ${readableStatus} for ${eventRow.title}.`,
+    data: { clubId: eventRow.club_id, eventId: eventRow.id },
+    activityTitle: 'Session RSVP updated',
+    activityDescription: `${actorName} is ${readableStatus} for ${eventRow.title}.`,
+    actorFallback: actorName,
+  })
+}
+
+export async function createClubAnnouncement(clubId: string, title: string, message: string): Promise<void> {
+  await notifyClubMembers({
+    clubId,
+    type: 'announcement',
+    title,
+    message,
+    data: { clubId },
+    activityTitle: title,
+    activityDescription: message,
+    actorFallback: 'Club admin',
+  })
 }
 
 // ============================================
