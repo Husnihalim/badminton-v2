@@ -32,6 +32,7 @@ function App() {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/invite/:inviteToken" element={<InviteJoinPage />} />
                 <Route path="/join/:inviteCode" element={<InviteJoinPage />} />
                 <Route path="/club/:clubId" element={<ClubHomePage />} />
                 <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />

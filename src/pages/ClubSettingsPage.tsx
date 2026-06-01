@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { buildInviteUrl, getClub, getMyMembership, regenerateInviteCode, updateClub } from '../lib/api'
+import { buildInviteUrl, getClub, getMyMembership, regenerateInviteLink, updateClub } from '../lib/api'
 import type { Club, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -33,7 +33,7 @@ export default function ClubSettingsPage() {
   const [city, setCity] = useState('')
   const [openJoin, setOpenJoin] = useState(true)
   const [approvalRequired, setApprovalRequired] = useState(true)
-  const [inviteCode, setInviteCode] = useState('')
+  const [inviteToken, setInviteToken] = useState('')
 
   const loadClubData = useCallback(async () => {
     if (!clubId) return
@@ -60,7 +60,7 @@ export default function ClubSettingsPage() {
       setCity(clubData.city || '')
       setOpenJoin(clubData.open_join !== false)
       setApprovalRequired(clubData.approval_required || false)
-      setInviteCode(clubData.invite_code || '')
+      setInviteToken(clubData.invite_code || '')
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to load club data'))
     } finally {
@@ -101,22 +101,22 @@ export default function ClubSettingsPage() {
     }
   }
 
-  const inviteUrl = inviteCode ? buildInviteUrl(inviteCode) : ''
+  const inviteUrl = inviteToken ? buildInviteUrl(inviteToken) : ''
 
-  const handleRegenerateCode = async () => {
+  const handleRegenerateInviteLink = async () => {
     if (!clubId) return
     
     try {
-      const newCode = await regenerateInviteCode(clubId)
-      setInviteCode(newCode || '')
+      const newToken = await regenerateInviteLink(clubId)
+      setInviteToken(newToken || '')
       setSuccessMessage('New invite link generated.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to generate new code'))
+      setError(getErrorMessage(err, 'Failed to generate new invite link'))
     }
   }
 
-  const handleCopyCode = async () => {
+  const handleCopyInviteLink = async () => {
     await navigator.clipboard.writeText(inviteUrl)
     setSuccessMessage('Invite link copied.')
     setTimeout(() => setSuccessMessage(''), 3000)
@@ -216,13 +216,13 @@ export default function ClubSettingsPage() {
                 </div>
                 <Input value={inviteUrl} readOnly className="font-mono text-sm" />
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="secondary" onClick={handleCopyCode} disabled={!inviteUrl}>
+                  <Button type="button" variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
                     <Copy size={17} aria-hidden="true" />
                     Copy link
                   </Button>
-                  <Button type="button" variant="secondary" onClick={handleRegenerateCode}>
+                  <Button type="button" variant="secondary" onClick={handleRegenerateInviteLink}>
                     <RefreshCw size={17} aria-hidden="true" />
-                    New
+                    Refresh link
                   </Button>
                 </div>
               </CardContent>

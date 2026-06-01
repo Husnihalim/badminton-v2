@@ -1,42 +1,42 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, LogIn, UserPlus } from 'lucide-react'
-import { joinClubByInviteCode } from '../lib/api'
+import { joinClubByInviteLinkToken } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader } from '../components/ui/card'
 
-const pendingInviteKey = 'kelabsukan.pendingInviteCode'
+const pendingInviteKey = 'kelabsukan.pendingInviteLinkToken'
 const postLoginRedirectKey = 'kelabsukan.postLoginRedirect'
 
-function getInviteRedirect(inviteCode: string) {
-  return `/join/${encodeURIComponent(inviteCode)}`
+function getInviteRedirect(inviteToken: string) {
+  return `/invite/${encodeURIComponent(inviteToken)}`
 }
 
 export default function InviteJoinPage() {
-  const { inviteCode = '' } = useParams()
-  const normalizedCode = inviteCode.trim().toUpperCase()
+  const { inviteToken = '', inviteCode = '' } = useParams()
+  const normalizedInviteToken = (inviteToken || inviteCode).trim().toUpperCase()
   const { user, isLoading } = useAuth()
   const navigate = useNavigate()
   const [status, setStatus] = useState<'idle' | 'joining' | 'joined' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    if (!normalizedCode) return
+    if (!normalizedInviteToken) return
 
     if (!isLoading && !user) {
-      window.localStorage.setItem(pendingInviteKey, normalizedCode)
-      window.localStorage.setItem(postLoginRedirectKey, getInviteRedirect(normalizedCode))
+      window.localStorage.setItem(pendingInviteKey, normalizedInviteToken)
+      window.localStorage.setItem(postLoginRedirectKey, getInviteRedirect(normalizedInviteToken))
     }
-  }, [normalizedCode, isLoading, user])
+  }, [normalizedInviteToken, isLoading, user])
 
   useEffect(() => {
-    if (isLoading || !user || !normalizedCode || status !== 'idle') return
+    if (isLoading || !user || !normalizedInviteToken || status !== 'idle') return
 
     const joinByInvite = async () => {
       try {
         setStatus('joining')
-        await joinClubByInviteCode(normalizedCode)
+        await joinClubByInviteLinkToken(normalizedInviteToken)
         window.localStorage.removeItem(pendingInviteKey)
         window.localStorage.removeItem(postLoginRedirectKey)
         setStatus('joined')
@@ -49,9 +49,9 @@ export default function InviteJoinPage() {
     }
 
     joinByInvite()
-  }, [isLoading, user, normalizedCode, navigate, status])
+  }, [isLoading, user, normalizedInviteToken, navigate, status])
 
-  const redirect = getInviteRedirect(normalizedCode)
+  const redirect = getInviteRedirect(normalizedInviteToken)
   const authQuery = `?redirect=${encodeURIComponent(redirect)}`
 
   if (isLoading || status === 'joining') {

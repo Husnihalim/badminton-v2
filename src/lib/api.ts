@@ -631,7 +631,7 @@ export async function updateClub(clubId: string, updates: {
   return data as Club
 }
 
-export async function joinClubByInviteCode(inviteCode: string): Promise<Membership | null> {
+export async function joinClubByInviteLinkToken(inviteToken: string): Promise<Membership | null> {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -639,39 +639,39 @@ export async function joinClubByInviteCode(inviteCode: string): Promise<Membersh
   }
 
   const { data, error } = await supabase.rpc('join_club_by_invite_code', {
-    invite_code_input: inviteCode,
+    invite_code_input: inviteToken,
   })
 
   if (error) {
-    console.error('Error joining club by invite code:', error)
+    console.error('Error joining club by invite link:', error)
     throw error
   }
 
   return data as Membership
 }
 
-export function buildInvitePath(inviteCode: string): string {
-  return `/join/${encodeURIComponent(inviteCode.trim().toUpperCase())}`
+export function buildInvitePath(inviteToken: string): string {
+  return `/invite/${encodeURIComponent(inviteToken.trim().toUpperCase())}`
 }
 
-export function buildInviteUrl(inviteCode: string): string {
-  const path = buildInvitePath(inviteCode)
+export function buildInviteUrl(inviteToken: string): string {
+  const path = buildInvitePath(inviteToken)
   if (typeof window === 'undefined') return path
   return `${window.location.origin}${path}`
 }
 
-export async function regenerateInviteCode(clubId: string): Promise<string | null> {
-  const newCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+export async function regenerateInviteLink(clubId: string): Promise<string | null> {
+  const newToken = Math.random().toString(36).substring(2, 10).toUpperCase()
   
   const { data, error } = await supabase
     .from('clubs')
-    .update({ invite_code: newCode } as any)
+    .update({ invite_code: newToken } as any)
     .eq('id', clubId)
     .select('invite_code')
     .single()
 
   if (error) {
-    console.error('Error regenerating invite code:', error)
+    console.error('Error regenerating invite link:', error)
     throw error
   }
 
