@@ -56,10 +56,11 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run badminton clubs, events, scores, and members/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /run racket clubs, sessions, scores, and members/i })).toBeInTheDocument()
       })
       
       expect(screen.getAllByRole('link', { name: /get started/i }).length).toBeGreaterThan(0)
+      expect(screen.queryByText(/mobile-first club operations/i)).not.toBeInTheDocument()
     })
 
     it('shows trust indicators', async () => {
@@ -140,7 +141,7 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run badminton clubs, events, scores, and members/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /run racket clubs, sessions, scores, and members/i })).toBeInTheDocument()
       })
 
       const loginLinks = screen.getAllByRole('link', { name: /log in/i })

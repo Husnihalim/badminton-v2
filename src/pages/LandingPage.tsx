@@ -7,7 +7,9 @@ import type { Club } from '../types'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Page } from '../components/ui/page'
-import heroImage from '../assets/hero.png'
+import heroBadminton from '../assets/hero-badminton.webp'
+import heroPickleball from '../assets/hero-pickleball.webp'
+import heroTennis from '../assets/hero-tennis.webp'
 
 export default function LandingPage() {
   const [clubs, setClubs] = useState<Club[]>([])
@@ -34,17 +36,14 @@ export default function LandingPage() {
 
   return (
     <Page>
-      <section className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-7 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <div className="space-y-5">
+      <section className="landing-hero">
+        <div className="landing-hero-copy">
           <div className="space-y-3">
-            <p className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
-              Mobile-first club operations
-            </p>
-            <h1 className="text-3xl font-bold leading-tight text-slate-950 sm:text-4xl">
-              Run badminton clubs, events, scores, and members from one clean workspace.
+            <h1 className="landing-hero-title">
+              Run racket clubs, sessions, scores, and members in one place.
             </h1>
-            <p className="max-w-2xl text-base leading-7 text-slate-600">
-              Create clubs, record singles or doubles results, manage game days, and keep members aligned without messy spreadsheets.
+            <p className="landing-hero-text">
+              Create clubs, schedule game days, record singles or doubles results, and keep members aligned without messy spreadsheets.
             </p>
           </div>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
@@ -61,8 +60,18 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-          <img className="mx-auto max-h-56 object-contain" src={heroImage} alt="KelabSukan app layers" />
+        <div className="racket-hero-collage" aria-label="Racket sports club action">
+          <img className="racket-hero-image racket-hero-image-main" src={heroBadminton} alt="Badminton player lunging for a shuttle" />
+          <img className="racket-hero-image racket-hero-image-side" src={heroTennis} alt="Tennis player hitting a forehand" />
+          <img className="racket-hero-image racket-hero-image-small" src={heroPickleball} alt="Pickleball player reaching near the net" />
+          <div className="racket-hero-stat racket-hero-stat-top">
+            <strong>RSVPs</strong>
+            <span>Live session status</span>
+          </div>
+          <div className="racket-hero-stat racket-hero-stat-bottom">
+            <strong>Scores</strong>
+            <span>Singles + doubles</span>
+          </div>
         </div>
       </section>
 
