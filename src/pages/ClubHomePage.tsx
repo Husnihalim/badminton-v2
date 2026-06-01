@@ -74,7 +74,7 @@ function formatEventCost(event: ClubEvent) {
   return [amount, event.cost_note].filter(Boolean).join(' · ')
 }
 
-function getClubMapQuery(club: Club) {
+function getClubLocationQuery(club: Club) {
   return [club.location, club.city].filter(Boolean).join(', ')
 }
 
@@ -103,8 +103,10 @@ export default function ClubHomePage() {
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [myMembership, setMyMembership] = useState<Membership | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSecondaryLoading, setIsSecondaryLoading] = useState(false)
   const [pageError, setPageError] = useState('')
   const [actionError, setActionError] = useState('')
+  const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({})
   const [successMessage, setSuccessMessage] = useState('')
 
   const [showEventModal, setShowEventModal] = useState(false)
@@ -142,14 +144,22 @@ export default function ClubHomePage() {
     
     try {
       setIsLoading(true)
+      setIsSecondaryLoading(false)
       setPageError('')
       setActionError('')
+      setSectionErrors({})
+      setMembers([])
+      setMatches([])
+      setActivities([])
+      setEvents([])
+      setMessages([])
+      setMyRsvps([])
+      setEventRsvpCounts({})
+      setEventRsvpsByEvent({})
       
-      const [clubData, membersData, eventsData, matchesData, membershipData, messageData] = await Promise.all([
+      const [clubData, eventsData, membershipData, messageData] = await Promise.all([
         getClub(clubId),
-        getClubMembers(clubId),
         getClubEvents(clubId),
-        getClubMatches(clubId),
         user ? getMyMembership(clubId) : Promise.resolve(null),
         getClubMessages(clubId),
       ])
@@ -160,33 +170,72 @@ export default function ClubHomePage() {
       }
 
       setClub(clubData)
-      setMembers(membersData)
-      setEvents(eventsData)
-      setMatches(matchesData)
+      const visibleEvents = [...eventsData]
+        .filter((event) => new Date(event.event_date).getTime() >= Date.now())
+        .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
+        .slice(0, 5)
+      setEvents(visibleEvents)
       setMyMembership(membershipData)
-      setMessages(messageData)
+      setMessages(messageData.slice(0, 6))
 
       if (user) {
-        const rsvps = await getMyEventRsvps()
-        setMyRsvps(rsvps)
+        try {
+          const rsvps = await getMyEventRsvps()
+          setMyRsvps(rsvps)
+        } catch (err) {
+          console.error('Failed to load my RSVPs:', err)
+          setSectionErrors((prev) => ({ ...prev, rsvps: 'Could not load your session responses.' }))
+        }
       }
 
       const rsvpCounts: Record<string, number> = {}
       const rsvpMap: Record<string, EventRsvp[]> = {}
-      for (const event of eventsData) {
-        const eventRsvps = await getEventRsvps(event.id)
-        rsvpMap[event.id] = eventRsvps
-        rsvpCounts[event.id] = eventRsvps.filter((r) => r.status === 'going').length
+      for (const event of visibleEvents) {
+        try {
+          const eventRsvps = await getEventRsvps(event.id)
+          rsvpMap[event.id] = eventRsvps
+          rsvpCounts[event.id] = eventRsvps.filter((r) => r.status === 'going').length
+        } catch (err) {
+          console.error(`Failed to load RSVPs for event ${event.id}:`, err)
+          setSectionErrors((prev) => ({ ...prev, rsvps: 'Some session attendance details could not be loaded.' }))
+        }
       }
       setEventRsvpCounts(rsvpCounts)
       setEventRsvpsByEvent(rsvpMap)
+      setIsLoading(false)
 
-      const activityData = await getClubActivity(clubId)
-      setActivities(activityData)
+      setIsSecondaryLoading(true)
+      const [membersResult, matchesResult, activityResult] = await Promise.allSettled([
+        getClubMembers(clubId),
+        getClubMatches(clubId),
+        getClubActivity(clubId),
+      ])
+
+      if (membersResult.status === 'fulfilled') {
+        setMembers(membersResult.value)
+      } else {
+        console.error('Failed to load members:', membersResult.reason)
+        setSectionErrors((prev) => ({ ...prev, members: 'Could not load member preview.' }))
+      }
+
+      if (matchesResult.status === 'fulfilled') {
+        setMatches(matchesResult.value.slice(0, 10))
+      } else {
+        console.error('Failed to load scores:', matchesResult.reason)
+        setSectionErrors((prev) => ({ ...prev, scores: 'Could not load recent scores.' }))
+      }
+
+      if (activityResult.status === 'fulfilled') {
+        setActivities(activityResult.value.slice(0, 8))
+      } else {
+        console.error('Failed to load activity:', activityResult.reason)
+        setSectionErrors((prev) => ({ ...prev, activity: 'Could not load community activity.' }))
+      }
     } catch (err) {
       setPageError(getErrorMessage(err, 'Failed to load club data'))
     } finally {
       setIsLoading(false)
+      setIsSecondaryLoading(false)
     }
   }, [clubId, user])
 
@@ -466,9 +515,9 @@ export default function ClubHomePage() {
   if (pageError || !club) return <Navigate to="/not-found" replace />
 
   const leaderboard = getLeaderboard()
-  const mapQuery = getClubMapQuery(club)
-  const mapUrl = mapQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}` : ''
-  const mapEmbedUrl = mapQuery ? `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed` : ''
+  const locationQuery = getClubLocationQuery(club)
+  const mapUrl = locationQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}` : ''
+  const memberCount = members.length || club.membersCount || 0
 
   return (
     <Page>
@@ -506,10 +555,21 @@ export default function ClubHomePage() {
           <div className="flex flex-wrap gap-3 text-sm text-slate-600">
             {club.location ? <span className="inline-flex items-center gap-1"><MapPin size={15} aria-hidden="true" />{club.location}</span> : null}
             {club.city ? <span>{club.city}</span> : null}
-            <span className="inline-flex items-center gap-1"><Users size={15} aria-hidden="true" />{members.length} members</span>
+            <span className="inline-flex items-center gap-1"><Users size={15} aria-hidden="true" />{memberCount} members</span>
             {myMembership?.status === 'active' ? <Badge>{myMembership.role}</Badge> : null}
             {isAdmin ? <Badge className="border-blue-200 bg-blue-50 text-blue-800">Admin</Badge> : null}
           </div>
+          {locationQuery ? (
+            <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
+              <p className="min-w-0">
+                Base location: <strong className="break-words text-slate-950">{locationQuery}</strong>
+              </p>
+              <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50" href={mapUrl} target="_blank" rel="noreferrer">
+                <ExternalLink size={16} aria-hidden="true" />
+                Open in Maps
+              </a>
+            </div>
+          ) : null}
           {club.invite_code && isAdmin ? (
             <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
               <p className="min-w-0">
@@ -522,32 +582,6 @@ export default function ClubHomePage() {
           ) : null}
         </CardContent>
       </Card>
-
-      {mapQuery ? (
-        <Card>
-          <CardContent className="space-y-3 pt-4 sm:pt-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold text-slate-950">Base location</h2>
-                <p className="text-sm leading-6 text-slate-600">{mapQuery}</p>
-              </div>
-              <a className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50" href={mapUrl} target="_blank" rel="noreferrer">
-                <ExternalLink size={16} aria-hidden="true" />
-                Map
-              </a>
-            </div>
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-              <iframe
-                title={`${club.name} base location map`}
-                src={mapEmbedUrl}
-                className="h-56 w-full"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
 
       {isAdmin ? (
         <Card className="border-blue-200 bg-blue-50/60">
@@ -593,170 +627,6 @@ export default function ClubHomePage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
-            {events.length ? (
-              <div className="space-y-3">
-                {events.map((event) => {
-                  const myRsvp = myRsvps.find((r) => r.event_id === event.id)
-                  const eventRsvps = eventRsvpsByEvent[event.id] || []
-                  const acceptedRsvps = eventRsvps.filter((r) => r.status === 'going')
-                  const holdingRsvps = eventRsvps.filter((r) => r.status === 'maybe')
-                  const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
-                  const rsvpCount = eventRsvpCounts[event.id] || acceptedRsvps.length
-                  const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
-                  
-                  return (
-                    <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                        <div className="space-y-1">
-                          <h3 className="font-bold text-slate-950">{event.title}</h3>
-                          <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
-                          {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
-                          {formatEventCost(event) ? (
-                            <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
-                              <DollarSign size={15} aria-hidden="true" />
-                              {formatEventCost(event)}
-                            </p>
-                          ) : null}
-                        </div>
-                        {isAdmin ? (
-                          <div className="grid grid-cols-2 gap-2 sm:flex">
-                            <Button type="button" size="sm" variant="secondary" onClick={() => openEditEventModal(event)}>
-                              Edit
-                            </Button>
-                            <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteEvent(event)}>
-                              Delete
-                            </Button>
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
-                          {event.signup_open ? 'Open' : 'Closed'}
-                        </Badge>
-                        {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
-                      </div>
-                      {isMember && event.signup_open ? (
-                        <div className="grid grid-cols-3 gap-2">
-                          {[
-                            ['going', 'Accept'],
-                            ['maybe', 'Hold'],
-                            ['not_going', 'Reject'],
-                          ].map(([status, label]) => (
-                            <Button
-                              key={status}
-                              type="button"
-                              size="sm"
-                              variant={myRsvp?.status === status ? 'primary' : 'secondary'}
-                              disabled={status === 'going' && isFull && myRsvp?.status !== 'going'}
-                              onClick={() => handleRsvp(event.id, status as 'going' | 'maybe' | 'not_going')}
-                            >
-                              {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
-                              {label}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : null}
-                      {myRsvp ? (
-                        <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p>
-                      ) : null}
-                      {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
-                      <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
-                          <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-                          <Badge className="border-slate-200 bg-slate-50 text-slate-700">{rejectedRsvps.length} rejected</Badge>
-                        </div>
-                        {acceptedRsvps.length ? (
-                          <p className="text-sm leading-6 text-slate-700">
-                            Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
-                          </p>
-                        ) : (
-                          <p className="text-sm text-slate-500">No accepted members yet.</p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No upcoming game days yet.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <h2 className="text-lg font-bold text-slate-950">Recent scores</h2>
-            {matches.length ? (
-              <div className="space-y-3">
-                {matches.map((match) => (
-                  <div key={match.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
-                    <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
-                    <p className="mt-2 font-semibold text-emerald-700">
-                      {match.score_sets?.map((set) => `${set.team1_score}-${set.team2_score}`).join(', ')}
-                    </p>
-                    <p className="text-xs text-slate-500">{new Date(match.match_date).toLocaleDateString()}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No results recorded yet.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardContent className="space-y-4 pt-4 sm:pt-5">
-          <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
-          {leaderboard.length ? (
-            <div className="space-y-2">
-              {leaderboard.slice(0, 10).map((player, index) => (
-                <div key={player.name} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <span className="font-mono text-sm font-bold text-slate-500">#{index + 1}</span>
-                  <span className="min-w-0 truncate font-semibold text-slate-950">{player.name}</span>
-                  <div className="flex gap-3 text-sm">
-                    <span className="font-semibold text-emerald-700">{player.wins}W</span>
-                    <span className="font-semibold text-red-600">{player.losses}L</span>
-                    <span className="font-bold text-slate-950">{player.points} pts</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No matches recorded yet.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-bold text-slate-950">Members</h2>
-              <Link to={`/club/${clubId}/members`} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
-                View all <ArrowRight size={15} aria-hidden="true" />
-              </Link>
-            </div>
-            {members.length ? (
-              <div className="space-y-2">
-                {members.slice(0, 5).map((member) => (
-                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
-                    <span className="min-w-0 truncate font-semibold text-slate-950">{member.name || 'Unknown member'}</span>
-                    <Badge>{member.role}</Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-600">No members yet.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="space-y-4 pt-4 sm:pt-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-slate-950">Messages</h2>
               {isAdmin ? (
@@ -768,7 +638,7 @@ export default function ClubHomePage() {
             </div>
             {messages.length ? (
               <div className="space-y-3">
-                {messages.slice(0, 6).map((message) => (
+                {messages.map((message) => (
                   <div key={message.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                     <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
                       <div className="min-w-0">
@@ -791,7 +661,7 @@ export default function ClubHomePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-600">No messages yet.</p>
+              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No messages yet.</p>
             )}
           </CardContent>
         </Card>
@@ -799,9 +669,10 @@ export default function ClubHomePage() {
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
             <h2 className="text-lg font-bold text-slate-950">Community activity</h2>
+            {sectionErrors.activity ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.activity}</p> : null}
             {activities.length ? (
               <div className="space-y-3">
-                {activities.slice(0, 8).map((activity) => (
+                {activities.map((activity) => (
                   <div key={activity.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                     <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700">
                       {activityIcon(activity.type)}
@@ -815,11 +686,187 @@ export default function ClubHomePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-600">No recent activity yet.</p>
+              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+                {isSecondaryLoading ? 'Loading activity...' : 'No recent activity yet.'}
+              </p>
             )}
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardContent className="space-y-4 pt-4 sm:pt-5">
+          <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
+          {sectionErrors.rsvps ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.rsvps}</p> : null}
+          {events.length ? (
+            <div className="space-y-3">
+              {events.map((event) => {
+                const myRsvp = myRsvps.find((r) => r.event_id === event.id)
+                const eventRsvps = eventRsvpsByEvent[event.id] || []
+                const acceptedRsvps = eventRsvps.filter((r) => r.status === 'going')
+                const holdingRsvps = eventRsvps.filter((r) => r.status === 'maybe')
+                const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
+                const rsvpCount = eventRsvpCounts[event.id] || acceptedRsvps.length
+                const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
+                
+                return (
+                  <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                      <div className="space-y-1">
+                        <h3 className="font-bold text-slate-950">{event.title}</h3>
+                        <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
+                        {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
+                        {formatEventCost(event) ? (
+                          <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
+                            <DollarSign size={15} aria-hidden="true" />
+                            {formatEventCost(event)}
+                          </p>
+                        ) : null}
+                      </div>
+                      {isAdmin ? (
+                        <div className="grid grid-cols-2 gap-2 sm:flex">
+                          <Button type="button" size="sm" variant="secondary" onClick={() => openEditEventModal(event)}>
+                            Edit
+                          </Button>
+                          <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteEvent(event)}>
+                            Delete
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+                        {event.signup_open ? 'Open' : 'Closed'}
+                      </Badge>
+                      {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
+                    </div>
+                    {isMember && event.signup_open ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          ['going', 'Accept'],
+                          ['maybe', 'Hold'],
+                          ['not_going', 'Reject'],
+                        ].map(([status, label]) => (
+                          <Button
+                            key={status}
+                            type="button"
+                            size="sm"
+                            variant={myRsvp?.status === status ? 'primary' : 'secondary'}
+                            disabled={status === 'going' && isFull && myRsvp?.status !== 'going'}
+                            onClick={() => handleRsvp(event.id, status as 'going' | 'maybe' | 'not_going')}
+                          >
+                            {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {myRsvp ? (
+                      <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p>
+                    ) : null}
+                    {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
+                    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
+                        <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
+                        <Badge className="border-slate-200 bg-slate-50 text-slate-700">{rejectedRsvps.length} rejected</Badge>
+                      </div>
+                      {acceptedRsvps.length ? (
+                        <p className="text-sm leading-6 text-slate-700">
+                          Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
+                        </p>
+                      ) : (
+                        <p className="text-sm text-slate-500">No accepted members yet.</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No upcoming game days yet.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <h2 className="text-lg font-bold text-slate-950">Recent scores</h2>
+            {sectionErrors.scores ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.scores}</p> : null}
+            {matches.length ? (
+              <div className="space-y-3">
+                {matches.slice(0, 5).map((match) => (
+                  <div key={match.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
+                    <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
+                    <p className="mt-2 font-semibold text-emerald-700">
+                      {match.score_sets?.map((set) => `${set.team1_score}-${set.team2_score}`).join(', ')}
+                    </p>
+                    <p className="text-xs text-slate-500">{new Date(match.match_date).toLocaleDateString()}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+                {isSecondaryLoading ? 'Loading scores...' : 'No results recorded yet.'}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
+            {sectionErrors.scores ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Leaderboard is unavailable while scores cannot load.</p> : null}
+            {leaderboard.length ? (
+              <div className="space-y-2">
+                {leaderboard.slice(0, 10).map((player, index) => (
+                  <div key={player.name} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <span className="font-mono text-sm font-bold text-slate-500">#{index + 1}</span>
+                    <span className="min-w-0 truncate font-semibold text-slate-950">{player.name}</span>
+                    <div className="flex gap-3 text-sm">
+                      <span className="font-semibold text-emerald-700">{player.wins}W</span>
+                      <span className="font-semibold text-red-600">{player.losses}L</span>
+                      <span className="font-bold text-slate-950">{player.points} pts</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+                {isSecondaryLoading ? 'Loading leaderboard...' : 'No matches recorded yet.'}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardContent className="space-y-4 pt-4 sm:pt-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-slate-950">Members</h2>
+            <Link to={`/club/${clubId}/members`} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+              View all <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+          {sectionErrors.members ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.members}</p> : null}
+          {members.length ? (
+            <div className="space-y-2">
+              {members.slice(0, 5).map((member) => (
+                <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
+                  <span className="min-w-0 truncate font-semibold text-slate-950">{member.name || 'Unknown member'}</span>
+                  <Badge>{member.role}</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+              {isSecondaryLoading ? 'Loading members...' : 'No members yet.'}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {showEventModal && isAdmin ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => { setShowEventModal(false); setEditingEvent(null) }}>

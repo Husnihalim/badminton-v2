@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarDays, Check, ClipboardPenLine, Club as ClubIcon, Link2, Trophy, Users } from 'lucide-react'
+import { Bell, CalendarDays, Check, ClipboardPenLine, Club as ClubIcon, Link2, ShieldCheck, Trophy, Users } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
-import { getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
+import { getMyClubs, getClubEvents, getClubJoinRequests, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
 import type { Club, ClubEvent, EventRsvp, MatchWithDetails } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -30,7 +30,7 @@ function getRsvpLabel(status: EventRsvp['status']) {
 export default function DashboardPage() {
   const [showScoreModal, setShowScoreModal] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
-  const { showToast } = useNotifications()
+  const { showToast, unreadCount } = useNotifications()
   const navigate = useNavigate()
   
   const [clubs, setClubs] = useState<DashboardClub[]>([])
@@ -38,29 +38,36 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<DashboardMatch[]>([])
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
+  const [adminAlertCount, setAdminAlertCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Get user's clubs
       const myClubs = await getMyClubs()
       setClubs(myClubs)
       
-      // Get events and matches from all user's clubs
       const allEvents: DashboardEvent[] = []
       const allMatches: DashboardMatch[] = []
+      let pendingAdminRequests = 0
       
       for (const club of myClubs) {
         try {
-          const [clubEvents, clubMatches] = await Promise.all([
+          const isClubAdmin = club.role === 'owner' || club.role === 'admin' || user?.role === 'superadmin'
+          const [clubEvents, clubMatches, joinRequests] = await Promise.all([
             getClubEvents(club.id),
             getClubMatches(club.id),
+            isClubAdmin ? getClubJoinRequests(club.id) : Promise.resolve([]),
           ])
           
-          // Add club name to events for display
-          allEvents.push(...clubEvents.map(e => ({ ...e, clubName: club.name })))
+          const now = Date.now()
+          allEvents.push(
+            ...clubEvents
+              .filter((event) => new Date(event.event_date).getTime() >= now)
+              .map((event) => ({ ...event, clubName: club.name }))
+          )
           allMatches.push(...clubMatches.map(m => ({ ...m, clubName: club.name })))
+          pendingAdminRequests += joinRequests.filter((request) => request.status === 'pending').length
         } catch (clubErr) {
           console.error(`Error loading data for club ${club.id}:`, clubErr)
         }
@@ -75,6 +82,7 @@ export default function DashboardPage() {
       const visibleEvents = allEvents.slice(0, 5)
       setEvents(visibleEvents)
       setMatches(allMatches.slice(0, 5))
+      setAdminAlertCount(pendingAdminRequests)
 
       const myEventRsvps = await getMyEventRsvps()
       setMyRsvps(myEventRsvps)
@@ -90,7 +98,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [showToast, user])
 
   const handleRsvp = async (eventId: string, status: EventRsvp['status']) => {
     try {
@@ -169,7 +177,7 @@ export default function DashboardPage() {
       <PageHeader
         eyebrow="Dashboard"
         title={`Welcome back, ${user.name.split(' ')[0]}`}
-        description="Your clubs, sessions, and recent match results in one place."
+        description="Your next sessions, club actions, and recent updates in one place."
         actions={
           <Button onClick={() => setShowScoreModal(true)}>
             <ClipboardPenLine size={17} aria-hidden="true" />
@@ -189,6 +197,22 @@ export default function DashboardPage() {
         <StatCard icon={<CalendarDays size={17} />} label="Events" value={upcomingEvents} />
         <StatCard icon={<Trophy size={17} />} label="Matches" value={totalMatches} />
       </div>
+
+      <Card>
+        <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
+          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <Bell size={18} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="text-base font-bold text-slate-950">Action summary</h2>
+            <p className="text-sm leading-6 text-slate-600">
+              {unreadCount ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}.` : 'No unread notifications.'}
+              {' '}
+              {adminAlertCount ? `${adminAlertCount} pending join request${adminAlertCount !== 1 ? 's' : ''} need review.` : 'No admin requests waiting.'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
@@ -230,6 +254,12 @@ export default function DashboardPage() {
                     <span>{club.membersCount} members</span>
                   </div>
                     <Badge>{club.role || 'member'}</Badge>
+                    {club.role === 'owner' || club.role === 'admin' ? (
+                      <Badge className="border-blue-200 bg-blue-50 text-blue-800">
+                        <ShieldCheck size={14} aria-hidden="true" />
+                        Admin actions
+                      </Badge>
+                    ) : null}
                   </CardContent>
                 </Card>
               </Link>
