@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { user, register } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -40,22 +41,30 @@ export default function RegisterPage() {
       setError('Supabase is not configured for this environment yet.')
       return
     }
-    const result = await register(email, name, password)
-    if (!result.success) {
-      setError(result.error || 'Could not create account. Please try again.')
-      return
-    }
-    if (result.emailVerificationRequired) {
-      window.localStorage.setItem('kelabsukan.postLoginRedirect', redirectTo)
-      setSuccessMessage(
-        redirectTo.startsWith('/invite/') || redirectTo.startsWith('/join/')
-          ? 'Account created. Please verify your email, then log in. We will finish joining the club from your invite link.'
-          : 'Account created. Please verify your email, then log in to continue.'
-      )
+
+    try {
+      setIsSubmitting(true)
       setError('')
-      return
+      setSuccessMessage('')
+
+      const result = await register(email, name, password)
+      if (!result.success) {
+        setError(result.error || 'Could not create account. Please try again.')
+        return
+      }
+      if (result.emailVerificationRequired) {
+        window.localStorage.setItem('kelabsukan.postLoginRedirect', redirectTo)
+        setSuccessMessage(
+          redirectTo.startsWith('/invite/') || redirectTo.startsWith('/join/')
+            ? 'Account created. Please verify your email, then log in. We will finish joining the club from your invite link.'
+            : 'Account created. Please verify your email, then log in to continue.'
+        )
+        return
+      }
+      navigate(redirectTo)
+    } finally {
+      setIsSubmitting(false)
     }
-    navigate(redirectTo)
   }
 
   return (
@@ -136,7 +145,7 @@ export default function RegisterPage() {
 
             <Button type="submit" fullWidth disabled={!isSupabaseConfigured}>
               <UserPlus size={17} aria-hidden="true" />
-              Sign up
+              {isSubmitting ? 'Creating account...' : 'Sign up'}
             </Button>
           </form>
           <p className="mt-5 text-sm text-slate-600">

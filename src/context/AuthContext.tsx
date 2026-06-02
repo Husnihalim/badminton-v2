@@ -31,6 +31,7 @@ type ProfileRow = {
 type AuthUserFallback = {
   id: string
   email?: string
+  identities?: unknown[]
   user_metadata?: {
     name?: string
   }
@@ -213,6 +214,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return {
         success: false,
         error: error?.message || 'Could not create account. Please try again.',
+      }
+    }
+
+    if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return {
+        success: false,
+        error: 'This email already has an account. Please log in instead.',
       }
     }
 
