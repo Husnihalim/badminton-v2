@@ -167,7 +167,16 @@ export async function createClub(club: {
     throw error
   }
 
-  return data as Club
+  const createdClub = data as Club
+
+  if (createdClub && !createdClub.invite_code) {
+    const inviteCode = await regenerateInviteLink(createdClub.id)
+    if (inviteCode) {
+      createdClub.invite_code = inviteCode
+    }
+  }
+
+  return createdClub
 }
 
 // ============================================
