@@ -1,6 +1,8 @@
 -- Update leaderboard metrics to include games played, win percentage, and cumulative points for/against.
 
-CREATE OR REPLACE FUNCTION public.get_club_leaderboard(
+DROP FUNCTION IF EXISTS public.get_club_leaderboard(UUID, INTEGER);
+
+CREATE FUNCTION public.get_club_leaderboard(
   target_club_id UUID,
   row_limit INTEGER DEFAULT 10
 )
@@ -65,8 +67,7 @@ AS $$
     SUM(points_for - points_against)::INTEGER AS points
   FROM player_results
   GROUP BY player_name
-  ORDER BY point_difference DESC, win_percentage DESC, wins DESC, player_name ASC
-  LIMIT GREATEST(row_limit, 1);
+  ORDER BY points DESC, win_percentage DESC, wins DESC, player_name ASC
 $$;
 
 REVOKE ALL ON FUNCTION public.get_club_leaderboard(UUID, INTEGER) FROM PUBLIC;
