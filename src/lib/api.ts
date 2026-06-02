@@ -791,9 +791,24 @@ export async function removeMember(clubId: string, userId: string): Promise<void
     target_user_id: userId,
   })
 
-  if (error) {
+  if (!error) return
+
+  const message = error.message?.toLowerCase() || ''
+  const isMissingRpc = message.includes('function') && message.includes('remove_club_member')
+  if (!isMissingRpc) {
     console.error('Error removing member:', error)
     throw error
+  }
+
+  const { error: fallbackError } = await supabase
+    .from('memberships')
+    .update({ status: 'inactive', role: 'member' } as never)
+    .eq('club_id', clubId)
+    .eq('user_id', userId)
+
+  if (fallbackError) {
+    console.error('Error removing member:', fallbackError)
+    throw fallbackError
   }
 }
 
