@@ -19,8 +19,11 @@ import {
   UserPlus,
   Users,
   X,
+  Trophy,
+  Flame,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
+import ScorecardShareModal from '../components/ScorecardShareModal'
 import { useAuth } from '../context/AuthContext'
 import {
   approveJoinRequest,
@@ -86,6 +89,13 @@ function getRsvpLabel(status: EventRsvp['status']) {
   return 'Rejected'
 }
 
+function renderRankBadge(rank: number) {
+  if (rank === 1) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700 shadow-sm border border-amber-200" title="Gold Medal">🥇</span>
+  if (rank === 2) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600 shadow-sm border border-slate-200" title="Silver Medal">🥈</span>
+  if (rank === 3) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-sm font-bold text-amber-800 shadow-sm border border-amber-100" title="Bronze Medal">🥉</span>
+  return <span className="font-mono text-sm font-bold text-slate-500 w-6 text-center">#{rank}</span>
+}
+
 export default function ClubHomePage() {
   const { clubId } = useParams()
   const navigate = useNavigate()
@@ -128,6 +138,7 @@ export default function ClubHomePage() {
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [messages, setMessages] = useState<ClubMessage[]>([])
   const [leaderboard, setLeaderboard] = useState<ClubLeaderboardRow[]>([])
+  const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = !!myMembership
@@ -603,6 +614,87 @@ export default function ClubHomePage() {
     message,
   }))
 
+  // Sort matches chronologically descending for streaks
+  const sortedMatchesForStreak = [...matches].sort((a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime())
+
+  const playerStreaks = new Map<string, { count: number; type: 'win' | 'loss' | null; broken: boolean }>()
+
+  for (const match of sortedMatchesForStreak) {
+    const scoreSets = match.score_sets || []
+    if (scoreSets.length === 0) continue
+
+    const team1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+    const team2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+    if (team1Sets === team2Sets) continue // Draw
+
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    for (const p of match.participants) {
+      const name = p.name || p.guest_name || 'Guest'
+      const isWin = p.team === winningTeam
+      
+      let streakInfo = playerStreaks.get(name)
+      if (!streakInfo) {
+        streakInfo = { count: 1, type: isWin ? 'win' : 'loss', broken: false }
+        playerStreaks.set(name, streakInfo)
+      } else if (!streakInfo.broken) {
+        if (streakInfo.type === 'win' && isWin) {
+          streakInfo.count++
+        } else if (streakInfo.type === 'loss' && !isWin) {
+          streakInfo.count++
+        } else {
+          streakInfo.broken = true
+        }
+      }
+    }
+  }
+
+  // Calculate doubles combinations
+  const doublesPairs = new Map<string, { wins: number; losses: number; matches: number }>()
+  const doublesMatches = matches.filter(m => m.match_type === 'doubles')
+  for (const match of doublesMatches) {
+    const scoreSets = match.score_sets || []
+    if (scoreSets.length === 0) continue
+
+    const team1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+    const team2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+    if (team1Sets === team2Sets) continue
+
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    const team1Participants = match.participants.filter(p => p.team === 1).map(p => p.name || p.guest_name || 'Guest')
+    const team2Participants = match.participants.filter(p => p.team === 2).map(p => p.name || p.guest_name || 'Guest')
+
+    if (team1Participants.length === 2) {
+      team1Participants.sort()
+      const pairKey = team1Participants.join(' & ')
+      const stats = doublesPairs.get(pairKey) ?? { wins: 0, losses: 0, matches: 0 }
+      stats.matches++
+      if (winningTeam === 1) stats.wins++
+      else stats.losses++
+      doublesPairs.set(pairKey, stats)
+    }
+
+    if (team2Participants.length === 2) {
+      team2Participants.sort()
+      const pairKey = team2Participants.join(' & ')
+      const stats = doublesPairs.get(pairKey) ?? { wins: 0, losses: 0, matches: 0 }
+      stats.matches++
+      if (winningTeam === 2) stats.wins++
+      else stats.losses++
+      doublesPairs.set(pairKey, stats)
+    }
+  }
+
+  const topDoublesPairs = Array.from(doublesPairs.entries())
+    .map(([names, stats]) => {
+      const winRate = stats.matches > 0 ? Math.round((stats.wins / stats.matches) * 100) : 0
+      return { names, ...stats, winRate }
+    })
+    .filter(p => p.matches >= 2)
+    .sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.matches - a.matches)
+    .slice(0, 3)
+
   return (
     <Page>
       {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
@@ -925,16 +1017,21 @@ export default function ClubHomePage() {
                         <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
                         <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
                       </div>
-                      {isAdmin ? (
-                        <div className="flex items-center gap-2">
-                          <Button type="button" variant="secondary" size="icon" onClick={() => handleEditMatch(match)} title="Edit score">
-                            <Pencil size={14} aria-hidden="true" />
-                          </Button>
-                          <Button type="button" variant="danger" size="icon" onClick={() => handleDeleteMatch(match.id)} title="Delete score">
-                            <Trash2 size={14} aria-hidden="true" />
-                          </Button>
-                        </div>
-                      ) : null}
+                      <div className="flex items-center gap-2">
+                        <Button type="button" variant="secondary" size="icon" onClick={() => setShareMatch(match)} title="Share Scorecard">
+                          <Share2 size={14} aria-hidden="true" />
+                        </Button>
+                        {isAdmin ? (
+                          <>
+                            <Button type="button" variant="secondary" size="icon" onClick={() => handleEditMatch(match)} title="Edit score">
+                              <Pencil size={14} aria-hidden="true" />
+                            </Button>
+                            <Button type="button" variant="danger" size="icon" onClick={() => handleDeleteMatch(match.id)} title="Delete score">
+                              <Trash2 size={14} aria-hidden="true" />
+                            </Button>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                     <p className="mt-2 font-semibold text-emerald-700">
                       {match.score_sets?.map((set) => `${set.team1_score}-${set.team2_score}`).join(', ')}
@@ -957,27 +1054,38 @@ export default function ClubHomePage() {
             {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
             {leaderboard.length ? (
               <div className="space-y-2">
-                {leaderboard.slice(0, 10).map((player, index) => (
-                  <div key={player.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono text-sm font-bold text-slate-500">#{index + 1}</span>
-                          <span className="truncate font-semibold text-slate-950">{player.name}</span>
+                {leaderboard.slice(0, 10).map((player, index) => {
+                  const streak = playerStreaks.get(player.name)
+                  const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
+
+                  return (
+                    <div key={player.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-3">
+                            {renderRankBadge(index + 1)}
+                            <span className="truncate font-semibold text-slate-950">{player.name}</span>
+                            {hasWinStreak ? (
+                              <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 ml-2 font-extrabold shadow-sm shrink-0">
+                                <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
+                                {streak.count} Hot Run
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                            <span>{player.games} GP</span>
+                            <span>{player.wins}W</span>
+                            <span>{player.losses}L</span>
+                            <span>{player.winPercentage}%</span>
+                          </div>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                          <span>{player.games} GP</span>
-                          <span>{player.wins}W</span>
-                          <span>{player.losses}L</span>
-                          <span>{player.winPercentage}%</span>
+                        <div className="text-right">
+                          <div className="text-sm font-semibold text-slate-950">{player.pointsFor} / {player.pointsAgainst} pts</div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold text-slate-950">{player.pointsFor} / {player.pointsAgainst} pts</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
@@ -987,6 +1095,38 @@ export default function ClubHomePage() {
           </CardContent>
         </Card>
       </div>
+
+      {topDoublesPairs.length ? (
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+              <Trophy size={18} className="text-amber-500 font-bold" />
+              Top Doubles Pairs
+            </h2>
+            <p className="text-xs text-slate-500">Unbeatable combinations (played at least 2 matches together).</p>
+            <div className="space-y-2">
+              {topDoublesPairs.map((pair, index) => (
+                <div key={pair.names} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-extrabold text-slate-500">#{index + 1}</span>
+                      <span className="truncate font-semibold text-slate-950 text-sm">{pair.names}</span>
+                    </div>
+                    <div className="mt-1 flex gap-2 text-xs text-slate-500">
+                      <span>{pair.matches} Matches</span>
+                      <span>{pair.wins} Wins</span>
+                      <span>{pair.winRate}% Win Rate</span>
+                    </div>
+                  </div>
+                  <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 font-bold shrink-0">
+                    {pair.wins} - {pair.losses}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardContent className="space-y-4 pt-4 sm:pt-5">
@@ -1144,6 +1284,14 @@ export default function ClubHomePage() {
           closeScoreModal()
         }}
       />
+
+      {shareMatch ? (
+        <ScorecardShareModal
+          match={shareMatch}
+          clubName={club?.name || 'Club'}
+          onClose={() => setShareMatch(null)}
+        />
+      ) : null}
     </Page>
   )
 }

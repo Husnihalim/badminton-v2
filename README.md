@@ -1,73 +1,92 @@
-# React + TypeScript + Vite
+# KelabSukan
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+KelabSukan is a mobile-first club management SaaS built to handle racket sport communities (Badminton, Tennis, Squash, Pickleball, Table Tennis, and Racquetball). It provides community organizers, admins, and members with a streamlined platform for tracking matches, scheduling game sessions, capturing attendance RSVPs, and analyzing leaderboards.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Key Features
 
-## React Compiler
+* **Club Management:** Custom community homepages, announcements/messages, member list management, and user permissions (Superadmin, Owner, Admin, Member).
+* **Match & Score Recording:** Atomic recording of singles (1v1) or doubles (2v2) matches. Supports casual (single-set) or tournament (multi-set) score formats, with options to choose from registered members or add guest players.
+* **Game Scheduling & RSVPs:** Schedule events/game sessions, set participant capacity limits, and allow members to RSVP (`going`, `maybe`, `not_going`) directly from their dashboards.
+* **Dynamic Leaderboards:** Real-time player statistics (wins, losses, win percentage, and point differentials) generated dynamically from recorded matches.
+* **Real-time Notifications:** In-app notification center tracking RSVPs, new event creations, announcements, and match recordings.
+* **Security & Performance:** Strict Row Level Security (RLS) policies on all tables, client-safe `SECURITY DEFINER` procedures, and a tight Content Security Policy (CSP) deployed via Netlify.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, Lucide Icons, React Router.
+* **Backend:** Supabase (PostgreSQL database, Auth, Storage for avatars, Realtime subscriptions).
+* **Testing:** Vitest, React Testing Library.
+* **Deployment:** Netlify (with custom redirect and header security profiles).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 💻 Local Development Setup
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Prerequisites
+* [Node.js](https://nodejs.org/) (v18 or higher recommended)
+* A [Supabase](https://supabase.com) account
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Setup Instructions
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. **Clone the Repository:**
+   ```bash
+   git clone <your-repo-url>
+   cd badminton-v2
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+2. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root directory:
+   ```env
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-public-key
+   ```
+
+4. **Initialize the Database:**
+   See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for step-by-step instructions on setting up tables, security policies, triggers, and RPCs.
+
+5. **Start Dev Server:**
+   ```bash
+   npm run dev
+   ```
+   Open your browser to `http://localhost:5173`.
+
+---
+
+## 🧪 Testing & Quality Checks
+
+* **Run Linting Check:**
+  ```bash
+  npm run lint
+  ```
+* **Run Unit & Component Tests:**
+  ```bash
+  npm run test
+  ```
+* **Build for Production:**
+  ```bash
+  npm run build
+  ```
+* **Preview Production Build:**
+  ```bash
+  npm run preview
+  ```
+
+---
+
+## 📁 Project Structure
+
+* `/src/components`: Reusable UI elements, modals, and the global Layout.
+* `/src/context`: Authentication and Notification contexts managing global state.
+* `/src/lib`: Supabase client configuration and API middleware adapters.
+* `/src/pages`: Main application page views (Landing, Dashboard, Club homepage, Settings, Profiles).
+* `/supabase/migrations`: Relational schema migrations, indexing, RLS security policies, and Postgres RPC procedures.
+* `netlify.toml`: Deployment and routing rules, custom headers, and Content Security Policy (CSP).

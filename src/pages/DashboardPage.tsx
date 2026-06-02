@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Share2, ShieldCheck, Trophy, Users } from 'lucide-react'
+import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
-import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
+import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent, getClubLeaderboard } from '../lib/api'
 import type { Club, ClubEvent, EventRsvp, MatchWithDetails } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Page, PageHeader } from '../components/ui/page'
+import ScorecardShareModal from '../components/ScorecardShareModal'
 
 type DashboardClub = Club & { role?: string }
 type DashboardEvent = ClubEvent & { clubName?: string }
@@ -53,8 +54,20 @@ export default function DashboardPage() {
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [shareMatch, setShareMatch] = useState<DashboardMatch | null>(null)
   
+  const [personalStats, setPersonalStats] = useState<{
+    matchesPlayed: number
+    wins: number
+    losses: number
+    winRate: number
+    streak: number
+    streakType: 'win' | 'loss' | null
+  }>({ matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, streak: 0, streakType: null })
+  const [clubRanks, setClubRanks] = useState<Record<string, { rank: number; total: number }>>({})
+
   const loadDashboardData = useCallback(async () => {
+    if (!user) return
     setIsLoading(true)
     try {
       const myClubs = await getMyClubs()
@@ -98,6 +111,82 @@ export default function DashboardPage() {
       setEvents(visibleEvents)
       setMatches(allMatches.slice(0, 5))
 
+      // Calculate personal stats from the full list of matches
+      const userMatches = allMatches.filter((m) =>
+        m.participants.some((p) => p.user_id === user.id)
+      )
+
+      // Sort user matches chronologically descending
+      userMatches.sort((a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime())
+
+      let personalWins = 0
+      let personalLosses = 0
+      let streakCount = 0
+      let activeStreakType: 'win' | 'loss' | null = null
+      let isStreakBroken = false
+
+      for (let i = 0; i < userMatches.length; i++) {
+        const m = userMatches[i]
+        const userPart = m.participants.find((p) => p.user_id === user.id)
+        if (!userPart) continue
+
+        const scoreSets = m.score_sets || []
+        if (scoreSets.length === 0) continue
+
+        const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
+        const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
+        if (team1Sets === team2Sets) continue // skip draw
+
+        const winningTeam = team1Sets > team2Sets ? 1 : 2
+        const isWin = userPart.team === winningTeam
+
+        if (isWin) {
+          personalWins++
+        } else {
+          personalLosses++
+        }
+
+        // Calculate streak
+        if (!isStreakBroken) {
+          if (activeStreakType === null) {
+            activeStreakType = isWin ? 'win' : 'loss'
+            streakCount = 1
+          } else if (activeStreakType === 'win' && isWin) {
+            streakCount++
+          } else if (activeStreakType === 'loss' && !isWin) {
+            streakCount++
+          } else {
+            isStreakBroken = true
+          }
+        }
+      }
+
+      setPersonalStats({
+        matchesPlayed: userMatches.length,
+        wins: personalWins,
+        losses: personalLosses,
+        winRate: userMatches.length > 0 ? Math.round((personalWins / (personalWins + personalLosses || 1)) * 100) : 0,
+        streak: activeStreakType === null ? 0 : streakCount,
+        streakType: activeStreakType
+      })
+
+      // Fetch user's rank in each club
+      const ranks: Record<string, { rank: number; total: number }> = {}
+      for (const club of myClubs) {
+        try {
+          const lb = await getClubLeaderboard(club.id, 100)
+          const index = lb.findIndex(
+            (row) => row.name.toLowerCase() === user.name.toLowerCase()
+          )
+          if (index !== -1) {
+            ranks[club.id] = { rank: index + 1, total: lb.length }
+          }
+        } catch (e) {
+          console.error(`Error fetching rank for club ${club.id}:`, e)
+        }
+      }
+      setClubRanks(ranks)
+
       const myEventRsvps = await getMyEventRsvps()
       setMyRsvps(myEventRsvps)
 
@@ -117,7 +206,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [showToast, user])
 
   const handleRsvp = async (eventId: string, status: EventRsvp['status']) => {
     try {
@@ -227,6 +316,62 @@ export default function DashboardPage() {
         <StatCard icon={<Trophy size={17} />} label="Matches" value={totalMatches} />
       </div>
 
+      {/* Personal Player Performance Section */}
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div>
+          <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+            <Activity size={18} className="text-emerald-700" />
+            Your Performance
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">Calculated from all matches played across your clubs.</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
+            <span className="text-xs font-semibold text-slate-500">Played</span>
+            <p className="text-xl font-extrabold text-slate-950">{personalStats.matchesPlayed}</p>
+            <span className="text-[10px] text-slate-400">Total Matches</span>
+          </div>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
+            <span className="text-xs font-semibold text-slate-500">Win / Loss</span>
+            <p className="text-xl font-extrabold text-slate-950">
+              <span className="text-emerald-700">{personalStats.wins}W</span>
+              <span className="text-slate-400 mx-1">-</span>
+              <span className="text-red-600">{personalStats.losses}L</span>
+            </p>
+            <span className="text-[10px] text-slate-400">Record</span>
+          </div>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
+            <span className="text-xs font-semibold text-slate-500">Win Rate</span>
+            <div className="flex items-center justify-center gap-1">
+              <Percent size={14} className="text-emerald-700 shrink-0" />
+              <span className="text-xl font-extrabold text-slate-950">{personalStats.winRate}%</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden max-w-[80px] mx-auto">
+              <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
+            <span className="text-xs font-semibold text-slate-500">Active Streak</span>
+            <div className="flex items-center justify-center gap-1">
+              {personalStats.streakType === 'win' ? (
+                <>
+                  <Flame size={16} className="text-amber-500 animate-pulse" />
+                  <span className="text-xl font-extrabold text-amber-600">{personalStats.streak} Win</span>
+                </>
+              ) : personalStats.streakType === 'loss' ? (
+                <span className="text-xl font-extrabold text-slate-600">-{personalStats.streak} Loss</span>
+              ) : (
+                <span className="text-xl font-extrabold text-slate-500">0</span>
+              )}
+            </div>
+            <span className="text-[10px] text-slate-400">Current Run</span>
+          </div>
+        </div>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-slate-950">Your clubs</h2>
@@ -249,17 +394,24 @@ export default function DashboardPage() {
                         <p className="line-clamp-2 text-sm leading-6 text-slate-600">{club.description}</p>
                       </div>
                     </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
-                    <span>{club.city}</span>
-                    <span>{club.membersCount} members</span>
-                  </div>
-                    <Badge>{club.role || 'member'}</Badge>
-                    {club.role === 'owner' || club.role === 'admin' ? (
-                      <Badge className="border-blue-200 bg-blue-50 text-blue-800">
-                        <ShieldCheck size={14} aria-hidden="true" />
-                        Admin actions
-                      </Badge>
-                    ) : null}
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+                      <span>{club.city}</span>
+                      <span>{club.membersCount} members</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      <Badge>{club.role || 'member'}</Badge>
+                      {club.role === 'owner' || club.role === 'admin' ? (
+                        <Badge className="border-blue-200 bg-blue-50 text-blue-800">
+                          <ShieldCheck size={14} aria-hidden="true" />
+                          Admin actions
+                        </Badge>
+                      ) : null}
+                      {clubRanks[club.id] ? (
+                        <Badge className="border-amber-200 bg-amber-50 text-amber-800 font-bold">
+                          🏆 Rank #{clubRanks[club.id].rank} / {clubRanks[club.id].total}
+                        </Badge>
+                      ) : null}
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
@@ -373,16 +525,23 @@ export default function DashboardPage() {
           <div className="grid gap-3">
             {matches.map((match) => (
               <Card key={match.id}>
-                <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
-                  <Trophy className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
-                  <div className="min-w-0 space-y-1">
-                    <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
-                    <p className="text-sm text-slate-500">{renderMatchPlayers(match)}</p>
-                    <p className="text-sm text-slate-500">{match.clubName}</p>
-                    <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
-                    <p className="font-semibold text-emerald-700">
-                      {match.score_sets?.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')}
-                    </p>
+                <CardContent className="flex items-start justify-between gap-3 pt-4 sm:pt-5">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <Trophy className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
+                    <div className="min-w-0 space-y-1">
+                      <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
+                      <p className="text-sm text-slate-500">{renderMatchPlayers(match)}</p>
+                      <p className="text-sm text-slate-500">{match.clubName}</p>
+                      <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
+                      <p className="font-semibold text-emerald-700">
+                        {match.score_sets?.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button type="button" variant="secondary" size="icon" onClick={() => setShareMatch(match)} title="Share Scorecard">
+                      <Share2 size={14} aria-hidden="true" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -392,6 +551,14 @@ export default function DashboardPage() {
           <p className="empty-state">No matches recorded yet.</p>
         )}
       </section>
+
+      {shareMatch ? (
+        <ScorecardShareModal
+          match={shareMatch}
+          clubName={shareMatch.clubName || 'Club'}
+          onClose={() => setShareMatch(null)}
+        />
+      ) : null}
     </Page>
   )
 }
