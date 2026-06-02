@@ -446,6 +446,30 @@ export default function ClubHomePage() {
     })
   }
 
+  const handleNativeBoardShare = async () => {
+    if (!club || !inviteUrl) return
+
+    const shareText = [
+      `${club.name} club board`,
+      club.description,
+      'Join the club to follow messages, announcements, and activity.',
+      inviteUrl,
+    ].filter(Boolean).join('\n')
+
+    if (!navigator.share) {
+      await navigator.clipboard.writeText(inviteUrl)
+      setSuccessMessage('Board link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+      return
+    }
+
+    await navigator.share({
+      title: `${club.name} club board`,
+      text: shareText,
+      url: inviteUrl,
+    })
+  }
+
   const handleRsvp = async (eventId: string, status: 'going' | 'maybe' | 'not_going') => {
     if (!user) return
 
@@ -521,6 +545,35 @@ export default function ClubHomePage() {
   const locationQuery = getClubLocationQuery(club)
   const mapUrl = locationQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}` : ''
   const memberCount = members.length || club.membersCount || 0
+  const boardShareText = [
+    `${club.name} club board`,
+    club.description,
+    'Join the club to follow messages, announcements, and activity.',
+    inviteUrl,
+  ].filter(Boolean).join('\n')
+  const boardWhatsappUrl = `https://wa.me/?text=${encodeURIComponent(boardShareText)}`
+  const boardItems = [
+    ...messages.map((message) => ({
+      id: `message-${message.id}`,
+      sourceId: message.id,
+      kind: 'message' as const,
+      title: message.title,
+      body: message.message,
+      actor: message.authorName || 'Club admin',
+      createdAt: message.created_at,
+      message,
+    })),
+    ...activities.map((activity) => ({
+      id: `activity-${activity.id}`,
+      sourceId: activity.id,
+      kind: 'activity' as const,
+      title: activity.title,
+      body: activity.description,
+      actor: activity.actor_name,
+      createdAt: activity.created_at,
+      activity,
+    })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return (
     <Page>
@@ -627,75 +680,91 @@ export default function ClubHomePage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-bold text-slate-950">Messages</h2>
-              {isAdmin ? (
-                <Button type="button" size="sm" variant="secondary" onClick={openCreateMessageModal}>
-                  <Megaphone size={16} aria-hidden="true" />
-                  New
-                </Button>
-              ) : null}
+      <Card>
+        <CardContent className="space-y-4 pt-4 sm:pt-5">
+          <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-slate-950">Club board</h2>
             </div>
-            {messages.length ? (
-              <div className="space-y-3">
-                {messages.map((message) => (
-                  <div key={message.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-950">{message.title}</p>
-                        <p className="text-sm leading-6 text-slate-600">{message.message}</p>
-                        <p className="mt-1 text-xs text-slate-500">by {message.authorName || 'Club admin'} • {new Date(message.created_at).toLocaleString()}</p>
-                      </div>
-                      {isAdmin ? (
-                        <div className="grid grid-cols-2 gap-2 sm:flex">
-                          <Button type="button" size="sm" variant="secondary" onClick={() => openEditMessageModal(message)}>
-                            Edit
-                          </Button>
-                          <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteMessage(message)}>
-                            Delete
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
+            {isAdmin ? (
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Button type="button" size="sm" variant="secondary" onClick={handleNativeBoardShare} disabled={!inviteUrl}>
+                  <Share2 size={16} aria-hidden="true" />
+                  Share
+                </Button>
+                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
+                  <MessageCircle size={16} aria-hidden="true" />
+                  WhatsApp
+                </a>
+                <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
+                  <Copy size={16} aria-hidden="true" />
+                  Copy
+                </Button>
               </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No messages yet.</p>
-            )}
-          </CardContent>
-        </Card>
+            ) : null}
+          </div>
 
-        <Card>
-          <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <h2 className="text-lg font-bold text-slate-950">Community activity</h2>
-            {sectionErrors.activity ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.activity}</p> : null}
-            {activities.length ? (
-              <div className="space-y-3">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700">
-                      {activityIcon(activity.type)}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-950">{activity.title}</p>
-                      <p className="text-sm leading-6 text-slate-600">{activity.description}</p>
-                      <p className="mt-1 text-xs text-slate-500">by {activity.actor_name} • {new Date(activity.created_at).toLocaleString()}</p>
+          {isAdmin ? (
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-left transition-colors hover:bg-slate-100"
+              onClick={openCreateMessageModal}
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm">
+                <Megaphone size={18} aria-hidden="true" />
+              </span>
+              <span className="min-h-10 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-500">
+                Post an announcement
+              </span>
+            </button>
+          ) : null}
+
+          {sectionErrors.activity ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.activity}</p> : null}
+
+          {boardItems.length ? (
+            <div className="space-y-3">
+              {boardItems.map((item) => (
+                <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm">
+                        {item.kind === 'message' ? <Megaphone size={18} aria-hidden="true" /> : activityIcon(item.activity.type)}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-slate-950">{item.actor}</p>
+                          <Badge className={item.kind === 'message' ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}>
+                            {item.kind === 'message' ? 'Announcement' : 'Activity'}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
+                        <div className="mt-3 space-y-1">
+                          <p className="font-bold text-slate-950">{item.title}</p>
+                          <p className="text-sm leading-6 text-slate-600">{item.body}</p>
+                        </div>
+                      </div>
                     </div>
+                    {isAdmin && item.kind === 'message' ? (
+                      <div className="grid grid-cols-2 gap-2 sm:flex">
+                        <Button type="button" size="sm" variant="secondary" onClick={() => openEditMessageModal(item.message)}>
+                          Edit
+                        </Button>
+                        <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteMessage(item.message)}>
+                          Delete
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
-                {isSecondaryLoading ? 'Loading activity...' : 'No recent activity yet.'}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+              {isSecondaryLoading ? 'Loading board...' : 'No board updates yet.'}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="space-y-4 pt-4 sm:pt-5">
