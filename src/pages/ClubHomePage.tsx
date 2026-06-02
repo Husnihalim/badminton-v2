@@ -12,10 +12,12 @@ import {
   MapPin,
   Megaphone,
   MessageCircle,
+  Pencil,
   Settings,
   ShieldCheck,
   Share2,
   Trophy,
+  Trash2,
   UserPlus,
   Users,
   X,
@@ -39,6 +41,7 @@ import {
   getClubMatches,
   getClubMessages,
   getClubMembers,
+  deleteMatch,
   getEventRsvps,
   getMyEventRsvps,
   getMyMembership,
@@ -111,6 +114,7 @@ export default function ClubHomePage() {
 
   const [showEventModal, setShowEventModal] = useState(false)
   const [showScoreModal, setShowScoreModal] = useState(false)
+  const [editingMatch, setEditingMatch] = useState<MatchWithDetails | null>(null)
   const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false)
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   
@@ -139,6 +143,39 @@ export default function ClubHomePage() {
   const isMember = !!myMembership
   const canJoin = user && !isMember && club?.open_join !== false
   const inviteUrl = club?.invite_code ? buildInviteUrl(club.invite_code) : ''
+
+  const closeScoreModal = () => {
+    setShowScoreModal(false)
+    setEditingMatch(null)
+  }
+
+  const handleCreateScore = () => {
+    setEditingMatch(null)
+    setShowScoreModal(true)
+  }
+
+  const handleEditMatch = (match: MatchWithDetails) => {
+    setEditingMatch(match)
+    setShowScoreModal(true)
+  }
+
+  const handleDeleteMatch = async (matchId: string) => {
+    if (!window.confirm('Delete this score? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setIsSecondaryLoading(true)
+      await deleteMatch(matchId)
+      await loadClubData()
+      setSuccessMessage('Score deleted successfully.')
+    } catch (err) {
+      console.error('Delete match failed:', err)
+      setActionError(getErrorMessage(err, 'Failed to delete score'))
+    } finally {
+      setIsSecondaryLoading(false)
+    }
+  }
 
   const loadClubData = useCallback(async () => {
     if (!clubId) return
@@ -651,7 +688,7 @@ export default function ClubHomePage() {
                 <CalendarDays size={17} aria-hidden="true" />
                 Create event
               </Button>
-              <Button variant="secondary" onClick={() => setShowScoreModal(true)}>
+              <Button variant="secondary" onClick={handleCreateScore}>
                 <ClipboardPenLine size={17} aria-hidden="true" />
                 Record score
               </Button>
@@ -886,8 +923,22 @@ export default function ClubHomePage() {
               <div className="space-y-3">
                 {matches.slice(0, 5).map((match) => (
                   <div key={match.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
-                    <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
+                        <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
+                      </div>
+                      {isAdmin ? (
+                        <div className="flex items-center gap-2">
+                          <Button type="button" variant="secondary" size="icon" onClick={() => handleEditMatch(match)} title="Edit score">
+                            <Pencil size={14} aria-hidden="true" />
+                          </Button>
+                          <Button type="button" variant="danger" size="icon" onClick={() => handleDeleteMatch(match.id)} title="Delete score">
+                            <Trash2 size={14} aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                     <p className="mt-2 font-semibold text-emerald-700">
                       {match.score_sets?.map((set) => `${set.team1_score}-${set.team2_score}`).join(', ')}
                     </p>
@@ -1078,9 +1129,13 @@ export default function ClubHomePage() {
 
       <ScoreRecordingModal
         isOpen={showScoreModal}
-        onClose={() => setShowScoreModal(false)}
-        clubId={club.id}
-        onScoreRecorded={loadClubData}
+        onClose={closeScoreModal}
+        clubId={club?.id}
+        editingMatch={editingMatch}
+        onScoreRecorded={() => {
+          loadClubData()
+          closeScoreModal()
+        }}
       />
     </Page>
   )

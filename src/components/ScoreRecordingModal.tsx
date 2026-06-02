@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardPenLine, Plus, Trash2, X } from 'lucide-react'
-import { createMatch, getClubMembers } from '../lib/api'
+import { createMatch, getClubMembers, updateMatch } from '../lib/api'
 import { getErrorMessage } from '../lib/utils'
-import type { Membership } from '../types'
+import type { MatchWithDetails, Membership } from '../types'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { Input } from './ui/input'
@@ -12,6 +12,7 @@ interface ScoreRecordingModalProps {
   isOpen: boolean
   onClose: () => void
   clubId?: string
+  editingMatch?: MatchWithDetails | null
   onScoreRecorded?: () => void
 }
 
@@ -46,7 +47,7 @@ function isPlayerValid(field: PlayerField): boolean {
   return Boolean(field.memberId || field.customName.trim())
 }
 
-export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRecorded }: ScoreRecordingModalProps) {
+export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMatch, onScoreRecorded }: ScoreRecordingModalProps) {
   const [matchTitle, setMatchTitle] = useState('')
   const [sport, setSport] = useState('badminton')
   const [matchType, setMatchType] = useState('singles')
@@ -76,6 +77,44 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
       loadMembers()
     }
   }, [isOpen, clubId, loadMembers])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (editingMatch) {
+      setMatchTitle(editingMatch.title || '')
+      setSport(editingMatch.sport)
+      setMatchType(editingMatch.match_type)
+
+      const team1 = editingMatch.participants.filter((participant) => participant.team === 1)
+      const team2 = editingMatch.participants.filter((participant) => participant.team === 2)
+
+      const createFieldFromParticipant = (participant?: MatchWithDetails['participants'][number]) => {
+        if (!participant) return createPlayerField()
+        return {
+          memberId: participant.user_id || '',
+          customName: participant.user_id ? '' : participant.guest_name || '',
+        }
+      }
+
+      setPlayer1A(createFieldFromParticipant(team1[0]))
+      setPlayer1B(createFieldFromParticipant(team1[1]))
+      setPlayer2A(createFieldFromParticipant(team2[0]))
+      setPlayer2B(createFieldFromParticipant(team2[1]))
+      setSets(editingMatch.score_sets.map((set) => ({ team1: String(set.team1_score), team2: String(set.team2_score) })) || [createScoreSetField()])
+      setErrors({})
+    } else {
+      setMatchTitle('')
+      setSport('badminton')
+      setMatchType('singles')
+      setPlayer1A(createPlayerField())
+      setPlayer1B(createPlayerField())
+      setPlayer2A(createPlayerField())
+      setPlayer2B(createPlayerField())
+      setSets([createScoreSetField()])
+      setErrors({})
+    }
+  }, [editingMatch, isOpen])
 
   if (!isOpen) return null
 
@@ -129,6 +168,8 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
     return Object.keys(nextErrors).length === 0
   }
 
+  const isEditing = Boolean(editingMatch)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate() || !clubId) return
@@ -136,44 +177,58 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
     setIsSubmitting(true)
 
     try {
-      const participants: {
-        team: 1 | 2
-        userId?: string
-        isGuest: boolean
-        guestName?: string
-      }[] = [
-        { team: 1, userId: player1A.memberId || undefined, isGuest: !player1A.memberId, guestName: player1A.customName || undefined },
-        { team: 2, userId: player2A.memberId || undefined, isGuest: !player2A.memberId, guestName: player2A.customName || undefined },
-      ]
+      const scoreSets = sets.map((set, index) => ({
+        set_number: index + 1,
+        team1_score: Number(set.team1),
+        team2_score: Number(set.team2),
+      }))
 
-      if (matchType === 'doubles') {
-        participants.push(
-          { team: 1, userId: player1B.memberId || undefined, isGuest: !player1B.memberId, guestName: player1B.customName || undefined },
-          { team: 2, userId: player2B.memberId || undefined, isGuest: !player2B.memberId, guestName: player2B.customName || undefined }
-        )
+      if (isEditing && editingMatch) {
+        await updateMatch({
+          match_id: editingMatch.id,
+          title: matchTitle,
+          sport,
+          match_type: matchType as 'singles' | 'doubles',
+          score_sets: scoreSets,
+        })
+      } else {
+        const participants: {
+          team: 1 | 2
+          userId?: string
+          isGuest: boolean
+          guestName?: string
+        }[] = [
+          { team: 1, userId: player1A.memberId || undefined, isGuest: !player1A.memberId, guestName: player1A.customName || undefined },
+          { team: 2, userId: player2A.memberId || undefined, isGuest: !player2A.memberId, guestName: player2A.customName || undefined },
+        ]
+
+        if (matchType === 'doubles') {
+          participants.push(
+            { team: 1, userId: player1B.memberId || undefined, isGuest: !player1B.memberId, guestName: player1B.customName || undefined },
+            { team: 2, userId: player2B.memberId || undefined, isGuest: !player2B.memberId, guestName: player2B.customName || undefined }
+          )
+        }
+
+        await createMatch({
+          club_id: clubId,
+          title: matchTitle,
+          sport,
+          match_type: matchType as 'singles' | 'doubles',
+          participants: participants.map((p) => ({
+            team: p.team,
+            user_id: p.userId || undefined,
+            is_guest: p.isGuest,
+            guest_name: p.guestName || undefined,
+          })),
+          score_sets: scoreSets,
+        })
       }
 
-      await createMatch({
-        club_id: clubId,
-        title: matchTitle,
-        sport,
-        match_type: matchType as 'singles' | 'doubles',
-        participants: participants.map((p) => ({
-          team: p.team,
-          user_id: p.userId || undefined,
-          is_guest: p.isGuest,
-          guest_name: p.guestName || undefined,
-        })),
-        score_sets: sets.map((set, index) => ({
-          set_number: index + 1,
-          team1_score: Number(set.team1),
-          team2_score: Number(set.team2),
-        })),
-      })
-
       const scoreSummary = sets.map((set) => `${set.team1}-${set.team2}`).join(', ')
-      showToast(`Score recorded: ${scoreSummary}`)
+      showToast(isEditing ? `Score updated: ${scoreSummary}` : `Score recorded: ${scoreSummary}`)
       setMatchTitle('')
+      setSport('badminton')
+      setMatchType('singles')
       setSets([createScoreSetField()])
       setPlayer1A(createPlayerField())
       setPlayer1B(createPlayerField())
@@ -185,10 +240,10 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
       onScoreRecorded?.()
     } catch (err) {
       console.error('Score recording failed:', err)
-      const baseMessage = getErrorMessage(err, 'Failed to record score')
-      const submitMessage = baseMessage === 'Failed to record score' && typeof err === 'object' && err !== null
-        ? `${baseMessage}: ${JSON.stringify(err)}`
-        : baseMessage
+      const baseMessage = getErrorMessage(err, isEditing ? 'Failed to update score' : 'Failed to record score')
+      const submitMessage = typeof err === 'object' && err !== null
+        ? `${baseMessage}: ${JSON.stringify(err)}
+` : baseMessage
       setErrors({ submit: submitMessage })
     } finally {
       setIsSubmitting(false)
@@ -200,12 +255,14 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
     field: PlayerField,
     setField: (f: PlayerField) => void,
     errorKey: string,
+    disabled = false,
   ) => (
     <label className="block space-y-2 text-sm font-semibold text-slate-700">
       <span>{label}</span>
       <Select
         value={field.memberId}
         onChange={(e) => setField({ memberId: e.target.value, customName: '' })}
+        disabled={disabled}
       >
         <option value="">Select member</option>
         {members.map((m) => (
@@ -218,6 +275,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
         value={field.customName}
         onChange={(e) => setField({ memberId: '', customName: e.target.value })}
         maxLength={120}
+        disabled={disabled}
       />
       {errors[errorKey] ? <p className="text-xs font-medium text-red-600">{errors[errorKey]}</p> : null}
     </label>
@@ -251,8 +309,10 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
                   <ClipboardPenLine size={18} aria-hidden="true" />
                 </span>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950">Record match score</h2>
-                  <p className="text-sm text-slate-600">Add singles or doubles results for this club.</p>
+                  <h2 className="text-xl font-bold text-slate-950">{isEditing ? 'Edit match score' : 'Record match score'}</h2>
+                  <p className="text-sm text-slate-600">
+                    {isEditing ? 'Update the score and refresh the leaderboard for this match.' : 'Add singles or doubles results for this club.'}
+                  </p>
                 </div>
               </div>
               <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close">
@@ -311,10 +371,10 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
               </label>
 
               <div className={matchType === 'doubles' ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4'}>
-                {renderPlayerField('Player 1', player1A, setPlayer1A, 'player1A')}
-                {matchType === 'doubles' ? renderPlayerField('Team 1, Player 2', player1B, setPlayer1B, 'player1B') : null}
-                {renderPlayerField('Player 2', player2A, setPlayer2A, 'player2A')}
-                {matchType === 'doubles' ? renderPlayerField('Team 2, Player 2', player2B, setPlayer2B, 'player2B') : null}
+                {renderPlayerField('Player 1', player1A, setPlayer1A, 'player1A', isEditing)}
+                {matchType === 'doubles' ? renderPlayerField('Team 1, Player 2', player1B, setPlayer1B, 'player1B', isEditing) : null}
+                {renderPlayerField('Player 2', player2A, setPlayer2A, 'player2A', isEditing)}
+                {matchType === 'doubles' ? renderPlayerField('Team 2, Player 2', player2B, setPlayer2B, 'player2B', isEditing) : null}
               </div>
 
               {errors.duplicate ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errors.duplicate}</p> : null}
@@ -371,7 +431,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Recording...' : 'Record score'}
+                  {isSubmitting ? 'Saving...' : isEditing ? 'Update score' : 'Record score'}
                 </Button>
               </div>
             </form>

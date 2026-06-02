@@ -333,6 +333,18 @@ export interface CreateMatchData {
   }[]
 }
 
+export interface UpdateMatchScoreData {
+  match_id: string
+  title?: string
+  sport?: string
+  match_type?: 'singles' | 'doubles'
+  score_sets: {
+    set_number: number
+    team1_score: number
+    team2_score: number
+  }[]
+}
+
 async function createMatchDirect(data: CreateMatchData): Promise<Match | null> {
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -450,6 +462,64 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
   })
 
   return createdMatch
+}
+
+export async function updateMatch(data: UpdateMatchScoreData): Promise<void> {
+  const updatePayload: Record<string, unknown> = {}
+
+  if (data.title !== undefined) updatePayload.title = data.title
+  if (data.sport !== undefined) updatePayload.sport = data.sport
+  if (data.match_type !== undefined) updatePayload.match_type = data.match_type
+
+  if (Object.keys(updatePayload).length) {
+    const { error: matchUpdateError } = await supabase
+      .from('matches')
+      .update(updatePayload)
+      .eq('id', data.match_id)
+
+    if (matchUpdateError) {
+      console.error('Error updating match:', matchUpdateError)
+      throw new Error(getErrorMessage(matchUpdateError, 'Failed to update match'))
+    }
+  }
+
+  const { error: deleteScoresError } = await supabase
+    .from('score_sets')
+    .delete()
+    .eq('match_id', data.match_id)
+
+  if (deleteScoresError) {
+    console.error('Error deleting old score sets:', deleteScoresError)
+    throw new Error(getErrorMessage(deleteScoresError, 'Failed to update match scores'))
+  }
+
+  const scoreRows = data.score_sets.map((set) => ({
+    match_id: data.match_id,
+    set_number: set.set_number,
+    team1_score: set.team1_score,
+    team2_score: set.team2_score,
+  }))
+
+  const { error: insertScoresError } = await supabase
+    .from('score_sets')
+    .insert(scoreRows)
+
+  if (insertScoresError) {
+    console.error('Error inserting new score sets:', insertScoresError)
+    throw new Error(getErrorMessage(insertScoresError, 'Failed to update match scores'))
+  }
+}
+
+export async function deleteMatch(matchId: string): Promise<void> {
+  const { error } = await supabase
+    .from('matches')
+    .delete()
+    .eq('id', matchId)
+
+  if (error) {
+    console.error('Error deleting match:', error)
+    throw new Error(getErrorMessage(error, 'Failed to delete match'))
+  }
 }
 
 async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<ClubLeaderboardRow[]> {
