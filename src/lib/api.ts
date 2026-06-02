@@ -805,6 +805,8 @@ export async function removeMember(clubId: string, userId: string): Promise<void
     .update({ status: 'inactive', role: 'member' } as never)
     .eq('club_id', clubId)
     .eq('user_id', userId)
+    .select('id')
+    .single()
 
   if (fallbackError) {
     console.error('Error removing member:', fallbackError)
