@@ -976,8 +976,7 @@ export default function ClubHomePage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-semibold text-emerald-700">{player.pointsFor} pts</div>
-                        <div className="text-sm font-semibold text-red-600">{player.pointsAgainst} pts</div>
+                        <div className="text-sm font-semibold text-slate-950">{player.pointsFor} / {player.pointsAgainst} pts</div>
                       </div>
                     </div>
                   </div>

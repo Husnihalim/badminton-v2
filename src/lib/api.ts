@@ -662,7 +662,18 @@ export async function getClubLeaderboard(clubId: string, limit = 10): Promise<Cl
     return []
   }
 
-  return (data as ClubLeaderboardRow[]) || []
+  const rows = (data as unknown as Array<Record<string, unknown>>) || []
+
+  return rows.map((row) => ({
+    name: (row.name as string) ?? '',
+    games: Number(row.games ?? row.game_count ?? 0),
+    wins: Number(row.wins ?? 0),
+    losses: Number(row.losses ?? 0),
+    winPercentage: Number(row.winPercentage ?? row.win_percentage ?? 0),
+    pointsFor: Number(row.pointsFor ?? row.points_for ?? 0),
+    pointsAgainst: Number(row.pointsAgainst ?? row.points_against ?? 0),
+    points: Number(row.points ?? row.point_difference ?? 0),
+  }))
 }
 
 // ============================================
