@@ -351,6 +351,7 @@ export interface UpdateMatchScoreData {
   title?: string
   sport?: string
   match_type?: 'singles' | 'doubles'
+  match_date?: string
   score_sets: {
     set_number: number
     team1_score: number
@@ -483,6 +484,7 @@ export async function updateMatch(data: UpdateMatchScoreData): Promise<void> {
   if (data.title !== undefined) updatePayload.title = data.title
   if (data.sport !== undefined) updatePayload.sport = data.sport
   if (data.match_type !== undefined) updatePayload.match_type = data.match_type
+  if (data.match_date !== undefined) updatePayload.match_date = data.match_date
 
   if (Object.keys(updatePayload).length) {
     const { error: matchUpdateError } = await supabase

@@ -49,6 +49,7 @@ function isPlayerValid(field: PlayerField): boolean {
 
 export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMatch, onScoreRecorded }: ScoreRecordingModalProps) {
   const [matchTitle, setMatchTitle] = useState('')
+  const [matchDate, setMatchDate] = useState<string>('')
   const [sport, setSport] = useState('badminton')
   const [matchType, setMatchType] = useState('singles')
   const [player1A, setPlayer1A] = useState<PlayerField>(createPlayerField())
@@ -83,6 +84,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
 
     if (editingMatch) {
       setMatchTitle(editingMatch.title || '')
+      setMatchDate(editingMatch.match_date)
       setSport(editingMatch.sport)
       setMatchType(editingMatch.match_type)
 
@@ -105,6 +107,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
       setErrors({})
     } else {
       setMatchTitle('')
+      setMatchDate(new Date().toISOString().split('T')[0])
       setSport('badminton')
       setMatchType('singles')
       setPlayer1A(createPlayerField())
@@ -126,8 +129,8 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
   const validate = (): boolean => {
     const nextErrors: Record<string, string> = {}
 
-    if (!matchTitle.trim()) nextErrors.matchTitle = 'Match title is required.'
     if (matchTitle.length > 120) nextErrors.matchTitle = 'Match title must be 120 characters or fewer.'
+    if (!matchDate) nextErrors.matchDate = 'Match date is required.'
     if (!isPlayerValid(player1A)) nextErrors.player1A = 'Player 1 is required.'
     if (!isPlayerValid(player2A)) nextErrors.player2A = 'Player 2 is required.'
 
@@ -186,9 +189,10 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
       if (isEditing && editingMatch) {
         await updateMatch({
           match_id: editingMatch.id,
-          title: matchTitle,
+          title: matchTitle || undefined,
           sport,
           match_type: matchType as 'singles' | 'doubles',
+          match_date: matchDate,
           score_sets: scoreSets,
         })
       } else {
@@ -211,9 +215,10 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
 
         await createMatch({
           club_id: clubId,
-          title: matchTitle,
+          title: matchTitle || undefined,
           sport,
           match_type: matchType as 'singles' | 'doubles',
+          match_date: matchDate,
           participants: participants.map((p) => ({
             team: p.team,
             user_id: p.userId || undefined,
@@ -227,6 +232,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
       const scoreSummary = sets.map((set) => `${set.team1}-${set.team2}`).join(', ')
       showToast(isEditing ? `Score updated: ${scoreSummary}` : `Score recorded: ${scoreSummary}`)
       setMatchTitle('')
+      setMatchDate(new Date().toISOString().split('T')[0])
       setSport('badminton')
       setMatchType('singles')
       setSets([createScoreSetField()])
@@ -335,31 +341,41 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
                     <option value="racquetball">Racquetball</option>
                   </Select>
                 </label>
-                <div className="space-y-1.5">
-                  <p className="text-sm font-semibold text-slate-700">Match type</p>
-                  <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
-                    {(['singles', 'doubles'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        className={`min-h-10 rounded-md px-3 text-sm font-semibold capitalize transition ${matchType === type ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'}`}
-                        onClick={() => {
-                          setMatchType(type)
-                          if (type === 'singles') {
-                            setPlayer1B(createPlayerField())
-                            setPlayer2B(createPlayerField())
-                          }
-                        }}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Match date</span>
+                  <Input
+                    type="date"
+                    value={matchDate}
+                    onChange={(e) => setMatchDate(e.target.value)}
+                  />
+                  {errors.matchDate ? <p className="text-xs font-medium text-red-600">{errors.matchDate}</p> : null}
+                </label>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1.5">Match type</p>
+                <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                  {(['singles', 'doubles'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`min-h-10 rounded-md px-3 text-sm font-semibold capitalize transition ${matchType === type ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'}`}
+                      onClick={() => {
+                        setMatchType(type)
+                        if (type === 'singles') {
+                          setPlayer1B(createPlayerField())
+                          setPlayer2B(createPlayerField())
+                        }
+                      }}
+                    >
+                      {type}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                <span>Match title</span>
+                <span>Match title <span className="font-normal text-slate-500">(optional)</span></span>
                 <Input
                   type="text"
                   placeholder="e.g. Monday Singles Game"
