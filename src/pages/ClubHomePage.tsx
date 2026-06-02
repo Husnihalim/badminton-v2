@@ -45,6 +45,7 @@ import {
   getEventRsvps,
   getMyEventRsvps,
   getMyMembership,
+  regenerateInviteLink,
   rejectJoinRequest,
   requestJoinClub,
   rsvpToEvent,
@@ -459,6 +460,29 @@ export default function ClubHomePage() {
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
+  const handleGenerateInviteLink = async () => {
+    if (!clubId) return
+
+    try {
+      setIsSecondaryLoading(true)
+      setActionError('')
+      const newCode = await regenerateInviteLink(clubId)
+
+      if (!newCode) {
+        throw new Error('No invite code returned')
+      }
+
+      setClub((currentClub) => (currentClub ? { ...currentClub, invite_code: newCode } : currentClub))
+      setSuccessMessage('Invite link generated.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      console.error('Generate invite link failed:', err)
+      setActionError(getErrorMessage(err, 'Failed to generate invite link'))
+    } finally {
+      setIsSecondaryLoading(false)
+    }
+  }
+
   const handleCopyEventShareLink = async (event: ClubEvent) => {
     await navigator.clipboard.writeText(buildEventShareUrl(event.id))
     setSuccessMessage('Game day link copied.')
@@ -663,15 +687,25 @@ export default function ClubHomePage() {
               </a>
             </div>
           ) : null}
-          {club.invite_code && isAdmin ? (
-            <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
-              <p className="min-w-0">
-                Invite link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
-              </p>
-              <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink}>
-                Copy
-              </Button>
-            </div>
+          {isAdmin ? (
+            club.invite_code ? (
+              <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
+                <p className="min-w-0">
+                  Invite link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
+                </p>
+                <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink}>
+                  Copy
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                <p className="text-slate-900">No invite link is available yet.</p>
+                <p>Generate one now so members and guests can join directly.</p>
+                <Button type="button" size="sm" variant="secondary" onClick={handleGenerateInviteLink} disabled={isSecondaryLoading}>
+                  Generate invite link
+                </Button>
+              </div>
+            )
           ) : null}
         </CardContent>
       </Card>
