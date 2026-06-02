@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, CalendarDays, Check, Club as ClubIcon, Copy, Link2, MessageCircle, Share2, ShieldCheck, Trophy, Users } from 'lucide-react'
+import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Share2, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubJoinRequests, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
@@ -44,7 +44,7 @@ function renderMatchPlayers(match: DashboardMatch) {
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
-  const { showToast, unreadCount } = useNotifications()
+  const { showToast } = useNotifications()
   const navigate = useNavigate()
   
   const [clubs, setClubs] = useState<DashboardClub[]>([])
@@ -52,7 +52,6 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<DashboardMatch[]>([])
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
-  const [adminAlertCount, setAdminAlertCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   
   const loadDashboardData = useCallback(async () => {
@@ -102,7 +101,6 @@ export default function DashboardPage() {
       const visibleEvents = allEvents.slice(0, 5)
       setEvents(visibleEvents)
       setMatches(allMatches.slice(0, 5))
-      setAdminAlertCount(pendingAdminRequests)
 
       const myEventRsvps = await getMyEventRsvps()
       setMyRsvps(myEventRsvps)
@@ -233,35 +231,6 @@ export default function DashboardPage() {
         <StatCard icon={<Trophy size={17} />} label="Matches" value={totalMatches} />
       </div>
 
-      <Card>
-        <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-            <Bell size={18} aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1 space-y-1">
-            <h2 className="text-base font-bold text-slate-950">Action summary</h2>
-            <p className="text-sm leading-6 text-slate-600">
-              {unreadCount ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}.` : 'No unread notifications.'}
-              {' '}
-              {adminAlertCount ? `${adminAlertCount} pending join request${adminAlertCount !== 1 ? 's' : ''} need review.` : 'No admin requests waiting.'}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="flex items-start gap-3 pt-4 sm:pt-5">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-            <Link2 size={18} aria-hidden="true" />
-          </span>
-          <div className="space-y-1">
-            <h2 className="text-base font-bold text-slate-950">Have an invite link?</h2>
-            <p className="text-sm leading-6 text-slate-600">
-              Open the club invite link from your friend. It will add the club directly after you log in.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-slate-950">Your clubs</h2>
