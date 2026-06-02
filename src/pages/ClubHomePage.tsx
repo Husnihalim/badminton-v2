@@ -961,13 +961,25 @@ export default function ClubHomePage() {
             {leaderboard.length ? (
               <div className="space-y-2">
                 {leaderboard.slice(0, 10).map((player, index) => (
-                  <div key={player.name} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <span className="font-mono text-sm font-bold text-slate-500">#{index + 1}</span>
-                    <span className="min-w-0 truncate font-semibold text-slate-950">{player.name}</span>
-                    <div className="flex gap-3 text-sm">
-                      <span className="font-semibold text-emerald-700">{player.wins}W</span>
-                      <span className="font-semibold text-red-600">{player.losses}L</span>
-                      <span className="font-bold text-slate-950">{player.points} pts</span>
+                  <div key={player.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-sm font-bold text-slate-500">#{index + 1}</span>
+                          <span className="truncate font-semibold text-slate-950">{player.name}</span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                          <span>{player.games} GP</span>
+                          <span>{player.wins}W</span>
+                          <span>{player.losses}L</span>
+                          <span>{player.winPercentage}%</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-emerald-700">+{player.pointsFor}</div>
+                        <div className="text-sm font-semibold text-red-600">-{player.pointsAgainst}</div>
+                        <div className="mt-1 text-xs text-slate-500">Δ {player.points}</div>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -58,8 +58,12 @@ type ClubMessageProfileRow = ClubMessage & {
 
 export type ClubLeaderboardRow = {
   name: string
+  games: number
   wins: number
   losses: number
+  winPercentage: number
+  pointsFor: number
+  pointsAgainst: number
   points: number
 }
 
@@ -551,36 +555,58 @@ async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<Club
     score_sets?: Array<{ team1_score: number; team2_score: number }>
   }>
 
-  const leaderboard = new Map<string, { wins: number; losses: number }>()
+  const leaderboard = new Map<string, { wins: number; losses: number; pointsFor: number; pointsAgainst: number }>()
 
   for (const match of rows) {
     const scoreSets = match.score_sets || []
     const team1Sets = scoreSets.filter((set) => set.team1_score > set.team2_score).length
     const team2Sets = scoreSets.filter((set) => set.team2_score > set.team1_score).length
+    const team1Points = scoreSets.reduce((total, set) => total + set.team1_score, 0)
+    const team2Points = scoreSets.reduce((total, set) => total + set.team2_score, 0)
 
-    if (team1Sets === team2Sets || scoreSets.length === 0) continue
+    if (scoreSets.length === 0) continue
+    const decidedMatch = team1Sets !== team2Sets
     const winningTeam = team1Sets > team2Sets ? 1 : 2
 
     for (const participant of match.match_participants || []) {
       const name = participant.profiles?.display_name || participant.profiles?.name || participant.guest_name || 'Unknown'
-      const stats = leaderboard.get(name) ?? { wins: 0, losses: 0 }
-      if (participant.team === winningTeam) {
-        stats.wins += 1
+      const stats = leaderboard.get(name) ?? { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 }
+
+      if (participant.team === 1) {
+        stats.pointsFor += team1Points
+        stats.pointsAgainst += team2Points
       } else {
-        stats.losses += 1
+        stats.pointsFor += team2Points
+        stats.pointsAgainst += team1Points
       }
+
+      if (decidedMatch) {
+        if (participant.team === winningTeam) {
+          stats.wins += 1
+        } else {
+          stats.losses += 1
+        }
+      }
+
       leaderboard.set(name, stats)
     }
   }
 
   return Array.from(leaderboard.entries())
-    .map(([name, { wins, losses }]) => ({
-      name,
-      wins,
-      losses,
-      points: wins * 3,
-    }))
-    .sort((a, b) => b.points - a.points || b.wins - a.wins || a.losses - b.losses || a.name.localeCompare(b.name))
+    .map(([name, { wins, losses, pointsFor, pointsAgainst }]) => {
+      const games = wins + losses
+      return {
+        name,
+        games,
+        wins,
+        losses,
+        winPercentage: games > 0 ? Math.round((wins / games) * 100) : 0,
+        pointsFor,
+        pointsAgainst,
+        points: pointsFor - pointsAgainst,
+      }
+    })
+    .sort((a, b) => b.points - a.points || b.winPercentage - a.winPercentage || b.wins - a.wins || a.name.localeCompare(b.name))
     .slice(0, Math.max(limit, 1))
 }
 
