@@ -8,7 +8,7 @@ type AuthContextType = {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
-  register: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }>
+  register: (email: string, name: string, password: string, inviteToken?: string | null) => Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }>
   refreshUser: () => Promise<User | null>
   logout: () => Promise<void>
 }
@@ -195,9 +195,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (
     email: string,
     name: string,
-    password: string
+    password: string,
+    inviteToken?: string | null
   ): Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase()
+    const normalizedInviteToken = inviteToken?.trim().toUpperCase() || null
 
     const { data: existingProfile, error: profileLookupError } = await supabase
       .from('profiles')
@@ -227,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: {
         data: {
           name,
+          ...(normalizedInviteToken ? { invite_token: normalizedInviteToken } : {}),
         },
       },
     })

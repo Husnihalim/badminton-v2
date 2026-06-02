@@ -47,7 +47,7 @@ export default function RegisterPage() {
       setError('')
       setSuccessMessage('')
 
-      const result = await register(email, name, password)
+      const result = await register(email, name, password, getInviteTokenFromRedirect(redirectTo))
       if (!result.success) {
         setError(result.error || 'Could not create account. Please try again.')
         return
@@ -160,4 +160,9 @@ export default function RegisterPage() {
 function getSafeRedirect(value: string | null) {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return '/dashboard'
   return value
+}
+
+function getInviteTokenFromRedirect(redirectTo: string) {
+  const match = redirectTo.match(/^\/(?:invite|join)\/([^/?#]+)/)
+  return match ? decodeURIComponent(match[1]).trim().toUpperCase() : null
 }

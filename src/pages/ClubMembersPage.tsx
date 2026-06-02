@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Shield, Trash2, UserRound, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getClub, getClubMembers, getMyMembership, removeMember, updateMemberRole } from '../lib/api'
+import { supabase } from '../lib/supabase'
 import type { Club, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -66,6 +67,30 @@ export default function ClubMembersPage() {
     if (clubId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       loadClubData()
+    }
+  }, [clubId, loadClubData])
+
+  useEffect(() => {
+    if (!clubId) return
+
+    const channel = supabase
+      .channel(`club-members:${clubId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'memberships', filter: `club_id=eq.${clubId}` },
+        () => {
+          loadClubData()
+        }
+      )
+      .subscribe()
+
+    const fallbackRefresh = window.setInterval(() => {
+      loadClubData()
+    }, 60000)
+
+    return () => {
+      window.clearInterval(fallbackRefresh)
+      supabase.removeChannel(channel)
     }
   }, [clubId, loadClubData])
 
