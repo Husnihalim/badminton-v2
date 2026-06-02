@@ -102,7 +102,7 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Aisha K."
-                disabled={!isSupabaseConfigured}
+                disabled={!isSupabaseConfigured || isSubmitting}
               />
             </div>
 
@@ -115,7 +115,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                disabled={!isSupabaseConfigured}
+                disabled={!isSupabaseConfigured || isSubmitting}
               />
             </div>
 
@@ -127,7 +127,7 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a password"
-                disabled={!isSupabaseConfigured}
+                disabled={!isSupabaseConfigured || isSubmitting}
               />
             </div>
 
@@ -139,11 +139,11 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter your password"
-                disabled={!isSupabaseConfigured}
+                disabled={!isSupabaseConfigured || isSubmitting}
               />
             </div>
 
-            <Button type="submit" fullWidth disabled={!isSupabaseConfigured}>
+            <Button type="submit" fullWidth disabled={!isSupabaseConfigured || isSubmitting}>
               <UserPlus size={17} aria-hidden="true" />
               {isSubmitting ? 'Creating account...' : 'Sign up'}
             </Button>

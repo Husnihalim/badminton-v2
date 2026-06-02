@@ -199,6 +199,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase()
 
+    const { data: existingProfile, error: profileLookupError } = await supabase
+      .from('profiles')
+      .select('id')
+      .ilike('email', normalizedEmail)
+      .limit(1)
+      .maybeSingle()
+
+    if (profileLookupError) {
+      console.error('Registration profile lookup error:', profileLookupError.message)
+      return {
+        success: false,
+        error: 'Could not verify this email. Please try again.',
+      }
+    }
+
+    if (existingProfile) {
+      return {
+        success: false,
+        error: 'This email is already registered. Please log in instead.',
+      }
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,
