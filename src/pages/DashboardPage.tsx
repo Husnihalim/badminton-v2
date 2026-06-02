@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, CalendarDays, Check, ClipboardPenLine, Club as ClubIcon, Link2, ShieldCheck, Trophy, Users } from 'lucide-react'
+import { Bell, CalendarDays, Check, ClipboardPenLine, Club as ClubIcon, Copy, Link2, MessageCircle, Share2, ShieldCheck, Trophy, Users } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
-import { getMyClubs, getClubEvents, getClubJoinRequests, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
+import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubJoinRequests, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
 import type { Club, ClubEvent, EventRsvp, MatchWithDetails } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -129,6 +129,28 @@ export default function DashboardPage() {
       console.error('Error updating dashboard RSVP:', err)
       showToast('Failed to update session response', 'error')
     }
+  }
+
+  const handleCopyEventShareLink = async (event: DashboardEvent) => {
+    await navigator.clipboard.writeText(buildEventShareUrl(event.id))
+    showToast('Game day link copied.', 'success')
+  }
+
+  const handleNativeEventShare = async (event: DashboardEvent) => {
+    const shareUrl = buildEventShareUrl(event.id)
+    const shareText = buildEventShareText(event)
+
+    if (!navigator.share) {
+      await navigator.clipboard.writeText(shareUrl)
+      showToast('Game day link copied.', 'success')
+      return
+    }
+
+    await navigator.share({
+      title: event.title,
+      text: shareText,
+      url: shareUrl,
+    })
   }
 
   useEffect(() => {
@@ -299,6 +321,8 @@ export default function DashboardPage() {
               const holdingRsvps = eventRsvps.filter((r) => r.status === 'maybe')
               const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
               const isFull = Boolean(event.max_participants && acceptedRsvps.length >= event.max_participants)
+              const eventShareText = buildEventShareText(event)
+              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(eventShareText)}`
 
               return (
               <Card key={event.id}>
@@ -311,10 +335,24 @@ export default function DashboardPage() {
                     <p className="text-sm text-slate-700">{new Date(event.event_date).toLocaleString()}</p>
                     <p className="text-sm text-slate-600">{event.location}</p>
                     {formatEventCost(event) ? <p className="text-sm font-semibold text-slate-800">{formatEventCost(event)}</p> : null}
-                    <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
-                      {event.signup_open ? 'Open for signup' : 'Closed'}
-                    </Badge>
+                  <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+                    {event.signup_open ? 'Open for signup' : 'Closed'}
+                  </Badge>
                   </div>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Button type="button" size="sm" variant="secondary" onClick={() => handleNativeEventShare(event)}>
+                      <Share2 size={15} aria-hidden="true" />
+                      Share
+                    </Button>
+                    <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50" href={whatsappUrl} target="_blank" rel="noreferrer">
+                      <MessageCircle size={15} aria-hidden="true" />
+                      WhatsApp
+                    </a>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => handleCopyEventShareLink(event)}>
+                      <Copy size={15} aria-hidden="true" />
+                      Copy link
+                    </Button>
                   </div>
                   {event.signup_open ? (
                     <div className="grid grid-cols-3 gap-2">

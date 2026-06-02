@@ -6,12 +6,15 @@ import {
   CalendarDays,
   Check,
   ClipboardPenLine,
+  Copy,
   DollarSign,
   ExternalLink,
   MapPin,
   Megaphone,
+  MessageCircle,
   Settings,
   ShieldCheck,
+  Share2,
   Trophy,
   UserPlus,
   Users,
@@ -21,6 +24,8 @@ import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import { useAuth } from '../context/AuthContext'
 import {
   approveJoinRequest,
+  buildEventShareText,
+  buildEventShareUrl,
   buildInviteUrl,
   createClubAnnouncement,
   createEvent,
@@ -417,6 +422,30 @@ export default function ClubHomePage() {
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
+  const handleCopyEventShareLink = async (event: ClubEvent) => {
+    await navigator.clipboard.writeText(buildEventShareUrl(event.id))
+    setSuccessMessage('Game day link copied.')
+    setTimeout(() => setSuccessMessage(''), 3000)
+  }
+
+  const handleNativeEventShare = async (event: ClubEvent) => {
+    const shareUrl = buildEventShareUrl(event.id)
+    const shareText = buildEventShareText({ ...event, clubName: club?.name })
+
+    if (!navigator.share) {
+      await navigator.clipboard.writeText(shareUrl)
+      setSuccessMessage('Game day link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+      return
+    }
+
+    await navigator.share({
+      title: event.title,
+      text: shareText,
+      url: shareUrl,
+    })
+  }
+
   const handleRsvp = async (eventId: string, status: 'going' | 'maybe' | 'not_going') => {
     if (!user) return
 
@@ -682,6 +711,8 @@ export default function ClubHomePage() {
                 const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
                 const rsvpCount = eventRsvpCounts[event.id] || acceptedRsvps.length
                 const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
+                const eventShareText = buildEventShareText({ ...event, clubName: club.name })
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(eventShareText)}`
                 
                 return (
                   <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -713,6 +744,20 @@ export default function ClubHomePage() {
                         {event.signup_open ? 'Open' : 'Closed'}
                       </Badge>
                       {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <Button type="button" size="sm" variant="secondary" onClick={() => handleNativeEventShare(event)}>
+                        <Share2 size={15} aria-hidden="true" />
+                        Share
+                      </Button>
+                      <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50" href={whatsappUrl} target="_blank" rel="noreferrer">
+                        <MessageCircle size={15} aria-hidden="true" />
+                        WhatsApp
+                      </a>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => handleCopyEventShareLink(event)}>
+                        <Copy size={15} aria-hidden="true" />
+                        Copy link
+                      </Button>
                     </div>
                     {isMember && event.signup_open ? (
                       <div className="grid grid-cols-3 gap-2">

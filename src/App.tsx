@@ -13,6 +13,7 @@ const ClubHomePage = lazy(() => import('./pages/ClubHomePage'))
 const ClubSettingsPage = lazy(() => import('./pages/ClubSettingsPage'))
 const ClubMembersPage = lazy(() => import('./pages/ClubMembersPage'))
 const InviteJoinPage = lazy(() => import('./pages/InviteJoinPage'))
+const GameDaySharePage = lazy(() => import('./pages/GameDaySharePage'))
 const LoginPage = lazy(() => import('./pages/Auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/Auth/ForgotPasswordPage'))
@@ -37,6 +38,7 @@ function App() {
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/invite/:inviteToken" element={<InviteJoinPage />} />
                   <Route path="/join/:inviteCode" element={<InviteJoinPage />} />
+                  <Route path="/game/:eventId" element={<GameDaySharePage />} />
                   <Route path="/club/:clubId" element={<ClubHomePage />} />
                   <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
                   <Route path="/club/:clubId/members" element={<ClubMembersPage />} />
