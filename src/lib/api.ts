@@ -873,6 +873,30 @@ export async function rsvpToEvent(eventId: string, status: 'going' | 'maybe' | '
   return data as EventRsvp
 }
 
+export async function adminUpdateEventRsvp(
+  eventId: string,
+  userId: string,
+  status: 'going' | 'maybe' | 'not_going'
+): Promise<EventRsvp | null> {
+  const { data, error } = await supabase
+    .from('event_rsvps')
+    .upsert({
+      event_id: eventId,
+      user_id: userId,
+      status,
+      updated_at: new Date().toISOString()
+    } as never, { onConflict: 'event_id,user_id' })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error admin updating RSVP:', error)
+    throw error
+  }
+
+  return data as EventRsvp
+}
+
 export async function joinClubBySharedEvent(eventId: string): Promise<Membership | null> {
   const { data, error } = await supabase.rpc('join_club_by_shared_event', {
     target_event_id: eventId,

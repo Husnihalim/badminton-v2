@@ -21,6 +21,8 @@ import {
   X,
   Trophy,
   Flame,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import ScorecardShareModal from '../components/ScorecardShareModal'
@@ -49,6 +51,7 @@ import {
   rejectJoinRequest,
   requestJoinClub,
   rsvpToEvent,
+  adminUpdateEventRsvp,
   updateClubMessage,
   updateEvent,
   type ClubLeaderboardRow,
@@ -139,6 +142,13 @@ export default function ClubHomePage() {
   const [messages, setMessages] = useState<ClubMessage[]>([])
   const [leaderboard, setLeaderboard] = useState<ClubLeaderboardRow[]>([])
   const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
+
+  const [eventsViewMode, setEventsViewMode] = useState<'list' | 'calendar'>('list')
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date())
+  const [showManageRsvpEventId, setShowManageRsvpEventId] = useState<string | null>(null)
+  const [isRsvpUpdating, setIsRsvpUpdating] = useState<string | null>(null)
+  const [nowTimestamp] = useState(() => Date.now())
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = !!myMembership
@@ -242,11 +252,9 @@ export default function ClubHomePage() {
       }
 
       setClub(clubData)
-      const visibleEvents = [...eventsData]
-        .filter((event) => new Date(event.event_date).getTime() >= Date.now())
+      const allEvents = [...eventsData]
         .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
-        .slice(0, 5)
-      setEvents(visibleEvents)
+      setEvents(allEvents)
       setMyMembership(membershipData)
       setMessages(messageData.slice(0, 6))
 
@@ -261,12 +269,12 @@ export default function ClubHomePage() {
       }
 
       const rsvpResults = await Promise.allSettled(
-        visibleEvents.map((event) => getEventRsvps(event.id))
+        allEvents.map((event) => getEventRsvps(event.id))
       )
       const rsvpCounts: Record<string, number> = {}
       const rsvpMap: Record<string, EventRsvp[]> = {}
       rsvpResults.forEach((result, index) => {
-        const event = visibleEvents[index]
+        const event = allEvents[index]
         if (result.status === 'fulfilled') {
           rsvpMap[event.id] = result.value
           rsvpCounts[event.id] = result.value.filter((r) => r.status === 'going').length
@@ -577,6 +585,269 @@ export default function ClubHomePage() {
     } catch (err) {
       setActionError(getErrorMessage(err, 'Failed to RSVP'))
     }
+  }
+
+  const handleAdminRsvpUpdate = async (eventId: string, userId: string, status: 'going' | 'maybe' | 'not_going') => {
+    try {
+      setIsRsvpUpdating(`${eventId}-${userId}`)
+      const updated = await adminUpdateEventRsvp(eventId, userId, status)
+      
+      if (updated) {
+        if (userId === user?.id) {
+          const rsvps = await getMyEventRsvps()
+          setMyRsvps(rsvps)
+        }
+        
+        const freshRsvps = await getEventRsvps(eventId)
+        setEventRsvpsByEvent((prev) => ({
+          ...prev,
+          [eventId]: freshRsvps,
+        }))
+        setEventRsvpCounts((prev) => ({
+          ...prev,
+          [eventId]: freshRsvps.filter((r) => r.status === 'going').length,
+        }))
+      }
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to update member RSVP'))
+    } finally {
+      setIsRsvpUpdating(null)
+    }
+  }
+
+  const renderEventCard = (event: ClubEvent) => {
+    const myRsvp = myRsvps.find((r) => r.event_id === event.id)
+    const eventRsvps = eventRsvpsByEvent[event.id] || []
+    const acceptedRsvps = eventRsvps.filter((r) => r.status === 'going')
+    const holdingRsvps = eventRsvps.filter((r) => r.status === 'maybe')
+    const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
+    const rsvpCount = eventRsvpCounts[event.id] || acceptedRsvps.length
+    const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
+    const eventShareText = buildEventShareText({ ...event, clubName: club?.name || '' })
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(eventShareText)}`
+
+    return (
+      <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          <div className="space-y-1">
+            <h3 className="font-bold text-slate-950">{event.title}</h3>
+            <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
+            {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
+            {formatEventCost(event) ? (
+              <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
+                <DollarSign size={15} aria-hidden="true" />
+                {formatEventCost(event)}
+              </p>
+            ) : null}
+          </div>
+          {isAdmin ? (
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Button type="button" size="sm" variant="secondary" onClick={() => openEditEventModal(event)}>
+                Edit
+              </Button>
+              <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteEvent(event)}>
+                Delete
+              </Button>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+            {event.signup_open ? 'Open' : 'Closed'}
+          </Badge>
+          {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Button type="button" size="sm" variant="secondary" onClick={() => handleNativeEventShare(event)}>
+            <Share2 size={15} aria-hidden="true" />
+            Share
+          </Button>
+          <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50" href={whatsappUrl} target="_blank" rel="noreferrer">
+            <MessageCircle size={15} aria-hidden="true" />
+            WhatsApp
+          </a>
+          <Button type="button" size="sm" variant="secondary" onClick={() => handleCopyEventShareLink(event)}>
+            <Copy size={15} aria-hidden="true" />
+            Copy link
+          </Button>
+        </div>
+        {isMember && event.signup_open ? (
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              ['going', 'Accept'],
+              ['maybe', 'Hold'],
+              ['not_going', 'Reject'],
+            ].map(([status, label]) => (
+              <Button
+                key={status}
+                type="button"
+                size="sm"
+                variant={myRsvp?.status === status ? 'primary' : 'secondary'}
+                disabled={status === 'going' && isFull && myRsvp?.status !== 'going'}
+                onClick={() => handleRsvp(event.id, status as 'going' | 'maybe' | 'not_going')}
+              >
+                {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
+                {label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+        {myRsvp ? (
+          <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p>
+        ) : null}
+        {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
+        <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
+            <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
+            <Badge className="border-slate-200 bg-slate-50 text-slate-700">{rejectedRsvps.length} rejected</Badge>
+          </div>
+          {acceptedRsvps.length ? (
+            <p className="text-sm leading-6 text-slate-700">
+              Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-slate-500">No accepted members yet.</p>
+          )}
+        </div>
+
+        {/* Admin Attendance Management Panel */}
+        {isAdmin && (
+          <div className="pt-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="w-full flex items-center justify-center gap-1.5"
+              onClick={() => setShowManageRsvpEventId(prev => prev === event.id ? null : event.id)}
+            >
+              <Users size={14} aria-hidden="true" />
+              {showManageRsvpEventId === event.id ? 'Hide attendance settings' : 'Manage member RSVPs'}
+            </Button>
+
+            {showManageRsvpEventId === event.id && (
+              <div className="mt-2.5 p-3 bg-slate-100 rounded-lg border border-slate-200 space-y-2">
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  Admin Control: Member Attendance List
+                </h4>
+                <div className="divide-y divide-slate-200 max-h-48 overflow-y-auto pr-0.5">
+                  {members
+                    .filter((m) => m.status === 'active')
+                    .map((member) => {
+                      const rsvp = eventRsvps.find((r) => r.user_id === member.user_id)
+                      const rsvpStatus = rsvp?.status || 'no_response'
+                      const loadingKey = `${event.id}-${member.user_id}`
+                      const isLoadingThis = isRsvpUpdating === loadingKey
+
+                      return (
+                        <div key={member.user_id} className="flex items-center justify-between py-1.5 text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] uppercase">
+                              {member.name ? member.name.slice(0, 2).toUpperCase() : 'M'}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-slate-800">{member.name || 'Anonymous'}</span>
+                              <span className="text-[9px] text-slate-500 capitalize">{member.role}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {isLoadingThis ? (
+                              <span className="text-[9px] text-slate-500 px-2">Syncing...</span>
+                            ) : (
+                              <>
+                                {[
+                                  ['going', 'Going', 'bg-emerald-100 text-emerald-800 border-emerald-200'],
+                                  ['maybe', 'Maybe', 'bg-amber-100 text-amber-800 border-amber-200'],
+                                  ['not_going', 'No', 'bg-slate-100 text-slate-700 border-slate-200'],
+                                ].map(([status, label, colorClass]) => {
+                                  const isActive = rsvpStatus === status
+                                  return (
+                                    <button
+                                      key={status}
+                                      type="button"
+                                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
+                                        isActive 
+                                          ? colorClass
+                                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                                      }`}
+                                      onClick={() => handleAdminRsvpUpdate(event.id, member.user_id, status as 'going' | 'maybe' | 'not_going')}
+                                    >
+                                      {label}
+                                    </button>
+                                  )
+                                })}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Calendar date calculations
+  const handlePrevMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))
+  }
+
+  const handleNextMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))
+  }
+
+  const calendarYear = calendarDate.getFullYear()
+  const calendarMonth = calendarDate.getMonth()
+
+  const calendarFirstDay = new Date(calendarYear, calendarMonth, 1)
+  const calendarStartDayOfWeek = calendarFirstDay.getDay()
+  const calendarTotalDays = new Date(calendarYear, calendarMonth + 1, 0).getDate()
+  const calendarPrevMonthDays = new Date(calendarYear, calendarMonth, 0).getDate()
+
+  const calendarCells = []
+
+  // Prev month padding
+  for (let i = calendarStartDayOfWeek - 1; i >= 0; i--) {
+    calendarCells.push({
+      day: calendarPrevMonthDays - i,
+      isCurrentMonth: false,
+      date: new Date(calendarYear, calendarMonth - 1, calendarPrevMonthDays - i),
+    })
+  }
+
+  // Current month days
+  for (let i = 1; i <= calendarTotalDays; i++) {
+    calendarCells.push({
+      day: i,
+      isCurrentMonth: true,
+      date: new Date(calendarYear, calendarMonth, i),
+    })
+  }
+
+  // Next month padding to complete grid
+  const calendarTotalCells = Math.ceil(calendarCells.length / 7) * 7
+  const calendarNextMonthPadding = calendarTotalCells - calendarCells.length
+  for (let i = 1; i <= calendarNextMonthPadding; i++) {
+    calendarCells.push({
+      day: i,
+      isCurrentMonth: false,
+      date: new Date(calendarYear, calendarMonth + 1, i),
+    })
+  }
+
+  const getEventsForDate = (date: Date) => {
+    return events.filter((event) => {
+      const eDate = new Date(event.event_date)
+      return (
+        eDate.getDate() === date.getDate() &&
+        eDate.getMonth() === date.getMonth() &&
+        eDate.getFullYear() === date.getFullYear()
+      )
+    })
   }
 
   const loadJoinRequests = async () => {
@@ -925,111 +1196,171 @@ export default function ClubHomePage() {
 
       <Card>
         <CardContent className="space-y-4 pt-4 sm:pt-5">
-          <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
-          {sectionErrors.rsvps ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.rsvps}</p> : null}
-          {events.length ? (
-            <div className="space-y-3">
-              {events.map((event) => {
-                const myRsvp = myRsvps.find((r) => r.event_id === event.id)
-                const eventRsvps = eventRsvpsByEvent[event.id] || []
-                const acceptedRsvps = eventRsvps.filter((r) => r.status === 'going')
-                const holdingRsvps = eventRsvps.filter((r) => r.status === 'maybe')
-                const rejectedRsvps = eventRsvps.filter((r) => r.status === 'not_going')
-                const rsvpCount = eventRsvpCounts[event.id] || acceptedRsvps.length
-                const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
-                const eventShareText = buildEventShareText({ ...event, clubName: club.name })
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(eventShareText)}`
-                
-                return (
-                  <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                      <div className="space-y-1">
-                        <h3 className="font-bold text-slate-950">{event.title}</h3>
-                        <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
-                        {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
-                        {formatEventCost(event) ? (
-                          <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
-                            <DollarSign size={15} aria-hidden="true" />
-                            {formatEventCost(event)}
-                          </p>
-                        ) : null}
-                      </div>
-                      {isAdmin ? (
-                        <div className="grid grid-cols-2 gap-2 sm:flex">
-                          <Button type="button" size="sm" variant="secondary" onClick={() => openEditEventModal(event)}>
-                            Edit
-                          </Button>
-                          <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteEvent(event)}>
-                            Delete
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
-                        {event.signup_open ? 'Open' : 'Closed'}
-                      </Badge>
-                      {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      <Button type="button" size="sm" variant="secondary" onClick={() => handleNativeEventShare(event)}>
-                        <Share2 size={15} aria-hidden="true" />
-                        Share
-                      </Button>
-                      <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50" href={whatsappUrl} target="_blank" rel="noreferrer">
-                        <MessageCircle size={15} aria-hidden="true" />
-                        WhatsApp
-                      </a>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => handleCopyEventShareLink(event)}>
-                        <Copy size={15} aria-hidden="true" />
-                        Copy link
-                      </Button>
-                    </div>
-                    {isMember && event.signup_open ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          ['going', 'Accept'],
-                          ['maybe', 'Hold'],
-                          ['not_going', 'Reject'],
-                        ].map(([status, label]) => (
-                          <Button
-                            key={status}
-                            type="button"
-                            size="sm"
-                            variant={myRsvp?.status === status ? 'primary' : 'secondary'}
-                            disabled={status === 'going' && isFull && myRsvp?.status !== 'going'}
-                            onClick={() => handleRsvp(event.id, status as 'going' | 'maybe' | 'not_going')}
-                          >
-                            {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
-                            {label}
-                          </Button>
-                        ))}
-                      </div>
-                    ) : null}
-                    {myRsvp ? (
-                      <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p>
-                    ) : null}
-                    {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
-                    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
-                        <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-                        <Badge className="border-slate-200 bg-slate-50 text-slate-700">{rejectedRsvps.length} rejected</Badge>
-                      </div>
-                      {acceptedRsvps.length ? (
-                        <p className="text-sm leading-6 text-slate-700">
-                          Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
-                        </p>
-                      ) : (
-                        <p className="text-sm text-slate-500">No accepted members yet.</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
+            <div className="flex border border-slate-200 rounded-lg p-0.5 bg-slate-100/80">
+              <button
+                type="button"
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                  eventsViewMode === 'list'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-950'
+                }`}
+                onClick={() => setEventsViewMode('list')}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                  eventsViewMode === 'calendar'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-950'
+                }`}
+                onClick={() => setEventsViewMode('calendar')}
+              >
+                Calendar
+              </button>
             </div>
+          </div>
+
+          {sectionErrors.rsvps ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.rsvps}</p> : null}
+
+          {eventsViewMode === 'list' ? (
+            events.filter((e) => new Date(e.event_date).getTime() >= nowTimestamp - 24 * 60 * 60 * 1000).length ? (
+              <div className="space-y-3">
+                {events
+                  .filter((e) => new Date(e.event_date).getTime() >= nowTimestamp - 24 * 60 * 60 * 1000)
+                  .slice(0, 5)
+                  .map((event) => renderEventCard(event))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No upcoming game days yet.</p>
+            )
           ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No upcoming game days yet.</p>
+            <div className="space-y-4">
+              {/* Calendar Month Header */}
+              <div className="flex items-center justify-between px-1">
+                <span className="font-bold text-slate-800">
+                  {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={handlePrevMonth}
+                    style={{ padding: '6px 10px', minHeight: '36px' }}
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft size={16} aria-hidden="true" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleNextMonth}
+                    style={{ padding: '6px 10px', minHeight: '36px' }}
+                    aria-label="Next month"
+                  >
+                    <ChevronRight size={16} aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Day of Week Headers */}
+              <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-500 border-b border-slate-100 pb-2">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                  <div key={idx}>{day}</div>
+                ))}
+              </div>
+
+              {/* Grid Days */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarCells.map((cell, idx) => {
+                  const dayEvents = getEventsForDate(cell.date)
+                  const isSelected = selectedDate && 
+                    cell.date.getDate() === selectedDate.getDate() &&
+                    cell.date.getMonth() === selectedDate.getMonth() &&
+                    cell.date.getFullYear() === selectedDate.getFullYear()
+                  
+                  const isToday = 
+                    cell.date.getDate() === new Date().getDate() &&
+                    cell.date.getMonth() === new Date().getMonth() &&
+                    cell.date.getFullYear() === new Date().getFullYear()
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedDate(cell.date)}
+                      className={`relative flex flex-col items-center justify-between p-2 min-h-12 border rounded-lg transition-all ${
+                        cell.isCurrentMonth 
+                          ? 'text-slate-900 bg-white border-slate-200/60' 
+                          : 'text-slate-400 bg-slate-50/50 border-slate-100'
+                      } ${
+                        isSelected 
+                          ? 'ring-2 ring-emerald-600 bg-emerald-50/20 border-emerald-500' 
+                          : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className={`text-xs font-bold ${
+                        isToday ? 'bg-emerald-600 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold' : ''
+                      }`}>
+                        {cell.day}
+                      </span>
+                      {dayEvents.length > 0 && (
+                        <div className="flex gap-0.5 justify-center mt-1">
+                          {dayEvents.slice(0, 3).map((_, i) => (
+                            <span 
+                              key={i} 
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isSelected ? 'bg-emerald-600' : 'bg-slate-400'
+                              }`} 
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Selected Date Header and List */}
+              <div className="border-t border-slate-100 pt-4 mt-2">
+                <h4 className="text-sm font-bold text-slate-800 mb-3">
+                  Sessions on {selectedDate ? selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                </h4>
+                
+                {selectedDate && getEventsForDate(selectedDate).length > 0 ? (
+                  <div className="space-y-3">
+                    {getEventsForDate(selectedDate).map((event) => renderEventCard(event))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 px-4 border border-dashed border-slate-200 rounded-lg">
+                    <p className="text-xs text-slate-500 mb-2">No game days scheduled for this date.</p>
+                    {isAdmin && (
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="secondary"
+                        onClick={() => {
+                          if (selectedDate) {
+                            const year = selectedDate.getFullYear();
+                            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                            const day = String(selectedDate.getDate()).padStart(2, '0');
+                            setEventDate(`${year}-${month}-${day}T18:00`); // default to 6 PM
+                          }
+                          setShowEventModal(true);
+                        }}
+                      >
+                        + Create Session
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
