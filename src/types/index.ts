@@ -11,6 +11,7 @@ export interface User {
   bio?: string | null
   preferred_sport?: string | null
   avatar_url?: string | null
+  is_private?: boolean | null
 }
 
 // Extended User with metadata

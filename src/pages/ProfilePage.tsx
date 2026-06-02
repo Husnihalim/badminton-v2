@@ -36,6 +36,7 @@ export default function ProfilePage() {
   const [preferredSport, setPreferredSport] = useState('badminton')
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [isPrivate, setIsPrivate] = useState(false)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
 
   const loadMyClubs = useCallback(async () => {
@@ -64,6 +65,7 @@ export default function ProfilePage() {
       setPreferredSport(user.preferred_sport || 'badminton')
       setBio(user.bio || '')
       setAvatarUrl(user.avatar_url || null)
+      setIsPrivate(user.is_private || false)
       loadMyClubs()
     }
   }, [user, authLoading, navigate, loadMyClubs])
@@ -138,6 +140,7 @@ export default function ProfilePage() {
         city: city.trim() || null,
         preferred_sport: preferredSport || null,
         bio: bio.trim() || null,
+        is_private: isPrivate,
       })
       await refreshUser()
       setProfileMessage('Profile saved.')
@@ -257,6 +260,19 @@ export default function ProfilePage() {
               <span>Bio</span>
               <Textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={1000} placeholder="Short note about your playing level, availability, or club interests." />
             </label>
+
+            <div className="flex items-center gap-2 py-2">
+              <input
+                id="is-private"
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-350 text-emerald-700 focus:ring-emerald-700"
+              />
+              <label htmlFor="is-private" className="text-sm font-semibold text-slate-700 select-none">
+                Make my profile private (only show basic info to other members)
+              </label>
+            </div>
 
             <div className="flex justify-end">
               <Button type="submit" disabled={isSavingProfile}>

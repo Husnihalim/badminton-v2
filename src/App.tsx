@@ -18,6 +18,7 @@ const LoginPage = lazy(() => import('./pages/Auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/Auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'))
+const MemberProfilePage = lazy(() => import('./pages/MemberProfilePage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/member/:userId" element={<MemberProfilePage />} />
                   <Route path="/invite/:inviteToken" element={<InviteJoinPage />} />
                   <Route path="/join/:inviteCode" element={<InviteJoinPage />} />
                   <Route path="/game/:eventId" element={<GameDaySharePage />} />

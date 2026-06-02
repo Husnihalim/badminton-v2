@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useMemo, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
   const { showToast } = useNotifications()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   
   const [clubs, setClubs] = useState<DashboardClub[]>([])
   const [events, setEvents] = useState<DashboardEvent[]>([])
@@ -474,6 +475,26 @@ export default function DashboardPage() {
     
     return () => clearTimeout(timeout)
   }, [user, authLoading, loadDashboardData])
+
+  useEffect(() => {
+    const rivalParam = searchParams.get('rival')
+    if (rivalParam && clubMembers.length > 0) {
+      const matched = clubMembers.find(
+        (m) => m.name.toLowerCase() === rivalParam.toLowerCase()
+      )
+      if (matched) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedRival(matched.name)
+        setTimeout(() => {
+          const el = document.getElementById('rival-select')
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 300)
+      }
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, clubMembers, setSearchParams])
 
   if (authLoading || (user && isLoading)) {
     return (

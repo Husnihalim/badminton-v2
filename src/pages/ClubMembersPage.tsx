@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Shield, Trash2, UserRound, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getClub, getClubMembers, getMyMembership, removeMember, updateMemberRole } from '../lib/api'
@@ -179,7 +179,11 @@ export default function ClubMembersPage() {
                     </span>
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-bold text-slate-950">{member.name || 'Unknown member'}</h3>
+                        <h3 className="truncate font-bold text-slate-950">
+                          <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
+                            {member.name || 'Unknown member'}
+                          </Link>
+                        </h3>
                         <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
                         {member.user_id === user?.id ? <span className="text-xs font-semibold text-slate-500">You</span> : null}
                       </div>

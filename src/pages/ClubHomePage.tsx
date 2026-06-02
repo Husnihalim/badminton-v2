@@ -179,7 +179,38 @@ export default function ClubHomePage() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const renderClickableMatchPlayers = (match: MatchWithDetails) => {
+    const team1 = match.participants.filter(p => p.team === 1)
+    const team2 = match.participants.filter(p => p.team === 2)
+
+    const renderParticipant = (p: typeof match.participants[0], idx: number, arr: typeof match.participants) => {
+      const pName = p.name || p.guest_name || 'Guest'
+      const matchingMember = members.find(m => m.name?.toLowerCase() === pName.toLowerCase() || m.user_id === p.user_id)
+      const isLast = idx === arr.length - 1
+
+      return (
+        <span key={p.id}>
+          {matchingMember?.user_id ? (
+            <Link to={`/member/${matchingMember.user_id}`} className="hover:underline font-semibold text-emerald-700">
+              {pName}
+            </Link>
+          ) : (
+            <span className="text-slate-700">{pName}</span>
+          )}
+          {!isLast && ' & '}
+        </span>
+      )
+    }
+
+    return (
+      <div className="text-xs text-slate-600 mt-1 flex flex-wrap items-center">
+        {team1.map(renderParticipant)}
+        <span className="text-slate-400 mx-1.5 font-bold">vs</span>
+        {team2.map(renderParticipant)}
+      </div>
+    )
+  }
+
   const loadClubData = useCallback(async () => {
     if (!clubId) return
     
@@ -1015,7 +1046,8 @@ export default function ClubHomePage() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
-                        <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
+                        <p className="text-sm text-slate-500">{match.sport} • {match.match_type}</p>
+                        {renderClickableMatchPlayers(match)}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button type="button" variant="secondary" size="icon" onClick={() => setShareMatch(match)} title="Share Scorecard">
@@ -1064,7 +1096,16 @@ export default function ClubHomePage() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-3">
                             {renderRankBadge(index + 1)}
-                            <span className="truncate font-semibold text-slate-950">{player.name}</span>
+                            {(() => {
+                              const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
+                              return match?.user_id ? (
+                                <Link to={`/member/${match.user_id}`} className="truncate font-semibold hover:underline text-emerald-700">
+                                  {player.name}
+                                </Link>
+                              ) : (
+                                <span className="truncate font-semibold text-slate-950">{player.name}</span>
+                              )
+                            })()}
                             {hasWinStreak ? (
                               <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 ml-2 font-extrabold shadow-sm shrink-0">
                                 <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
@@ -1141,7 +1182,11 @@ export default function ClubHomePage() {
             <div className="space-y-2">
               {members.slice(0, 5).map((member) => (
                 <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
-                  <span className="min-w-0 truncate font-semibold text-slate-950">{member.name || 'Unknown member'}</span>
+                  <span className="min-w-0 truncate font-semibold text-slate-950">
+                    <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
+                      {member.name || 'Unknown member'}
+                    </Link>
+                  </span>
                   <Badge>{member.role}</Badge>
                 </div>
               ))}

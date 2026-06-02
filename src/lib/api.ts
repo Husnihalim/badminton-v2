@@ -980,6 +980,7 @@ export type ProfileUpdates = {
   bio?: string | null
   preferred_sport?: string | null
   avatar_url?: string | null
+  is_private?: boolean | null
 }
 
 export async function updateProfile(userId: string, updates: ProfileUpdates) {
