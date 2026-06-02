@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
-  Activity,
   ArrowRight,
   CalendarDays,
   Check,
@@ -16,7 +15,6 @@ import {
   Settings,
   ShieldCheck,
   Share2,
-  Trophy,
   Trash2,
   UserPlus,
   Users,
@@ -34,7 +32,6 @@ import {
   deleteClubMessage,
   deleteEvent,
   getClub,
-  getClubActivity,
   getClubEvents,
   getClubLeaderboard,
   getClubJoinRequests,
@@ -53,7 +50,7 @@ import {
   updateEvent,
   type ClubLeaderboardRow,
 } from '../lib/api'
-import type { Club, ClubActivity, ClubEvent, ClubMessage, EventRsvp, JoinRequest, MatchWithDetails, Membership } from '../types'
+import type { Club, ClubEvent, ClubMessage, EventRsvp, JoinRequest, MatchWithDetails, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -63,13 +60,6 @@ import { Textarea } from '../components/ui/textarea'
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
-}
-
-function activityIcon(type: ClubActivity['type']) {
-  if (type === 'match_recorded') return <Trophy size={17} aria-hidden="true" />
-  if (type === 'member_joined') return <UserPlus size={17} aria-hidden="true" />
-  if (type === 'event_created') return <CalendarDays size={17} aria-hidden="true" />
-  return <Activity size={17} aria-hidden="true" />
 }
 
 function formatEventCost(event: ClubEvent) {
@@ -136,7 +126,6 @@ export default function ClubHomePage() {
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpCounts, setEventRsvpCounts] = useState<Record<string, number>>({})
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
-  const [activities, setActivities] = useState<ClubActivity[]>([])
   const [messages, setMessages] = useState<ClubMessage[]>([])
   const [leaderboard, setLeaderboard] = useState<ClubLeaderboardRow[]>([])
 
@@ -144,6 +133,7 @@ export default function ClubHomePage() {
   const isMember = !!myMembership
   const canJoin = user && !isMember && club?.open_join !== false
   const inviteUrl = club?.invite_code ? buildInviteUrl(club.invite_code) : ''
+  const userId = user?.id
 
   const closeScoreModal = () => {
     setShowScoreModal(false)
@@ -178,6 +168,7 @@ export default function ClubHomePage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const loadClubData = useCallback(async () => {
     if (!clubId) return
     
@@ -189,7 +180,6 @@ export default function ClubHomePage() {
       setSectionErrors({})
       setMembers([])
       setMatches([])
-      setActivities([])
       setEvents([])
       setMessages([])
       setLeaderboard([])
@@ -200,7 +190,7 @@ export default function ClubHomePage() {
       const [clubData, eventsData, membershipData, messageData] = await Promise.all([
         getClub(clubId),
         getClubEvents(clubId),
-        user ? getMyMembership(clubId) : Promise.resolve(null),
+        userId ? getMyMembership(clubId) : Promise.resolve(null),
         getClubMessages(clubId),
       ])
 
@@ -218,7 +208,7 @@ export default function ClubHomePage() {
       setMyMembership(membershipData)
       setMessages(messageData.slice(0, 6))
 
-      if (user) {
+      if (userId) {
         try {
           const rsvps = await getMyEventRsvps()
           setMyRsvps(rsvps)
@@ -248,10 +238,9 @@ export default function ClubHomePage() {
       setIsLoading(false)
 
       setIsSecondaryLoading(true)
-      const [membersResult, matchesResult, activityResult, leaderboardResult] = await Promise.allSettled([
+      const [membersResult, matchesResult, leaderboardResult] = await Promise.allSettled([
         getClubMembers(clubId),
         getClubMatches(clubId),
-        getClubActivity(clubId),
         getClubLeaderboard(clubId, 10),
       ])
 
@@ -269,13 +258,6 @@ export default function ClubHomePage() {
         setSectionErrors((prev) => ({ ...prev, scores: 'Could not load recent scores.' }))
       }
 
-      if (activityResult.status === 'fulfilled') {
-        setActivities(activityResult.value.slice(0, 8))
-      } else {
-        console.error('Failed to load activity:', activityResult.reason)
-        setSectionErrors((prev) => ({ ...prev, activity: 'Could not load community activity.' }))
-      }
-
       if (leaderboardResult.status === 'fulfilled') {
         setLeaderboard(leaderboardResult.value)
       } else {
@@ -288,11 +270,10 @@ export default function ClubHomePage() {
       setIsLoading(false)
       setIsSecondaryLoading(false)
     }
-  }, [clubId, user])
+  }, [clubId, userId])
 
   useEffect(() => {
     if (clubId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadClubData()
     }
   }, [clubId, loadClubData])
@@ -609,32 +590,18 @@ export default function ClubHomePage() {
   const boardShareText = [
     `${club.name} club board`,
     club.description,
-    'Join the club to follow messages, announcements, and activity.',
+    'Join the club to follow announcements and game days.',
     inviteUrl,
   ].filter(Boolean).join('\n')
   const boardWhatsappUrl = `https://wa.me/?text=${encodeURIComponent(boardShareText)}`
-  const boardItems = [
-    ...messages.map((message) => ({
-      id: `message-${message.id}`,
-      sourceId: message.id,
-      kind: 'message' as const,
-      title: message.title,
-      body: message.message,
-      actor: message.authorName || 'Club admin',
-      createdAt: message.created_at,
-      message,
-    })),
-    ...activities.map((activity) => ({
-      id: `activity-${activity.id}`,
-      sourceId: activity.id,
-      kind: 'activity' as const,
-      title: activity.title,
-      body: activity.description,
-      actor: activity.actor_name,
-      createdAt: activity.created_at,
-      activity,
-    })),
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const announcementItems = messages.map((message) => ({
+    id: `message-${message.id}`,
+    title: message.title,
+    body: message.message,
+    actor: message.authorName || 'Club admin',
+    createdAt: message.created_at,
+    message,
+  }))
 
   return (
     <Page>
@@ -732,7 +699,7 @@ export default function ClubHomePage() {
               </Button>
               <Button variant="secondary" onClick={openCreateMessageModal}>
                 <Megaphone size={17} aria-hidden="true" />
-                Notify
+                Announcement
               </Button>
               <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
                 <UserPlus size={17} aria-hidden="true" />
@@ -790,23 +757,19 @@ export default function ClubHomePage() {
             </button>
           ) : null}
 
-          {sectionErrors.activity ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.activity}</p> : null}
-
-          {boardItems.length ? (
+          {announcementItems.length ? (
             <div className="space-y-3">
-              {boardItems.map((item) => (
+              {announcementItems.map((item) => (
                 <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
                     <div className="flex min-w-0 items-start gap-3">
                       <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm">
-                        {item.kind === 'message' ? <Megaphone size={18} aria-hidden="true" /> : activityIcon(item.activity.type)}
+                        <Megaphone size={18} aria-hidden="true" />
                       </span>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-semibold text-slate-950">{item.actor}</p>
-                          <Badge className={item.kind === 'message' ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}>
-                            {item.kind === 'message' ? 'Announcement' : 'Activity'}
-                          </Badge>
+                          <Badge className="border-blue-200 bg-blue-50 text-blue-800">Announcement</Badge>
                         </div>
                         <p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
                         <div className="mt-3 space-y-1">
@@ -815,7 +778,7 @@ export default function ClubHomePage() {
                         </div>
                       </div>
                     </div>
-                    {isAdmin && item.kind === 'message' ? (
+                    {isAdmin ? (
                       <div className="grid grid-cols-2 gap-2 sm:flex">
                         <Button type="button" size="sm" variant="secondary" onClick={() => openEditMessageModal(item.message)}>
                           Edit
@@ -831,7 +794,7 @@ export default function ClubHomePage() {
             </div>
           ) : (
             <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
-              {isSecondaryLoading ? 'Loading board...' : 'No board updates yet.'}
+              {isSecondaryLoading ? 'Loading announcements...' : 'No announcements yet.'}
             </p>
           )}
         </CardContent>

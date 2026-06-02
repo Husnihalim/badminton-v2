@@ -48,7 +48,9 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
     switch (type) {
       case 'join_request': return '👤'
       case 'join_approved': return '✅'
+      case 'event_created': return '📅'
       case 'event_reminder': return '📅'
+      case 'rsvp_update': return '✓'
       case 'score_recorded': return '🏆'
       case 'announcement': return '📢'
       default: return '📌'

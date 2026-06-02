@@ -79,6 +79,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
     }
   }, [isOpen, clubId, loadMembers])
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isOpen) return
 
@@ -118,6 +119,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
       setErrors({})
     }
   }, [editingMatch, isOpen])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!isOpen) return null
 

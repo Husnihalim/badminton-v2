@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Share2, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
-import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubJoinRequests, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
+import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
 import type { Club, ClubEvent, EventRsvp, MatchWithDetails } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -64,21 +64,18 @@ export default function DashboardPage() {
       const allMatches: DashboardMatch[] = []
       const clubResults = await Promise.allSettled(
         myClubs.map(async (club) => {
-          const isClubAdmin = club.role === 'owner' || club.role === 'admin' || user?.role === 'superadmin'
-          const [clubEvents, clubMatches, joinRequests] = await Promise.all([
+          const [clubEvents, clubMatches] = await Promise.all([
             getClubEvents(club.id),
             getClubMatches(club.id),
-            isClubAdmin ? getClubJoinRequests(club.id) : Promise.resolve([]),
           ])
 
-          return { club, clubEvents, clubMatches, joinRequests }
+          return { club, clubEvents, clubMatches }
         })
       )
 
-      let pendingAdminRequests = 0
       clubResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          const { club, clubEvents, clubMatches, joinRequests } = result.value
+          const { club, clubEvents, clubMatches } = result.value
           const now = Date.now()
           allEvents.push(
             ...clubEvents
@@ -86,7 +83,6 @@ export default function DashboardPage() {
               .map((event) => ({ ...event, clubName: club.name }))
           )
           allMatches.push(...clubMatches.map(m => ({ ...m, clubName: club.name })))
-          pendingAdminRequests += joinRequests.filter((request) => request.status === 'pending').length
         } else {
           console.error(`Error loading data for club ${myClubs[index]?.id}:`, result.reason)
         }
@@ -121,7 +117,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [showToast, user])
+  }, [showToast])
 
   const handleRsvp = async (eventId: string, status: EventRsvp['status']) => {
     try {
