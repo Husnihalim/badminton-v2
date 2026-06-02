@@ -88,11 +88,10 @@ export default function ClubMembersPage() {
     try {
       setIsRemoving(true)
       await removeMember(clubId, memberToRemove.user_id)
-      setSuccessMessage(`${memberToRemove.name} has been removed from the club.`)
-      setTimeout(() => setSuccessMessage(''), 3000)
       setMembers((currentMembers) => currentMembers.filter((member) => member.user_id !== memberToRemove.user_id))
       setMemberToRemove(null)
-      await loadClubData()
+      setSuccessMessage(`${memberToRemove.name} has been removed from the club.`)
+      setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to remove member'))
     } finally {
