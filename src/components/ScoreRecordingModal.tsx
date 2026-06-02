@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardPenLine, Plus, Trash2, X } from 'lucide-react'
 import { createMatch, getClubMembers } from '../lib/api'
+import { getErrorMessage } from '../lib/utils'
 import type { Membership } from '../types'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
@@ -43,10 +44,6 @@ function getPlayerName(field: PlayerField, members: Membership[]): string {
 
 function isPlayerValid(field: PlayerField): boolean {
   return Boolean(field.memberId || field.customName.trim())
-}
-
-function getErrorMessage(err: unknown, fallback: string) {
-  return err instanceof Error ? err.message : fallback
 }
 
 export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRecorded }: ScoreRecordingModalProps) {
@@ -187,7 +184,12 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, onScoreRe
       onClose()
       onScoreRecorded?.()
     } catch (err) {
-      setErrors({ submit: getErrorMessage(err, 'Failed to record score') })
+      console.error('Score recording failed:', err)
+      const baseMessage = getErrorMessage(err, 'Failed to record score')
+      const submitMessage = baseMessage === 'Failed to record score' && typeof err === 'object' && err !== null
+        ? `${baseMessage}: ${JSON.stringify(err)}`
+        : baseMessage
+      setErrors({ submit: submitMessage })
     } finally {
       setIsSubmitting(false)
     }

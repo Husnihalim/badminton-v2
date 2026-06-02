@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, CalendarDays, Check, ClipboardPenLine, Club as ClubIcon, Copy, Link2, MessageCircle, Share2, ShieldCheck, Trophy, Users } from 'lucide-react'
-import ScoreRecordingModal from '../components/ScoreRecordingModal'
+import { Bell, CalendarDays, Check, Club as ClubIcon, Copy, Link2, MessageCircle, Share2, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubJoinRequests, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent } from '../lib/api'
@@ -27,8 +26,23 @@ function getRsvpLabel(status: EventRsvp['status']) {
   return 'Rejected'
 }
 
+function renderMatchPlayers(match: DashboardMatch) {
+  const team1 = match.participants
+    .filter((participant) => participant.team === 1)
+    .map((participant) => participant.name || participant.guest_name || 'Guest')
+  const team2 = match.participants
+    .filter((participant) => participant.team === 2)
+    .map((participant) => participant.name || participant.guest_name || 'Guest')
+
+  if (!team1.length || !team2.length) {
+    return match.title || `${match.sport} match`
+  }
+
+  const formatTeam = (team: string[]) => team.join(team.length > 1 ? ' & ' : '')
+  return `${formatTeam(team1)} vs ${formatTeam(team2)}`
+}
+
 export default function DashboardPage() {
-  const [showScoreModal, setShowScoreModal] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
   const { showToast, unreadCount } = useNotifications()
   const navigate = useNavigate()
@@ -211,18 +225,6 @@ export default function DashboardPage() {
         eyebrow="Dashboard"
         title={`Welcome back, ${user.name.split(' ')[0]}`}
         description="Your next sessions, club actions, and recent updates in one place."
-        actions={
-          <Button onClick={() => setShowScoreModal(true)}>
-            <ClipboardPenLine size={17} aria-hidden="true" />
-            Record score
-          </Button>
-        }
-      />
-
-      <ScoreRecordingModal 
-        isOpen={showScoreModal} 
-        onClose={() => setShowScoreModal(false)} 
-        onScoreRecorded={loadDashboardData}
       />
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -410,6 +412,7 @@ export default function DashboardPage() {
                   <Trophy className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
                   <div className="min-w-0 space-y-1">
                     <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
+                    <p className="text-sm text-slate-500">{renderMatchPlayers(match)}</p>
                     <p className="text-sm text-slate-500">{match.clubName}</p>
                     <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
                     <p className="font-semibold text-emerald-700">

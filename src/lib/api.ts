@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getErrorMessage, isMissingRpcFunctionError } from './utils'
 import type { 
   Club, 
   Membership, 
@@ -332,6 +333,69 @@ export interface CreateMatchData {
   }[]
 }
 
+async function createMatchDirect(data: CreateMatchData): Promise<Match | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Must be authenticated to record a match')
+  }
+
+  const matchInsert = {
+    club_id: data.club_id,
+    title: data.title || null,
+    sport: data.sport,
+    match_type: data.match_type,
+    recorded_by: user.id,
+    match_date: data.match_date || new Date().toISOString().split('T')[0],
+  }
+
+  const { data: match, error: matchInsertError } = await supabase
+    .from('matches')
+    .insert(matchInsert)
+    .select()
+    .single()
+
+  if (matchInsertError || !match) {
+    console.error('Error inserting match directly:', matchInsertError)
+    throw new Error(getErrorMessage(matchInsertError, 'Failed to create match'))
+  }
+
+  const participantRows = data.participants.map((participant) => ({
+    match_id: match.id,
+    team: participant.team,
+    user_id: participant.user_id || null,
+    is_guest: participant.is_guest,
+    guest_name: participant.guest_name || null,
+  }))
+
+  const { error: participantsError } = await supabase
+    .from('match_participants')
+    .insert(participantRows)
+
+  if (participantsError) {
+    console.error('Error inserting participants directly:', participantsError)
+    throw new Error(getErrorMessage(participantsError, 'Failed to create match participants'))
+  }
+
+  const scoreRows = data.score_sets.map((set) => ({
+    match_id: match.id,
+    set_number: set.set_number,
+    team1_score: set.team1_score,
+    team2_score: set.team2_score,
+  }))
+
+  const { error: scoreError } = await supabase
+    .from('score_sets')
+    .insert(scoreRows)
+
+  if (scoreError) {
+    console.error('Error inserting score sets directly:', scoreError)
+    throw new Error(getErrorMessage(scoreError, 'Failed to create match score sets'))
+  }
+
+  return match as Match
+}
+
 export async function createMatch(data: CreateMatchData): Promise<Match | null> {
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -359,8 +423,16 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
   })
 
   if (matchError || !match) {
-    console.error('Error creating match:', matchError)
-    throw matchError
+    console.error('Error creating match:', { match, matchError })
+    const fallbackError = matchError
+      ? matchError
+      : { message: 'No data returned from create_match_with_details' }
+    const functionMissing = isMissingRpcFunctionError(fallbackError, 'create_match_with_details')
+    if (functionMissing) {
+      console.warn('Falling back to direct inserts because create_match_with_details RPC is unavailable.')
+      return createMatchDirect(data)
+    }
+    throw new Error(getErrorMessage(fallbackError, 'Failed to create match'))
   }
 
   const createdMatch = match as Match
@@ -378,6 +450,68 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
   })
 
   return createdMatch
+}
+
+async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<ClubLeaderboardRow[]> {
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      id,
+      match_participants(
+        team,
+        guest_name,
+        profiles(name, display_name)
+      ),
+      score_sets(team1_score, team2_score)
+    `)
+    .eq('club_id', clubId)
+
+  if (error) {
+    console.error('Error querying leaderboard directly:', error)
+    return []
+  }
+
+  const rows = (data || []) as Array<{
+    id: string
+    match_participants?: Array<{
+      team: number
+      guest_name: string | null
+      profiles?: { name?: string | null; display_name?: string | null } | null
+    }>
+    score_sets?: Array<{ team1_score: number; team2_score: number }>
+  }>
+
+  const leaderboard = new Map<string, { wins: number; losses: number }>()
+
+  for (const match of rows) {
+    const scoreSets = match.score_sets || []
+    const team1Sets = scoreSets.filter((set) => set.team1_score > set.team2_score).length
+    const team2Sets = scoreSets.filter((set) => set.team2_score > set.team1_score).length
+
+    if (team1Sets === team2Sets || scoreSets.length === 0) continue
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    for (const participant of match.match_participants || []) {
+      const name = participant.profiles?.display_name || participant.profiles?.name || participant.guest_name || 'Unknown'
+      const stats = leaderboard.get(name) ?? { wins: 0, losses: 0 }
+      if (participant.team === winningTeam) {
+        stats.wins += 1
+      } else {
+        stats.losses += 1
+      }
+      leaderboard.set(name, stats)
+    }
+  }
+
+  return Array.from(leaderboard.entries())
+    .map(([name, { wins, losses }]) => ({
+      name,
+      wins,
+      losses,
+      points: wins * 3,
+    }))
+    .sort((a, b) => b.points - a.points || b.wins - a.wins || a.losses - b.losses || a.name.localeCompare(b.name))
+    .slice(0, Math.max(limit, 1))
 }
 
 export async function getClubMatches(clubId: string): Promise<(Match & { 
@@ -424,6 +558,11 @@ export async function getClubLeaderboard(clubId: string, limit = 10): Promise<Cl
 
   if (error) {
     console.error('Error fetching leaderboard:', error)
+    const functionMissing = isMissingRpcFunctionError(error, 'get_club_leaderboard')
+    if (functionMissing) {
+      console.warn('Falling back to a direct leaderboard query because get_club_leaderboard RPC is unavailable.')
+      return getClubLeaderboardQuery(clubId, limit)
+    }
     return []
   }
 
