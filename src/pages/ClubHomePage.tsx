@@ -428,6 +428,7 @@ export default function ClubHomePage() {
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date())
   const [showManageRsvpEventId, setShowManageRsvpEventId] = useState<string | null>(null)
+  const [rsvpSearchQuery, setRsvpSearchQuery] = useState('')
   const [isRsvpUpdating, setIsRsvpUpdating] = useState<string | null>(null)
   const [nowTimestamp] = useState(() => Date.now())
 
@@ -895,10 +896,16 @@ export default function ClubHomePage() {
     }
   }
 
-  const handleAdminRsvpUpdate = async (eventId: string, userId: string, status: 'going' | 'maybe' | 'not_going') => {
+  const handleAdminRsvpUpdate = async (
+    eventId: string,
+    userId: string,
+    status: 'going' | 'maybe' | 'not_going',
+    attended?: boolean,
+    paid?: boolean
+  ) => {
     try {
       setIsRsvpUpdating(`${eventId}-${userId}`)
-      const updated = await adminUpdateEventRsvp(eventId, userId, status)
+      const updated = await adminUpdateEventRsvp(eventId, userId, status, attended, paid)
       
       if (updated) {
         if (userId === user?.id) {
@@ -917,7 +924,7 @@ export default function ClubHomePage() {
         }))
       }
     } catch (err) {
-      alert(getErrorMessage(err, 'Failed to update member RSVP'))
+      alert(getErrorMessage(err, 'Failed to update member attendance/payment'))
     } finally {
       setIsRsvpUpdating(null)
     }
@@ -933,6 +940,40 @@ export default function ClubHomePage() {
     const isFull = Boolean(event.max_participants && rsvpCount >= event.max_participants)
     const eventShareText = buildEventShareText({ ...event, clubName: club?.name || '' })
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(eventShareText)}`
+
+    // Attendance and collection stats
+    const attendedCount = eventRsvps.filter((r) => r.attended).length
+    const paidCount = eventRsvps.filter((r) => r.paid).length
+    const cost = event.cost_amount ? Number(event.cost_amount) : 0
+    const collectedAmount = paidCount * cost
+    const expectedAmount = attendedCount * cost
+
+    const filteredMembers = members
+      .filter((m) => m.status === 'active')
+      .filter((m) => {
+        if (!rsvpSearchQuery) return true
+        return (m.name || '').toLowerCase().includes(rsvpSearchQuery.toLowerCase())
+      })
+      .sort((a, b) => {
+        const rsvpA = eventRsvps.find((r) => r.user_id === a.user_id)
+        const rsvpB = eventRsvps.find((r) => r.user_id === b.user_id)
+        
+        // Sort: Attended first, then RSVP status (Going first, then Maybe, then none, then Not Going)
+        if (rsvpA?.attended && !rsvpB?.attended) return -1
+        if (!rsvpA?.attended && rsvpB?.attended) return 1
+
+        const statusA = rsvpA?.status || 'no_response'
+        const statusB = rsvpB?.status || 'no_response'
+        
+        const getWeight = (status: string) => {
+          if (status === 'going') return 0
+          if (status === 'maybe') return 1
+          if (status === 'no_response') return 2
+          return 3
+        }
+        
+        return getWeight(statusA) - getWeight(statusB)
+      })
 
     return (
       <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -1027,69 +1068,154 @@ export default function ClubHomePage() {
               size="sm"
               variant="secondary"
               className="w-full flex items-center justify-center gap-1.5"
-              onClick={() => setShowManageRsvpEventId(prev => prev === event.id ? null : event.id)}
+              onClick={() => {
+                setShowManageRsvpEventId(prev => prev === event.id ? null : event.id)
+                setRsvpSearchQuery('') // Clear search on toggle
+              }}
             >
               <Users size={14} aria-hidden="true" />
               {showManageRsvpEventId === event.id ? 'Hide attendance settings' : 'Manage member RSVPs'}
             </Button>
 
             {showManageRsvpEventId === event.id && (
-              <div className="mt-2.5 p-3 bg-slate-100 rounded-lg border border-slate-200 space-y-2">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  Admin Control: Member Attendance List
-                </h4>
-                <div className="divide-y divide-slate-200 max-h-48 overflow-y-auto pr-0.5">
-                  {members
-                    .filter((m) => m.status === 'active')
-                    .map((member) => {
+              <div className="mt-2.5 p-3.5 bg-slate-100 rounded-lg border border-slate-200 space-y-3">
+                <div className="flex flex-col gap-1.5">
+                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Admin Control: Attendance & Payment
+                  </h4>
+                  
+                  {/* Summary Stats Panel */}
+                  <div className="p-2.5 bg-white rounded-md border border-slate-200/80 text-[11px] font-medium text-slate-700 grid grid-cols-2 gap-2 shadow-sm">
+                    <div>
+                      📊 <span className="font-bold text-slate-900">Attended:</span> {attendedCount}
+                    </div>
+                    <div>
+                      💰 <span className="font-bold text-slate-900">Paid:</span> {paidCount}
+                    </div>
+                    {cost > 0 && (
+                      <div className="col-span-2 border-t border-slate-100 pt-1.5 mt-0.5 flex justify-between items-center text-xs">
+                        <span>💵 <span className="font-bold text-slate-900">Revenue:</span></span>
+                        <span className="font-bold text-emerald-700">RM {collectedAmount.toFixed(2)} / RM {expectedAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Search Input */}
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Search members..."
+                    value={rsvpSearchQuery}
+                    onChange={(e) => setRsvpSearchQuery(e.target.value)}
+                    className="min-h-9 text-xs flex-1 bg-white border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
+                  />
+                  {rsvpSearchQuery && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setRsvpSearchQuery('')}
+                      className="min-h-9 px-3 text-xs"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+
+                {/* Member Attendance List */}
+                <div className="divide-y divide-slate-200/80 max-h-60 overflow-y-auto pr-0.5 space-y-1">
+                  {filteredMembers.length ? (
+                    filteredMembers.map((member) => {
                       const rsvp = eventRsvps.find((r) => r.user_id === member.user_id)
                       const rsvpStatus = rsvp?.status || 'no_response'
                       const loadingKey = `${event.id}-${member.user_id}`
                       const isLoadingThis = isRsvpUpdating === loadingKey
 
                       return (
-                        <div key={member.user_id} className="flex items-center justify-between py-1.5 text-xs">
-                          <div className="flex items-center gap-2">
-                            <div className="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] uppercase">
+                        <div key={member.user_id} className="flex items-center justify-between py-2 text-xs gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 shrink-0 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] uppercase shadow-sm">
                               {member.name ? member.name.slice(0, 2).toUpperCase() : 'M'}
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-slate-800">{member.name || 'Anonymous'}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-slate-800 truncate">{member.name || 'Anonymous'}</span>
                               <span className="text-[9px] text-slate-500 capitalize">{member.role}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
+                          
+                          <div className="flex items-center gap-1.5 shrink-0">
                             {isLoadingThis ? (
-                              <span className="text-[9px] text-slate-500 px-2">Syncing...</span>
+                              <span className="text-[9px] text-slate-500 px-2 py-1 font-medium animate-pulse">Syncing...</span>
                             ) : (
                               <>
-                                {[
-                                  ['going', 'Going', 'bg-emerald-100 text-emerald-800 border-emerald-200'],
-                                  ['maybe', 'Maybe', 'bg-amber-100 text-amber-800 border-amber-200'],
-                                  ['not_going', 'No', 'bg-red-100 text-red-800 border-red-200'],
-                                ].map(([status, label, colorClass]) => {
-                                  const isActive = rsvpStatus === status
-                                  return (
-                                    <button
-                                      key={status}
-                                      type="button"
-                                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
-                                        isActive 
-                                          ? colorClass
-                                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                                      }`}
-                                      onClick={() => handleAdminRsvpUpdate(event.id, member.user_id, status as 'going' | 'maybe' | 'not_going')}
-                                    >
-                                      {label}
-                                    </button>
-                                  )
-                                })}
+                                {/* RSVP Select */}
+                                <select
+                                  value={rsvpStatus}
+                                  onChange={(e) => {
+                                    const val = e.target.value
+                                    if (val !== 'no_response') {
+                                      handleAdminRsvpUpdate(event.id, member.user_id, val as any, rsvp?.attended, rsvp?.paid)
+                                    }
+                                  }}
+                                  className="h-7 min-h-7 text-[10px] py-0.5 px-1 border border-slate-200 rounded-md w-20 font-bold bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                >
+                                  {rsvpStatus === 'no_response' && <option value="no_response">Pending</option>}
+                                  <option value="going">Going</option>
+                                  <option value="maybe">Maybe</option>
+                                  <option value="not_going">No</option>
+                                </select>
+
+                                {/* Attended Toggle */}
+                                <button
+                                  type="button"
+                                  className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
+                                    rsvp?.attended
+                                      ? 'bg-emerald-600 border-emerald-600 text-white'
+                                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                  }`}
+                                  onClick={() => handleAdminRsvpUpdate(
+                                    event.id,
+                                    member.user_id,
+                                    rsvpStatus === 'no_response' ? 'going' : rsvpStatus,
+                                    !rsvp?.attended,
+                                    rsvp?.paid
+                                  )}
+                                >
+                                  {rsvp?.attended ? <Check size={11} strokeWidth={3} /> : null}
+                                  Attended
+                                </button>
+
+                                {/* Paid Toggle */}
+                                <button
+                                  type="button"
+                                  className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
+                                    rsvp?.paid
+                                      ? 'bg-amber-500 border-amber-500 text-white'
+                                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                  }`}
+                                  onClick={() => handleAdminRsvpUpdate(
+                                    event.id,
+                                    member.user_id,
+                                    rsvpStatus === 'no_response' ? 'going' : rsvpStatus,
+                                    rsvp?.attended,
+                                    !rsvp?.paid
+                                  )}
+                                >
+                                  <DollarSign size={10} />
+                                  Paid
+                                </button>
                               </>
                             )}
                           </div>
                         </div>
                       )
-                    })}
+                    })
+                  ) : (
+                    <div className="text-center py-4 text-xs text-slate-500 italic">
+                      No members match search.
+                    </div>
+                  )}
                 </div>
               </div>
             )}

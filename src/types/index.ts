@@ -143,6 +143,8 @@ export interface EventRsvp {
   event_id: string
   user_id: string
   status: 'going' | 'maybe' | 'not_going'
+  attended?: boolean
+  paid?: boolean
   created_at: string
   updated_at: string
   // Joined fields

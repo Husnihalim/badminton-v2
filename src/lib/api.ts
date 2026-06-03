@@ -881,16 +881,22 @@ export async function rsvpToEvent(eventId: string, status: 'going' | 'maybe' | '
 export async function adminUpdateEventRsvp(
   eventId: string,
   userId: string,
-  status: 'going' | 'maybe' | 'not_going'
+  status: 'going' | 'maybe' | 'not_going',
+  attended?: boolean,
+  paid?: boolean
 ): Promise<EventRsvp | null> {
+  const payload: Record<string, any> = {
+    event_id: eventId,
+    user_id: userId,
+    status,
+    updated_at: new Date().toISOString()
+  }
+  if (attended !== undefined) payload.attended = attended
+  if (paid !== undefined) payload.paid = paid
+
   const { data, error } = await supabase
     .from('event_rsvps')
-    .upsert({
-      event_id: eventId,
-      user_id: userId,
-      status,
-      updated_at: new Date().toISOString()
-    } as never, { onConflict: 'event_id,user_id' })
+    .upsert(payload as never, { onConflict: 'event_id,user_id' })
     .select()
     .single()
 
