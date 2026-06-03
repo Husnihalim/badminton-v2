@@ -19,6 +19,7 @@ const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/Auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'))
 const MemberProfilePage = lazy(() => import('./pages/MemberProfilePage'))
+const SuperAdminAnalyticsPage = lazy(() => import('./pages/SuperAdminAnalyticsPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
                   <Route path="/club/:clubId" element={<ClubHomePage />} />
                   <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
                   <Route path="/club/:clubId/members" element={<ClubMembersPage />} />
+                  <Route path="/superadmin/analytics" element={<SuperAdminAnalyticsPage />} />
                   <Route path="/not-found" element={<NotFoundPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

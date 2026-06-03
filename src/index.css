@@ -3,23 +3,49 @@
 
 @theme {
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Invert Slate palette for dark mode */
+  --color-slate-50: #070a13;
+  --color-slate-100: #121826;
+  --color-slate-200: #1b2336;
+  --color-slate-300: #263147;
+  --color-slate-400: #475673;
+  --color-slate-500: #64748b;
+  --color-slate-600: #94a3b8;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+  --color-slate-950: #f8fafc;
+
+  /* Override Emerald to Volt/Lime for high-energy racket sports UI */
+  --color-emerald-50: rgba(163, 230, 53, 0.05);
+  --color-emerald-100: rgba(163, 230, 53, 0.1);
+  --color-emerald-200: rgba(163, 230, 53, 0.2);
+  --color-emerald-300: rgba(163, 230, 53, 0.35);
+  --color-emerald-400: #bef264;
+  --color-emerald-500: #a3e635;
+  --color-emerald-600: #84cc16;
+  --color-emerald-700: #a3e635;
+  --color-emerald-800: #84cc16;
+  --color-emerald-900: #65a30d;
 }
 
 :root {
-  color-scheme: light;
-  color: #0f172a;
-  background: #f6f7f9;
+  color-scheme: dark;
+  color: #f8fafc;
+  background: #070a13;
   font-family: var(--font-sans);
   line-height: 1.5;
   font-size: 16px;
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-muted: #f8fafc;
-  --text: #0f172a;
-  --text-muted: #475569;
-  --primary: #047857;
-  --primary-hover: #065f46;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --bg: #070a13;
+  --surface: #121826;
+  --surface-muted: #1b2336;
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --primary: #a3e635;
+  --primary-hover: #bef264;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -28,6 +54,7 @@
 
 html {
   scroll-behavior: smooth;
+  background-color: var(--bg);
 }
 
 body {

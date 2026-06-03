@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from 'react'
 import Navbar from './Navbar'
+import FeedbackWidget from './FeedbackWidget'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
@@ -8,6 +9,7 @@ export default function Layout({ children }: PropsWithChildren) {
         <Navbar />
       </header>
       <main className="app-layout">{children}</main>
+      <FeedbackWidget />
     </div>
   )
 }

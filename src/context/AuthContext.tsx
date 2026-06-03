@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import type { User } from '../types'
 import { supabase } from '../lib/supabase'
-import { ensureCurrentUserProfile } from '../lib/api'
+import { ensureCurrentUserProfile, logPlatformEvent } from '../lib/api'
 
 type AuthContextType = {
   user: User | null
@@ -170,6 +170,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error || !data.user) {
       console.error('Login error:', error?.message)
+      logPlatformEvent('login_failed', `Failed login attempt for ${email.trim().toLowerCase()}`, 'warning', {
+        email: email.trim().toLowerCase(),
+        error: error?.message || 'Unknown error'
+      })
       return false
     }
 
@@ -177,18 +181,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await new Promise(resolve => setTimeout(resolve, 500))
     const userProfile = await fetchUserProfile(data.user.id, data.user)
     if (userProfile) {
+      logPlatformEvent('login_success', `User logged in: ${userProfile.email}`, 'info', { email: userProfile.email })
       setUser(userProfile)
       return true
     }
     // Fallback: create user from auth data
-    setUser({
+    const fallbackUser: User = {
       id: data.user.id,
       email: data.user.email || email,
       name: data.user.user_metadata?.name || email.split('@')[0],
       role: 'member',
       display_name: data.user.user_metadata?.name || email.split('@')[0],
       avatar_url: null,
-    })
+    }
+    logPlatformEvent('login_success', `User logged in (fallback profile): ${fallbackUser.email}`, 'info', { email: fallbackUser.email })
+    setUser(fallbackUser)
     return true
   }, [fetchUserProfile])
 
@@ -210,6 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (profileLookupError) {
       console.error('Registration profile lookup error:', profileLookupError.message)
+      logPlatformEvent('registration_failed', `Database lookup error for ${normalizedEmail}`, 'error', {
+        email: normalizedEmail,
+        error: profileLookupError.message
+      })
       return {
         success: false,
         error: 'Could not verify this email. Please try again.',
@@ -217,6 +228,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (existingProfile) {
+      logPlatformEvent('registration_failed', `Email already registered: ${normalizedEmail}`, 'warning', {
+        email: normalizedEmail
+      })
       return {
         success: false,
         error: 'This email is already registered. Please log in instead.',
@@ -236,6 +250,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error || !data.user) {
       console.error('Registration error:', error?.message)
+      logPlatformEvent('registration_failed', `Sign up error for ${normalizedEmail}`, 'warning', {
+        email: normalizedEmail,
+        error: error?.message || 'Unknown error'
+      })
       return {
         success: false,
         error: error?.message || 'Could not create account. Please try again.',
@@ -243,6 +261,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      logPlatformEvent('registration_failed', `Identity already exists for ${normalizedEmail}`, 'warning', {
+        email: normalizedEmail
+      })
       return {
         success: false,
         error: 'This email already has an account. Please log in instead.',
@@ -250,6 +271,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!data.session) {
+      logPlatformEvent('registration_success', `User registered (verification required): ${normalizedEmail}`, 'info', {
+        email: normalizedEmail
+      })
       return { success: true, emailVerificationRequired: true }
     }
     
@@ -262,14 +286,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       avatar_url: null,
     }
 
+    logPlatformEvent('registration_success', `User registered and signed in: ${normalizedEmail}`, 'info', {
+      email: normalizedEmail
+    })
     setUser(userProfile)
     return { success: true }
   }, [])
 
   const logout = useCallback(async (): Promise<void> => {
+    const userEmail = user?.email
     await supabase.auth.signOut()
+    if (userEmail) {
+      logPlatformEvent('logout', `User logged out: ${userEmail}`, 'info', { email: userEmail })
+    }
     setUser(null)
-  }, [])
+  }, [user])
 
   const value: AuthContextType = {
     user,

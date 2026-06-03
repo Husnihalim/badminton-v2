@@ -20,6 +20,18 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
+    
+    // Dynamically import logCrashReport to log the React crash to the database
+    import('../lib/api')
+      .then(({ logCrashReport }) => {
+        logCrashReport(
+          error.name || 'ReactError',
+          error.message || 'Uncaught React Component Crash',
+          error.stack || errorInfo.componentStack || null,
+          window.location.href
+        ).catch(err => console.error('Failed to send crash report:', err))
+      })
+      .catch(err => console.error('Failed to load API client for error logging:', err))
   }
 
   render() {

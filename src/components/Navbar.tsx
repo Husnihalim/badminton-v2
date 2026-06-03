@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings } from 'lucide-react'
+import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import NotificationsPanel from './NotificationsPanel'
@@ -157,6 +157,18 @@ export default function Navbar() {
                       <Settings size={15} aria-hidden="true" />
                       Account Settings
                     </Link>
+                    
+                    {user.role === 'superadmin' && (
+                      <Link 
+                        className="nav-dropdown-item" 
+                        to="/superadmin/analytics"
+                        onClick={() => setIsDropdownOpen(false)}
+                        style={{ color: '#ef4444' }}
+                      >
+                        <Shield size={15} aria-hidden="true" style={{ color: '#f87171' }} />
+                        Super Admin Panel
+                      </Link>
+                    )}
                     
                     <div className="nav-dropdown-divider" />
                     
