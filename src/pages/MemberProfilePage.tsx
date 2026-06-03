@@ -319,12 +319,14 @@ export default function MemberProfilePage() {
         </div>
         <CardContent className="p-6 space-y-6">
           <div className="flex flex-col items-center text-center space-y-4 sm:flex-row sm:items-start sm:text-left sm:space-y-0 sm:space-x-6">
-            <div className="h-24 w-24 rounded-full border-2 border-emerald-500 overflow-hidden bg-slate-850 shrink-0 flex items-center justify-center">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <UserRound size={48} className="text-emerald-500" />
-              )}
+            <div className="avatar-gradient-outline shrink-0">
+              <div className="avatar-gradient-outline-inner h-24 w-24 flex items-center justify-center">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <UserRound size={48} className="text-[#ccff00]" />
+                )}
+              </div>
             </div>
             <div className="space-y-2 min-w-0 flex-1">
               <h1 className="text-2xl font-extrabold tracking-tight truncate">{displayName}</h1>

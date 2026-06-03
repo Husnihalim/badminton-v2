@@ -327,11 +327,12 @@
 .racket-hero-collage::before {
   content: "";
   position: absolute;
-  inset: 16% 4% 2% 14%;
+  inset: 10% 10% 10% 10%;
   z-index: -1;
-  border-radius: 8px;
-  background: var(--primary);
-  opacity: 0.08;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+  opacity: 0.15;
+  filter: blur(50px);
 }
 
 .racket-hero-image {
@@ -895,7 +896,8 @@
 }
 
 /* Dark Mode Override Utility Adapters */
-.dark .bg-white {
+.dark .bg-white,
+.dark [class*="bg-white"] {
   background-color: var(--surface) !important;
 }
 
@@ -903,14 +905,110 @@
   background-color: var(--surface-muted) !important;
 }
 
-.dark .text-slate-900 {
+.dark .text-slate-900,
+.dark .text-slate-950,
+.dark [class*="text-slate-900"],
+.dark [class*="text-slate-950"] {
   color: var(--text) !important;
 }
 
-.dark .text-slate-700 {
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark [class*="text-slate-800"],
+.dark [class*="text-slate-700"],
+.dark [class*="text-slate-600"] {
   color: var(--text-muted) !important;
 }
 
-.dark .text-slate-600 {
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark [class*="text-slate-500"],
+.dark [class*="text-slate-400"] {
+  color: #94a3b8 !important; /* High contrast gray */
+}
+
+/* Force solid emerald/green backgrounds to use dark text in dark mode */
+.dark .bg-emerald-600,
+.dark .bg-emerald-700,
+.dark [class*="bg-emerald-600"],
+.dark [class*="bg-emerald-700"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-text) !important;
+}
+
+.dark .text-emerald-700,
+.dark .text-emerald-800 {
+  color: var(--primary) !important;
+}
+
+/* Premium Table Override in Dark Mode */
+.dark table {
+  background-color: var(--surface) !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+.dark thead tr {
+  background-color: rgba(30, 41, 59, 0.45) !important;
   color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.dark th {
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.dark td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  color: var(--text) !important;
+}
+
+.dark tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.dark tbody tr:hover {
+  background-color: rgba(204, 255, 0, 0.03) !important;
+}
+
+/* Premium Toast overrides in Dark Mode */
+.dark .modal-toast {
+  background: rgba(18, 24, 38, 0.9) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--primary) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(204, 255, 0, 0.15) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Landing Hero Dark Mode Tweaks */
+.dark .landing-hero {
+  background: linear-gradient(135deg, rgba(18, 24, 38, 0.5) 0%, rgba(11, 15, 25, 0.8) 100%) !important;
+  border: 1px solid rgba(204, 255, 0, 0.12) !important;
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Profile Avatar glow */
+.avatar-gradient-outline {
+  background: linear-gradient(135deg, #10b981, #ccff00);
+  padding: 3px;
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 15px rgba(204, 255, 0, 0.1);
+}
+
+.avatar-gradient-outline-inner {
+  border-radius: 50%;
+  border: 2px solid #070a13;
+  overflow: hidden;
+  background-color: #121824;
 }
