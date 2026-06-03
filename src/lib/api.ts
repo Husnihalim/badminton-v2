@@ -333,6 +333,7 @@ export interface CreateMatchData {
   sport: string
   match_type: 'singles' | 'doubles'
   match_date?: string
+  event_id?: string
   participants: {
     team: 1 | 2
     user_id?: string
@@ -373,6 +374,7 @@ async function createMatchDirect(data: CreateMatchData): Promise<Match | null> {
     match_type: data.match_type,
     recorded_by: user.id,
     match_date: data.match_date || new Date().toISOString().split('T')[0],
+    event_id: data.event_id || null,
   }
 
   const { data: match, error: matchInsertError } = await supabase
@@ -446,6 +448,7 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
       team1_score: s.team1_score,
       team2_score: s.team2_score,
     })),
+    match_event_id: data.event_id || null,
   })
 
   if (matchError || !match) {

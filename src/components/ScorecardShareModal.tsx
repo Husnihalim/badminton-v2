@@ -28,58 +28,42 @@ export default function ScorecardShareModal({ match, clubName, onClose }: Scorec
     canvas.width = 800
     canvas.height = 500
 
-    // 1. Background Gradient (Sleek dark sports card theme)
-    const gradient = ctx.createLinearGradient(0, 0, 800, 500)
-    gradient.addColorStop(0, '#022c22') // Deep emerald
-    gradient.addColorStop(0.5, '#0f172a') // Dark slate
-    gradient.addColorStop(1, '#022c22') // Deep emerald
-    ctx.fillStyle = gradient
+    // 1. Background (Sleek professional stadium scoreboard dark theme)
+    ctx.fillStyle = '#090d16' // Solid very dark slate/black
     ctx.fillRect(0, 0, 800, 500)
 
-    // 2. Add subtle grid pattern
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'
+    // Subtle dark stadium grid pattern
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)'
     ctx.lineWidth = 1
-    for (let x = 0; x < 800; x += 40) {
+    for (let x = 0; x < 800; x += 30) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
       ctx.lineTo(x, 500)
       ctx.stroke()
     }
-    for (let y = 0; y < 500; y += 40) {
+    for (let y = 0; y < 500; y += 30) {
       ctx.beginPath()
       ctx.moveTo(0, y)
       ctx.lineTo(800, y)
       ctx.stroke()
     }
 
-    // 3. Gold Accent borders
-    ctx.strokeStyle = '#e2e8f0'
-    ctx.lineWidth = 1.5
-    ctx.strokeRect(20, 20, 760, 460)
-
-    ctx.strokeStyle = '#fbbf24' // Gold border
-    ctx.lineWidth = 3
-    ctx.strokeRect(25, 25, 750, 450)
-
-    // 4. Header: Club name & title
-    ctx.fillStyle = '#fbbf24' // Gold
-    ctx.font = 'bold 26px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText(clubName.toUpperCase(), 400, 70)
-
-    ctx.fillStyle = '#94a3b8' // Slate gray
-    ctx.font = 'semibold 13px sans-serif'
-    ctx.fillText(`${match.sport.toUpperCase()} • ${match.match_type.toUpperCase()}`, 400, 95)
-
-    // Divider line
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.2)'
+    // Outer border
+    ctx.strokeStyle = '#1f2937'
     ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(100, 115)
-    ctx.lineTo(700, 115)
-    ctx.stroke()
+    ctx.strokeRect(15, 15, 770, 470)
 
-    // 5. Extract Team details
+    // 2. Header
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 24px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText(clubName.toUpperCase(), 400, 55)
+
+    ctx.fillStyle = '#64748b'
+    ctx.font = 'bold 12px sans-serif'
+    ctx.fillText(`${match.sport.toUpperCase()} • ${match.match_type.toUpperCase()} SESSION`, 400, 80)
+
+    // 3. Extract Team details
     const team1 = match.participants
       .filter((p) => p.team === 1)
       .map((p) => p.name || p.guest_name || 'Guest')
@@ -87,88 +71,171 @@ export default function ScorecardShareModal({ match, clubName, onClose }: Scorec
       .filter((p) => p.team === 2)
       .map((p) => p.name || p.guest_name || 'Guest')
 
-    const team1Text = team1.join(' & ')
-    const team2Text = team2.join(' & ')
+    const team1Text = team1.join(' & ').toUpperCase()
+    const team2Text = team2.join(' & ').toUpperCase()
 
-    // Determine Winner for visual tag
+    // Determine Winner for visual highlight
     const scoreSets = match.score_sets || []
     const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
     const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-    const winner = team1Sets > team2Sets ? 1 : 2
+    const winner = team1Sets > team2Sets ? 1 : (team2Sets > team1Sets ? 2 : 0)
 
-    // 6. Draw Teams UI Left and Right
-    ctx.textAlign = 'center'
-    
-    // Team 1
-    ctx.fillStyle = winner === 1 ? '#ffffff' : '#94a3b8'
-    ctx.font = winner === 1 ? 'bold 22px sans-serif' : '20px sans-serif'
-    ctx.fillText(team1Text, 230, 200)
+    // 4. Scoreboard Main Container
+    const containerX = 40
+    const containerY = 110
+    const containerW = 720
+    const containerH = 280
+
+    ctx.fillStyle = '#111827' // Dark slate box
+    ctx.fillRect(containerX, containerY, containerW, containerH)
+    ctx.strokeStyle = '#1f2937' // Border
+    ctx.lineWidth = 2
+    ctx.strokeRect(containerX, containerY, containerW, containerH)
+
+    // Row highlights for the winning team
     if (winner === 1) {
-      ctx.fillStyle = '#fbbf24'
-      ctx.font = 'bold 11px sans-serif'
-      ctx.fillText('WINNER ★', 230, 165)
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.04)' // Translucent orange glow
+      ctx.fillRect(containerX + 2, containerY + 2, containerW - 4, 136)
+      // Solid orange left-indicator bar
+      ctx.fillStyle = '#f97316'
+      ctx.fillRect(containerX, containerY, 5, 140)
+    } else if (winner === 2) {
+      ctx.fillStyle = 'rgba(34, 197, 94, 0.04)' // Translucent green glow
+      ctx.fillRect(containerX + 2, containerY + 142, containerW - 4, 136)
+      // Solid green left-indicator bar
+      ctx.fillStyle = '#22c55e'
+      ctx.fillRect(containerX, containerY + 140, 5, 140)
     }
 
-    // VS text
-    ctx.fillStyle = '#f59e0b'
-    ctx.font = 'italic bold 28px sans-serif'
-    ctx.fillText('VS', 400, 220)
+    // Horizontal Row Separator
+    ctx.strokeStyle = '#1f2937'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(containerX, containerY + 140)
+    ctx.lineTo(containerX + containerW, containerY + 140)
+    ctx.stroke()
 
-    // Team 2
-    ctx.fillStyle = winner === 2 ? '#ffffff' : '#94a3b8'
-    ctx.font = winner === 2 ? 'bold 22px sans-serif' : '20px sans-serif'
-    ctx.fillText(team2Text, 570, 200)
+    // 5. Draw Crown Function
+    const drawCrown = (c: CanvasRenderingContext2D, cx: number, cy: number) => {
+      c.fillStyle = '#fbbf24' // gold
+      c.beginPath()
+      c.moveTo(cx, cy + 18)
+      c.lineTo(cx + 4, cy + 6)
+      c.lineTo(cx + 9, cy + 12)
+      c.lineTo(cx + 13, cy + 2)
+      c.lineTo(cx + 17, cy + 12)
+      c.lineTo(cx + 22, cy + 6)
+      c.lineTo(cx + 26, cy + 18)
+      c.closePath()
+      c.fill()
+    }
+
+    // 6. Render Team Names
+    ctx.textAlign = 'left'
+    
+    // Team 1 Row Names
+    ctx.fillStyle = '#f97316' // Orange
+    ctx.font = 'bold 22px sans-serif'
+    let t1NameX = containerX + 30
+    if (winner === 1) {
+      drawCrown(ctx, containerX + 30, containerY + 60)
+      ctx.fillStyle = '#fbbf24' // Show "WINNER" tag in gold
+      ctx.font = 'bold 11px sans-serif'
+      ctx.fillText('MATCH WINNER', containerX + 62, containerY + 45)
+      
+      ctx.fillStyle = '#f97316'
+      ctx.font = 'bold 22px sans-serif'
+      t1NameX = containerX + 62
+    }
+    ctx.fillText(team1Text, t1NameX, containerY + 78)
+
+    // Team 2 Row Names
+    ctx.fillStyle = '#22c55e' // Green
+    ctx.font = 'bold 22px sans-serif'
+    let t2NameX = containerX + 30
     if (winner === 2) {
-      ctx.fillStyle = '#fbbf24'
+      drawCrown(ctx, containerX + 30, containerY + 200)
+      ctx.fillStyle = '#fbbf24' // Show "WINNER" tag in gold
       ctx.font = 'bold 11px sans-serif'
-      ctx.fillText('WINNER ★', 570, 165)
+      ctx.fillText('MATCH WINNER', containerX + 62, containerY + 185)
+      
+      ctx.fillStyle = '#22c55e'
+      ctx.font = 'bold 22px sans-serif'
+      t2NameX = containerX + 62
     }
+    ctx.fillText(team2Text, t2NameX, containerY + 218)
 
-    // 7. Render Scores block in the middle
-    ctx.fillStyle = '#1e293b' // dark block for scores
-    ctx.fillRect(150, 270, 500, 110)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
-    ctx.strokeRect(150, 270, 500, 110)
+    // 7. Draw Set Scores Grid Boxes (Centered in Right Panel X: 460 to 740)
+    const numSets = scoreSets.length
+    const boxW = 66
+    const boxH = 92
+    const boxGap = 12
+    const totalW = numSets * boxW + (numSets - 1) * boxGap
+    const scoreAreaCenterX = containerX + containerW - 150 // X = 610
+    const startX = scoreAreaCenterX - (totalW / 2)
 
-    // Set score values
-    const sets = match.score_sets || []
-    const maxSets = Math.max(sets.length, 1)
-    const setWidth = 500 / maxSets
+    scoreSets.forEach((set, idx) => {
+      const xPos = startX + idx * (boxW + boxGap)
+      
+      // Draw set labels above the box (e.g. SET 1)
+      ctx.fillStyle = '#64748b'
+      ctx.font = 'bold 10px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(`SET ${set.set_number}`, xPos + boxW / 2, containerY - 10)
 
-    ctx.textAlign = 'center'
-    ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
+      // Set Winner detection
+      const team1WonSet = set.team1_score > set.team2_score
+      const team2WonSet = set.team2_score > set.team1_score
 
-    sets.forEach((set, idx) => {
-      const centerX = 150 + (idx * setWidth) + (setWidth / 2)
-
-      // Set label (e.g. Set 1)
-      ctx.fillStyle = '#94a3b8'
-      ctx.font = '12px sans-serif'
-      ctx.fillText(`SET ${idx + 1}`, centerX, 298)
-
-      // Set score numbers
-      ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 36px sans-serif'
-      ctx.fillText(`${set.team1_score} - ${set.team2_score}`, centerX, 352)
-
-      // Vertical separator
-      if (idx < sets.length - 1) {
-        ctx.beginPath()
-        ctx.moveTo(150 + ((idx + 1) * setWidth), 275)
-        ctx.lineTo(150 + ((idx + 1) * setWidth), 375)
-        ctx.stroke()
+      // Draw Team 1 Box (Top Row)
+      const t1Y = containerY + 24
+      if (team1WonSet) {
+        // Solid Orange fill for Set Winner
+        ctx.fillStyle = '#f97316'
+        ctx.fillRect(xPos, t1Y, boxW, boxH)
+        ctx.fillStyle = '#111827' // Dark text
+      } else {
+        // Translucent dark box with Orange border & number for Set Loser
+        ctx.fillStyle = '#1f2937'
+        ctx.fillRect(xPos, t1Y, boxW, boxH)
+        ctx.strokeStyle = 'rgba(249, 115, 22, 0.4)'
+        ctx.lineWidth = 1.5
+        ctx.strokeRect(xPos, t1Y, boxW, boxH)
+        ctx.fillStyle = '#f97316' // Orange number
       }
+      ctx.font = 'bold 36px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(set.team1_score.toString(), xPos + boxW / 2, t1Y + boxH / 2 + 12)
+
+      // Draw Team 2 Box (Bottom Row)
+      const t2Y = containerY + 164
+      if (team2WonSet) {
+        // Solid Green fill for Set Winner
+        ctx.fillStyle = '#22c55e'
+        ctx.fillRect(xPos, t2Y, boxW, boxH)
+        ctx.fillStyle = '#111827' // Dark text
+      } else {
+        // Translucent dark box with Green border & number for Set Loser
+        ctx.fillStyle = '#1f2937'
+        ctx.fillRect(xPos, t2Y, boxW, boxH)
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)'
+        ctx.lineWidth = 1.5
+        ctx.strokeRect(xPos, t2Y, boxW, boxH)
+        ctx.fillStyle = '#22c55e' // Green number
+      }
+      ctx.font = 'bold 36px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(set.team2_score.toString(), xPos + boxW / 2, t2Y + boxH / 2 + 12)
     })
 
-    // 8. Footer metadata
-    ctx.fillStyle = '#64748b'
-    ctx.font = '12px sans-serif'
+    // 8. Footer
+    ctx.fillStyle = '#475569'
+    ctx.font = 'bold 11px sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText(new Date(match.match_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 50, 450)
+    ctx.fillText(new Date(match.match_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(), 40, 440)
 
     ctx.textAlign = 'right'
-    ctx.fillText('KELABSUKAN.COM', 750, 450)
+    ctx.fillText('WWW.KELABSUKAN.COM', 760, 440)
 
     // Save download URL
     setDownloadUrl(canvas.toDataURL('image/png'))

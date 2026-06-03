@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowRight,
@@ -63,6 +63,7 @@ import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
 import { Textarea } from '../components/ui/textarea'
+import { Select } from '../components/ui/select'
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
@@ -97,6 +98,280 @@ function renderRankBadge(rank: number) {
   if (rank === 2) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600 shadow-sm border border-slate-200" title="Silver Medal">🥈</span>
   if (rank === 3) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-sm font-bold text-amber-800 shadow-sm border border-amber-100" title="Bronze Medal">🥉</span>
   return <span className="font-mono text-sm font-bold text-slate-500 w-6 text-center">#{rank}</span>
+}
+
+function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardRow[] {
+  const playerStats = new Map<string, {
+    games: number
+    wins: number
+    losses: number
+    pointsFor: number
+    pointsAgainst: number
+  }>()
+
+  for (const match of matchesList) {
+    const scoreSets = match.score_sets || []
+    if (scoreSets.length === 0) continue
+
+    const team1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+    const team2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+    if (team1Sets === team2Sets) continue // Draw/Tie
+
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    let team1Points = 0
+    let team2Points = 0
+    for (const set of scoreSets) {
+      team1Points += set.team1_score
+      team2Points += set.team2_score
+    }
+
+    for (const participant of match.participants) {
+      const name = participant.name || participant.guest_name || 'Guest'
+      const isWin = participant.team === winningTeam
+
+      let stats = playerStats.get(name)
+      if (!stats) {
+        stats = { games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 }
+        playerStats.set(name, stats)
+      }
+
+      stats.games += 1
+      if (isWin) {
+        stats.wins += 1
+      } else {
+        stats.losses += 1
+      }
+
+      if (participant.team === 1) {
+        stats.pointsFor += team1Points
+        stats.pointsAgainst += team2Points
+      } else {
+        stats.pointsFor += team2Points
+        stats.pointsAgainst += team1Points
+      }
+    }
+  }
+
+  return Array.from(playerStats.entries())
+    .map(([name, stats]) => {
+      const winPercentage = stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0
+      const points = stats.pointsFor - stats.pointsAgainst
+      return {
+        name,
+        games: stats.games,
+        wins: stats.wins,
+        losses: stats.losses,
+        winPercentage,
+        pointsFor: stats.pointsFor,
+        pointsAgainst: stats.pointsAgainst,
+        points
+      }
+    })
+    .sort((a, b) => {
+      return b.points - a.points || b.winPercentage - a.winPercentage || b.wins - a.wins || a.name.localeCompare(b.name)
+    })
+}
+
+function calculateSessionHighlights(eventMatches: MatchWithDetails[]) {
+  const playerStats = new Map<string, {
+    games: number
+    wins: number
+    losses: number
+    pointsFor: number
+    pointsAgainst: number
+    matchResults: boolean[]
+  }>()
+
+  const chronMatches = [...eventMatches].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+
+  for (const match of chronMatches) {
+    const scoreSets = match.score_sets || []
+    if (scoreSets.length === 0) continue
+
+    const team1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+    const team2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+    if (team1Sets === team2Sets) continue // Draw
+
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    let team1Points = 0
+    let team2Points = 0
+    for (const set of scoreSets) {
+      team1Points += set.team1_score
+      team2Points += set.team2_score
+    }
+
+    for (const p of match.participants) {
+      const name = p.name || p.guest_name || 'Guest'
+      const isWin = p.team === winningTeam
+
+      let stats = playerStats.get(name)
+      if (!stats) {
+        stats = { games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, matchResults: [] }
+        playerStats.set(name, stats)
+      }
+
+      stats.games++
+      if (isWin) stats.wins++
+      else stats.losses++
+
+      if (p.team === 1) {
+        stats.pointsFor += team1Points
+        stats.pointsAgainst += team2Points
+      } else {
+        stats.pointsFor += team2Points
+        stats.pointsAgainst += team1Points
+      }
+      stats.matchResults.push(isWin)
+    }
+  }
+
+  const playersList = Array.from(playerStats.entries()).map(([name, stats]) => {
+    const winRate = stats.games > 0 ? (stats.wins / stats.games) * 100 : 0
+    const pointDiff = stats.pointsFor - stats.pointsAgainst
+    
+    let longestStreak = 0
+    let currentStreak = 0
+    for (const res of stats.matchResults) {
+      if (res) {
+        currentStreak++
+        if (currentStreak > longestStreak) {
+          longestStreak = currentStreak
+        }
+      } else {
+        currentStreak = 0
+      }
+    }
+
+    return {
+      name,
+      ...stats,
+      winRate,
+      pointDiff,
+      longestStreak,
+    }
+  })
+
+  const mvpCandidates = playersList.filter(p => p.games >= 2)
+  let mvp = null
+  if (mvpCandidates.length > 0) {
+    mvp = [...mvpCandidates].sort((a, b) => b.winRate - a.winRate || b.pointDiff - a.pointDiff)[0]
+  } else if (playersList.length > 0) {
+    mvp = [...playersList].sort((a, b) => b.winRate - a.winRate || b.pointDiff - a.pointDiff)[0]
+  }
+
+  const streakCandidates = playersList.filter(p => p.longestStreak >= 2)
+  let streakStar = null
+  if (streakCandidates.length > 0) {
+    streakStar = [...streakCandidates].sort((a, b) => b.longestStreak - a.longestStreak || b.wins - a.wins)[0]
+  }
+
+  const resilienceCandidates = playersList.filter(p => p.games >= 2)
+  let resilience = null
+  if (resilienceCandidates.length > 0) {
+    resilience = [...resilienceCandidates].sort((a, b) => a.winRate - b.winRate || b.games - a.games)[0]
+    if (resilience.winRate >= 50) {
+      resilience = null
+    }
+  }
+
+  const duos = new Map<string, { wins: number; matches: number }>()
+  for (const match of chronMatches) {
+    if (match.match_type !== 'doubles') continue
+    const scoreSets = match.score_sets || []
+    if (scoreSets.length === 0) continue
+
+    const team1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+    const team2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+    if (team1Sets === team2Sets) continue // Draw
+
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    const team1P = match.participants.filter(p => p.team === 1).map(p => p.name || p.guest_name || 'Guest')
+    const team2P = match.participants.filter(p => p.team === 2).map(p => p.name || p.guest_name || 'Guest')
+
+    if (team1P.length === 2) {
+      team1P.sort()
+      const key = team1P.join(' & ')
+      const stats = duos.get(key) ?? { wins: 0, matches: 0 }
+      stats.matches++
+      if (winningTeam === 1) stats.wins++
+      duos.set(key, stats)
+    }
+
+    if (team2P.length === 2) {
+      team2P.sort()
+      const key = team2P.join(' & ')
+      const stats = duos.get(key) ?? { wins: 0, matches: 0 }
+      stats.matches++
+      if (winningTeam === 2) stats.wins++
+      duos.set(key, stats)
+    }
+  }
+
+  const duosList = Array.from(duos.entries()).map(([names, stats]) => {
+    const winRate = stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0
+    return { names, ...stats, winRate }
+  })
+
+  const powerDuoCandidates = duosList.filter(d => d.matches >= 2)
+  let powerDuo = null
+  if (powerDuoCandidates.length > 0) {
+    powerDuo = [...powerDuoCandidates].sort((a, b) => b.winRate - a.winRate || b.matches - a.matches)[0]
+  } else if (duosList.length > 0) {
+    powerDuo = [...duosList].sort((a, b) => b.winRate - a.winRate || b.matches - a.matches)[0]
+  }
+
+  const rivalries = new Map<string, number>()
+  for (const match of chronMatches) {
+    const team1P = match.participants.filter(p => p.team === 1).map(p => p.name || p.guest_name || 'Guest')
+    const team2P = match.participants.filter(p => p.team === 2).map(p => p.name || p.guest_name || 'Guest')
+
+    for (const p1 of team1P) {
+      for (const p2 of team2P) {
+        const key = [p1, p2].sort().join(' vs ')
+        rivalries.set(key, (rivalries.get(key) ?? 0) + 1)
+      }
+    }
+  }
+
+  const rivalriesList = Array.from(rivalries.entries()).map(([names, count]) => ({ names, count }))
+  const rivalryCandidates = rivalriesList.filter(r => r.count >= 2)
+  let rivalry = null
+  if (rivalryCandidates.length > 0) {
+    rivalry = [...rivalryCandidates].sort((a, b) => b.count - a.count)[0]
+  }
+
+  const totalMatches = eventMatches.length
+  let totalPoints = 0
+  let totalSets = 0
+  for (const match of eventMatches) {
+    for (const set of match.score_sets || []) {
+      totalPoints += set.team1_score + set.team2_score
+      totalSets++
+    }
+  }
+
+  const avgSetsPerMatch = totalMatches > 0 ? (totalSets / totalMatches).toFixed(1) : '0.0'
+  const avgPointsPerSet = totalSets > 0 ? (totalPoints / totalSets).toFixed(1) : '0.0'
+
+  return {
+    mvp,
+    streakStar,
+    resilience,
+    powerDuo,
+    rivalry,
+    stats: {
+      totalMatches,
+      totalPoints,
+      avgSetsPerMatch,
+      avgPointsPerSet,
+    },
+    playersList: playersList.sort((a, b) => b.pointDiff - a.pointDiff || b.winRate - a.winRate)
+  }
 }
 
 export default function ClubHomePage() {
@@ -140,8 +415,14 @@ export default function ClubHomePage() {
   const [eventRsvpCounts, setEventRsvpCounts] = useState<Record<string, number>>({})
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [messages, setMessages] = useState<ClubMessage[]>([])
-  const [leaderboard, setLeaderboard] = useState<ClubLeaderboardRow[]>([])
+  const [, setLeaderboard] = useState<ClubLeaderboardRow[]>([])
   const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
+
+  const [selectedScoreEventId, setSelectedScoreEventId] = useState<string | null>(null)
+  const [selectedScoreEventTitle, setSelectedScoreEventTitle] = useState<string | null>(null)
+  const [selectedScoreEventDate, setSelectedScoreEventDate] = useState<string | null>(null)
+  const [showHighlightsEvent, setShowHighlightsEvent] = useState<ClubEvent | null>(null)
+  const [timeframe, setTimeframe] = useState<string>('all-time')
 
   const [eventsViewMode, setEventsViewMode] = useState<'list' | 'calendar'>('list')
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
@@ -156,18 +437,76 @@ export default function ClubHomePage() {
   const inviteUrl = club?.invite_code ? buildInviteUrl(club.invite_code) : ''
   const userId = user?.id
 
+  const filteredMatchesForLeaderboard = useMemo(() => {
+    if (timeframe === 'all-time') {
+      return matches
+    }
+    
+    if (timeframe === 'month') {
+      const now = new Date()
+      const currentYear = now.getFullYear()
+      const currentMonth = now.getMonth()
+      return matches.filter(m => {
+        const d = new Date(m.match_date)
+        return d.getFullYear() === currentYear && d.getMonth() === currentMonth
+      })
+    }
+    
+    if (timeframe === 'week') {
+      const today = new Date()
+      const day = today.getDay()
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1)
+      const startOfWeek = new Date(today.setDate(diff))
+      startOfWeek.setHours(0, 0, 0, 0)
+      
+      const endOfWeek = new Date(startOfWeek)
+      endOfWeek.setDate(endOfWeek.getDate() + 6)
+      endOfWeek.setHours(23, 59, 59, 999)
+      
+      return matches.filter(m => {
+        const d = new Date(m.match_date)
+        return d.getTime() >= startOfWeek.getTime() && d.getTime() <= endOfWeek.getTime()
+      })
+    }
+    
+    return matches.filter(m => m.event_id === timeframe)
+  }, [matches, timeframe])
+
+  const computedLeaderboard = useMemo(() => {
+    return calculateLeaderboard(filteredMatchesForLeaderboard)
+  }, [filteredMatchesForLeaderboard])
+
   const closeScoreModal = () => {
     setShowScoreModal(false)
     setEditingMatch(null)
+    setSelectedScoreEventId(null)
+    setSelectedScoreEventTitle(null)
+    setSelectedScoreEventDate(null)
   }
 
   const handleCreateScore = () => {
     setEditingMatch(null)
+    setSelectedScoreEventId(null)
+    setSelectedScoreEventTitle(null)
+    setSelectedScoreEventDate(null)
+    setShowScoreModal(true)
+  }
+
+  const handleCreateScoreForEvent = (event: ClubEvent) => {
+    setEditingMatch(null)
+    setSelectedScoreEventId(event.id)
+    setSelectedScoreEventTitle(event.title)
+    const evDateStr = event.event_date ? new Date(event.event_date).toISOString().split('T')[0] : null
+    setSelectedScoreEventDate(evDateStr)
     setShowScoreModal(true)
   }
 
   const handleEditMatch = (match: MatchWithDetails) => {
     setEditingMatch(match)
+    setSelectedScoreEventId(match.event_id || null)
+    const matchingEv = events.find(e => e.id === match.event_id)
+    setSelectedScoreEventTitle(matchingEv?.title || null)
+    setSelectedScoreEventDate(match.match_date)
     setShowScoreModal(true)
   }
 
@@ -302,7 +641,7 @@ export default function ClubHomePage() {
       }
 
       if (matchesResult.status === 'fulfilled') {
-        setMatches(matchesResult.value.slice(0, 10))
+        setMatches(matchesResult.value)
       } else {
         console.error('Failed to load scores:', matchesResult.reason)
         setSectionErrors((prev) => ({ ...prev, scores: 'Could not load recent scores.' }))
@@ -787,6 +1126,36 @@ export default function ClubHomePage() {
             )}
           </div>
         )}
+        {/* Session Highlights & Recording Buttons */}
+        <div className="grid gap-2 pt-2 border-t border-slate-200 sm:grid-cols-2">
+          {matches.some(m => m.event_id === event.id) ? (
+            <Button
+              type="button"
+              size="sm"
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold flex items-center justify-center gap-1.5 shadow-sm border-0"
+              onClick={() => setShowHighlightsEvent(event)}
+            >
+              <Trophy size={14} className="text-amber-100" />
+              View Highlights
+            </Button>
+          ) : (
+            <div className="text-xs text-slate-400 flex items-center justify-center py-2 italic">
+              No matches recorded yet.
+            </div>
+          )}
+          {isAdmin ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="flex items-center justify-center gap-1.5"
+              onClick={() => handleCreateScoreForEvent(event)}
+            >
+              <ClipboardPenLine size={14} className="text-slate-600" />
+              Record Score
+            </Button>
+          ) : null}
+        </div>
       </div>
     )
   }
@@ -1413,11 +1782,36 @@ export default function ClubHomePage() {
 
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
+              <div className="w-full sm:w-48">
+                <Select
+                  value={timeframe}
+                  onChange={(e) => setTimeframe(e.target.value)}
+                  className="min-h-9 text-xs font-semibold py-1 px-2 border-slate-300 rounded-md focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
+                >
+                  <option value="all-time">🏆 All-Time</option>
+                  <option value="month">📅 This Month</option>
+                  <option value="week">📅 This Week</option>
+                  {events.length > 0 && (
+                    <optgroup label="Game Sessions">
+                      {events
+                        .slice()
+                        .reverse()
+                        .map((event) => (
+                          <option key={event.id} value={event.id}>
+                            {event.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                </Select>
+              </div>
+            </div>
             {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
-            {leaderboard.length ? (
+            {computedLeaderboard.length ? (
               <div className="space-y-2">
-                {leaderboard.slice(0, 10).map((player, index) => {
+                {computedLeaderboard.slice(0, 10).map((player, index) => {
                   const streak = playerStreaks.get(player.name)
                   const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
 
@@ -1461,7 +1855,7 @@ export default function ClubHomePage() {
               </div>
             ) : (
               <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
-                {isSecondaryLoading ? 'Loading leaderboard...' : 'No matches recorded yet.'}
+                {isSecondaryLoading ? 'Loading leaderboard...' : 'No matches recorded for this timeframe.'}
               </p>
             )}
           </CardContent>
@@ -1655,11 +2049,252 @@ export default function ClubHomePage() {
         onClose={closeScoreModal}
         clubId={club?.id}
         editingMatch={editingMatch}
+        eventId={selectedScoreEventId || undefined}
+        eventTitle={selectedScoreEventTitle || undefined}
+        eventDate={selectedScoreEventDate || undefined}
         onScoreRecorded={() => {
           loadClubData()
           closeScoreModal()
         }}
       />
+
+      {showHighlightsEvent ? (() => {
+        const eventMatches = matches.filter(m => m.event_id === showHighlightsEvent.id)
+        const highlights = calculateSessionHighlights(eventMatches)
+        const eventDateStr = new Date(showHighlightsEvent.event_date).toLocaleDateString(undefined, {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        })
+
+        return (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 overflow-y-auto" onClick={() => setShowHighlightsEvent(null)}>
+            <Card className="my-8 w-full max-w-4xl rounded-xl shadow-2xl bg-slate-900 border border-slate-800 text-white overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Header */}
+              <div className="relative px-6 py-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800">
+                <div className="absolute top-4 right-4">
+                  <Button type="button" variant="ghost" size="icon" onClick={() => setShowHighlightsEvent(null)} className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-full">
+                    <X size={20} />
+                  </Button>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Badge className="w-fit border-amber-500 bg-amber-500/10 text-amber-500 font-extrabold uppercase tracking-wider text-[10px]">
+                    ⭐ Game Night Summary
+                  </Badge>
+                  <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400 bg-clip-text text-transparent">
+                    {showHighlightsEvent.title}
+                  </h2>
+                  <p className="text-sm text-slate-400 font-medium">
+                    📅 {eventDateStr} {showHighlightsEvent.location ? `· 📍 ${showHighlightsEvent.location}` : ''}
+                  </p>
+                </div>
+
+                {/* Session Quick Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                  {[
+                    ['Total Matches', highlights.stats.totalMatches, '🎾'],
+                    ['Total Points Scored', highlights.stats.totalPoints, '🔢'],
+                    ['Avg Sets / Match', highlights.stats.avgSetsPerMatch, '📊'],
+                    ['Avg Points / Set', highlights.stats.avgPointsPerSet, '📈']
+                  ].map(([label, val, emoji]) => (
+                    <div key={label} className="bg-slate-950/40 rounded-lg p-3 border border-slate-800/60 text-center">
+                      <span className="text-2xl mb-1 block">{emoji}</span>
+                      <span className="block text-lg font-bold text-white">{val}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scrollable Content */}
+              <CardContent className="p-6 space-y-8 max-h-[60vh] overflow-y-auto bg-slate-950 text-slate-100">
+                
+                {/* Accordion/Cards of highlights */}
+                <div>
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">🏆 Tonight's Highlights</h3>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    
+                    {/* MVP (King of the Court) */}
+                    {highlights.mvp && (
+                      <div className="relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-transparent p-5 shadow-lg shadow-amber-950/20">
+                        <div className="absolute top-2 right-2 text-2xl">👑</div>
+                        <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">King of the Court</span>
+                        <h4 className="mt-1.5 text-lg font-extrabold text-white truncate">{highlights.mvp.name}</h4>
+                        <p className="mt-2 text-xs font-semibold text-amber-400/90">
+                          🔥 {Math.round(highlights.mvp.winRate)}% Win Rate ({highlights.mvp.wins}W-{highlights.mvp.losses}L)
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Point Diff: <span className="font-semibold text-emerald-400">+{highlights.mvp.pointDiff}</span>
+                        </p>
+                        <p className="mt-3 text-[10px] italic text-slate-500">The most dominant player of the night.</p>
+                      </div>
+                    )}
+
+                    {/* Streak Star */}
+                    {highlights.streakStar && (
+                      <div className="relative overflow-hidden rounded-xl border border-orange-500/30 bg-gradient-to-b from-orange-500/10 to-transparent p-5 shadow-lg shadow-orange-950/20">
+                        <div className="absolute top-2 right-2 text-2xl">🔥</div>
+                        <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Streak Star</span>
+                        <h4 className="mt-1.5 text-lg font-extrabold text-white truncate">{highlights.streakStar.name}</h4>
+                        <p className="mt-2 text-xs font-semibold text-orange-400/90">
+                          📈 {highlights.streakStar.longestStreak} Win Streak
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Total Wins: <span className="font-semibold text-white">{highlights.streakStar.wins}</span>
+                        </p>
+                        <p className="mt-3 text-[10px] italic text-slate-500">Unstoppable momentum on the court!</p>
+                      </div>
+                    )}
+
+                    {/* Resilience Award */}
+                    {highlights.resilience && (
+                      <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 to-transparent p-5 shadow-lg shadow-emerald-950/20">
+                        <div className="absolute top-2 right-2 text-2xl">🛠️</div>
+                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Resilience Award</span>
+                        <h4 className="mt-1.5 text-lg font-extrabold text-white truncate">{highlights.resilience.name}</h4>
+                        <p className="mt-2 text-xs font-semibold text-emerald-400/90">
+                          💪 Played {highlights.resilience.games} Matches
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Wins: {highlights.resilience.wins} · Losses: {highlights.resilience.losses}
+                        </p>
+                        <p className="mt-3 text-[10px] italic text-slate-500">Showed great stamina and competitive spirit!</p>
+                      </div>
+                    )}
+
+                    {/* Power Duo */}
+                    {highlights.powerDuo && (
+                      <div className="relative overflow-hidden rounded-xl border border-indigo-500/30 bg-gradient-to-b from-indigo-500/10 to-transparent p-5 shadow-lg shadow-indigo-950/20">
+                        <div className="absolute top-2 right-2 text-2xl">🤝</div>
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Power Duo</span>
+                        <h4 className="mt-1.5 text-sm font-extrabold text-white truncate" title={highlights.powerDuo.names}>{highlights.powerDuo.names}</h4>
+                        <p className="mt-2 text-xs font-semibold text-indigo-400/90">
+                          🏆 {Math.round(highlights.powerDuo.winRate)}% Win Rate
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Record: {highlights.powerDuo.wins} Wins / {highlights.powerDuo.matches} Matches
+                        </p>
+                        <p className="mt-3 text-[10px] italic text-slate-500">The night's most synergistic team pairing.</p>
+                      </div>
+                    )}
+
+                    {/* Rivalry of the Night */}
+                    {highlights.rivalry && (
+                      <div className="relative overflow-hidden rounded-xl border border-red-500/30 bg-gradient-to-b from-red-500/10 to-transparent p-5 shadow-lg shadow-red-950/20">
+                        <div className="absolute top-2 right-2 text-2xl">⚔️</div>
+                        <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Night's Rivalry</span>
+                        <h4 className="mt-1.5 text-sm font-extrabold text-white truncate" title={highlights.rivalry.names}>{highlights.rivalry.names}</h4>
+                        <p className="mt-2 text-xs font-semibold text-red-400/90">
+                          💥 Faced Off {highlights.rivalry.count} Times
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          A close, competitive battle!
+                        </p>
+                        <p className="mt-3 text-[10px] italic text-slate-500">Most matches played on opposing teams.</p>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+
+                {/* Night's Standings */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">📈 Standings for this Session</h3>
+                  <div className="border border-slate-800 rounded-lg overflow-x-auto bg-slate-900/60 font-sans">
+                    <table className="w-full text-left border-collapse text-xs md:text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-950/80 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                          <th className="py-3 px-4">Rank</th>
+                          <th className="py-3 px-4">Player</th>
+                          <th className="py-3 px-4 text-center">GP</th>
+                          <th className="py-3 px-4 text-center">W - L</th>
+                          <th className="py-3 px-4 text-center">Win %</th>
+                          <th className="py-3 px-4 text-right">Pts Ratio</th>
+                          <th className="py-3 px-4 text-right">Points Diff</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/50">
+                        {highlights.playersList.map((player, idx) => (
+                          <tr key={player.name} className="hover:bg-slate-800/40 text-slate-200">
+                            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
+                            <td className="py-3 px-4 font-semibold text-white">{player.name}</td>
+                            <td className="py-3 px-4 text-center font-mono">{player.games}</td>
+                            <td className="py-3 px-4 text-center font-mono text-slate-300">{player.wins} - {player.losses}</td>
+                            <td className="py-3 px-4 text-center font-mono">{Math.round(player.winRate)}%</td>
+                            <td className="py-3 px-4 text-right font-mono text-slate-400">{player.pointsFor} / {player.pointsAgainst}</td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400">{player.pointDiff > 0 ? `+${player.pointDiff}` : player.pointDiff}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Session Match Logs */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">📝 Match Records</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {eventMatches.map((match) => {
+                      const t1 = match.participants.filter(p => p.team === 1).map(p => p.name || p.guest_name || 'Guest').join(' & ')
+                      const t2 = match.participants.filter(p => p.team === 2).map(p => p.name || p.guest_name || 'Guest').join(' & ')
+                      
+                      const scoreSets = match.score_sets || []
+                      const t1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+                      const t2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+                      const matchWinner = t1Sets > t2Sets ? 1 : 2
+
+                      return (
+                        <div key={match.id} className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-4 space-y-2">
+                          <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{match.sport} · {match.match_type}</span>
+                            <span className="text-[10px] text-slate-500">{new Date(match.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          
+                          <div className="space-y-1.5">
+                            {/* Team 1 */}
+                            <div className="flex justify-between items-center text-xs">
+                              <span className={`font-semibold truncate max-w-[180px] ${matchWinner === 1 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
+                                {matchWinner === 1 ? '👑 ' : ''}{t1}
+                              </span>
+                              <span className={`font-mono text-sm ${matchWinner === 1 ? 'font-bold text-amber-400' : 'text-slate-400'}`}>{t1Sets}</span>
+                            </div>
+                            
+                            {/* Team 2 */}
+                            <div className="flex justify-between items-center text-xs">
+                              <span className={`font-semibold truncate max-w-[180px] ${matchWinner === 2 ? 'text-emerald-400 font-bold' : 'text-slate-400'}`}>
+                                {matchWinner === 2 ? '👑 ' : ''}{t2}
+                              </span>
+                              <span className={`font-mono text-sm ${matchWinner === 2 ? 'font-bold text-emerald-400' : 'text-slate-400'}`}>{t2Sets}</span>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-slate-800/60 pt-2 flex items-center justify-between">
+                            <span className="text-[10px] font-mono text-slate-400">
+                              Sets: {scoreSets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')}
+                            </span>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => setShareMatch(match)} title="Share Scorecard" className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-800">
+                              <Share2 size={12} />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+              </CardContent>
+
+              {/* Footer */}
+              <div className="bg-slate-900 px-6 py-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
+                <span>POWERED BY KELABSUKAN.COM</span>
+                <Button type="button" size="sm" variant="secondary" onClick={() => setShowHighlightsEvent(null)}>
+                  Close Summary
+                </Button>
+              </div>
+
+            </Card>
+          </div>
+        )
+      })() : null}
 
       {shareMatch ? (
         <ScorecardShareModal

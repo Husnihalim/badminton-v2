@@ -14,6 +14,9 @@ interface ScoreRecordingModalProps {
   clubId?: string
   editingMatch?: MatchWithDetails | null
   onScoreRecorded?: () => void
+  eventId?: string
+  eventTitle?: string
+  eventDate?: string
 }
 
 type PlayerField = {
@@ -47,7 +50,16 @@ function isPlayerValid(field: PlayerField): boolean {
   return Boolean(field.memberId || field.customName.trim())
 }
 
-export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMatch, onScoreRecorded }: ScoreRecordingModalProps) {
+export default function ScoreRecordingModal({
+  isOpen,
+  onClose,
+  clubId,
+  editingMatch,
+  onScoreRecorded,
+  eventId,
+  eventTitle,
+  eventDate,
+}: ScoreRecordingModalProps) {
   const [matchTitle, setMatchTitle] = useState('')
   const [matchDate, setMatchDate] = useState<string>('')
   const [sport, setSport] = useState('badminton')
@@ -108,7 +120,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
       setErrors({})
     } else {
       setMatchTitle('')
-      setMatchDate(new Date().toISOString().split('T')[0])
+      setMatchDate(eventDate || new Date().toISOString().split('T')[0])
       setSport('badminton')
       setMatchType('singles')
       setPlayer1A(createPlayerField())
@@ -118,7 +130,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
       setSets([createScoreSetField()])
       setErrors({})
     }
-  }, [editingMatch, isOpen])
+  }, [editingMatch, isOpen, eventDate])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!isOpen) return null
@@ -228,6 +240,7 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
             guest_name: p.guestName || undefined,
           })),
           score_sets: scoreSets,
+          event_id: eventId || undefined,
         })
       }
 
@@ -329,6 +342,12 @@ export default function ScoreRecordingModal({ isOpen, onClose, clubId, editingMa
             </div>
 
             {errors.submit ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errors.submit}</p> : null}
+
+            {eventTitle && eventId ? (
+              <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-800">
+                🏆 Linking to session: <span className="font-bold underline">{eventTitle}</span>
+              </div>
+            ) : null}
 
             <form className="space-y-4" onSubmit={handleSubmit} noValidate>
               <div className="grid gap-3 sm:grid-cols-2">

@@ -88,6 +88,7 @@ export interface Match {
   match_type: 'singles' | 'doubles'
   recorded_by: string
   match_date: string
+  event_id?: string | null
   created_at: string
 }
 
