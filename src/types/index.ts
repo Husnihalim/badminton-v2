@@ -59,6 +59,7 @@ export interface Membership {
   // Joined fields
   name?: string
   email?: string
+  avatar_url?: string | null
 }
 
 // Database ClubEvent type

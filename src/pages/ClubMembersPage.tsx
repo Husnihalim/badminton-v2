@@ -174,9 +174,17 @@ export default function ClubMembersPage() {
               {sortedMembers.map((member) => (
                 <div key={member.id} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm">
-                      <UserRound size={18} aria-hidden="true" />
-                    </span>
+                    {member.avatar_url ? (
+                      <img 
+                        src={member.avatar_url} 
+                        alt={member.name || 'Member'} 
+                        className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-slate-200"
+                      />
+                    ) : (
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm">
+                        <UserRound size={18} aria-hidden="true" />
+                      </span>
+                    )}
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="truncate font-bold text-slate-950">
