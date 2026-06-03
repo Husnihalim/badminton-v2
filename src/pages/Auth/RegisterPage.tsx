@@ -16,16 +16,18 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wantCreateClub, setWantCreateClub] = useState(false)
   const { user, register } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectTo = getSafeRedirect(searchParams.get('redirect'))
+  const targetRedirect = wantCreateClub ? '/profile?create_club=true' : redirectTo
 
   useEffect(() => {
     if (user) {
-      navigate(redirectTo)
+      navigate(targetRedirect)
     }
-  }, [user, navigate, redirectTo])
+  }, [user, navigate, targetRedirect])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -47,21 +49,21 @@ export default function RegisterPage() {
       setError('')
       setSuccessMessage('')
 
-      const result = await register(email, name, password, getInviteTokenFromRedirect(redirectTo))
+      const result = await register(email, name, password, getInviteTokenFromRedirect(targetRedirect))
       if (!result.success) {
         setError(result.error || 'Could not create account. Please try again.')
         return
       }
       if (result.emailVerificationRequired) {
-        window.localStorage.setItem('kelabsukan.postLoginRedirect', redirectTo)
+        window.localStorage.setItem('kelabsukan.postLoginRedirect', targetRedirect)
         setSuccessMessage(
-          redirectTo.startsWith('/invite/') || redirectTo.startsWith('/join/')
+          targetRedirect.startsWith('/invite/') || targetRedirect.startsWith('/join/')
             ? 'Account created. Please verify your email, then log in. We will finish joining the club from your invite link.'
             : 'Account created. Please verify your email, then log in to continue.'
         )
         return
       }
-      navigate(redirectTo)
+      navigate(targetRedirect)
     } finally {
       setIsSubmitting(false)
     }
@@ -141,6 +143,19 @@ export default function RegisterPage() {
                 placeholder="Re-enter your password"
                 disabled={!isSupabaseConfigured || isSubmitting}
               />
+            </div>
+
+            <div className="flex items-center gap-2 py-2">
+              <input
+                id="want-create-club"
+                type="checkbox"
+                checked={wantCreateClub}
+                onChange={(e) => setWantCreateClub(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-350 text-emerald-700 focus:ring-emerald-700"
+              />
+              <label htmlFor="want-create-club" className="text-sm font-semibold text-slate-700 select-none">
+                I want to create a new club
+              </label>
             </div>
 
             <Button type="submit" fullWidth disabled={!isSupabaseConfigured || isSubmitting}>

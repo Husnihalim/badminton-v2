@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Building2, Camera, Lock, MapPin, Plus, Save, UserRound, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { createClub, getMyClubs, updateProfile, uploadProfilePhoto } from '../lib/api'
@@ -19,6 +19,7 @@ function getErrorMessage(err: unknown, fallback: string) {
 export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [clubs, setClubs] = useState<Club[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showCreateClubModal, setShowCreateClubModal] = useState(false)
@@ -67,8 +68,11 @@ export default function ProfilePage() {
       setAvatarUrl(user.avatar_url || null)
       setIsPrivate(user.is_private || false)
       loadMyClubs()
+      if (searchParams.get('create_club') === 'true') {
+        setShowCreateClubModal(true)
+      }
     }
-  }, [user, authLoading, navigate, loadMyClubs])
+  }, [user, authLoading, navigate, loadMyClubs, searchParams])
 
   const handleCreateClub = async (e: React.FormEvent) => {
     e.preventDefault()

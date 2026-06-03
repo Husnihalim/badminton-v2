@@ -1,13 +1,15 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { getClubMatches, deleteClub } from './api'
+import { getClubMatches, deleteClub, createClub } from './api'
 import { supabase } from './supabase'
 
 // Mock Supabase client
 vi.mock('./supabase', () => {
   const mockFrom = vi.fn()
+  const mockRpc = vi.fn(() => Promise.resolve({ data: 'MOCK_INVITE_CODE', error: null }))
   return {
     supabase: {
       from: mockFrom,
+      rpc: mockRpc,
       auth: {
         getUser: vi.fn(() => Promise.resolve({ data: { user: { id: 'test-user-id' } }, error: null })),
       }
@@ -112,6 +114,41 @@ describe('api.ts - Critical Database Methods', () => {
       expect(mockFrom).toHaveBeenCalledWith('clubs')
       expect(mockDelete).toHaveBeenCalled()
       expect(mockEq).toHaveBeenCalledWith('id', 'club-to-delete')
+    })
+  })
+
+  describe('createClub', () => {
+    it('inserts a new club with correct defaults matching LEP BC settings', async () => {
+      const mockSingle = vi.fn().mockImplementation(() => Promise.resolve({
+        data: { id: 'new-club-id', name: 'Ace Smash Club', invite_code: null },
+        error: null
+      }))
+      const mockSelect = vi.fn().mockReturnThis()
+      const mockInsert = vi.fn().mockReturnThis()
+      
+      const mockFrom = vi.mocked(supabase.from)
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
+        select: mockSelect,
+        single: mockSingle,
+      } as any)
+
+      const result = await createClub({
+        name: 'Ace Smash Club',
+        city: 'Kuala Lumpur',
+      })
+
+      expect(mockFrom).toHaveBeenCalledWith('clubs')
+      expect(mockInsert).toHaveBeenCalledWith({
+        sport_focus: ['badminton'],
+        open_join: true,
+        approval_required: true,
+        name: 'Ace Smash Club',
+        city: 'Kuala Lumpur',
+        owner_id: 'test-user-id',
+      })
+      expect(result?.id).toBe('new-club-id')
+      expect(result?.invite_code).toBe('MOCK_INVITE_CODE')
     })
   })
 })

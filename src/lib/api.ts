@@ -157,6 +157,9 @@ export async function createClub(club: {
   const { data, error } = await supabase
     .from('clubs')
     .insert({
+      sport_focus: ['badminton'],
+      open_join: true,
+      approval_required: true,
       ...club,
       owner_id: user.id,
     } as never)
