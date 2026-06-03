@@ -2282,11 +2282,11 @@ export default function ClubHomePage() {
         })
 
         return (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 overflow-y-auto" onClick={() => setShowHighlightsEvent(null)}>
-            <Card className="my-8 w-full max-w-4xl rounded-xl shadow-2xl bg-slate-900 border border-slate-800 text-white overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 md:p-6" onClick={() => setShowHighlightsEvent(null)}>
+            <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl shadow-2xl bg-slate-900 border border-slate-800 text-white overflow-hidden" onClick={(e) => e.stopPropagation()}>
               
               {/* Header */}
-              <div className="relative px-6 py-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800">
+              <div className="relative px-6 py-6 md:py-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex-none">
                 <div className="absolute top-4 right-4">
                   <Button type="button" variant="ghost" size="icon" onClick={() => setShowHighlightsEvent(null)} className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-full">
                     <X size={20} />
@@ -2322,7 +2322,7 @@ export default function ClubHomePage() {
               </div>
 
               {/* Scrollable Content */}
-              <CardContent className="p-6 space-y-8 max-h-[60vh] overflow-y-auto bg-slate-950 text-slate-100">
+              <CardContent className="p-6 space-y-8 flex-1 overflow-y-auto bg-slate-950 text-slate-100">
                 
                 {/* Accordion/Cards of highlights */}
                 <div>
@@ -2500,7 +2500,7 @@ export default function ClubHomePage() {
               </CardContent>
 
               {/* Footer */}
-              <div className="bg-slate-900 px-6 py-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
+              <div className="bg-slate-900 px-6 py-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500 flex-none">
                 <span>POWERED BY KELABSUKAN.COM</span>
                 <Button type="button" size="sm" variant="secondary" onClick={() => setShowHighlightsEvent(null)}>
                   Close Summary
