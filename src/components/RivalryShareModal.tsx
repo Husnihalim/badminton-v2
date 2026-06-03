@@ -10,6 +10,7 @@ interface RivalryShareModalProps {
   matchesPlayed: number
   userName: string
   onClose: () => void
+  mode?: 'rival' | 'partner'
 }
 
 export default function RivalryShareModal({
@@ -19,6 +20,7 @@ export default function RivalryShareModal({
   matchesPlayed,
   userName,
   onClose,
+  mode = 'rival',
 }: RivalryShareModalProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [copied, setCopied] = useState(false)
@@ -52,8 +54,8 @@ export default function RivalryShareModal({
     ctx.lineTo(350, 500)
     ctx.stroke()
 
-    // Right accent (Amber)
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.15)'
+    // Right accent (Amber/Gold depending on mode)
+    ctx.strokeStyle = mode === 'partner' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'
     ctx.lineWidth = 40
     ctx.beginPath()
     ctx.moveTo(850, 500)
@@ -89,7 +91,11 @@ export default function RivalryShareModal({
     ctx.fillStyle = '#fbbf24'
     ctx.font = 'bold 24px sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText('HEAD-TO-HEAD RIVALRY', 400, 75)
+    if (mode === 'partner') {
+      ctx.fillText('DOUBLES PARTNERSHIP RECORD', 400, 75)
+    } else {
+      ctx.fillText('HEAD-TO-HEAD RIVALRY', 400, 75)
+    }
 
     ctx.fillStyle = '#64748b'
     ctx.font = 'semibold 13px sans-serif'
@@ -113,15 +119,15 @@ export default function RivalryShareModal({
 
     ctx.fillStyle = '#64748b'
     ctx.font = '14px sans-serif'
-    ctx.fillText('WINS', 200, 345)
+    ctx.fillText(mode === 'partner' ? 'WINS TOGETHER' : 'WINS', 200, 345)
 
-    // VS center divider
-    ctx.fillStyle = '#ef4444' // Neon Red
+    // Center divider
+    ctx.fillStyle = mode === 'partner' ? '#10b981' : '#ef4444'
     ctx.font = 'italic bold 32px sans-serif'
-    ctx.fillText('VS', 400, 260)
+    ctx.fillText(mode === 'partner' ? '&' : 'VS', 400, 260)
 
-    // Right side: Rival (Amber)
-    ctx.fillStyle = '#f59e0b' // Amber
+    // Right side: Rival (Amber/Emerald depending on mode)
+    ctx.fillStyle = mode === 'partner' ? '#10b981' : '#f59e0b' // Partner is also green, Rival is gold/amber
     ctx.beginPath()
     ctx.arc(600, 180, 5, 0, Math.PI * 2)
     ctx.fill()
@@ -131,13 +137,13 @@ export default function RivalryShareModal({
     ctx.textAlign = 'center'
     ctx.fillText(rivalName.toUpperCase(), 600, 220)
 
-    ctx.fillStyle = '#f59e0b'
+    ctx.fillStyle = mode === 'partner' ? '#f87171' : '#f59e0b' // Red for losses together, amber for rival wins
     ctx.font = 'bold 80px sans-serif'
     ctx.fillText(losses.toString(), 600, 310)
 
     ctx.fillStyle = '#64748b'
     ctx.font = '14px sans-serif'
-    ctx.fillText('WINS', 600, 345)
+    ctx.fillText(mode === 'partner' ? 'LOSSES TOGETHER' : 'WINS', 600, 345)
 
     // 7. Status Banner
     ctx.fillStyle = '#1e293b'
@@ -146,15 +152,30 @@ export default function RivalryShareModal({
     ctx.strokeRect(150, 380, 500, 45)
 
     let statusText: string
-    if (wins > losses) {
-      statusText = `${userName.split(' ')[0]} holds the lead! 👑`
-      ctx.fillStyle = '#10b981'
-    } else if (losses > wins) {
-      statusText = `${rivalName.split(' ')[0]} holds the lead! 👑`
-      ctx.fillStyle = '#f59e0b'
+    if (mode === 'partner') {
+      const total = wins + losses
+      const winRate = total > 0 ? Math.round((wins / total) * 100) : 0
+      if (winRate >= 65) {
+        statusText = 'A dominant partnership! 🏆'
+        ctx.fillStyle = '#10b981'
+      } else if (winRate >= 45) {
+        statusText = 'A solid, competitive pair! 🤝'
+        ctx.fillStyle = '#fbbf24'
+      } else {
+        statusText = 'Playing and improving together! 🎾'
+        ctx.fillStyle = '#64748b'
+      }
     } else {
-      statusText = "The rivalry is currently tied! ⚔️"
-      ctx.fillStyle = '#fbbf24'
+      if (wins > losses) {
+        statusText = `${userName.split(' ')[0]} holds the lead! 👑`
+        ctx.fillStyle = '#10b981'
+      } else if (losses > wins) {
+        statusText = `${rivalName.split(' ')[0]} holds the lead! 👑`
+        ctx.fillStyle = '#f59e0b'
+      } else {
+        statusText = "The rivalry is currently tied! ⚔️"
+        ctx.fillStyle = '#fbbf24'
+      }
     }
 
     ctx.font = 'bold 15px sans-serif'
@@ -172,23 +193,27 @@ export default function RivalryShareModal({
 
     // Generate url
     setDownloadUrl(canvas.toDataURL('image/png'))
-  }, [rivalName, wins, losses, matchesPlayed, userName])
+  }, [rivalName, wins, losses, matchesPlayed, userName, mode])
 
   const handleDownload = () => {
     if (!downloadUrl) return
     const link = document.createElement('a')
-    link.download = `rivalry-${userName.split(' ')[0]}-vs-${rivalName.split(' ')[0]}.png`
+    link.download = mode === 'partner'
+      ? `partnership-${userName.split(' ')[0]}-and-${rivalName.split(' ')[0]}.png`
+      : `rivalry-${userName.split(' ')[0]}-vs-${rivalName.split(' ')[0]}.png`
     link.href = downloadUrl
     link.click()
   }
 
   const handleShare = async () => {
-    const shareText = `Check out my Head-to-Head rivalry stats against ${rivalName} in KelabSukan!\nRecord: ${userName.split(' ')[0]} ${wins} - ${losses} ${rivalName.split(' ')[0]}`
+    const shareText = mode === 'partner'
+      ? `Check out our doubles partnership stats in KelabSukan!\nRecord: ${userName.split(' ')[0]} & ${rivalName.split(' ')[0]} - ${wins} Wins / ${losses} Losses`
+      : `Check out my Head-to-Head rivalry stats against ${rivalName} in KelabSukan!\nRecord: ${userName.split(' ')[0]} ${wins} - ${losses} ${rivalName.split(' ')[0]}`
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'H2H Rivalry Comparison',
+          title: mode === 'partner' ? 'Doubles Partnership Stats' : 'H2H Rivalry Comparison',
           text: shareText,
           url: window.location.href,
         })
@@ -208,8 +233,8 @@ export default function RivalryShareModal({
         <CardContent className="p-4 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white">Share Rivalry Card</h2>
-              <p className="text-sm text-slate-400">Download or copy a premium rivalry summary card.</p>
+              <h2 className="text-xl font-bold text-white">{mode === 'partner' ? 'Share Partnership Card' : 'Share Rivalry Card'}</h2>
+              <p className="text-sm text-slate-400">Download or copy a premium {mode === 'partner' ? 'partnership' : 'rivalry'} summary card.</p>
             </div>
             <button type="button" className="text-slate-400 hover:text-white" onClick={onClose} aria-label="Close">
               <X size={20} />

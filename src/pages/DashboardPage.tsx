@@ -78,22 +78,31 @@ export default function DashboardPage() {
   }>({ onFire: false, giantSlayer: false, cleanSweep: false, ironMan: false, dynamicDuo: false })
   const [clubMembers, setClubMembers] = useState<{ id?: string; name: string }[]>([])
   const [selectedRival, setSelectedRival] = useState<string>('')
-  const [shareRivalMatch, setShareRivalMatch] = useState<{ rivalName: string; wins: number; losses: number; matchesPlayed: number } | null>(null)
+  const [comparisonMode, setComparisonMode] = useState<'rival' | 'partner'>('partner')
+  const [shareRivalMatch, setShareRivalMatch] = useState<{ rivalName: string; wins: number; losses: number; matchesPlayed: number; mode: 'rival' | 'partner' } | null>(null)
 
   const rivalryStats = useMemo(() => {
     if (!selectedRival || !user) return null
 
-    const h2hMatches = allUserMatches.filter((m) => {
+    const targetMatches = allUserMatches.filter((m) => {
       const userPart = m.participants.find((p) => p.user_id === user.id)
-      const rivalPart = m.participants.find(
+      if (!userPart) return false
+
+      const otherPart = m.participants.find(
         (p) => (p.user_id && p.user_id === selectedRival) || 
                (p.name && p.name.toLowerCase() === selectedRival.toLowerCase()) ||
                (p.guest_name && p.guest_name.toLowerCase() === selectedRival.toLowerCase())
       )
-      return userPart && rivalPart && userPart.team !== rivalPart.team
+      if (!otherPart) return false
+
+      if (comparisonMode === 'rival') {
+        return userPart.team !== otherPart.team
+      } else {
+        return m.match_type === 'doubles' && userPart.team === otherPart.team
+      }
     })
 
-    h2hMatches.sort((a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime())
+    targetMatches.sort((a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime())
 
     let wins = 0
     let losses = 0
@@ -102,7 +111,7 @@ export default function DashboardPage() {
     let streakType: 'win' | 'loss' | null = null
     let isStreakBroken = false
 
-    h2hMatches.forEach((m, idx) => {
+    targetMatches.forEach((m, idx) => {
       const userPart = m.participants.find((p) => p.user_id === user.id)
       if (!userPart) return
 
@@ -139,14 +148,15 @@ export default function DashboardPage() {
     })
 
     return {
-      matchesPlayed: h2hMatches.length,
+      matchesPlayed: targetMatches.length,
       wins,
       losses,
+      winRate: targetMatches.length > 0 ? Math.round((wins / targetMatches.length) * 100) : 0,
       form: form.reverse(),
       streak: streakType === null ? 0 : activeStreak,
       streakType,
     }
-  }, [selectedRival, allUserMatches, user])
+  }, [selectedRival, allUserMatches, user, comparisonMode])
 
   const loadDashboardData = useCallback(async () => {
     if (!user) return
@@ -662,14 +672,52 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
             <Users size={18} className="text-emerald-700 shrink-0" />
-            Head-to-Head Rivalry Checker
+            {comparisonMode === 'partner' ? 'Doubles Partnership Checker' : 'Head-to-Head Rivalry Checker'}
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Select a club member to analyze your head-to-head match history.</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {comparisonMode === 'partner'
+              ? 'Select a club member to analyze your performance playing together on the same team.'
+              : 'Select a club member to analyze your head-to-head match history.'}
+          </p>
+        </div>
+
+        {/* Mode Switcher Toggle */}
+        <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1 w-full max-w-xs shadow-sm">
+          <button
+            type="button"
+            className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
+              comparisonMode === 'partner'
+                ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
+                : 'text-slate-600 hover:text-slate-900 font-bold'
+            }`}
+            onClick={() => {
+              setComparisonMode('partner')
+              setSelectedRival('')
+            }}
+          >
+            🤝 Partner Stats
+          </button>
+          <button
+            type="button"
+            className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
+              comparisonMode === 'rival'
+                ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
+                : 'text-slate-600 hover:text-slate-900 font-bold'
+            }`}
+            onClick={() => {
+              setComparisonMode('rival')
+              setSelectedRival('')
+            }}
+          >
+            ⚔️ Rival Stats
+          </button>
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="w-full sm:max-w-xs space-y-2">
-            <label htmlFor="rival-select" className="text-xs font-semibold text-slate-500">Choose Rival</label>
+            <label htmlFor="rival-select" className="text-xs font-semibold text-slate-500">
+              {comparisonMode === 'partner' ? 'Choose Partner' : 'Choose Rival'}
+            </label>
             <select
               id="rival-select"
               value={selectedRival}
@@ -691,8 +739,14 @@ export default function DashboardPage() {
                 <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 space-y-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="font-bold text-slate-950">You vs {selectedRival}</h3>
-                      <p className="text-xs text-slate-500">Competitive match record against this player.</p>
+                      <h3 className="font-bold text-slate-950">
+                        {comparisonMode === 'partner' ? `You & ${selectedRival}` : `You vs ${selectedRival}`}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        {comparisonMode === 'partner'
+                          ? 'Your doubles performance when playing together on the same team.'
+                          : 'Competitive match record playing on opposite teams.'}
+                      </p>
                     </div>
                     <Button
                       type="button"
@@ -701,12 +755,13 @@ export default function DashboardPage() {
                         rivalName: selectedRival,
                         wins: rivalryStats.wins,
                         losses: rivalryStats.losses,
-                        matchesPlayed: rivalryStats.matchesPlayed
+                        matchesPlayed: rivalryStats.matchesPlayed,
+                        mode: comparisonMode
                       })}
                       className="gap-1.5 self-start bg-emerald-750 hover:bg-emerald-850 text-white font-semibold"
                     >
                       <Share2 size={14} />
-                      Share Rivalry Card
+                      Share {comparisonMode === 'partner' ? 'Partnership' : 'Rivalry'} Card
                     </Button>
                   </div>
 
@@ -716,19 +771,27 @@ export default function DashboardPage() {
                       <span className="text-lg font-extrabold text-slate-950">{rivalryStats.matchesPlayed}</span>
                     </div>
                     <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                      <span className="text-xs text-emerald-600 block">Your Wins</span>
+                      <span className="text-xs text-emerald-600 block">
+                        {comparisonMode === 'partner' ? 'Wins Together' : 'Your Wins'}
+                      </span>
                       <span className="text-lg font-extrabold text-emerald-700">{rivalryStats.wins}</span>
                     </div>
                     <div className="p-3 bg-red-50/50 border border-red-100 rounded-lg">
-                      <span className="text-xs text-red-600 block">Their Wins</span>
+                      <span className="text-xs text-red-600 block">
+                        {comparisonMode === 'partner' ? 'Losses Together' : 'Their Wins'}
+                      </span>
                       <span className="text-lg font-extrabold text-red-700">{rivalryStats.losses}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500 font-medium">Head-to-Head Streak:</span>
-                      {rivalryStats.streakType === 'win' ? (
+                      <span className="text-slate-500 font-medium">
+                        {comparisonMode === 'partner' ? 'Win Rate:' : 'Head-to-Head Streak:'}
+                      </span>
+                      {comparisonMode === 'partner' ? (
+                        <span className="text-emerald-700 font-bold">{rivalryStats.winRate}%</span>
+                      ) : rivalryStats.streakType === 'win' ? (
                         <span className="text-emerald-700 font-bold">🔥 {rivalryStats.streak} Win</span>
                       ) : rivalryStats.streakType === 'loss' ? (
                         <span className="text-red-600 font-bold">-{rivalryStats.streak} Loss</span>
@@ -737,7 +800,9 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-slate-500 font-medium mr-1">Rivalry Form:</span>
+                      <span className="text-slate-500 font-medium mr-1">
+                        {comparisonMode === 'partner' ? 'Partnership Form:' : 'Rivalry Form:'}
+                      </span>
                       {rivalryStats.form.map((outcome, idx) => (
                         <span
                           key={idx}
@@ -754,13 +819,15 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                  You haven't played any matches against {selectedRival} yet.
+                  {comparisonMode === 'partner'
+                    ? `You haven't played any doubles matches together with ${selectedRival} yet.`
+                    : `You haven't played any matches against ${selectedRival} yet.`}
                 </div>
               )}
             </div>
           ) : (
             <div className="flex-1 rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
-              Select a player to display rivalry analysis.
+              Select a player to display {comparisonMode === 'partner' ? 'partnership' : 'rivalry'} analysis.
             </div>
           )}
         </div>
@@ -960,6 +1027,7 @@ export default function DashboardPage() {
           losses={shareRivalMatch.losses}
           matchesPlayed={shareRivalMatch.matchesPlayed}
           userName={user.name}
+          mode={shareRivalMatch.mode}
           onClose={() => setShareRivalMatch(null)}
         />
       ) : null}
