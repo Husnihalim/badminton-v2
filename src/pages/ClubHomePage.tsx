@@ -697,6 +697,16 @@ export default function ClubHomePage() {
     setShowEventModal(true)
   }
 
+  const openDuplicateEventModal = (event: ClubEvent) => {
+    setEditingEvent(null)
+    setEventTitle(event.title)
+    setEventDate('') // Clear date for duplication selection
+    setEventLocation(event.location || '')
+    setEventCostAmount(event.cost_amount != null ? String(event.cost_amount) : '')
+    setEventCostNote(event.cost_note || '')
+    setShowEventModal(true)
+  }
+
   const handleDeleteEvent = async (event: ClubEvent) => {
     if (!window.confirm(`Delete ${event.title}? Members will be notified that the session is cancelled.`)) return
 
@@ -990,9 +1000,12 @@ export default function ClubHomePage() {
             ) : null}
           </div>
           {isAdmin ? (
-            <div className="grid grid-cols-2 gap-2 sm:flex">
+            <div className="grid grid-cols-3 gap-2 sm:flex">
               <Button type="button" size="sm" variant="secondary" onClick={() => openEditEventModal(event)}>
                 Edit
+              </Button>
+              <Button type="button" size="sm" variant="secondary" onClick={() => openDuplicateEventModal(event)}>
+                Duplicate
               </Button>
               <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteEvent(event)}>
                 Delete
