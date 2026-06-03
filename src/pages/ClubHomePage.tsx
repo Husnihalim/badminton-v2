@@ -169,7 +169,7 @@ function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardR
       }
     })
     .sort((a, b) => {
-      return b.points - a.points || b.winPercentage - a.winPercentage || b.wins - a.wins || a.name.localeCompare(b.name)
+      return b.winPercentage - a.winPercentage || b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name)
     })
 }
 

@@ -622,7 +622,7 @@ async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<Club
         points: pointsFor - pointsAgainst,
       }
     })
-    .sort((a, b) => b.points - a.points || b.winPercentage - a.winPercentage || b.wins - a.wins || a.name.localeCompare(b.name))
+    .sort((a, b) => b.winPercentage - a.winPercentage || b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name))
     .slice(0, Math.max(limit, 1))
 }
 
