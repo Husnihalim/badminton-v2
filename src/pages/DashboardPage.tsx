@@ -12,6 +12,7 @@ import { Page, PageHeader } from '../components/ui/page'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import RivalryShareModal from '../components/RivalryShareModal'
 import { cn } from '../lib/utils'
+import { MatchScoreboard } from '../components/MatchScoreboard'
 
 type DashboardClub = Club & { role?: string }
 type DashboardEvent = ClubEvent & { clubName?: string }
@@ -27,22 +28,6 @@ function getRsvpLabel(status: EventRsvp['status']) {
   if (status === 'going') return 'Accepted'
   if (status === 'maybe') return 'Holding'
   return 'Rejected'
-}
-
-function renderMatchPlayers(match: DashboardMatch) {
-  const team1 = match.participants
-    .filter((participant) => participant.team === 1)
-    .map((participant) => participant.name || participant.guest_name || 'Guest')
-  const team2 = match.participants
-    .filter((participant) => participant.team === 2)
-    .map((participant) => participant.name || participant.guest_name || 'Guest')
-
-  if (!team1.length || !team2.length) {
-    return match.title || `${match.sport} match`
-  }
-
-  const formatTeam = (team: string[]) => team.join(team.length > 1 ? ' & ' : '')
-  return `${formatTeam(team1)} vs ${formatTeam(team2)}`
 }
 
 export default function DashboardPage() {
@@ -984,27 +969,12 @@ export default function DashboardPage() {
         {matches.length ? (
           <div className="grid gap-3">
             {matches.map((match) => (
-              <Card key={match.id}>
-                <CardContent className="flex items-start justify-between gap-3 pt-4 sm:pt-5">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <Trophy className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
-                    <div className="min-w-0 space-y-1">
-                      <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
-                      <p className="text-sm text-slate-500">{renderMatchPlayers(match)}</p>
-                      <p className="text-sm text-slate-500">{match.clubName}</p>
-                      <p className="text-sm text-slate-600">{match.sport} • {match.match_type}</p>
-                      <p className="font-semibold text-emerald-700">
-                        {match.score_sets?.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button type="button" variant="secondary" size="icon" onClick={() => setShareMatch(match)} title="Share Scorecard">
-                      <Share2 size={14} aria-hidden="true" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <MatchScoreboard
+                key={match.id}
+                match={match}
+                onShare={setShareMatch}
+                showClubName={true}
+              />
             ))}
           </div>
         ) : (

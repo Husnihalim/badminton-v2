@@ -4,48 +4,115 @@
 @theme {
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  /* Invert Slate palette for dark mode */
-  --color-slate-50: #070a13;
-  --color-slate-100: #121826;
-  --color-slate-200: #1b2336;
-  --color-slate-300: #263147;
-  --color-slate-400: #475673;
-  --color-slate-500: #64748b;
-  --color-slate-600: #94a3b8;
-  --color-slate-700: #cbd5e1;
-  --color-slate-800: #e2e8f0;
-  --color-slate-900: #f1f5f9;
-  --color-slate-950: #f8fafc;
+  /* Dynamically mapped slate colors supporting both light and dark modes */
+  --color-slate-50: var(--theme-slate-50);
+  --color-slate-100: var(--theme-slate-100);
+  --color-slate-200: var(--theme-slate-200);
+  --color-slate-300: var(--theme-slate-300);
+  --color-slate-400: var(--theme-slate-400);
+  --color-slate-500: var(--theme-slate-500);
+  --color-slate-600: var(--theme-slate-600);
+  --color-slate-700: var(--theme-slate-700);
+  --color-slate-800: var(--theme-slate-800);
+  --color-slate-900: var(--theme-slate-900);
+  --color-slate-950: var(--theme-slate-950);
 
-  /* Override Emerald to Volt/Lime for high-energy racket sports UI */
-  --color-emerald-50: rgba(163, 230, 53, 0.05);
-  --color-emerald-100: rgba(163, 230, 53, 0.1);
-  --color-emerald-200: rgba(163, 230, 53, 0.2);
-  --color-emerald-300: rgba(163, 230, 53, 0.35);
-  --color-emerald-400: #bef264;
-  --color-emerald-500: #a3e635;
-  --color-emerald-600: #84cc16;
-  --color-emerald-700: #a3e635;
-  --color-emerald-800: #84cc16;
-  --color-emerald-900: #65a30d;
+  /* Dynamically mapped emerald colors (actions/highlights) */
+  --color-emerald-50: var(--theme-emerald-50);
+  --color-emerald-100: var(--theme-emerald-100);
+  --color-emerald-200: var(--theme-emerald-200);
+  --color-emerald-300: var(--theme-emerald-300);
+  --color-emerald-400: var(--theme-emerald-400);
+  --color-emerald-500: var(--theme-emerald-500);
+  --color-emerald-600: var(--theme-emerald-600);
+  --color-emerald-700: var(--theme-emerald-700);
+  --color-emerald-800: var(--theme-emerald-800);
+  --color-emerald-900: var(--theme-emerald-900);
 }
 
 :root {
-  color-scheme: dark;
-  color: #f8fafc;
-  background: #070a13;
+  color-scheme: light;
   font-family: var(--font-sans);
   line-height: 1.5;
   font-size: 16px;
-  --bg: #070a13;
-  --surface: #121826;
-  --surface-muted: #1b2336;
+  
+  /* Core Variables - Light Mode */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --primary: #0d9488;
+  --primary-hover: #14b8a6;
+  --primary-text: #ffffff;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.02);
+
+  /* Theme Slate Mapping - Light Mode */
+  --theme-slate-50: #f8fafc;
+  --theme-slate-100: #f1f5f9;
+  --theme-slate-200: #e2e8f0;
+  --theme-slate-300: #cbd5e1;
+  --theme-slate-400: #94a3b8;
+  --theme-slate-500: #64748b;
+  --theme-slate-600: #475569;
+  --theme-slate-700: #334155;
+  --theme-slate-800: #1e293b;
+  --theme-slate-900: #0f172a;
+  --theme-slate-950: #020617;
+
+  /* Theme Emerald Mapping - Light Mode (Traditional sporty green) */
+  --theme-emerald-50: #f0fdf4;
+  --theme-emerald-100: #dcfce7;
+  --theme-emerald-200: #bbf7d0;
+  --theme-emerald-300: #86efac;
+  --theme-emerald-400: #4ade80;
+  --theme-emerald-500: #22c55e;
+  --theme-emerald-600: #16a34a;
+  --theme-emerald-700: #15803d;
+  --theme-emerald-800: #166534;
+  --theme-emerald-900: #14532d;
+}
+
+.dark {
+  color-scheme: dark;
+  
+  /* Core Variables - Dark Mode (Midnight Black & Electric Lime) */
+  --bg: #0b0f19;
+  --surface: #121824;
+  --surface-muted: #1c2436;
   --text: #f8fafc;
   --text-muted: #94a3b8;
-  --primary: #a3e635;
-  --primary-hover: #bef264;
-  --border: rgba(255, 255, 255, 0.08);
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --primary: #ccff00;
+  --primary-hover: #ddff33;
+  --primary-text: #0b0f19;
+  --border: rgba(204, 255, 0, 0.15);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* Theme Slate Mapping - Dark Mode */
+  --theme-slate-50: #0b0f19;
+  --theme-slate-100: #121824;
+  --theme-slate-200: #1c2436;
+  --theme-slate-300: #2a354c;
+  --theme-slate-400: #455474;
+  --theme-slate-500: #64748b;
+  --theme-slate-600: #94a3b8;
+  --theme-slate-700: #cbd5e1;
+  --theme-slate-800: #e2e8f0;
+  --theme-slate-900: #f8fafc;
+  --theme-slate-950: #ffffff;
+
+  /* Theme Emerald Mapping - Dark Mode (Electric Lime) */
+  --theme-emerald-50: rgba(204, 255, 0, 0.05);
+  --theme-emerald-100: rgba(204, 255, 0, 0.1);
+  --theme-emerald-200: rgba(204, 255, 0, 0.2);
+  --theme-emerald-300: rgba(204, 255, 0, 0.35);
+  --theme-emerald-400: #ddff33;
+  --theme-emerald-500: #ccff00;
+  --theme-emerald-600: #b3e600;
+  --theme-emerald-700: #ccff00;
+  --theme-emerald-800: #b3e600;
+  --theme-emerald-900: #99cc00;
 }
 
 * {
@@ -62,6 +129,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 a {

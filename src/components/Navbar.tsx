@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield } from 'lucide-react'
+import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import NotificationsPanel from './NotificationsPanel'
@@ -11,6 +11,24 @@ export default function Navbar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'light'
+  })
+
+  useEffect(() => {
+    const root = window.document.documentElement
+    if (theme === 'dark') {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
+    }
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'))
+  }
 
   // Handle click outside dropdown to close it
   useEffect(() => {
@@ -62,6 +80,16 @@ export default function Navbar() {
           </Link>
         </div>
         <div className="nav-links">
+          {/* Theme Toggle */}
+          <button
+            type="button"
+            className="nav-link"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            style={{ padding: '8px 10px', minWidth: '40px' }}
+          >
+            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
           {user ? (
             <>
               {/* Notifications Bell */}

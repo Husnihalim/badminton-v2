@@ -10,6 +10,8 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Page } from '../components/ui/page'
 import { cn } from '../lib/utils'
+import { MatchScoreboard } from '../components/MatchScoreboard'
+import ScorecardShareModal from '../components/ScorecardShareModal'
 
 export default function MemberProfilePage() {
   const { userId } = useParams<{ userId: string }>()
@@ -21,6 +23,7 @@ export default function MemberProfilePage() {
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
 
   const [personalStats, setPersonalStats] = useState({
     matchesPlayed: 0,
@@ -275,22 +278,6 @@ export default function MemberProfilePage() {
     loadProfileData()
   }, [loadProfileData])
 
-  const renderMatchPlayers = (match: MatchWithDetails) => {
-    const team1 = match.participants
-      .filter((p) => p.team === 1)
-      .map((p) => p.name || p.guest_name || 'Guest')
-    const team2 = match.participants
-      .filter((p) => p.team === 2)
-      .map((p) => p.name || p.guest_name || 'Guest')
-
-    if (!team1.length || !team2.length) {
-      return match.title || `${match.sport} match`
-    }
-
-    const formatTeam = (team: string[]) => team.join(team.length > 1 ? ' & ' : '')
-    return `${formatTeam(team1)} vs ${formatTeam(team2)}`
-  }
-
   if (loading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
@@ -516,24 +503,12 @@ export default function MemberProfilePage() {
             {matches.length ? (
               <div className="grid gap-3">
                 {matches.map((match) => (
-                  <Card key={match.id}>
-                    <CardContent className="flex items-start justify-between gap-3 pt-4 sm:pt-5">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <Trophy className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
-                        <div className="min-w-0 space-y-1">
-                          <h3 className="font-bold text-slate-950">{match.title || `${match.sport} match`}</h3>
-                          <p className="text-sm text-slate-600">{renderMatchPlayers(match)}</p>
-                          <p className="text-xs text-slate-500 capitalize">{match.sport} • {match.match_type}</p>
-                          <p className="font-semibold text-emerald-700">
-                            {match.score_sets?.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-400 shrink-0">
-                        {new Date(match.match_date).toLocaleDateString()}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <MatchScoreboard
+                    key={match.id}
+                    match={match}
+                    onShare={setShareMatch}
+                    showClubName={true}
+                  />
                 ))}
               </div>
             ) : (
@@ -553,6 +528,13 @@ export default function MemberProfilePage() {
           </p>
         </div>
       )}
+      {shareMatch ? (
+        <ScorecardShareModal
+          match={shareMatch}
+          clubName={shareMatch.clubName || 'Club'}
+          onClose={() => setShareMatch(null)}
+        />
+      ) : null}
     </Page>
   )
 }
