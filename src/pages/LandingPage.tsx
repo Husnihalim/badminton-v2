@@ -64,14 +64,6 @@ export default function LandingPage() {
           <img className="racket-hero-image racket-hero-image-main" src={heroBadminton} alt="Badminton player lunging for a shuttle" />
           <img className="racket-hero-image racket-hero-image-side" src={heroTennis} alt="Tennis player hitting a forehand" />
           <img className="racket-hero-image racket-hero-image-small" src={heroPickleball} alt="Pickleball player reaching near the net" />
-          <div className="racket-hero-stat racket-hero-stat-top">
-            <strong>RSVPs</strong>
-            <span>Live session status</span>
-          </div>
-          <div className="racket-hero-stat racket-hero-stat-bottom">
-            <strong>Scores</strong>
-            <span>Singles + doubles</span>
-          </div>
         </div>
       </section>
 
