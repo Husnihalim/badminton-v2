@@ -999,7 +999,7 @@ export default function ClubHomePage() {
             ) : null}
           </div>
           {isAdmin ? (
-            <div className="grid grid-cols-3 gap-2 sm:flex">
+            <div className="flex flex-wrap gap-2">
               <Button type="button" size="sm" variant="secondary" onClick={() => openEditEventModal(event)}>
                 Edit
               </Button>
@@ -1193,9 +1193,10 @@ export default function ClubHomePage() {
                                     !rsvp?.attended,
                                     rsvp?.paid
                                   )}
+                                  title="Attended"
                                 >
-                                  {rsvp?.attended ? <Check size={11} strokeWidth={3} /> : null}
-                                  Attended
+                                  <Check size={11} strokeWidth={3} className={rsvp?.attended ? '' : 'text-slate-400'} />
+                                  <span className="hidden sm:inline">Attended</span>
                                 </button>
 
                                 {/* Paid Toggle */}
@@ -1213,9 +1214,10 @@ export default function ClubHomePage() {
                                     rsvp?.attended,
                                     !rsvp?.paid
                                   )}
+                                  title="Paid"
                                 >
-                                  <DollarSign size={10} />
-                                  Paid
+                                  <DollarSign size={10} className={rsvp?.paid ? '' : 'text-slate-400'} />
+                                  <span className="hidden sm:inline">Paid</span>
                                 </button>
                               </>
                             )}
@@ -1770,7 +1772,7 @@ export default function ClubHomePage() {
                       key={idx}
                       type="button"
                       onClick={() => setSelectedDate(cell.date)}
-                      className={`relative flex flex-col items-center justify-between p-2 min-h-12 border rounded-lg transition-all ${
+                      className={`relative flex flex-col items-center justify-between p-1 sm:p-2 min-h-10 sm:min-h-12 border rounded-lg transition-all ${
                         cell.isCurrentMonth 
                           ? 'text-slate-900 bg-white border-slate-200/60' 
                           : 'text-slate-400 bg-slate-50/50 border-slate-100'
@@ -2164,7 +2166,7 @@ export default function ClubHomePage() {
                     <X size={20} />
                   </Button>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 pr-10">
                   <Badge className="w-fit border-amber-500 bg-amber-500/10 text-amber-500 font-extrabold uppercase tracking-wider text-[10px]">
                     ⭐ Game Night Summary
                   </Badge>

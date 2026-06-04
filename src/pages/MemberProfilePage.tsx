@@ -310,7 +310,7 @@ export default function MemberProfilePage() {
 
       {/* Profile Header Card */}
       <Card className="bg-slate-900 text-white border-slate-800 overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-4">
+        <div className="absolute top-4 right-4 hidden sm:block">
           {profile.is_private ? (
             <Badge className="bg-slate-800 text-slate-400 border-slate-700">🔒 Private Profile</Badge>
           ) : (
@@ -342,6 +342,9 @@ export default function MemberProfilePage() {
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
                 <Badge className="bg-emerald-900 hover:bg-emerald-900 border-none capitalize">
                   {profile.preferred_sport || 'badminton'}
+                </Badge>
+                <Badge className="sm:hidden bg-slate-800 text-slate-400 border-slate-700">
+                  {profile.is_private ? '🔒 Private' : '🌐 Public'}
                 </Badge>
                 {isOwner && (
                   <Badge className="bg-slate-800 border-slate-700 text-slate-200">

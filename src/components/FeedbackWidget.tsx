@@ -73,30 +73,31 @@ export default function FeedbackWidget() {
             bottom: '65px',
             right: '0',
             width: '320px',
-            backgroundColor: 'white',
-            border: '1px solid #e2e8f0',
+            backgroundColor: 'var(--surface)',
+            color: 'var(--text)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
-            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05)',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.08)',
             padding: '16px',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'var(--font-sans)',
             animation: 'fadeInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
           {submitted ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <Smile size={48} style={{ color: '#047857', margin: '0 auto 12px' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#0f172a', margin: '0 0 6px' }}>Thank You!</h3>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Your feedback has been submitted to the Superadmin.</p>
+              <Smile size={48} style={{ color: 'var(--primary)', margin: '0 auto 12px' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text)', margin: '0 0 6px' }}>Thank You!</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>Your feedback has been submitted to the Superadmin.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Share your Feedback</h3>
-                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>SaaS MVP</span>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text)', margin: 0 }}>Share your Feedback</h3>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>SaaS MVP</span>
               </div>
 
               {/* Feedback Type Toggle */}
-              <div style={{ display: 'flex', gap: '6px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '2px', backgroundColor: '#f8fafc' }}>
+              <div style={{ display: 'flex', gap: '6px', border: '1px solid var(--border)', borderRadius: '8px', padding: '2px', backgroundColor: 'var(--surface-muted)' }}>
                 {(['suggestion', 'bug', 'other'] as const).map((type) => (
                   <button
                     key={type}
@@ -110,8 +111,8 @@ export default function FeedbackWidget() {
                       textTransform: 'capitalize',
                       border: 'none',
                       borderRadius: '6px',
-                      backgroundColor: feedbackType === type ? 'white' : 'transparent',
-                      color: feedbackType === type ? '#047857' : '#64748b',
+                      backgroundColor: feedbackType === type ? 'var(--surface)' : 'transparent',
+                      color: feedbackType === type ? 'var(--primary)' : 'var(--text-muted)',
                       boxShadow: feedbackType === type ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                       cursor: 'pointer',
                     }}
@@ -123,7 +124,7 @@ export default function FeedbackWidget() {
 
               {/* Star Rating */}
               <div>
-                <label style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                   Rate your experience (optional)
                 </label>
                 <div style={{ display: 'flex', gap: '4px' }}>
@@ -148,7 +149,7 @@ export default function FeedbackWidget() {
 
               {/* Message */}
               <div>
-                <label htmlFor="feedback-message" style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>
+                <label htmlFor="feedback-message" style={{ fontSize: '0.78rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                   What's on your mind?
                 </label>
                 <textarea
@@ -161,7 +162,9 @@ export default function FeedbackWidget() {
                   style={{
                     width: '100%',
                     borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--surface-muted)',
+                    color: 'var(--text)',
                     padding: '8px',
                     fontSize: '0.85rem',
                     fontFamily: 'inherit',
@@ -179,8 +182,8 @@ export default function FeedbackWidget() {
                 disabled={isSubmitting || !message.trim()}
                 style={{
                   minHeight: '38px',
-                  backgroundColor: '#047857',
-                  color: 'white',
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-text)',
                   borderRadius: '8px',
                   border: 'none',
                   display: 'inline-flex',

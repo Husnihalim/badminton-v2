@@ -201,7 +201,7 @@ export default function ClubMembersPage() {
                   </div>
 
                   {isAdmin && member.user_id !== user?.id && member.role !== 'owner' ? (
-                    <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+                    <div className="flex flex-wrap gap-2 sm:justify-end">
                       {isOwner ? (
                         <Select
                           value={member.role}
