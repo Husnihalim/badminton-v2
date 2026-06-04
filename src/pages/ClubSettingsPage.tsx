@@ -157,9 +157,9 @@ export default function ClubSettingsPage() {
       
       await updateClub(clubId, {
         name,
-        description: description || null,
-        location: location || null,
-        city: city || null,
+        description: description || undefined,
+        location: location || undefined,
+        city: city || undefined,
         open_join: openJoin,
         approval_required: approvalRequired,
         logo_url: logoUrl || null,

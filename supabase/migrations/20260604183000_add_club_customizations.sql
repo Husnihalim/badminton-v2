@@ -152,3 +152,11 @@ BEGIN
       );
   END IF;
 END $$;
+
+-- Allow active club members to insert into club_messages so automatic match notifications can be posted by any active member recording a match
+DROP POLICY IF EXISTS "Club admins can create messages" ON club_messages;
+CREATE POLICY "Club members can create messages"
+  ON club_messages FOR INSERT
+  TO authenticated
+  WITH CHECK (private.is_active_club_member(club_id));
+
