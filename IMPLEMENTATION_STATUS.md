@@ -99,7 +99,7 @@
 | Notifications | ❌ | Not implemented |
 | Social links | ❌ | Not implemented |
 | Results feed | ✅ | Recent results feed with shareable scorecards |
-| Comments/reactions | ❌ | Not implemented |
+| Comments/reactions | ✅ | Fully implemented |
 | Activity stream | ❌ | Not implemented |
 
 ### 10. Marketplace and Payments
@@ -156,7 +156,6 @@ Users can:
 ### Medium Priority (Nice to Have)
 - [ ] Map integration for clubs
 - [ ] Email notifications
-- [ ] Match comments
 - [ ] Photo uploads
 
 ### Low Priority (Post-MVP)
