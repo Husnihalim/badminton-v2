@@ -511,6 +511,31 @@ export default function ClubHomePage() {
     }
   }, [events, matches])
 
+  const weeklyHighlights = useMemo(() => {
+    if (matches.length === 0) return null
+
+    // Determine the boundary of the current week (Monday to Sunday)
+    const today = new Date()
+    const day = today.getDay()
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1)
+    const startOfWeek = new Date(today.setDate(diff))
+    startOfWeek.setHours(0, 0, 0, 0)
+    
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(endOfWeek.getDate() + 6)
+    endOfWeek.setHours(23, 59, 59, 999)
+    
+    const weeklyMatches = matches.filter(m => {
+      const d = new Date(m.match_date)
+      return d.getTime() >= startOfWeek.getTime() && d.getTime() <= endOfWeek.getTime()
+    })
+
+    if (weeklyMatches.length === 0) return null
+
+    return calculateSessionHighlights(weeklyMatches)
+  }, [matches])
+
+
   const closeScoreModal = () => {
     setShowScoreModal(false)
     setEditingMatch(null)
@@ -2052,6 +2077,88 @@ export default function ClubHomePage() {
             </div>
           </div>
           {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
+          {weeklyHighlights && (weeklyHighlights.mvp || weeklyHighlights.streakStar || weeklyHighlights.resilience) && (
+            <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/60 dark:border-slate-800 rounded-xl p-3 grid gap-3 sm:grid-cols-3">
+              {weeklyHighlights.mvp && (() => {
+                const mvp = weeklyHighlights.mvp
+                const m = members.find(mem => mem.name?.toLowerCase() === mvp.name.toLowerCase())
+                return (
+                  <div className="relative overflow-hidden rounded-lg border border-amber-250 bg-amber-500/5 dark:bg-amber-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]">
+                    <div className="absolute top-2 right-2 text-sm">🏆</div>
+                    <div>
+                      <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">Weekly MVP</span>
+                      <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                        {m?.user_id ? (
+                          <Link to={`/member/${m.user_id}`} className="hover:underline text-emerald-700 dark:text-emerald-400">
+                            {mvp.name}
+                          </Link>
+                        ) : (
+                          <span>{mvp.name}</span>
+                        )}
+                      </h4>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs font-bold text-amber-750 dark:text-amber-400">
+                      <span>🔥 {Math.round(mvp.winRate)}% Win</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">({mvp.wins}W-{mvp.losses}L)</span>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {weeklyHighlights.streakStar && (() => {
+                const streakStar = weeklyHighlights.streakStar
+                const m = members.find(mem => mem.name?.toLowerCase() === streakStar.name.toLowerCase())
+                return (
+                  <div className="relative overflow-hidden rounded-lg border border-orange-250 bg-orange-500/5 dark:bg-orange-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]">
+                    <div className="absolute top-2 right-2 text-sm">🔥</div>
+                    <div>
+                      <span className="text-[10px] font-extrabold text-orange-705 dark:text-orange-400 uppercase tracking-wider block">Streak Star</span>
+                      <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                        {m?.user_id ? (
+                          <Link to={`/member/${m.user_id}`} className="hover:underline text-emerald-700 dark:text-emerald-400">
+                            {streakStar.name}
+                          </Link>
+                        ) : (
+                          <span>{streakStar.name}</span>
+                        )}
+                      </h4>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs font-bold text-orange-750 dark:text-orange-400">
+                      <span>📈 {streakStar.longestStreak} Streak</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{streakStar.wins} Wins</span>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {weeklyHighlights.resilience && (() => {
+                const resilience = weeklyHighlights.resilience
+                const m = members.find(mem => mem.name?.toLowerCase() === resilience.name.toLowerCase())
+                return (
+                  <div className="relative overflow-hidden rounded-lg border border-emerald-250 bg-emerald-500/5 dark:bg-emerald-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]">
+                    <div className="absolute top-2 right-2 text-sm">💪</div>
+                    <div>
+                      <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">Resilience</span>
+                      <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                        {m?.user_id ? (
+                          <Link to={`/member/${m.user_id}`} className="hover:underline text-emerald-700 dark:text-emerald-400">
+                            {resilience.name}
+                          </Link>
+                        ) : (
+                          <span>{resilience.name}</span>
+                        )}
+                      </h4>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs font-bold text-emerald-750 dark:text-emerald-400">
+                      <span>{resilience.games} Matches</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">({resilience.wins}W-{resilience.losses}L)</span>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+
           {computedLeaderboard.length ? (
             <div className="space-y-2">
               {computedLeaderboard.slice(0, 10).map((player, index) => {
