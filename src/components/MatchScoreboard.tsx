@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Share2, Palette, Check } from 'lucide-react'
+import { Share2, Palette, Check, MessageCircle, Trash2 } from 'lucide-react'
 import { Button } from './ui/button'
 import type { MatchWithDetails } from '../types'
+import { useAuth } from '../context/AuthContext'
+import { toggleMatchReaction, addMatchComment, deleteMatchComment } from '../lib/api'
 
 interface MatchScoreboardProps {
   match: MatchWithDetails & { clubName?: string }
@@ -44,6 +46,90 @@ export function MatchScoreboard({
 
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const { user } = useAuth()
+  const [reactions, setReactions] = useState(match.reactions || [])
+  const [comments, setComments] = useState(match.comments || [])
+  const [showComments, setShowComments] = useState(false)
+  const [newCommentText, setNewCommentText] = useState('')
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+
+  useEffect(() => {
+    setReactions(match.reactions || [])
+    setComments(match.comments || [])
+  }, [match.reactions, match.comments])
+
+  const handleToggleReaction = async (emoji: string) => {
+    if (!user) return
+    
+    // Optimistic UI updates
+    const hasAlreadyReacted = reactions.some(r => r.user_id === user.id && r.reaction === emoji)
+    let updatedReactions = [...reactions]
+    
+    if (hasAlreadyReacted) {
+      updatedReactions = updatedReactions.filter(r => !(r.user_id === user.id && r.reaction === emoji))
+    } else {
+      updatedReactions.push({
+        id: 'temp-id-' + Date.now(),
+        match_id: match.id,
+        user_id: user.id,
+        reaction: emoji,
+        created_at: new Date().toISOString(),
+        name: user.name,
+        display_name: user.display_name || user.name
+      })
+    }
+    
+    setReactions(updatedReactions)
+    
+    try {
+      await toggleMatchReaction(match.id, emoji)
+    } catch (err) {
+      console.error('Failed to toggle reaction:', err)
+      setReactions(reactions)
+    }
+  }
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !newCommentText.trim() || isSubmittingComment) return
+
+    try {
+      setIsSubmittingComment(true)
+      const newComment = await addMatchComment(match.id, newCommentText.trim())
+      setComments(prev => [...prev, newComment])
+      setNewCommentText('')
+    } catch (err) {
+      console.error('Failed to add comment:', err)
+    } finally {
+      setIsSubmittingComment(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm('Delete this comment?')) return
+    
+    // Optimistic UI update
+    const previousComments = [...comments]
+    setComments(prev => prev.filter(c => c.id !== commentId))
+    
+    try {
+      await deleteMatchComment(commentId)
+    } catch (err) {
+      console.error('Failed to delete comment:', err)
+      setComments(previousComments)
+    }
+  }
+
+  const reactionEmojis = ['🔥', '💪', '👏', '🎯', '😱', '😢']
+
+  const getReactionCount = (emoji: string) => {
+    return reactions.filter(r => r.reaction === emoji).length
+  }
+
+  const hasReacted = (emoji: string) => {
+    return user ? reactions.some(r => r.user_id === user.id && r.reaction === emoji) : false
+  }
 
   // Listen to external theme changes (so multiple cards sync together)
   useEffect(() => {
@@ -390,6 +476,121 @@ export function MatchScoreboard({
           })}
         </div>
       </div>
+
+      {/* Reactions and Comments toggle row */}
+      <div className="border-t border-slate-100 dark:border-slate-800/60 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {reactionEmojis.map((emoji) => {
+            const count = getReactionCount(emoji)
+            const active = hasReacted(emoji)
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => handleToggleReaction(emoji)}
+                disabled={!user}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border transition select-none cursor-pointer ${
+                  active
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-250 dark:border-emerald-800 font-bold"
+                    : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-slate-800 dark:hover:text-slate-100"
+                }`}
+                title={!user ? "Login to react" : ""}
+              >
+                <span>{emoji}</span>
+                {count > 0 && <span className="text-[10px] font-extrabold">{count}</span>}
+              </button>
+            )
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowComments(!showComments)}
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-slate-500 hover:text-slate-850 dark:hover:text-white transition select-none cursor-pointer"
+        >
+          <MessageCircle size={14} />
+          <span className="font-bold">{comments.length > 0 ? `${comments.length} Comments` : 'Comment'}</span>
+        </button>
+      </div>
+
+      {/* Comments Panel */}
+      {showComments && (
+        <div className="border-t border-slate-150/60 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900/10 p-4 rounded-b-xl space-y-4">
+          {/* Feed */}
+          {comments.length > 0 ? (
+            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+              {comments.map((comment) => {
+                const canDelete = user && (
+                  comment.user_id === user.id || 
+                  isAdmin || 
+                  user.role === 'superadmin'
+                )
+                return (
+                  <div key={comment.id} className="flex gap-2.5 items-start text-xs">
+                    <div className="h-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 uppercase shadow-sm">
+                      {comment.display_name ? comment.display_name.slice(0, 2).toUpperCase() : 'M'}
+                    </div>
+                    <div className="flex-1 min-w-0 bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-slate-900 dark:text-slate-150 truncate">
+                          {comment.display_name}
+                        </span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 font-semibold">
+                          {new Date(comment.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-slate-700 dark:text-slate-250 break-words leading-relaxed">
+                        {comment.content}
+                      </p>
+                    </div>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="p-1 text-slate-450 hover:text-red-650 transition shrink-0 self-center"
+                        title="Delete comment"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-center text-xs text-slate-450 dark:text-slate-550 py-3 italic">
+              No comments yet. Start the conversation!
+            </p>
+          )}
+
+          {/* Form */}
+          {user ? (
+            <form onSubmit={handleAddComment} className="flex items-center gap-2 pt-1">
+              <input
+                type="text"
+                maxLength={280}
+                required
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                disabled={isSubmittingComment}
+                className="flex-1 min-w-0 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-slate-150 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 shadow-sm"
+              />
+              <button
+                type="submit"
+                disabled={isSubmittingComment || !newCommentText.trim()}
+                className="bg-emerald-650 hover:bg-emerald-750 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-lg shadow-sm transition shrink-0 select-none cursor-pointer disabled:opacity-50"
+              >
+                Post
+              </button>
+            </form>
+          ) : (
+            <p className="text-center text-xs text-slate-450 dark:text-slate-550 pt-1">
+              Please <Link to="/login" className="text-emerald-750 font-bold hover:underline">login</Link> to post comments.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

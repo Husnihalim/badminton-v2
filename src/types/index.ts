@@ -112,9 +112,32 @@ export interface ScoreSet {
   team2_score: number
 }
 
+export interface MatchReaction {
+  id: string
+  match_id: string
+  user_id: string
+  reaction: string
+  created_at: string
+  name?: string
+  display_name?: string | null
+}
+
+export interface MatchComment {
+  id: string
+  match_id: string
+  user_id: string
+  content: string
+  created_at: string
+  name?: string
+  display_name?: string | null
+  avatar_url?: string | null
+}
+
 export interface MatchWithDetails extends Match {
   participants: MatchParticipant[]
   score_sets: ScoreSet[]
+  reactions?: MatchReaction[]
+  comments?: MatchComment[]
   // Joined fields
   clubName?: string
 }

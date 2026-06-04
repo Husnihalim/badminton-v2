@@ -11,7 +11,10 @@ import type {
   EventRsvp,
   Notification,
   ClubActivity,
-  ClubMessage
+  ClubMessage,
+  MatchReaction,
+  MatchComment,
+  MatchWithDetails
 } from '../types'
 
 type ProfileSummary = {
@@ -48,9 +51,19 @@ type MatchParticipantQueryRow = MatchParticipant & {
   profiles?: ProfileSummary | null
 }
 
+type MatchReactionQueryRow = MatchReaction & {
+  profiles?: ProfileSummary | null
+}
+
+type MatchCommentQueryRow = MatchComment & {
+  profiles?: ProfileSummary | null
+}
+
 type MatchQueryRow = Match & {
   match_participants?: MatchParticipantQueryRow[] | null
   score_sets?: ScoreSet[] | null
+  match_reactions?: MatchReactionQueryRow[] | null
+  match_comments?: MatchCommentQueryRow[] | null
 }
 
 type ClubMessageProfileRow = ClubMessage & {
@@ -629,16 +642,15 @@ async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<Club
     .slice(0, Math.max(limit, 1))
 }
 
-export async function getClubMatches(clubId: string): Promise<(Match & { 
-  participants: MatchParticipant[], 
-  score_sets: ScoreSet[] 
-})[]> {
+export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]> {
   const { data, error } = await supabase
     .from('matches')
     .select(`
       *,
       match_participants(*, profiles(name, display_name)),
-      score_sets(*)
+      score_sets(*),
+      match_reactions(*, profiles(name, display_name)),
+      match_comments(*, profiles(name, display_name, avatar_url))
     `)
     .eq('club_id', clubId)
     .order('created_at', { ascending: false })
@@ -654,10 +666,23 @@ export async function getClubMatches(clubId: string): Promise<(Match & {
         ...p,
         name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
       })) as MatchParticipant[]
+      const reactions = (match.match_reactions || []).map((r) => ({
+        ...r,
+        name: r.profiles?.name || 'Member',
+        display_name: r.profiles?.display_name || r.profiles?.name || 'Member',
+      }))
+      const comments = (match.match_comments || []).map((c) => ({
+        ...c,
+        name: c.profiles?.name || 'Member',
+        display_name: c.profiles?.display_name || c.profiles?.name || 'Member',
+        avatar_url: c.profiles?.avatar_url || null,
+      }))
       return {
         ...(match as Match),
         participants,
         score_sets: (match.score_sets || []) as ScoreSet[],
+        reactions,
+        comments,
       }
     }
   )
@@ -1659,4 +1684,90 @@ export async function getUserFeedback(limit = 50): Promise<UserFeedback[]> {
     return []
   }
   return (data as unknown as UserFeedback[]) || []
+}
+
+export async function toggleMatchReaction(matchId: string, reaction: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Must be authenticated to react')
+
+  // Check if reaction already exists from this user
+  const { data: existing, error: fetchError } = await supabase
+    .from('match_reactions')
+    .select('id')
+    .eq('match_id', matchId)
+    .eq('user_id', user.id)
+    .eq('reaction', reaction)
+    .maybeSingle()
+
+  if (fetchError) {
+    console.error('Error fetching reaction:', fetchError)
+    throw fetchError
+  }
+
+  if (existing) {
+    // Delete it
+    const { error: deleteError } = await supabase
+      .from('match_reactions')
+      .delete()
+      .eq('id', existing.id)
+
+    if (deleteError) {
+      console.error('Error deleting reaction:', deleteError)
+      throw deleteError
+    }
+  } else {
+    // Insert it
+    const { error: insertError } = await supabase
+      .from('match_reactions')
+      .insert({
+        match_id: matchId,
+        user_id: user.id,
+        reaction
+      } as never)
+
+    if (insertError) {
+      console.error('Error inserting reaction:', insertError)
+      throw insertError
+    }
+  }
+}
+
+export async function addMatchComment(matchId: string, content: string): Promise<MatchComment> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Must be authenticated to comment')
+
+  const { data, error } = await supabase
+    .from('match_comments')
+    .insert({
+      match_id: matchId,
+      user_id: user.id,
+      content: content.trim()
+    } as never)
+    .select('*, profiles(name, display_name, avatar_url)')
+    .single()
+
+  if (error) {
+    console.error('Error adding comment:', error)
+    throw error
+  }
+
+  const row = data as unknown as MatchCommentQueryRow
+  return {
+    ...row,
+    name: row.profiles?.name || 'Member',
+    display_name: row.profiles?.display_name || row.profiles?.name || 'Member',
+    avatar_url: row.profiles?.avatar_url || null,
+  }
+}
+
+export async function deleteMatchComment(commentId: string): Promise<void> {
+  const { error } = await supabase
+    .from('match_comments')
+    .delete()
+    .eq('id', commentId)
+
+  if (error) {
+    console.error('Error deleting comment:', error)
+    throw error
+  }
 }

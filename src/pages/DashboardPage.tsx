@@ -148,6 +148,7 @@ export default function DashboardPage() {
 
     const partners = new Map<string, { wins: number; matches: number }>()
     const rivals = new Map<string, { wins: number; matches: number }>()
+    const opponentPairs = new Map<string, { wins: number; losses: number; matches: number }>()
 
     allUserMatches.forEach((m) => {
       const userPart = m.participants.find((p) => p.user_id === user.id)
@@ -165,7 +166,12 @@ export default function DashboardPage() {
 
       m.participants.forEach((p) => {
         const pName = p.name || p.guest_name
-        if (!pName || pName.toLowerCase() === user.name.toLowerCase()) return
+        if (!pName) return
+
+        // Exclude the user themselves from being recommended as teammate/rival
+        if (p.user_id === user.id) return
+        if (pName.toLowerCase() === user.name.toLowerCase()) return
+        if (user.display_name && pName.toLowerCase() === user.display_name.toLowerCase()) return
 
         if (userPart.team === p.team) {
           // Teammate (Partner) in doubles
@@ -183,6 +189,27 @@ export default function DashboardPage() {
           rivals.set(pName, stats)
         }
       })
+
+      // Calculate opponent pairs in doubles matches
+      if (m.match_type === 'doubles') {
+        const oppNames = m.participants
+          .filter((p) => p.team !== userPart.team)
+          .map((p) => p.name || p.guest_name)
+          .filter(Boolean) as string[]
+
+        if (oppNames.length === 2) {
+          oppNames.sort()
+          const pairKey = oppNames.join(' & ')
+          const stats = opponentPairs.get(pairKey) ?? { wins: 0, losses: 0, matches: 0 }
+          stats.matches++
+          if (isWin) {
+            stats.wins++
+          } else {
+            stats.losses++
+          }
+          opponentPairs.set(pairKey, stats)
+        }
+      }
     })
 
     // Find best partner: highest win rate (min 2 matches if possible, otherwise 1)
@@ -213,9 +240,36 @@ export default function DashboardPage() {
       topRival = [...targetRivals].sort((a, b) => b.matches - a.matches || Math.abs(50 - a.winRate) - Math.abs(50 - b.winRate))[0]
     }
 
+    // Find nemesis (worst opponent): lowest win rate and must have at least 1 loss
+    let nemesis = null
+    const nemesisList = rivalsList.filter((r) => r.matches - r.wins > 0)
+    if (nemesisList.length > 0) {
+      const nemesisCandidates = nemesisList.filter((r) => r.matches >= 2)
+      const targetNemesis = nemesisCandidates.length > 0 ? nemesisCandidates : nemesisList
+      nemesis = [...targetNemesis].sort(
+        (a, b) => a.winRate - b.winRate || b.matches - a.matches || (b.matches - b.wins) - (a.matches - a.wins)
+      )[0]
+    }
+
+    // Find toughest opponent pairs (lost to them)
+    const opponentPairsList = Array.from(opponentPairs.entries()).map(([names, stats]) => ({
+      names,
+      ...stats,
+      winRate: (stats.wins / stats.matches) * 100,
+    }))
+
+    const worstOpponentPairs = opponentPairsList
+      .filter((p) => p.losses > 0)
+      .sort((a, b) => b.losses - a.losses || a.winRate - b.winRate || b.matches - a.matches)
+      .slice(0, 3)
+
     return {
       bestPartner,
       topRival,
+      nemesis,
+      worstOpponentPairs,
+      bestPartnersList: partnersList.filter(p => p.matches >= 1).sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.matches - a.matches).slice(0, 3),
+      topRivalsList: rivalsList.filter(r => r.matches >= 1).sort((a, b) => b.matches - a.matches || a.winRate - b.winRate).slice(0, 3)
     }
   }, [allUserMatches, user])
 
@@ -333,7 +387,8 @@ export default function DashboardPage() {
         try {
           const lb = await getClubLeaderboard(club.id, 100)
           const index = lb.findIndex(
-            (row) => row.name.toLowerCase() === user.name.toLowerCase()
+            (row) => row.name.toLowerCase() === user.name.toLowerCase() ||
+                    (user.display_name && row.name.toLowerCase() === user.display_name.toLowerCase())
           )
           if (index !== -1) {
             ranks[club.id] = { rank: index + 1, total: lb.length }
@@ -348,7 +403,10 @@ export default function DashboardPage() {
           const members = await getClubMembers(club.id)
           members.forEach((m) => {
             const mName = m.name || 'Unknown'
-            if (mName.toLowerCase() !== user.name.toLowerCase() && !rivalsSet.has(mName.toLowerCase())) {
+            if (m.user_id !== user.id &&
+                mName.toLowerCase() !== user.name.toLowerCase() &&
+                (!user.display_name || mName.toLowerCase() !== user.display_name.toLowerCase()) &&
+                !rivalsSet.has(mName.toLowerCase())) {
               rivalsSet.add(mName.toLowerCase())
               rivalsList.push({ id: m.user_id, name: mName })
             }
@@ -433,7 +491,7 @@ export default function DashboardPage() {
         const lbMap = clubLeaderboards[m.club_id]
         if (!lbMap) continue
 
-        const userRank = lbMap[user.name.toLowerCase()]
+        const userRank = lbMap[user.name.toLowerCase()] || (user.display_name && lbMap[user.display_name.toLowerCase()])
         if (!userRank) continue
 
         const scoreSets = m.score_sets || []
@@ -776,7 +834,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Recommendations */}
-          {recommendedInsights && (recommendedInsights.bestPartner || recommendedInsights.topRival) && (
+          {recommendedInsights && (recommendedInsights.bestPartner || recommendedInsights.topRival || recommendedInsights.nemesis) && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-slate-500">Quick recommendations:</span>
               {recommendedInsights.bestPartner && (
@@ -806,11 +864,28 @@ export default function DashboardPage() {
                   className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
                     comparisonMode === 'rival' && selectedRival === recommendedInsights.topRival.name
                       ? 'bg-red-50 text-red-700 border-red-300 ring-2 ring-red-500/10'
-                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-950'
+                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-955'
                   }`}
                   title={`Recommended Opponent: ${recommendedInsights.topRival.name}`}
                 >
                   ⚔️ Opponent: {recommendedInsights.topRival.name}
+                </button>
+              )}
+              {recommendedInsights.nemesis && (!recommendedInsights.topRival || recommendedInsights.nemesis.name !== recommendedInsights.topRival.name) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComparisonMode('rival')
+                    setSelectedRival(recommendedInsights.nemesis!.name)
+                  }}
+                  className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
+                    comparisonMode === 'rival' && selectedRival === recommendedInsights.nemesis.name
+                      ? 'bg-rose-50 text-rose-700 border-rose-300 ring-2 ring-rose-500/10'
+                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-955'
+                  }`}
+                  title={`Nemesis (Worst Opponent): ${recommendedInsights.nemesis.name} (${Math.round(recommendedInsights.nemesis.winRate)}% Win Rate)`}
+                >
+                  ⚔️ Nemesis: {recommendedInsights.nemesis.name}
                 </button>
               )}
             </div>
@@ -930,8 +1005,140 @@ export default function DashboardPage() {
               )}
             </div>
           ) : (
-            <div className="flex-1 rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
-              Select a player to display {comparisonMode === 'partner' ? 'partnership' : 'rivalry'} analysis.
+            <div className="flex-1 space-y-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4 sm:p-5 space-y-4">
+                <div>
+                  <h3 className="font-bold text-slate-950 text-base">Your Partnership & Rivalry Insights</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Personalized recommendations and analysis based on your matches. Click any player's badge above or select from the dropdown to view details.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Top Partners */}
+                  <div className="space-y-2.5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <span>🤝</span> Best Partners
+                    </h4>
+                    {recommendedInsights?.bestPartnersList && recommendedInsights.bestPartnersList.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {recommendedInsights.bestPartnersList.map((p, idx) => (
+                          <div 
+                            key={p.name} 
+                            onClick={() => {
+                              setComparisonMode('partner')
+                              setSelectedRival(p.name)
+                            }}
+                            className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-lg hover:border-emerald-500 hover:shadow-sm cursor-pointer transition select-none"
+                          >
+                            <div className="min-w-0 flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-400 font-mono">#{idx + 1}</span>
+                              <span className="text-sm font-semibold text-slate-900 truncate">{p.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-500 font-medium">{p.matches} matches</span>
+                              <span className="inline-flex items-center text-xs font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-100">
+                                {Math.round(p.winRate)}% Win
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-white">
+                        Play doubles matches to see recommended partners.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Top Rivals */}
+                  <div className="space-y-2.5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <span>⚔️</span> Top Rivals
+                    </h4>
+                    {recommendedInsights?.topRivalsList && recommendedInsights.topRivalsList.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {recommendedInsights.topRivalsList.map((r, idx) => {
+                          const isNemesis = recommendedInsights.nemesis && recommendedInsights.nemesis.name === r.name
+                          return (
+                            <div 
+                              key={r.name} 
+                              onClick={() => {
+                                setComparisonMode('rival')
+                                setSelectedRival(r.name)
+                              }}
+                              className={`flex items-center justify-between p-2.5 bg-white border rounded-lg hover:shadow-sm cursor-pointer transition select-none ${
+                                isNemesis ? 'border-rose-200 hover:border-rose-500' : 'border-slate-150 hover:border-emerald-500'
+                              }`}
+                            >
+                              <div className="min-w-0 flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-400 font-mono">#{idx + 1}</span>
+                                <span className="text-sm font-semibold text-slate-900 truncate">{r.name}</span>
+                                {isNemesis && (
+                                  <span className="inline-flex items-center text-[10px] font-extrabold px-1.5 py-0.2 bg-rose-50 text-rose-600 rounded border border-rose-100">
+                                    Nemesis
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-500 font-medium">{r.matches} matches</span>
+                                <span className={`inline-flex items-center text-xs font-bold px-2 py-0.5 rounded border ${
+                                  r.winRate < 50 
+                                    ? 'bg-rose-50 text-rose-700 border-rose-100' 
+                                    : 'bg-slate-50 text-slate-700 border-slate-250'
+                                }`}>
+                                  {Math.round(r.winRate)}% Win
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-white">
+                        Play matches to see rivalry analysis.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Toughest Opponent Pairs Section (Lost a lot to some pairs) */}
+                <div className="space-y-2.5 border-t border-slate-200/60 pt-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <span>🔥</span> Toughest Opponent Pairs (Doubles)
+                  </h4>
+                  {recommendedInsights?.worstOpponentPairs && recommendedInsights.worstOpponentPairs.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {recommendedInsights.worstOpponentPairs.map((pair, idx) => (
+                        <div 
+                          key={pair.names}
+                          className="flex flex-col justify-between p-3 bg-white border border-rose-100 hover:border-rose-300 hover:shadow-sm rounded-lg transition"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-extrabold text-rose-500 font-mono">#{idx + 1}</span>
+                              <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Nemesis Pair</span>
+                            </div>
+                            <p className="text-sm font-semibold text-slate-900 leading-tight line-clamp-2" title={pair.names}>
+                              {pair.names}
+                            </p>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between border-t border-slate-50 pt-2 text-xs">
+                            <span className="text-slate-500 font-medium">{pair.matches} played</span>
+                            <span className="font-extrabold text-rose-600">
+                              {pair.losses} {pair.losses === 1 ? 'loss' : 'losses'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-white">
+                      No doubles losses recorded against specific opponent pairs yet. Keep playing to track nemesis pairs!
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1115,7 +1322,7 @@ export default function DashboardPage() {
           wins={shareRivalMatch.wins}
           losses={shareRivalMatch.losses}
           matchesPlayed={shareRivalMatch.matchesPlayed}
-          userName={user.name}
+          userName={user.display_name || user.name}
           mode={shareRivalMatch.mode}
           onClose={() => setShareRivalMatch(null)}
         />
