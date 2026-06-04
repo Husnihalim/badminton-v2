@@ -42,6 +42,13 @@ export interface Club {
   owner_id: string
   created_at: string
   updated_at: string
+  // Customizations
+  logo_url?: string | null
+  banner_url?: string | null
+  banner_preset?: string | null
+  accent_color?: string | null
+  announcement?: string | null
+  announcement_updated_at?: string | null
   // Computed/joined fields
   membersCount?: number
   role?: string
@@ -56,10 +63,22 @@ export interface Membership {
   status: 'active' | 'inactive' | 'banned'
   joined_at: string
   approved_by: string | null
+  elo_rating?: number
   // Joined fields
   name?: string
   email?: string
   avatar_url?: string | null
+}
+
+export interface EloHistory {
+  id: string
+  membership_id: string
+  match_id: string
+  rating_before: number
+  rating_after: number
+  created_at: string
+  match_title?: string
+  match_date?: string
 }
 
 // Database ClubEvent type

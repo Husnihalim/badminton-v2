@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { buildInviteUrl, getClub, getMyMembership, regenerateInviteLink, updateClub } from '../lib/api'
+import { buildInviteUrl, getClub, getMyMembership, regenerateInviteLink, updateClub, uploadClubLogo, uploadClubBanner } from '../lib/api'
 import type { Club, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -14,6 +14,22 @@ import { Textarea } from '../components/ui/textarea'
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
 }
+
+const ACCENT_COLORS = [
+  { name: 'emerald', class: 'bg-emerald-600 border-emerald-400 text-emerald-600', label: 'Emerald' },
+  { name: 'indigo', class: 'bg-indigo-600 border-indigo-400 text-indigo-600', label: 'Indigo' },
+  { name: 'violet', class: 'bg-violet-600 border-violet-400 text-violet-600', label: 'Violet' },
+  { name: 'amber', class: 'bg-amber-600 border-amber-400 text-amber-600', label: 'Amber' },
+  { name: 'rose', class: 'bg-rose-600 border-rose-400 text-rose-600', label: 'Rose' },
+  { name: 'sky', class: 'bg-sky-600 border-sky-400 text-sky-600', label: 'Sky' },
+]
+
+const BANNER_PRESETS = [
+  { id: 'court_green', name: 'Court Green', gradient: 'bg-gradient-to-r from-emerald-600 to-emerald-800' },
+  { id: 'court_blue', name: 'Court Blue', gradient: 'bg-gradient-to-r from-sky-600 to-indigo-800' },
+  { id: 'dark_elite', name: 'Dark Elite', gradient: 'bg-gradient-to-r from-slate-800 to-slate-950' },
+  { id: 'neon_arena', name: 'Neon Arena', gradient: 'bg-gradient-to-r from-fuchsia-700 to-violet-900' },
+]
 
 export default function ClubSettingsPage() {
   const { clubId } = useParams()
@@ -34,6 +50,16 @@ export default function ClubSettingsPage() {
   const [openJoin, setOpenJoin] = useState(true)
   const [approvalRequired, setApprovalRequired] = useState(true)
   const [inviteToken, setInviteToken] = useState('')
+
+  // Custom branding states
+  const [logoUrl, setLogoUrl] = useState('')
+  const [bannerUrl, setBannerUrl] = useState('')
+  const [bannerPreset, setBannerPreset] = useState('')
+  const [accentColor, setAccentColor] = useState('emerald')
+  const [announcement, setAnnouncement] = useState('')
+  
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false)
 
   const loadClubData = useCallback(async () => {
     if (!clubId) return
@@ -61,6 +87,13 @@ export default function ClubSettingsPage() {
       setOpenJoin(clubData.open_join !== false)
       setApprovalRequired(clubData.approval_required || false)
       setInviteToken(clubData.invite_code || '')
+      
+      // Load custom branding fields
+      setLogoUrl(clubData.logo_url || '')
+      setBannerUrl(clubData.banner_url || '')
+      setBannerPreset(clubData.banner_preset || 'court_green')
+      setAccentColor(clubData.accent_color || 'emerald')
+      setAnnouncement(clubData.announcement || '')
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to load club data'))
     } finally {
@@ -75,6 +108,43 @@ export default function ClubSettingsPage() {
     }
   }, [clubId, loadClubData])
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !clubId) return
+
+    try {
+      setIsUploadingLogo(true)
+      setError('')
+      const url = await uploadClubLogo(clubId, file)
+      setLogoUrl(url)
+      setSuccessMessage('Logo uploaded successfully.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to upload logo'))
+    } finally {
+      setIsUploadingLogo(false)
+    }
+  }
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !clubId) return
+
+    try {
+      setIsUploadingBanner(true)
+      setError('')
+      const url = await uploadClubBanner(clubId, file)
+      setBannerUrl(url)
+      setBannerPreset('') // clear preset when custom cover uploaded
+      setSuccessMessage('Banner uploaded successfully.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to upload banner'))
+    } finally {
+      setIsUploadingBanner(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!clubId) return
@@ -83,17 +153,26 @@ export default function ClubSettingsPage() {
       setIsSaving(true)
       setError('')
       
+      const announcementChanged = announcement !== (club?.announcement || '')
+      
       await updateClub(clubId, {
         name,
-        description: description || undefined,
-        location: location || undefined,
-        city: city || undefined,
+        description: description || null,
+        location: location || null,
+        city: city || null,
         open_join: openJoin,
         approval_required: approvalRequired,
+        logo_url: logoUrl || null,
+        banner_url: bannerPreset ? null : (bannerUrl || null),
+        banner_preset: bannerPreset || null,
+        accent_color: accentColor,
+        announcement: announcement || null,
+        announcement_updated_at: announcementChanged ? new Date().toISOString() : (club?.announcement_updated_at || null),
       })
       
       setSuccessMessage('Club settings saved.')
       setTimeout(() => setSuccessMessage(''), 3000)
+      loadClubData()
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to save settings'))
     } finally {
@@ -142,7 +221,7 @@ export default function ClubSettingsPage() {
       <PageHeader
         eyebrow="Club admin"
         title="Club settings"
-        description={`Manage ${club.name} details, approval rules, and invite link.`}
+        description={`Manage ${club.name} details, custom themes, noticeboard and invite link.`}
         actions={
           <Button variant="secondary" onClick={() => navigate(`/club/${clubId}`)}>
             <ArrowLeft size={17} aria-hidden="true" />
@@ -155,39 +234,213 @@ export default function ClubSettingsPage() {
         {error ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
 
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card>
-            <CardContent className="space-y-4 pt-4 sm:pt-5">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                  <Settings size={18} aria-hidden="true" />
-                </span>
-                <h2 className="text-lg font-bold text-slate-950">Basic information</h2>
-              </div>
+          <div className="space-y-5">
+            {/* Basic Info Card */}
+            <Card>
+              <CardContent className="space-y-4 pt-4 sm:pt-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                    <Settings size={18} aria-hidden="true" />
+                  </span>
+                  <h2 className="text-lg font-bold text-slate-950">Basic information</h2>
+                </div>
 
-              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                <span>Club name *</span>
-                <Input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
-              </label>
-
-              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                <span>Description</span>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="What is your club about?" />
-              </label>
-
-              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Location</span>
-                  <Input type="text" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="e.g. Community Center Court" />
+                  <span>Club name *</span>
+                  <Input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
                 </label>
+
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>City</span>
-                  <Input type="text" value={city} onChange={(e) => setCity(e.target.value)} maxLength={120} placeholder="e.g. Kuala Lumpur" />
+                  <span>Description</span>
+                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="What is your club about?" />
                 </label>
-              </div>
-            </CardContent>
-          </Card>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Location</span>
+                    <Input type="text" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="e.g. Community Center Court" />
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>City</span>
+                    <Input type="text" value={city} onChange={(e) => setCity(e.target.value)} maxLength={120} placeholder="e.g. Kuala Lumpur" />
+                  </label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Club Branding & Theme Card */}
+            <Card>
+              <CardContent className="space-y-5 pt-4 sm:pt-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                    <Palette size={18} aria-hidden="true" />
+                  </span>
+                  <h2 className="text-lg font-bold text-slate-950">Club Branding & Theme</h2>
+                </div>
+
+                {/* Logo Section */}
+                <div className="space-y-2">
+                  <span className="text-sm font-semibold text-slate-700 block">Club Logo</span>
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 shrink-0 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Club logo preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <Camera size={24} className="text-slate-400" />
+                      )}
+                    </div>
+                    <div>
+                      <input
+                        type="file"
+                        id="logo-upload-input"
+                        className="hidden"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handleLogoUpload}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => document.getElementById('logo-upload-input')?.click()}
+                        disabled={isUploadingLogo}
+                      >
+                        {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                      </Button>
+                      <p className="text-[11px] text-slate-500 mt-1">Recommended: Square format image, max 5MB.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accent Color Section */}
+                <div className="space-y-2.5">
+                  <span className="text-sm font-semibold text-slate-700 block">Brand Accent Theme</span>
+                  <div className="flex flex-wrap gap-3">
+                    {ACCENT_COLORS.map((c) => {
+                      const isSelected = accentColor === c.name
+                      return (
+                        <button
+                          key={c.name}
+                          type="button"
+                          onClick={() => setAccentColor(c.name)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs font-bold ${
+                            isSelected 
+                              ? 'bg-slate-900 border-slate-900 text-white shadow'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className={`h-3.5 w-3.5 rounded-full border ${c.class.split(' ')[0]} ${c.class.split(' ')[1]}`} />
+                          {c.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Preset Banner Covers */}
+                <div className="space-y-2.5">
+                  <span className="text-sm font-semibold text-slate-700 block">Header Banner Cover Preset</span>
+                  <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+                    {BANNER_PRESETS.map((bp) => {
+                      const isSelected = bannerPreset === bp.id
+                      return (
+                        <button
+                          key={bp.id}
+                          type="button"
+                          onClick={() => {
+                            setBannerPreset(bp.id)
+                            setBannerUrl('')
+                          }}
+                          className={`flex flex-col text-left rounded-lg overflow-hidden border transition-all ${
+                            isSelected 
+                              ? 'ring-2 ring-emerald-600 border-transparent shadow' 
+                              : 'border-slate-200 hover:border-slate-350'
+                          }`}
+                        >
+                          <div className={`h-12 w-full ${bp.gradient}`} />
+                          <span className="p-2 text-xs font-semibold text-slate-950 truncate block">{bp.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Banner Cover Upload */}
+                <div className="space-y-2">
+                  <span className="text-sm font-semibold text-slate-700 block">Or Upload Custom Cover Banner</span>
+                  <div className="space-y-3">
+                    {bannerUrl ? (
+                      <div className="h-20 w-full rounded-lg border border-slate-200 overflow-hidden bg-slate-50">
+                        <img src={bannerUrl} alt="Custom banner preview" className="h-full w-full object-cover" />
+                      </div>
+                    ) : null}
+                    <div>
+                      <input
+                        type="file"
+                        id="banner-upload-input"
+                        className="hidden"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleBannerUpload}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => document.getElementById('banner-upload-input')?.click()}
+                        disabled={isUploadingBanner}
+                        className="gap-1.5"
+                      >
+                        <ImageIcon size={14} />
+                        {isUploadingBanner ? 'Uploading...' : 'Upload Cover Image'}
+                      </Button>
+                      <p className="text-[11px] text-slate-500 mt-1">Recommended: Landscape photo, max 10MB.</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="space-y-5">
+            {/* Announcement / Pinned Notice Card */}
+            <Card className="border-emerald-100 bg-emerald-50/10">
+              <CardContent className="space-y-4 pt-4 sm:pt-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                    <Megaphone size={18} aria-hidden="true" />
+                  </span>
+                  <h2 className="text-lg font-bold text-slate-950">Pinned Noticeboard Announcement</h2>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Pin an announcement bar to the absolute top of the club homepage. Perfect for high-priority news (e.g., fees due, court allocations, cancellations).
+                </p>
+
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Announcement Message</span>
+                  <Textarea 
+                    value={announcement} 
+                    onChange={(e) => setAnnouncement(e.target.value)} 
+                    maxLength={500} 
+                    placeholder="Write announcement message (e.g. Fees due this session)..."
+                    rows={4}
+                  />
+                </label>
+
+                {announcement ? (
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => setAnnouncement('')} 
+                    fullWidth
+                    className="border-dashed hover:border-slate-350"
+                  >
+                    Clear Announcement
+                  </Button>
+                ) : null}
+              </CardContent>
+            </Card>
+
+            {/* Join Settings Card */}
             <Card>
               <CardContent className="space-y-4 pt-4 sm:pt-5">
                 <h2 className="text-lg font-bold text-slate-950">Join settings</h2>
@@ -208,6 +461,7 @@ export default function ClubSettingsPage() {
               </CardContent>
             </Card>
 
+            {/* Invite Link Card */}
             <Card>
               <CardContent className="space-y-3 pt-4 sm:pt-5">
                 <div className="flex items-center justify-between gap-3">

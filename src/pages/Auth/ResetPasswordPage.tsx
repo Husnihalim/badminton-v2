@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Account recovery</p>
           <h1 className="text-2xl font-bold leading-tight text-slate-950">Set new password</h1>
           <p className="text-sm leading-6 text-slate-600">
-            Enter a new password for your KelabSukan account.
+            Enter a new password for your kelabsukan.com account.
           </p>
         </CardHeader>
 

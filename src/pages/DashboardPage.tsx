@@ -638,7 +638,7 @@ export default function DashboardPage() {
       <Card className="mx-auto mt-6 max-w-md">
         <CardContent className="space-y-4 pt-5 text-center">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-slate-950">Welcome to KelabSukan</h1>
+            <h1 className="text-2xl font-bold text-slate-950">Welcome to kelabsukan.com</h1>
             <p className="text-sm leading-6 text-slate-600">
               Log in to view your dashboard, clubs, events, and match scores.
             </p>

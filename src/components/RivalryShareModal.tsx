@@ -207,8 +207,8 @@ export default function RivalryShareModal({
 
   const handleShare = async () => {
     const shareText = mode === 'partner'
-      ? `Check out our doubles partnership stats in KelabSukan!\nRecord: ${userName.split(' ')[0]} & ${rivalName.split(' ')[0]} - ${wins} Wins / ${losses} Losses`
-      : `Check out my Head-to-Head rivalry stats against ${rivalName} in KelabSukan!\nRecord: ${userName.split(' ')[0]} ${wins} - ${losses} ${rivalName.split(' ')[0]}`
+      ? `Check out our doubles partnership stats on kelabsukan.com!\nRecord: ${userName.split(' ')[0]} & ${rivalName.split(' ')[0]} - ${wins} Wins / ${losses} Losses`
+      : `Check out my Head-to-Head rivalry stats against ${rivalName} on kelabsukan.com!\nRecord: ${userName.split(' ')[0]} ${wins} - ${losses} ${rivalName.split(' ')[0]}`
     
     if (navigator.share) {
       try {

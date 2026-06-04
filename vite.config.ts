@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'KelabSukan',
-        short_name: 'KelabSukan',
+        name: 'kelabsukan.com',
+        short_name: 'kelabsukan.com',
         description: 'Your racket sport club companion',
         theme_color: '#047857',
         background_color: '#ffffff',
@@ -22,9 +22,9 @@ export default defineConfig({
         scope: '/',
         icons: [
           {
-            src: '/favicon.svg',
+            src: '/favicon.png',
             sizes: 'any',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]

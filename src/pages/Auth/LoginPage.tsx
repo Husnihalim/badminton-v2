@@ -78,7 +78,7 @@ export default function LoginPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Welcome back</p>
           <h1 className="text-2xl font-bold leading-tight text-slate-950">Log in</h1>
           <p className="text-sm leading-6 text-slate-600">
-            Use your KelabSukan account. Your session stays active on this device.
+            Use your kelabsukan.com account. Your session stays active on this device.
           </p>
         </CardHeader>
 

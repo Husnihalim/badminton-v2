@@ -4,6 +4,7 @@ import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, S
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import NotificationsPanel from './NotificationsPanel'
+import logoImg from '../assets/logo.png'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -67,7 +68,8 @@ export default function Navbar() {
     <>
       <nav className="nav-bar">
         <Link className="site-brand" to="/">
-          KelabSukan
+          <img src={logoImg} alt="kelabsukan.com logo" className="site-brand-logo" />
+          <span className="site-brand-text">kelabsukan.com</span>
         </Link>
         <div className="nav-links">
           <Link className="nav-link" to="/">

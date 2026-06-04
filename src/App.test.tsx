@@ -80,7 +80,7 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByText('KelabSukan')).toBeInTheDocument()
+        expect(screen.getByText('kelabsukan.com')).toBeInTheDocument()
       })
       
       expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument()

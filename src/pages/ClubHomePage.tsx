@@ -422,6 +422,7 @@ export default function ClubHomePage() {
   const [selectedScoreEventDate, setSelectedScoreEventDate] = useState<string | null>(null)
   const [showHighlightsEvent, setShowHighlightsEvent] = useState<ClubEvent | null>(null)
   const [timeframe, setTimeframe] = useState<string>('all-time')
+  const [sortBy, setSortBy] = useState<'win-rate' | 'elo'>('elo')
 
   const [eventsViewMode, setEventsViewMode] = useState<'list' | 'calendar'>('list')
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
@@ -473,8 +474,16 @@ export default function ClubHomePage() {
   }, [matches, timeframe])
 
   const computedLeaderboard = useMemo(() => {
-    return calculateLeaderboard(filteredMatchesForLeaderboard)
-  }, [filteredMatchesForLeaderboard])
+    const raw = calculateLeaderboard(filteredMatchesForLeaderboard)
+    if (sortBy === 'elo') {
+      return [...raw].sort((a, b) => {
+        const eloA = members.find(m => m.name?.toLowerCase() === a.name.toLowerCase())?.elo_rating ?? 1200
+        const eloB = members.find(m => m.name?.toLowerCase() === b.name.toLowerCase())?.elo_rating ?? 1200
+        return eloB - eloA || b.winPercentage - a.winPercentage || b.games - a.games
+      })
+    }
+    return raw
+  }, [filteredMatchesForLeaderboard, members, sortBy])
 
   const latestSessionWithMatches = useMemo(() => {
     if (matches.length === 0) return null
@@ -2027,9 +2036,37 @@ export default function ClubHomePage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
               <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Rankings based on win rate for the selected timeframe.</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {sortBy === 'elo' ? 'Rankings based on competitive Elo ratings.' : 'Rankings based on win rate for the selected timeframe.'}
+              </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Sort Toggle */}
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setSortBy('elo')}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
+                    sortBy === 'elo'
+                      ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  ⚡ Elo Rating
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('win-rate')}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
+                    sortBy === 'win-rate'
+                      ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  📈 Win Rate
+                </button>
+              </div>
+
               <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
                 {[
                   { id: 'all-time', label: '🏆 All-Time' },
@@ -2194,6 +2231,15 @@ export default function ClubHomePage() {
                               ⚔️ H2H
                             </Link>
                           )}
+                          {(() => {
+                            const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
+                            const elo = match?.elo_rating || 1200
+                            return (
+                              <Badge className="border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 gap-0.5 font-extrabold shadow-sm shrink-0">
+                                ⚡ {elo} Elo
+                              </Badge>
+                            )
+                          })()}
                           {hasWinStreak ? (
                             <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 font-extrabold shadow-sm shrink-0">
                               <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />

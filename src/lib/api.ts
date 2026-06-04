@@ -14,7 +14,8 @@ import type {
   ClubMessage,
   MatchReaction,
   MatchComment,
-  MatchWithDetails
+  MatchWithDetails,
+  EloHistory
 } from '../types'
 
 type ProfileSummary = {
@@ -79,6 +80,7 @@ export type ClubLeaderboardRow = {
   pointsFor: number
   pointsAgainst: number
   points: number
+  elo_rating?: number
 }
 
 export async function ensureCurrentUserProfile(): Promise<void> {
@@ -1098,6 +1100,12 @@ export async function updateClub(clubId: string, updates: {
   open_join?: boolean
   approval_required?: boolean
   invite_code?: string | null
+  logo_url?: string | null
+  banner_url?: string | null
+  banner_preset?: string | null
+  accent_color?: string | null
+  announcement?: string | null
+  announcement_updated_at?: string | null
 }): Promise<Club | null> {
   const { data, error } = await supabase
     .from('clubs')
@@ -1112,6 +1120,54 @@ export async function updateClub(clubId: string, updates: {
   }
 
   return data as Club
+}
+
+export async function uploadClubLogo(clubId: string, file: File): Promise<string> {
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const filePath = `${clubId}/logo-${Date.now()}.${extension}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('club-logos')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.error('Error uploading club logo:', uploadError)
+    throw uploadError
+  }
+
+  const { data } = supabase.storage
+    .from('club-logos')
+    .getPublicUrl(filePath)
+
+  await updateClub(clubId, { logo_url: data.publicUrl })
+  return data.publicUrl
+}
+
+export async function uploadClubBanner(clubId: string, file: File): Promise<string> {
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const filePath = `${clubId}/banner-${Date.now()}.${extension}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('club-banners')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.error('Error uploading club banner:', uploadError)
+    throw uploadError
+  }
+
+  const { data } = supabase.storage
+    .from('club-banners')
+    .getPublicUrl(filePath)
+
+  await updateClub(clubId, { banner_url: data.publicUrl, banner_preset: null })
+  return data.publicUrl
 }
 
 export async function joinClubByInviteLinkToken(inviteToken: string): Promise<Membership | null> {
@@ -1770,4 +1826,45 @@ export async function deleteMatchComment(commentId: string): Promise<void> {
     console.error('Error deleting comment:', error)
     throw error
   }
+}
+
+export async function getMemberEloHistory(clubId: string, userId: string): Promise<EloHistory[]> {
+  // Find the membership ID for this user in this club
+  const { data: member, error: memberError } = await supabase
+    .from('memberships')
+    .select('id')
+    .eq('club_id', clubId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (memberError || !member) {
+    console.error('Error fetching membership for Elo history:', memberError)
+    return []
+  }
+
+  // Fetch elo_history records joined with matches title/date
+  const { data, error } = await supabase
+    .from('elo_history')
+    .select(`
+      *,
+      matches(title, match_date, created_at)
+    `)
+    .eq('membership_id', member.id)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching Elo history:', error)
+    return []
+  }
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    membership_id: row.membership_id,
+    match_id: row.match_id,
+    rating_before: row.rating_before,
+    rating_after: row.rating_after,
+    created_at: row.created_at,
+    match_title: row.matches?.title || 'Match',
+    match_date: row.matches?.match_date || row.matches?.created_at || row.created_at
+  }))
 }

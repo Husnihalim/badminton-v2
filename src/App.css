@@ -28,12 +28,27 @@
   display: inline-flex;
   min-height: 44px;
   align-items: center;
+  text-decoration: none;
+  gap: 8px;
+}
+
+.site-brand-logo {
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  background: white;
+  padding: 1px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.site-brand-text {
   color: var(--text);
-  font-size: clamp(1.35rem, 4.2vw, 2rem);
+  font-size: clamp(1.2rem, 4vw, 1.75rem);
   font-weight: 900;
   letter-spacing: -0.5px;
   line-height: 1;
-  text-decoration: none;
   background: linear-gradient(135deg, #38bdf8, var(--primary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

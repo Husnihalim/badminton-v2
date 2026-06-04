@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Activity, Flame, MapPin, Percent, Shield, Trophy, UserRound, ChevronLeft } from 'lucide-react'
-import { getProfile, getClubMatches } from '../lib/api'
+import { getProfile, getClubMatches, getMemberEloHistory } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import type { Club, MatchWithDetails, User } from '../types'
+import type { Club, MatchWithDetails, User, EloHistory } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -24,6 +24,8 @@ export default function MemberProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
+  const [clubElos, setClubElos] = useState<Record<string, number>>({})
+  const [eloHistory, setEloHistory] = useState<any[]>([])
 
   const [personalStats, setPersonalStats] = useState({
     matchesPlayed: 0,
@@ -60,10 +62,10 @@ export default function MemberProfilePage() {
       }
       setProfile(userProfile)
 
-      // 2. Fetch User's Clubs
+      // 2. Fetch User's Clubs and Elo ratings
       const { data: membershipData, error: membershipError } = await supabase
         .from('memberships')
-        .select('club_id, clubs(*)')
+        .select('club_id, elo_rating, clubs(*)')
         .eq('user_id', userId)
         .eq('status', 'active')
 
@@ -71,13 +73,44 @@ export default function MemberProfilePage() {
         console.error('Error fetching memberships:', membershipError)
       }
 
-      const userClubs = (membershipData as unknown as { clubs: Club }[] || []).map((m) => m.clubs).filter(Boolean)
+      const eloMap: Record<string, number> = {}
+      const userClubs = (membershipData as unknown as Array<{ club_id: string; elo_rating: number | null; clubs: Club }> || [])
+        .map((m) => {
+          if (m.club_id && m.elo_rating != null) {
+            eloMap[m.club_id] = m.elo_rating
+          }
+          return m.clubs
+        })
+        .filter(Boolean)
       setClubs(userClubs)
+      setClubElos(eloMap)
 
       // 3. Fetch Matches if profile is public
       if (!userProfile.is_private || currentUser?.id === userId) {
         const allMatches: MatchWithDetails[] = []
         const clubLeaderboards: Record<string, Record<string, number>> = {}
+
+        // Fetch Elo History
+        supabase
+          .from('elo_history')
+          .select(`
+            id,
+            rating_before,
+            rating_after,
+            created_at,
+            memberships!inner(user_id, club_id, clubs(name)),
+            matches(title, match_date)
+          `)
+          .eq('memberships.user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(10)
+          .then(({ data: eloData, error: eloError }) => {
+            if (eloError) {
+              console.error('Error fetching Elo history:', eloError)
+            } else {
+              setEloHistory(eloData || [])
+            }
+          })
 
         // Fetch matches and leaderboards for each club
         await Promise.all(
@@ -367,8 +400,11 @@ export default function MemberProfilePage() {
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Clubs</h3>
               <div className="flex flex-wrap gap-1.5">
                 {clubs.map(c => (
-                  <Badge key={c.id} className="bg-slate-800 border-slate-700 text-slate-350">
-                    {c.name}
+                  <Badge key={c.id} className="bg-slate-800 border-slate-700 text-slate-350 flex items-center gap-1.5">
+                    <span>{c.name}</span>
+                    <span className="text-emerald-400 font-extrabold text-[10px] bg-emerald-950/50 px-1.5 py-0.2 rounded">
+                      ⚡ {clubElos[c.id] ?? 1200}
+                    </span>
                   </Badge>
                 ))}
               </div>
@@ -447,6 +483,55 @@ export default function MemberProfilePage() {
               </div>
             </div>
           </section>
+
+          {/* Elo History Card */}
+          {eloHistory.length > 0 && (
+            <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              <div>
+                <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+                  <Activity size={18} className="text-emerald-700 shrink-0" />
+                  Elo Rating Progression
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Recent rating changes from club matches.</p>
+              </div>
+
+              <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
+                {eloHistory.map((item) => {
+                  const ratingDiff = item.rating_after - item.rating_before
+                  const isGain = ratingDiff >= 0
+                  const clubName = item.memberships?.clubs?.name || 'Club'
+                  const matchTitle = item.matches?.title || 'Match'
+                  const dateStr = new Date(item.matches?.match_date || item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                  
+                  return (
+                    <div key={item.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0">
+                        <span className="font-bold text-slate-900 truncate block">
+                          {matchTitle}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold block">
+                          {clubName} · {dateStr}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <span className="font-mono text-slate-500">
+                          {item.rating_before} → <span className="font-extrabold text-slate-900">{item.rating_after}</span>
+                        </span>
+                        <span className={cn(
+                          "inline-flex items-center justify-center font-extrabold px-1.5 py-0.5 rounded text-[10px] w-12 text-center",
+                          isGain 
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
+                            : "bg-red-50 text-red-700 border border-red-100"
+                        )}>
+                          {isGain ? `+${ratingDiff}` : ratingDiff}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Achievements Medals Grid */}
           <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
