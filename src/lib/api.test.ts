@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { getClubMatches, deleteClub, createClub } from './api'
 import { supabase } from './supabase'
 
@@ -19,11 +19,11 @@ vi.mock('./supabase', () => {
 
 describe('api.ts - Critical Database Methods', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
+    vi.mocked(supabase.from).mockReset()
+    vi.mocked(supabase.rpc).mockReset()
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'MOCK_INVITE_CODE', error: null } as any)
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null } as any)
   })
 
 
@@ -178,9 +178,12 @@ describe('api.ts - Critical Database Methods', () => {
         { id: 'user-3', name: 'Charlie' },
       ]
 
+      const mockMaybeSingle = vi.fn().mockImplementation(() => Promise.resolve({ data: { name: 'Test User' }, error: null }))
       const mockInsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }))
       const mockIn = vi.fn().mockImplementation(() => Promise.resolve({ data: mockProfiles, error: null }))
-      const mockEq = vi.fn().mockImplementation(() => Promise.resolve({ data: [{ name: 'Test User' }], error: null }))
+      const mockEq = vi.fn().mockImplementation(() => ({
+        maybeSingle: mockMaybeSingle
+      }))
 
       const mockFrom = vi.mocked(supabase.from)
       mockFrom.mockImplementation((_table: string) => {
@@ -189,7 +192,8 @@ describe('api.ts - Critical Database Methods', () => {
           in: mockIn,
           eq: mockEq,
           insert: mockInsert,
-          single: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null }))
+          single: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
+          maybeSingle: mockMaybeSingle
         } as any
         return chain
       })

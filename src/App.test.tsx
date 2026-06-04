@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
+import { supabase } from './lib/supabase'
 
 type MockResult = { data: unknown[]; error: null }
 type MockCallback = (value: MockResult) => unknown
@@ -48,6 +49,7 @@ const renderApp = (path = '/') => {
 beforeEach(() => {
   window.localStorage.clear()
   vi.clearAllMocks()
+  vi.mocked(supabase.from).mockImplementation(() => createMockChain() as any)
 })
 
 describe('KelabSukan App - Core Features', () => {
