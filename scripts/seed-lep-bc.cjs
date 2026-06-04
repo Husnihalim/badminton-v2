@@ -38,14 +38,7 @@ const adminUser = {
   role: 'superadmin',
 }
 
-const fakeUsers = [
-  { email: 'lep.member1@example.com', password: 'Test123!', name: 'Aiman Rahman', role: 'member' },
-  { email: 'lep.member2@example.com', password: 'Test123!', name: 'Farah Aziz', role: 'member' },
-  { email: 'lep.member3@example.com', password: 'Test123!', name: 'Jason Tan', role: 'member' },
-  { email: 'lep.member4@example.com', password: 'Test123!', name: 'Mei Lin', role: 'member' },
-  { email: 'lep.member5@example.com', password: 'Test123!', name: 'Kumar Raj', role: 'member' },
-  { email: 'lep.pending@example.com', password: 'Test123!', name: 'Pending Member', role: 'member' },
-]
+const fakeUsers = []
 
 async function getUserByEmail(email) {
   let page = 1
@@ -320,69 +313,14 @@ async function main() {
   console.log('Seeding LEP BC...')
 
   const admin = await ensureUser(adminUser)
-  const members = []
-  for (const seedUser of fakeUsers) {
-    members.push(await ensureUser(seedUser))
-  }
-
   const club = await ensureClub(admin.id)
   await ensureMembership(club.id, admin.id, 'owner', admin.id)
-
-  for (const member of members.slice(0, 5)) {
-    await ensureMembership(club.id, member.id, 'member', admin.id)
-  }
-
-  await ensureJoinRequest(club.id, members[5].id)
-
-  const event1 = await ensureEvent(club.id, admin.id, 'LEP BC Wednesday Session', 3, 'Court 1-2', 16)
-  const event2 = await ensureEvent(club.id, admin.id, 'LEP BC Weekend Doubles', 7, 'Main Hall', 24)
-
-  await ensureRsvp(event1.id, admin.id, 'going')
-  await ensureRsvp(event1.id, members[0].id, 'going')
-  await ensureRsvp(event1.id, members[1].id, 'going')
-  await ensureRsvp(event1.id, members[2].id, 'maybe')
-  await ensureRsvp(event2.id, members[3].id, 'going')
-  await ensureRsvp(event2.id, members[4].id, 'going')
-
-  await ensureMatch(
-    club.id,
-    admin.id,
-    'LEP BC Singles Seed Match',
-    [
-      { userId: members[0].id, team: 1 },
-      { userId: members[1].id, team: 2 },
-    ],
-    [
-      [21, 18],
-      [19, 21],
-      [21, 15],
-    ]
-  )
-
-  await ensureMatch(
-    club.id,
-    admin.id,
-    'LEP BC Doubles Seed Match',
-    [
-      { userId: members[0].id, team: 1 },
-      { userId: members[2].id, team: 1 },
-      { userId: members[3].id, team: 2 },
-      { userId: members[4].id, team: 2 },
-    ],
-    [
-      [21, 17],
-      [21, 19],
-    ]
-  )
 
   console.log('Done.')
   console.log(`Club: ${club.name}`)
   console.log(`Club ID: ${club.id}`)
   console.log(`Invite code: ${club.invite_code}`)
   console.log(`Admin/owner: ${adminUser.email}`)
-  console.log('Fake user password: Test123!')
-  console.log('Fake users:')
-  fakeUsers.forEach((user) => console.log(`- ${user.email}`))
 }
 
 main().catch((error) => {

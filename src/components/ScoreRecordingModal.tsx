@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ClipboardPenLine, Plus, Trash2, X } from 'lucide-react'
+import { ClipboardPenLine, Plus, X } from 'lucide-react'
 import { createMatch, getClubMembers, updateMatch } from '../lib/api'
 import { getErrorMessage } from '../lib/utils'
 import type { MatchWithDetails, Membership } from '../types'
@@ -186,6 +186,18 @@ export default function ScoreRecordingModal({
   }
 
   const isEditing = Boolean(editingMatch)
+
+  const getTeamNames = (teamNum: 1 | 2) => {
+    if (teamNum === 1) {
+      const p1 = getPlayerName(player1A, members)
+      const p2 = matchType === 'doubles' ? getPlayerName(player1B, members) : ''
+      return [p1, p2].filter(Boolean).join(' / ') || 'Select players...'
+    } else {
+      const p1 = getPlayerName(player2A, members)
+      const p2 = matchType === 'doubles' ? getPlayerName(player2B, members) : ''
+      return [p1, p2].filter(Boolean).join(' / ') || 'Select players...'
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -407,11 +419,56 @@ export default function ScoreRecordingModal({
                 {errors.matchTitle ? <p className="text-xs font-medium text-red-600">{errors.matchTitle}</p> : null}
               </label>
 
-              <div className={matchType === 'doubles' ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4'}>
-                {renderPlayerField('Player 1', player1A, setPlayer1A, 'player1A', isEditing)}
-                {matchType === 'doubles' ? renderPlayerField('Team 1, Player 2', player1B, setPlayer1B, 'player1B', isEditing) : null}
-                {renderPlayerField('Player 2', player2A, setPlayer2A, 'player2A', isEditing)}
-                {matchType === 'doubles' ? renderPlayerField('Team 2, Player 2', player2B, setPlayer2B, 'player2B', isEditing) : null}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Team 1 Card */}
+                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500" />
+                  <div className="mb-3 flex items-center justify-between pl-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Team 1</span>
+                    {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-slate-400">Doubles Pair</span>}
+                  </div>
+                  <div className="space-y-4 pl-2">
+                    {renderPlayerField(
+                      matchType === 'doubles' ? 'Player 1' : 'Player',
+                      player1A,
+                      setPlayer1A,
+                      'player1A',
+                      isEditing
+                    )}
+                    {matchType === 'doubles' ? renderPlayerField(
+                      'Player 2',
+                      player1B,
+                      setPlayer1B,
+                      'player1B',
+                      isEditing
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Team 2 Card */}
+                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500" />
+                  <div className="mb-3 flex items-center justify-between pl-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">Team 2</span>
+                    {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-slate-400">Doubles Pair</span>}
+                  </div>
+                  <div className="space-y-4 pl-2">
+                    {renderPlayerField(
+                      matchType === 'doubles' ? 'Player 1' : 'Player',
+                      player2A,
+                      setPlayer2A,
+                      'player2A',
+                      isEditing
+                    )}
+                    {matchType === 'doubles' ? renderPlayerField(
+                      'Player 2',
+                      player2B,
+                      setPlayer2B,
+                      'player2B',
+                      isEditing
+                    ) : null}
+                  </div>
+                </div>
               </div>
 
               {errors.duplicate ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errors.duplicate}</p> : null}
@@ -424,40 +481,92 @@ export default function ScoreRecordingModal({
                     Add set
                   </Button>
                 </div>
-                <div className="space-y-2">
-                  {sets.map((set, index) => {
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                  <table className="w-full border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <th className="px-4 py-3 font-semibold">Team / Players</th>
+                        {sets.map((_, idx) => (
+                          <th key={idx} className="w-24 px-4 py-3 text-center font-semibold">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span>Set {idx + 1}</span>
+                              {sets.length > 1 && idx === sets.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeSet(idx)}
+                                  className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600 transition-colors"
+                                  title="Remove set"
+                                >
+                                  <X size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {/* Row 1: Team 1 */}
+                      <tr>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold uppercase tracking-wide text-emerald-700">Team 1</span>
+                            <span className="mt-0.5 max-w-[280px] truncate text-sm font-normal text-slate-600">
+                              {getTeamNames(1)}
+                            </span>
+                          </div>
+                        </td>
+                        {sets.map((set, idx) => (
+                          <td key={idx} className="w-24 px-4 py-2 text-center">
+                            <Input
+                              type="number"
+                              className="mx-auto h-10 min-h-10 w-20 text-center font-semibold text-base focus:border-emerald-500 focus:ring-emerald-500/15"
+                              placeholder="0"
+                              value={set.team1}
+                              onChange={(e) => updateScoreSet(idx, 'team1', e.target.value)}
+                              min={0}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Row 2: Team 2 */}
+                      <tr>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">Team 2</span>
+                            <span className="mt-0.5 max-w-[280px] truncate text-sm font-normal text-slate-600">
+                              {getTeamNames(2)}
+                            </span>
+                          </div>
+                        </td>
+                        {sets.map((set, idx) => (
+                          <td key={idx} className="w-24 px-4 py-2 text-center">
+                            <Input
+                              type="number"
+                              className="mx-auto h-10 min-h-10 w-20 text-center font-semibold text-base focus:border-indigo-500 focus:ring-indigo-500/15"
+                              placeholder="0"
+                              value={set.team2}
+                              onChange={(e) => updateScoreSet(idx, 'team2', e.target.value)}
+                              min={0}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Score validation errors */}
+                <div className="space-y-1">
+                  {sets.map((_, index) => {
                     const setNumber = index + 1
                     const setError = errors[`set${setNumber}`] || errors[`set${setNumber}Team1`] || errors[`set${setNumber}Team2`]
-
+                    if (!setError) return null
                     return (
-                      <div key={setNumber} className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-semibold text-slate-700">Set {setNumber}</span>
-                          {sets.length > 1 ? (
-                            <Button type="button" size="icon" variant="ghost" onClick={() => removeSet(index)} aria-label={`Remove set ${setNumber}`}>
-                              <Trash2 size={15} aria-hidden="true" />
-                            </Button>
-                          ) : null}
-                        </div>
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                          <Input
-                            type="number"
-                            placeholder="Team 1"
-                            value={set.team1}
-                            onChange={(e) => updateScoreSet(index, 'team1', e.target.value)}
-                            min={0}
-                          />
-                          <span className="text-lg font-bold text-slate-400">-</span>
-                          <Input
-                            type="number"
-                            placeholder="Team 2"
-                            value={set.team2}
-                            onChange={(e) => updateScoreSet(index, 'team2', e.target.value)}
-                            min={0}
-                          />
-                        </div>
-                        {setError ? <p className="text-xs font-medium text-red-600">{setError}</p> : null}
-                      </div>
+                      <p key={setNumber} className="text-xs font-medium text-red-600">
+                        Set {setNumber}: {setError}
+                      </p>
                     )
                   })}
                 </div>

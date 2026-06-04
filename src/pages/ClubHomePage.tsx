@@ -61,7 +61,7 @@ import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
 import { Textarea } from '../components/ui/textarea'
-import { Select } from '../components/ui/select'
+
 import { MatchScoreboard } from '../components/MatchScoreboard'
 
 function getErrorMessage(err: unknown, fallback: string) {
@@ -1872,19 +1872,45 @@ export default function ClubHomePage() {
 
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
-              <div className="w-full sm:w-48">
-                <Select
-                  value={timeframe}
-                  onChange={(e) => setTimeframe(e.target.value)}
-                  className="min-h-9 text-xs font-semibold py-1 px-2 border-slate-300 rounded-md focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
-                >
-                  <option value="all-time">🏆 All-Time</option>
-                  <option value="month">📅 This Month</option>
-                  <option value="week">📅 This Week</option>
-                  {events.length > 0 && (
-                    <optgroup label="Game Sessions">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Rankings based on win rate for the selected timeframe.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
+                  {[
+                    { id: 'all-time', label: '🏆 All-Time' },
+                    { id: 'week', label: '📅 This Week' },
+                    { id: 'month', label: '📅 This Month' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setTimeframe(tab.id)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
+                        timeframe === tab.id
+                          ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {events.length > 0 && (
+                  <div className="relative">
+                    <select
+                      value={['all-time', 'week', 'month'].includes(timeframe) ? '' : timeframe}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setTimeframe(e.target.value)
+                        }
+                      }}
+                      className="min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-white text-slate-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                    >
+                      <option value="">🎯 Filter by Session</option>
                       {events
                         .slice()
                         .reverse()
@@ -1893,9 +1919,9 @@ export default function ClubHomePage() {
                             {event.title}
                           </option>
                         ))}
-                    </optgroup>
-                  )}
-                </Select>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
             {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
@@ -1904,12 +1930,16 @@ export default function ClubHomePage() {
                 {computedLeaderboard.slice(0, 10).map((player, index) => {
                   const streak = playerStreaks.get(player.name)
                   const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
+                  const isMe = user && (
+                    user.name?.toLowerCase() === player.name.toLowerCase() ||
+                    user.display_name?.toLowerCase() === player.name.toLowerCase()
+                  )
 
                   return (
                     <div key={player.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             {renderRankBadge(index + 1)}
                             {(() => {
                               const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
@@ -1921,8 +1951,17 @@ export default function ClubHomePage() {
                                 <span className="truncate font-semibold text-slate-950">{player.name}</span>
                               )
                             })()}
+                            {user && !isMe && (
+                              <Link
+                                to={`/dashboard?rival=${player.name}`}
+                                className="inline-flex items-center gap-0.5 text-[10px] font-extrabold text-emerald-750 hover:text-emerald-850 hover:underline shrink-0 ml-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm"
+                                title={`Compare Head-to-Head with ${player.name}`}
+                              >
+                                ⚔️ H2H
+                              </Link>
+                            )}
                             {hasWinStreak ? (
-                              <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 ml-2 font-extrabold shadow-sm shrink-0">
+                              <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 font-extrabold shadow-sm shrink-0">
                                 <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
                                 {streak.count} Hot Run
                               </Badge>
@@ -1995,19 +2034,33 @@ export default function ClubHomePage() {
           {sectionErrors.members ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.members}</p> : null}
           {members.length ? (
             <div className="space-y-2">
-              {members.slice(0, 5).map((member) => (
-                <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
-                  <span className="min-w-0 truncate font-semibold text-slate-950">
-                    <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
-                      {member.name || 'Unknown member'}
-                    </Link>
-                  </span>
-                  <Badge>{member.role}</Badge>
-                </div>
-              ))}
+              {members.slice(0, 5).map((member) => {
+                const isCurrentUser = user && user.id === member.user_id
+                return (
+                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white shadow-sm hover:border-slate-350 transition">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="min-w-0 truncate font-semibold text-slate-950">
+                        <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
+                          {member.name || 'Unknown member'}
+                        </Link>
+                      </span>
+                      <Badge className="text-[9px] bg-slate-50 border-slate-200 text-slate-700 capitalize font-medium">{member.role}</Badge>
+                    </div>
+                    {user && !isCurrentUser && (
+                      <Link
+                        to={`/dashboard?rival=${member.name}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-850 hover:underline shrink-0"
+                        title={`Compare Head-to-Head with ${member.name}`}
+                      >
+                        ⚔️ Compare
+                      </Link>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-650">
               {isSecondaryLoading ? 'Loading members...' : 'No members yet.'}
             </p>
           )}
