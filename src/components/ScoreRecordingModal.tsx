@@ -187,17 +187,7 @@ export default function ScoreRecordingModal({
 
   const isEditing = Boolean(editingMatch)
 
-  const getTeamNames = (teamNum: 1 | 2) => {
-    if (teamNum === 1) {
-      const p1 = getPlayerName(player1A, members)
-      const p2 = matchType === 'doubles' ? getPlayerName(player1B, members) : ''
-      return [p1, p2].filter(Boolean).join(' / ') || 'Select players...'
-    } else {
-      const p1 = getPlayerName(player2A, members)
-      const p2 = matchType === 'doubles' ? getPlayerName(player2B, members) : ''
-      return [p1, p2].filter(Boolean).join(' / ') || 'Select players...'
-    }
-  }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -510,12 +500,7 @@ export default function ScoreRecordingModal({
                       {/* Row 1: Team 1 */}
                       <tr>
                         <td className="px-4 py-3 font-medium text-slate-900">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold uppercase tracking-wide text-emerald-700">Team 1</span>
-                            <span className="mt-0.5 max-w-[280px] truncate text-sm font-normal text-slate-600">
-                              {getTeamNames(1)}
-                            </span>
-                          </div>
+                          <span className="text-xs font-bold uppercase tracking-wide text-emerald-700">Team 1</span>
                         </td>
                         {sets.map((set, idx) => (
                           <td key={idx} className="w-24 px-4 py-2 text-center">
@@ -533,12 +518,7 @@ export default function ScoreRecordingModal({
                       {/* Row 2: Team 2 */}
                       <tr>
                         <td className="px-4 py-3 font-medium text-slate-900">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">Team 2</span>
-                            <span className="mt-0.5 max-w-[280px] truncate text-sm font-normal text-slate-600">
-                              {getTeamNames(2)}
-                            </span>
-                          </div>
+                          <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">Team 2</span>
                         </td>
                         {sets.map((set, idx) => (
                           <td key={idx} className="w-24 px-4 py-2 text-center">
