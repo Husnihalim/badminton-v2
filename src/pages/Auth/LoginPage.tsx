@@ -52,10 +52,10 @@ export default function LoginPage() {
       setIsSubmitting(true)
       setError('')
 
-      const success = await login(email, password)
+      const result = await login(email, password)
 
-      if (!success) {
-        setError('Could not log in. Please check your email and password.')
+      if (!result.success) {
+        setError(result.error || 'Could not log in. Please check your email and password.')
         return
       }
 

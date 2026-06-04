@@ -7,7 +7,7 @@ import { ensureCurrentUserProfile, logPlatformEvent } from '../lib/api'
 type AuthContextType = {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   register: (email: string, name: string, password: string, inviteToken?: string | null) => Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }>
   refreshUser: () => Promise<User | null>
   logout: () => Promise<void>
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchUserProfile])
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email.trim().toLowerCase(),
         error: error?.message || 'Unknown error'
       })
-      return false
+      return { success: false, error: error?.message || 'Unknown error' }
     }
 
     // Wait a moment for the profile trigger to create the profile
@@ -183,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (userProfile) {
       logPlatformEvent('login_success', `User logged in: ${userProfile.email}`, 'info', { email: userProfile.email })
       setUser(userProfile)
-      return true
+      return { success: true }
     }
     // Fallback: create user from auth data
     const fallbackUser: User = {
@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     logPlatformEvent('login_success', `User logged in (fallback profile): ${fallbackUser.email}`, 'info', { email: fallbackUser.email })
     setUser(fallbackUser)
-    return true
+    return { success: true }
   }, [fetchUserProfile])
 
   const register = useCallback(async (
