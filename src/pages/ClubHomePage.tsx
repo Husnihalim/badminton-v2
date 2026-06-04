@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowRight,
   CalendarDays,
@@ -470,6 +470,17 @@ export default function ClubHomePage() {
   const { clubId } = useParams()
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('celebrate') === 'true') {
+      setShowCelebrationModal(true)
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('celebrate')
+      setSearchParams(newParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
 
@@ -2984,6 +2995,147 @@ export default function ClubHomePage() {
           onClose={() => setShareMatch(null)}
         />
       ) : null}
+
+      {showCelebrationModal && club ? (
+        <>
+          <CelebrationConfetti />
+          <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setShowCelebrationModal(false)}>
+            <Card className="relative w-full max-w-md overflow-hidden rounded-2xl border-none bg-white text-center shadow-2xl transition-all" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Premium top accent pattern */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
+              
+              <CardContent className="space-y-6 px-6 pt-10 pb-8 sm:px-8">
+                {/* Large celebratory icon */}
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shadow-inner animate-bounce">
+                  <span className="text-4xl">🎉</span>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Congratulations!</p>
+                  <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">
+                    Welcome to the Club!
+                  </h2>
+                  <p className="text-sm leading-6 text-slate-600">
+                    You are now an active member of <strong className="text-slate-900">{club.name}</strong>.
+                  </p>
+                </div>
+
+                {/* Club Detail Card */}
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-left space-y-3">
+                  <div className="flex items-center gap-3">
+                    {club.logo_url ? (
+                      <img src={club.logo_url} alt={`${club.name} logo`} className="h-10 w-10 rounded-full object-cover border border-slate-200" />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-bold">
+                        {club.name[0]}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-bold text-slate-900 leading-tight">{club.name}</h4>
+                      <p className="text-xs text-slate-500">{club.city || 'Local Club'}</p>
+                    </div>
+                  </div>
+                  {club.description && (
+                    <p className="text-xs text-slate-600 italic line-clamp-2 leading-relaxed border-t border-slate-200/60 pt-2.5">
+                      "{club.description}"
+                    </p>
+                  )}
+                </div>
+
+                {/* Quick guidance tips */}
+                <div className="space-y-2 text-left text-xs">
+                  <p className="font-bold text-slate-700 uppercase tracking-wide">Next steps:</p>
+                  <ul className="space-y-2.5 text-slate-600 pl-1">
+                    <li className="flex items-start gap-2">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">1</span>
+                      <span>Check the **Upcoming Sessions** below and submit your RSVP.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">2</span>
+                      <span>View recent match history and record set scores to update the ELO leaderboard.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    fullWidth
+                    onClick={() => setShowCelebrationModal(false)}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-600/10 font-bold"
+                  >
+                    Let's Play! 🏸
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      ) : null}
     </Page>
+  )
+}
+
+function CelebrationConfetti() {
+  const particles = useMemo(() => {
+    return Array.from({ length: 120 }).map((_, i) => {
+      const size = Math.random() * 10 + 6
+      const left = Math.random() * 100
+      const delay = Math.random() * 2
+      const duration = Math.random() * 3 + 2
+      const colors = ['#10b981', '#34d399', '#f59e0b', '#fbbf24', '#3b82f6', '#60a5fa', '#ec4899', '#f472b6', '#8b5cf6', '#a78bfa']
+      const color = colors[Math.floor(Math.random() * colors.length)]
+      const rotation = Math.random() * 360
+      const shape = Math.random() > 0.5 ? 'circle' : 'square'
+      return {
+        id: i,
+        size,
+        left,
+        delay,
+        duration,
+        color,
+        rotation,
+        shape
+      }
+    })
+  }, [])
+
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 100 }}>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute"
+          style={{
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            left: `${p.left}%`,
+            top: `-20px`,
+            backgroundColor: p.color,
+            borderRadius: p.shape === 'circle' ? '50%' : '2px',
+            opacity: 0.8,
+            animationName: 'fallAndRotate',
+            animationDuration: `${p.duration}s`,
+            animationTimingFunction: 'linear',
+            animationDelay: `${p.delay}s`,
+            animationIterationCount: 'infinite',
+            transform: `rotate(${p.rotation}deg)`
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes fallAndRotate {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(110vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+      `}</style>
+    </div>
   )
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { getClubMatches, deleteClub, createClub } from './api'
 import { supabase } from './supabase'
 
@@ -19,8 +19,13 @@ vi.mock('./supabase', () => {
 
 describe('api.ts - Critical Database Methods', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
 
   describe('getClubMatches', () => {
     it('returns matches with correctly resolved participant names and scores', async () => {
@@ -149,6 +154,80 @@ describe('api.ts - Critical Database Methods', () => {
       })
       expect(result?.id).toBe('new-club-id')
       expect(result?.invite_code).toBe('MOCK_INVITE_CODE')
+    })
+  })
+
+  describe('createMatch and automated announcement', () => {
+    it('creates a match and posts an automated completion announcement to the club message board', async () => {
+      const mockRpcMatch = {
+        id: 'match-123',
+        club_id: 'club-1',
+        title: 'Sunday Doubles',
+        sport: 'badminton',
+        match_type: 'doubles',
+        recorded_by: 'test-user-id',
+        match_date: '2026-06-04',
+      }
+
+      const mockRpc = vi.mocked(supabase.rpc)
+      mockRpc.mockResolvedValue({ data: mockRpcMatch, error: null } as any)
+
+      const mockProfiles = [
+        { id: 'user-1', name: 'Alice' },
+        { id: 'user-2', name: 'Bob' },
+        { id: 'user-3', name: 'Charlie' },
+      ]
+
+      const mockInsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }))
+      const mockIn = vi.fn().mockImplementation(() => Promise.resolve({ data: mockProfiles, error: null }))
+      const mockEq = vi.fn().mockImplementation(() => Promise.resolve({ data: [{ name: 'Test User' }], error: null }))
+
+      const mockFrom = vi.mocked(supabase.from)
+      mockFrom.mockImplementation((_table: string) => {
+        const chain = {
+          select: vi.fn().mockReturnThis(),
+          in: mockIn,
+          eq: mockEq,
+          insert: mockInsert,
+          single: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null }))
+        } as any
+        return chain
+      })
+
+
+      const matchData = {
+        club_id: 'club-1',
+        title: 'Sunday Doubles',
+        sport: 'badminton',
+        match_type: 'doubles' as const,
+        participants: [
+          { team: 1 as const, user_id: 'user-1', is_guest: false },
+          { team: 1 as const, user_id: 'user-2', is_guest: false },
+          { team: 2 as const, user_id: 'user-3', is_guest: false },
+          { team: 2 as const, guest_name: 'Guest Dave', is_guest: true },
+        ],
+        score_sets: [
+          { set_number: 1, team1_score: 21, team2_score: 18 },
+          { set_number: 2, team1_score: 21, team2_score: 19 },
+        ]
+      }
+
+      const { createMatch } = await import('./api')
+      const result = await createMatch(matchData)
+
+      expect(result?.id).toBe('match-123')
+      expect(mockRpc).toHaveBeenCalledWith('create_match_with_details', expect.any(Object))
+      
+      expect(mockFrom).toHaveBeenCalledWith('profiles')
+      expect(mockIn).toHaveBeenCalledWith('id', ['user-1', 'user-2', 'user-3'])
+
+      expect(mockFrom).toHaveBeenCalledWith('club_messages')
+      expect(mockInsert).toHaveBeenCalledWith({
+        club_id: 'club-1',
+        title: '🎉 Match Completed',
+        message: 'Alice & Bob beat Charlie & Guest Dave (21-18, 21-19)',
+        created_by: 'test-user-id',
+      })
     })
   })
 })

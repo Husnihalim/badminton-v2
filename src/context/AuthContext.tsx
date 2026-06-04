@@ -146,6 +146,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setTimeout(async () => {
+          const hash = typeof window !== 'undefined' ? window.location.hash || '' : ''
+          const search = typeof window !== 'undefined' ? window.location.search || '' : ''
+          const isEmailVerificationRedirect = hash.includes('type=signup') || 
+                                              search.includes('type=signup') ||
+                                              hash.includes('type=invite') ||
+                                              search.includes('type=invite')
+
+          if (isEmailVerificationRedirect && session?.user) {
+            const rememberedRedirect = window.localStorage.getItem('kelabsukan.postLoginRedirect') || '/dashboard'
+            
+            // Clean up the hash/search from URL to avoid re-triggering
+            if (typeof window !== 'undefined' && window.history?.replaceState) {
+              window.history.replaceState(null, '', window.location.pathname)
+            }
+
+            await supabase.auth.signOut()
+            setUser(null)
+            setIsLoading(false)
+            
+            // Redirect to login with verified flag and the post-login destination
+            window.location.href = `/login?verified=true&redirect=${encodeURIComponent(rememberedRedirect)}`
+            return
+          }
+
           if (session?.user) {
             const userProfile = await fetchUserProfile(session.user.id, session.user)
             setUser(userProfile)

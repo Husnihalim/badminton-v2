@@ -36,12 +36,15 @@ export default function InviteJoinPage() {
     const joinByInvite = async () => {
       try {
         setStatus('joining')
-        await joinClubByInviteLinkToken(normalizedInviteToken)
+        const membership = await joinClubByInviteLinkToken(normalizedInviteToken)
         window.localStorage.removeItem(pendingInviteKey)
         window.localStorage.removeItem(postLoginRedirectKey)
         setStatus('joined')
         setMessage('You joined the club from the invite link.')
-        setTimeout(() => navigate('/dashboard'), 1200)
+        const target = membership?.club_id 
+          ? `/club/${encodeURIComponent(membership.club_id)}?celebrate=true`
+          : '/dashboard'
+        setTimeout(() => navigate(target), 1200)
       } catch (err) {
         setStatus('error')
         setMessage(err instanceof Error ? err.message : 'Could not join from this invite link.')

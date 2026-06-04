@@ -89,6 +89,11 @@ export default function LoginPage() {
                 {error || 'Supabase is not configured for this environment yet.'}
               </div>
             )}
+            {searchParams.get('verified') === 'true' && !error && (
+              <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 font-medium">
+                Email verified successfully! Please log in to your account.
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700" htmlFor="login-email">Email</label>
