@@ -43,7 +43,8 @@
   --surface: #ffffff;
   --surface-muted: #f1f5f9;
   --text: #0f172a;
-  --text-muted: #475569;
+  --text-muted: #334155;
+  --nav-bg: rgba(255, 255, 255, 0.85);
   --primary: #0d9488;
   --primary-hover: #14b8a6;
   --primary-text: #ffffff;
@@ -55,13 +56,13 @@
   --theme-slate-100: #f1f5f9;
   --theme-slate-200: #e2e8f0;
   --theme-slate-300: #cbd5e1;
-  --theme-slate-400: #94a3b8;
-  --theme-slate-500: #64748b;
-  --theme-slate-600: #475569;
-  --theme-slate-700: #334155;
-  --theme-slate-800: #1e293b;
-  --theme-slate-900: #0f172a;
-  --theme-slate-950: #020617;
+  --theme-slate-400: #52637a;
+  --theme-slate-500: #3f4d61;
+  --theme-slate-600: #2a3547;
+  --theme-slate-700: #1c2431;
+  --theme-slate-800: #0f1521;
+  --theme-slate-900: #080c14;
+  --theme-slate-950: #020408;
 
   /* Theme Emerald Mapping - Light Mode (Traditional sporty green) */
   --theme-emerald-50: #f0fdf4;
@@ -85,6 +86,7 @@
   --surface-muted: #1c2436;
   --text: #f8fafc;
   --text-muted: #94a3b8;
+  --nav-bg: rgba(18, 24, 38, 0.85);
   --primary: #ccff00;
   --primary-hover: #ddff33;
   --primary-text: #0b0f19;

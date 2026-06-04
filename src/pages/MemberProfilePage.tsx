@@ -340,7 +340,7 @@ export default function MemberProfilePage() {
               )}
 
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
-                <Badge className="bg-emerald-900 hover:bg-emerald-900 border-none capitalize">
+                <Badge className="bg-emerald-900 hover:bg-emerald-900 border-none capitalize text-white">
                   {profile.preferred_sport || 'badminton'}
                 </Badge>
                 <Badge className="sm:hidden bg-slate-800 text-slate-400 border-slate-700">
@@ -503,7 +503,7 @@ export default function MemberProfilePage() {
           </section>
 
           {/* Recent Match Log */}
-          <section className="space-y-3">
+          <section className="space-y-4">
             <h2 className="text-lg font-bold text-slate-950">Recent Matches</h2>
             {matches.length ? (
               <div className="grid gap-3">

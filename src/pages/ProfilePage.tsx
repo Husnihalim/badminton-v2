@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Building2, Camera, Lock, MapPin, Plus, Save, UserRound, Users, X } from 'lucide-react'
+import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, UserRound, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import { createClub, getMyClubs, updateProfile, uploadProfilePhoto } from '../lib/api'
 import type { Club } from '../types'
 import { Badge } from '../components/ui/badge'
@@ -9,6 +10,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
+import { PasswordInput } from '../components/ui/password-input'
 import { Select } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 
@@ -39,6 +41,11 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isPrivate, setIsPrivate] = useState(false)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordMessage, setPasswordMessage] = useState('')
+  const [isSavingPassword, setIsSavingPassword] = useState(false)
 
   const loadMyClubs = useCallback(async () => {
     try {
@@ -153,6 +160,49 @@ export default function ProfilePage() {
       setProfileError(getErrorMessage(err, 'Failed to save profile'))
     } finally {
       setIsSavingProfile(false)
+    }
+  }
+
+  const handleChangePassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!password || !confirmPassword) {
+      setPasswordError('Password and confirmation are required.')
+      setPasswordMessage('')
+      return
+    }
+
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters.')
+      setPasswordMessage('')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordError('Passwords do not match.')
+      setPasswordMessage('')
+      return
+    }
+
+    try {
+      setIsSavingPassword(true)
+      setPasswordError('')
+      setPasswordMessage('')
+
+      const { error: updateError } = await supabase.auth.updateUser({ password })
+
+      if (updateError) {
+        setPasswordError(updateError.message)
+        return
+      }
+
+      setPassword('')
+      setConfirmPassword('')
+      setPasswordMessage('Password updated successfully.')
+      setTimeout(() => setPasswordMessage(''), 3000)
+    } catch (err) {
+      setPasswordError(getErrorMessage(err, 'Failed to update password'))
+    } finally {
+      setIsSavingPassword(false)
     }
   }
 
@@ -288,7 +338,55 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <section className="space-y-3">
+      <Card>
+        <CardContent className="space-y-5 pt-4 sm:pt-5">
+          <div>
+            <h2 className="text-lg font-bold text-slate-950">Change password</h2>
+            <p className="text-sm leading-6 text-slate-600">
+              Update your password to keep your account secure.
+            </p>
+          </div>
+
+          <form className="space-y-4" onSubmit={handleChangePassword}>
+            {passwordError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{passwordError}</p> : null}
+            {passwordMessage ? <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{passwordMessage}</p> : null}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>New password</span>
+                <PasswordInput
+                  id="profile-new-password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter a new password"
+                  disabled={isSavingPassword}
+                />
+              </label>
+              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <span>Confirm new password</span>
+                <PasswordInput
+                  id="profile-confirm-password"
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter the new password"
+                  disabled={isSavingPassword}
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSavingPassword}>
+                <KeyRound size={17} aria-hidden="true" />
+                {isSavingPassword ? 'Updating...' : 'Update password'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-slate-950">My clubs</h2>
           <span className="text-sm font-semibold text-slate-500">{clubs.length}</span>

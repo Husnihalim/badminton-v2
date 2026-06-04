@@ -18,5 +18,5 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-5 pt-0 sm:p-6 sm:pt-0', className)} {...props} />
+  return <div className={cn('p-5 sm:p-6 [&:not(:first-child)]:pt-0', className)} {...props} />
 }

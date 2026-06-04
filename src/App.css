@@ -19,7 +19,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -434,7 +434,7 @@
 
 .hero-banner,
 .section-card {
-  margin-bottom: 18px;
+  margin-bottom: 24px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
@@ -525,7 +525,7 @@
 .trust-strip,
 .grid-2 {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .preview-card,
@@ -543,7 +543,7 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
-  padding: 16px;
+  padding: 20px;
   box-shadow: var(--shadow);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -882,6 +882,21 @@
   .trust-strip,
   .grid-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .preview-card,
+  .marketplace-card,
+  .listing-card,
+  .analysis-card,
+  .member-card,
+  .event-card,
+  .match-card,
+  .feature-card,
+  .hero-summary,
+  .trust-card,
+  .action-card {
+    padding: 28px;
   }
 
   .modal-overlay {
@@ -1028,4 +1043,41 @@
   border: 2px solid #070a13;
   overflow: hidden;
   background-color: #121824;
+}
+
+/* Light Mode Overrides for Always-Dark Cards and Modals */
+:root:not(.dark) .bg-slate-900,
+:root:not(.dark) .bg-slate-950,
+:root:not(.dark) .bg-emerald-900,
+:root:not(.dark) .bg-emerald-950,
+:root:not(.dark) [class*="bg-slate-900"],
+:root:not(.dark) [class*="bg-slate-950"],
+:root:not(.dark) [class*="bg-emerald-900"],
+:root:not(.dark) [class*="bg-emerald-950"] {
+  --theme-slate-400: #94a3b8 !important;
+  --theme-slate-500: #cbd5e1 !important;
+  --theme-slate-600: #e2e8f0 !important;
+  --theme-slate-700: #f1f5f9 !important;
+  --theme-slate-800: #f8fafc !important;
+  --text-muted: #94a3b8 !important;
+  --text: #f8fafc !important;
+  --border: rgba(255, 255, 255, 0.15) !important;
+}
+
+:root:not(.dark) .bg-slate-900 *,
+:root:not(.dark) .bg-slate-950 *,
+:root:not(.dark) .bg-emerald-900 *,
+:root:not(.dark) .bg-emerald-950 *,
+:root:not(.dark) [class*="bg-slate-900"] *,
+:root:not(.dark) [class*="bg-slate-950"] *,
+:root:not(.dark) [class*="bg-emerald-900"] *,
+:root:not(.dark) [class*="bg-emerald-950"] * {
+  --theme-slate-400: #94a3b8 !important;
+  --theme-slate-500: #cbd5e1 !important;
+  --theme-slate-600: #e2e8f0 !important;
+  --theme-slate-700: #f1f5f9 !important;
+  --theme-slate-800: #f8fafc !important;
+  --text-muted: #94a3b8 !important;
+  --text: #f8fafc !important;
+  --border: rgba(255, 255, 255, 0.15) !important;
 }

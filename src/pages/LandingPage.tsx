@@ -81,7 +81,7 @@ export default function LandingPage() {
         <TrustCard icon={<Smartphone size={18} />} title="Phone-first" text="Designed for use beside the court, not just on desktop." />
       </div>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <h2 className="text-lg font-bold text-slate-950">Featured clubs</h2>
         {isLoading ? (
           <Card>
@@ -103,7 +103,7 @@ export default function LandingPage() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <h2 className="text-lg font-bold text-slate-950">What the app covers</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <FeatureCard icon={<Users size={18} />} title="Club management" text="Track members, approvals, social links, and club activity." />

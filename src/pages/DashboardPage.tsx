@@ -818,7 +818,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <h2 className="text-lg font-bold text-slate-950">Your clubs</h2>
         {clubs.length ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -874,7 +874,7 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
         {events.length ? (
           <div className="grid gap-3">
@@ -964,7 +964,7 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <h2 className="text-lg font-bold text-slate-950">Recent match results</h2>
         {matches.length ? (
           <div className="grid gap-3">
