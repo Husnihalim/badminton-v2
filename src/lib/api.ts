@@ -380,6 +380,61 @@ export interface UpdateMatchScoreData {
   }[]
 }
 
+async function postMatchAnnouncement(data: CreateMatchData, userId: string) {
+  try {
+    const userIds = data.participants
+      .map((p) => p.user_id)
+      .filter((id): id is string => !!id)
+
+    const profileNamesMap: Record<string, string> = {}
+    if (userIds.length > 0) {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds)
+
+      if (!error && profiles) {
+        profiles.forEach((p) => {
+          profileNamesMap[p.id] = p.name || 'Club member'
+        })
+      }
+    }
+
+    const getPlayerName = (p: typeof data.participants[0]) => {
+      if (p.is_guest) return p.guest_name || 'Guest'
+      if (p.user_id) return profileNamesMap[p.user_id] || 'Club member'
+      return 'Unknown Player'
+    }
+
+    const t1Sets = data.score_sets.filter((s) => s.team1_score > s.team2_score).length
+    const t2Sets = data.score_sets.filter((s) => s.team2_score > s.team1_score).length
+    
+    const winningTeam = t1Sets > t2Sets ? 1 : (t2Sets > t1Sets ? 2 : 1)
+    const losingTeam = winningTeam === 1 ? 2 : 1
+
+    const winners = data.participants.filter((p) => p.team === winningTeam).map(getPlayerName)
+    const losers = data.participants.filter((p) => p.team === losingTeam).map(getPlayerName)
+
+    const winnersText = winners.join(' & ')
+    const losersText = losers.join(' & ')
+
+    const scoreText = data.score_sets
+      .map((s) => `${s.team1_score}-${s.team2_score}`)
+      .join(', ')
+
+    const announcementMessage = `${winnersText} beat ${losersText} (${scoreText})`
+
+    await supabase.from('club_messages').insert({
+      club_id: data.club_id,
+      title: '🎉 Match Completed',
+      message: announcementMessage,
+      created_by: userId,
+    })
+  } catch (err) {
+    console.error('Failed to post match announcement:', err)
+  }
+}
+
 async function createMatchDirect(data: CreateMatchData): Promise<Match | null> {
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -441,6 +496,8 @@ async function createMatchDirect(data: CreateMatchData): Promise<Match | null> {
     throw new Error(getErrorMessage(scoreError, 'Failed to create match score sets'))
   }
 
+  await postMatchAnnouncement(data, user.id)
+
   return match as Match
 }
 
@@ -497,6 +554,8 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
   }).catch((notificationError) => {
     console.error('Error sending score notifications:', notificationError)
   })
+
+  await postMatchAnnouncement(data, user.id)
 
   return createdMatch
 }

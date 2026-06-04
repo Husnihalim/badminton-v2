@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS match_reactions (
 
 ALTER TABLE match_reactions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Reactions viewable by active club members" ON match_reactions;
 CREATE POLICY "Reactions viewable by active club members"
     ON match_reactions FOR SELECT
     TO authenticated
@@ -25,6 +26,7 @@ CREATE POLICY "Reactions viewable by active club members"
         )
     );
 
+DROP POLICY IF EXISTS "Users can create their own reactions" ON match_reactions;
 CREATE POLICY "Users can create their own reactions"
     ON match_reactions FOR INSERT
     TO authenticated
@@ -37,10 +39,12 @@ CREATE POLICY "Users can create their own reactions"
         )
     );
 
+DROP POLICY IF EXISTS "Users can delete their own reactions" ON match_reactions;
 CREATE POLICY "Users can delete their own reactions"
     ON match_reactions FOR DELETE
     TO authenticated
     USING (auth.uid() = user_id);
+
 
 -- ============================================
 -- MATCH COMMENTS TABLE
@@ -55,6 +59,7 @@ CREATE TABLE IF NOT EXISTS match_comments (
 
 ALTER TABLE match_comments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Comments viewable by active club members" ON match_comments;
 CREATE POLICY "Comments viewable by active club members"
     ON match_comments FOR SELECT
     TO authenticated
@@ -66,6 +71,7 @@ CREATE POLICY "Comments viewable by active club members"
         )
     );
 
+DROP POLICY IF EXISTS "Users can create their own comments" ON match_comments;
 CREATE POLICY "Users can create their own comments"
     ON match_comments FOR INSERT
     TO authenticated
@@ -78,6 +84,7 @@ CREATE POLICY "Users can create their own comments"
         )
     );
 
+DROP POLICY IF EXISTS "Users or admins can update/delete comments" ON match_comments;
 CREATE POLICY "Users or admins can update/delete comments"
     ON match_comments FOR ALL
     TO authenticated
@@ -92,6 +99,7 @@ CREATE POLICY "Users or admins can update/delete comments"
               AND ms.status = 'active'
         )
     );
+
 
 -- ============================================
 -- ADD TO REALTIME PUBLICATION

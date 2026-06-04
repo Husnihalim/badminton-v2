@@ -59,7 +59,7 @@ import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
-import { Page, PageHeader } from '../components/ui/page'
+import { Page } from '../components/ui/page'
 import { Textarea } from '../components/ui/textarea'
 
 import { MatchScoreboard } from '../components/MatchScoreboard'
@@ -373,10 +373,116 @@ function calculateSessionHighlights(eventMatches: MatchWithDetails[]) {
   }
 }
 
+const BANNER_PRESETS = [
+  { id: 'court_green', name: 'Court Green', gradient: 'bg-gradient-to-r from-emerald-600 to-emerald-800' },
+  { id: 'court_blue', name: 'Court Blue', gradient: 'bg-gradient-to-r from-sky-600 to-indigo-800' },
+  { id: 'dark_elite', name: 'Dark Elite', gradient: 'bg-gradient-to-r from-slate-800 to-slate-950' },
+  { id: 'neon_arena', name: 'Neon Arena', gradient: 'bg-gradient-to-r from-fuchsia-700 to-violet-900' },
+]
+
+const THEME_MAP: Record<string, {
+  bg: string
+  bgHover: string
+  bgLight: string
+  text: string
+  textDark: string
+  textLight: string
+  border: string
+  borderLight: string
+  ring: string
+  ringFocus: string
+}> = {
+  emerald: {
+    bg: 'bg-emerald-600',
+    bgHover: 'hover:bg-emerald-700',
+    bgLight: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    textDark: 'text-emerald-800',
+    textLight: 'text-emerald-405', // using emerald-400 placeholder
+    border: 'border-emerald-500',
+    borderLight: 'border-emerald-200',
+    ring: 'ring-emerald-600 focus-visible:ring-emerald-500',
+    ringFocus: 'focus:ring-emerald-600 focus:border-emerald-600',
+  },
+  indigo: {
+    bg: 'bg-indigo-600',
+    bgHover: 'hover:bg-indigo-700',
+    bgLight: 'bg-indigo-50',
+    text: 'text-indigo-700',
+    textDark: 'text-indigo-800',
+    textLight: 'text-indigo-400',
+    border: 'border-indigo-500',
+    borderLight: 'border-indigo-200',
+    ring: 'ring-indigo-600 focus-visible:ring-indigo-500',
+    ringFocus: 'focus:ring-indigo-600 focus:border-indigo-600',
+  },
+  violet: {
+    bg: 'bg-violet-600',
+    bgHover: 'hover:bg-violet-700',
+    bgLight: 'bg-violet-50',
+    text: 'text-violet-700',
+    textDark: 'text-violet-800',
+    textLight: 'text-violet-400',
+    border: 'border-violet-500',
+    borderLight: 'border-violet-200',
+    ring: 'ring-violet-600 focus-visible:ring-violet-500',
+    ringFocus: 'focus:ring-violet-600 focus:border-violet-600',
+  },
+  amber: {
+    bg: 'bg-amber-600',
+    bgHover: 'hover:bg-amber-700',
+    bgLight: 'bg-amber-50',
+    text: 'text-amber-700',
+    textDark: 'text-amber-800',
+    textLight: 'text-amber-400',
+    border: 'border-amber-500',
+    borderLight: 'border-amber-200',
+    ring: 'ring-amber-600 focus-visible:ring-amber-500',
+    ringFocus: 'focus:ring-amber-600 focus:border-amber-600',
+  },
+  rose: {
+    bg: 'bg-rose-600',
+    bgHover: 'hover:bg-rose-700',
+    bgLight: 'bg-rose-50',
+    text: 'text-rose-700',
+    textDark: 'text-rose-800',
+    textLight: 'text-rose-400',
+    border: 'border-rose-500',
+    borderLight: 'border-rose-200',
+    ring: 'ring-rose-600 focus-visible:ring-rose-500',
+    ringFocus: 'focus:ring-rose-600 focus:border-rose-600',
+  },
+  sky: {
+    bg: 'bg-sky-600',
+    bgHover: 'hover:bg-sky-700',
+    bgLight: 'bg-sky-50',
+    text: 'text-sky-700',
+    textDark: 'text-sky-800',
+    textLight: 'text-sky-400',
+    border: 'border-sky-500',
+    borderLight: 'border-sky-200',
+    ring: 'ring-sky-600 focus-visible:ring-sky-500',
+    ringFocus: 'focus:ring-sky-600 focus:border-sky-600',
+  },
+}
+
 export default function ClubHomePage() {
   const { clubId } = useParams()
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
+
+  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
+
+  const toggleExpand = (id: string, isLatest: boolean) => {
+    setExpandedMessages(prev => {
+      const current = isLatest ? (prev[id] !== false) : !!prev[id];
+      return {
+        ...prev,
+        [id]: !current
+      };
+    });
+  }
+
   
   const [club, setClub] = useState<Club | null>(null)
   const [members, setMembers] = useState<Membership[]>([])
@@ -1128,7 +1234,7 @@ export default function ClubHomePage() {
         {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
         <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
           <div className="flex flex-wrap gap-2">
-            <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
+            <Badge className={`border-${theme.borderLight} ${theme.bgLight} ${theme.textDark}`}>{acceptedRsvps.length} accepted</Badge>
             <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
             <Badge className="border-slate-200 bg-slate-50 text-slate-700">{rejectedRsvps.length} rejected</Badge>
           </div>
@@ -1176,7 +1282,7 @@ export default function ClubHomePage() {
                     {cost > 0 && (
                       <div className="col-span-2 border-t border-slate-100 pt-1.5 mt-0.5 flex justify-between items-center text-xs">
                         <span>💵 <span className="font-bold text-slate-900">Revenue:</span></span>
-                        <span className="font-bold text-emerald-700">RM {collectedAmount.toFixed(2)} / RM {expectedAmount.toFixed(2)}</span>
+                        <span className={`font-bold ${theme.text}`}>RM {collectedAmount.toFixed(2)} / RM {expectedAmount.toFixed(2)}</span>
                       </div>
                     )}
                   </div>
@@ -1189,7 +1295,7 @@ export default function ClubHomePage() {
                     placeholder="Search members..."
                     value={rsvpSearchQuery}
                     onChange={(e) => setRsvpSearchQuery(e.target.value)}
-                    className="min-h-9 text-xs flex-1 bg-white border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
+                    className={`min-h-9 text-xs flex-1 bg-white border-slate-200 focus:border-${accent}-600 focus:ring-1 focus:ring-${accent}-600/20`}
                   />
                   {rsvpSearchQuery && (
                     <Button
@@ -1216,7 +1322,7 @@ export default function ClubHomePage() {
                       return (
                         <div key={member.user_id} className="flex items-center justify-between py-2 text-xs gap-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 shrink-0 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] uppercase shadow-sm">
+                            <div className={`w-6 h-6 shrink-0 rounded-full ${theme.bg} text-white flex items-center justify-center font-bold text-[10px] uppercase shadow-sm`}>
                               {member.name ? member.name.slice(0, 2).toUpperCase() : 'M'}
                             </div>
                             <div className="flex flex-col min-w-0">
@@ -1239,7 +1345,7 @@ export default function ClubHomePage() {
                                       handleAdminRsvpUpdate(event.id, member.user_id, val as any, rsvp?.attended, rsvp?.paid)
                                     }
                                   }}
-                                  className="h-7 min-h-7 text-[10px] py-0.5 px-1 border border-slate-200 rounded-md w-20 font-bold bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-slate-200 rounded-md w-20 font-bold bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-500`}
                                 >
                                   {rsvpStatus === 'no_response' && <option value="no_response">Pending</option>}
                                   <option value="going">Going</option>
@@ -1252,7 +1358,7 @@ export default function ClubHomePage() {
                                   type="button"
                                   className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                                     rsvp?.attended
-                                      ? 'bg-emerald-600 border-emerald-600 text-white'
+                                      ? `${theme.bg} ${theme.border} text-white`
                                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                   }`}
                                   onClick={() => handleAdminRsvpUpdate(
@@ -1444,6 +1550,12 @@ export default function ClubHomePage() {
 
   if (pageError || !club) return <Navigate to="/not-found" replace />
 
+  const accent = club.accent_color || 'emerald'
+  const theme = THEME_MAP[accent] || THEME_MAP.emerald
+  const primaryButtonClass = accent !== 'emerald' 
+    ? `${theme.bg} ${theme.bgHover} text-white shadow-none`
+    : ''
+
   const locationQuery = getClubLocationQuery(club)
   const mapUrl = locationQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}` : ''
   const memberCount = members.length || club.membersCount || 0
@@ -1553,60 +1665,126 @@ export default function ClubHomePage() {
         </div>
       ) : null}
 
-      <PageHeader
-        eyebrow="Club"
-        title={club.name}
-        description={club.description || 'Club workspace for events, members, scores, and activity.'}
-        actions={
-          <>
-            {canJoin ? (
-              <Button onClick={handleJoinClub}>
-                <UserPlus size={17} aria-hidden="true" />
-                Request to join
-              </Button>
-            ) : null}
-            {isAdmin ? (
-              <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
-                <Settings size={17} aria-hidden="true" />
-                Settings
-              </Button>
-            ) : null}
-          </>
-        }
-      />
+      {/* Sleek Banner Cover Header */}
+      <div className="relative overflow-hidden rounded-2xl shadow-sm border border-slate-200 bg-white">
+        {/* Banner Image / Gradient */}
+        <div 
+          className={`h-40 sm:h-52 w-full relative ${
+            club.banner_url 
+              ? 'bg-cover bg-center' 
+              : BANNER_PRESETS.find(p => p.id === club.banner_preset)?.gradient || 'bg-gradient-to-r from-emerald-600 to-emerald-800'
+          }`}
+          style={club.banner_url ? { backgroundImage: `url(${club.banner_url})` } : undefined}
+        >
+          {/* Subtle overlay for contrast */}
+          <div className="absolute inset-0 bg-black/10" />
+        </div>
 
-      <Card>
-        <CardContent className="space-y-4 pt-4 sm:pt-5">
-          <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-            {club.location ? <span className="inline-flex items-center gap-1"><MapPin size={15} aria-hidden="true" />{club.location}</span> : null}
-            {club.city ? <span>{club.city}</span> : null}
-            <span className="inline-flex items-center gap-1"><Users size={15} aria-hidden="true" />{memberCount} members</span>
-            {myMembership?.status === 'active' ? <Badge>{myMembership.role}</Badge> : null}
-            {isAdmin ? <Badge className="border-blue-200 bg-blue-50 text-blue-800">Admin</Badge> : null}
+        {/* Header content overlay / details */}
+        <div className="relative px-4 pb-6 pt-0 sm:px-6">
+          {/* Logo container overlapping the banner */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-12 sm:-mt-16 mb-4 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4 min-w-0">
+              {/* Floating Logo */}
+              <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-full ring-4 ring-white bg-slate-100 flex items-center justify-center overflow-hidden shadow-md shrink-0">
+                {club.logo_url ? (
+                  <img 
+                    src={club.logo_url} 
+                    alt={`${club.name} logo`} 
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className={`h-full w-full flex items-center justify-center text-3xl sm:text-4xl font-black text-white ${theme.bg}`}>
+                    {club.name.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              {/* Title & Metadata */}
+              <div className="min-w-0 pb-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${theme.text}`}>Club Workspace</span>
+                  {myMembership?.status === 'active' ? (
+                    <Badge className={`${theme.bgLight} ${theme.textDark} border-${accent}-200 capitalize font-bold text-[10px]`}>
+                      {myMembership.role}
+                    </Badge>
+                  ) : null}
+                  {isAdmin ? <Badge className="border-blue-200 bg-blue-50 text-blue-800 font-bold text-[10px]">Admin</Badge> : null}
+                </div>
+                <h1 className="text-xl sm:text-2xl font-black leading-tight text-slate-950 mt-1 truncate">{club.name}</h1>
+                <p className="mt-1 text-xs sm:text-sm text-slate-600 line-clamp-2 max-w-xl">
+                  {club.description || 'Club workspace for events, members, scores, and activity.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex shrink-0 flex-wrap gap-2 items-center sm:pb-1">
+              {canJoin ? (
+                <Button onClick={handleJoinClub} className={primaryButtonClass}>
+                  <UserPlus size={17} aria-hidden="true" />
+                  Request to join
+                </Button>
+              ) : null}
+              {isAdmin ? (
+                <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)} className="hover:bg-slate-50">
+                  <Settings size={17} aria-hidden="true" />
+                  Settings
+                </Button>
+              ) : null}
+            </div>
           </div>
+
+          <hr className="border-slate-100 my-4" />
+
+          {/* Quick Stats Bar */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-650">
+            {club.location ? (
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin size={16} className="text-slate-400" aria-hidden="true" />
+                {club.location}
+              </span>
+            ) : null}
+            {club.city ? (
+              <span className="inline-flex items-center gap-1 text-slate-500">
+                ({club.city})
+              </span>
+            ) : null}
+            <span className="inline-flex items-center gap-1.5">
+              <Users size={16} className="text-slate-400" aria-hidden="true" />
+              <strong>{memberCount}</strong> members
+            </span>
+          </div>
+
           {locationQuery ? (
-            <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div className="mt-4 grid gap-2 rounded-lg border border-slate-150 bg-slate-50/50 p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
               <p className="min-w-0">
                 Base location: <strong className="break-words text-slate-950">{locationQuery}</strong>
               </p>
-              <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50" href={mapUrl} target="_blank" rel="noreferrer">
-                <ExternalLink size={16} aria-hidden="true" />
+              <a 
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-50 shadow-sm" 
+                href={mapUrl} 
+                target="_blank" 
+                rel="noreferrer"
+              >
+                <ExternalLink size={14} aria-hidden="true" />
                 Open in Maps
               </a>
             </div>
           ) : null}
-          {isAdmin ? (
+
+          {isAdmin && (
             club.invite_code ? (
-              <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-650 sm:grid-cols-[1fr_auto] sm:items-center">
                 <p className="min-w-0">
                   Invite link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
                 </p>
                 <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink}>
-                  Copy
+                  Copy Link
                 </Button>
               </div>
             ) : (
-              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-650">
                 <p className="text-slate-900">No invite link is available yet.</p>
                 <p>Generate one now so members and guests can join directly.</p>
                 <Button type="button" size="sm" variant="secondary" onClick={handleGenerateInviteLink} disabled={isSecondaryLoading}>
@@ -1614,9 +1792,33 @@ export default function ClubHomePage() {
                 </Button>
               </div>
             )
-          ) : null}
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Pinned Noticeboard Announcement */}
+      {club.announcement ? (
+        <div className="rounded-2xl border border-amber-250 bg-amber-50/60 p-4 shadow-sm">
+          <div className="flex gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-amber-700 shadow-sm border border-amber-200">
+              <Megaphone size={18} aria-hidden="true" />
+            </span>
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <h3 className="text-sm font-bold text-amber-900">Pinned Announcement</h3>
+                {club.announcement_updated_at ? (
+                  <span className="text-xs text-amber-600">
+                    Updated {new Date(club.announcement_updated_at).toLocaleDateString()}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-2 text-sm text-amber-850 leading-relaxed whitespace-pre-wrap">
+                {club.announcement}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isAdmin ? (
         <Card className="border-blue-200 bg-blue-50/60">
@@ -1700,38 +1902,62 @@ export default function ClubHomePage() {
 
           {announcementItems.length ? (
             <div className="space-y-3">
-              {announcementItems.map((item) => (
-                <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm">
-                        <Megaphone size={18} aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-slate-950">{item.actor}</p>
-                          <Badge className="border-blue-200 bg-blue-50 text-blue-800">Announcement</Badge>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
-                        <div className="mt-3 space-y-1">
-                          <p className="font-bold text-slate-950">{item.title}</p>
-                          <p className="text-sm leading-6 text-slate-600">{item.body}</p>
+              {announcementItems.map((item, index) => {
+                const isLatest = index === 0
+                const isExpanded = isLatest 
+                  ? (expandedMessages[item.id] !== false) 
+                  : !!expandedMessages[item.id]
+
+                return (
+                  <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 hover:bg-slate-50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div 
+                        className="flex min-w-0 items-start gap-3 cursor-pointer flex-1"
+                        onClick={() => toggleExpand(item.id, isLatest)}
+                      >
+                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white ${theme.text} shadow-sm`}>
+                          <Megaphone size={18} aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-950">{item.actor}</p>
+                            <Badge className="border-blue-200 bg-blue-50 text-blue-800 text-[10px]">Announcement</Badge>
+                            <span className="text-[10px] text-slate-400">
+                              {isExpanded ? 'Click to collapse' : 'Click to expand'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-slate-950">{item.title}</p>
+                              <span className="text-slate-400">
+                                <ChevronRight className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} size={16} />
+                              </span>
+                            </div>
+                            
+                            {isExpanded && (
+                              <p className="mt-2 text-sm leading-6 text-slate-600 bg-white/75 rounded-lg p-2.5 border border-slate-100 whitespace-pre-wrap">
+                                {item.body}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
+
+                      {isAdmin ? (
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col lg:flex-row shrink-0">
+                          <Button type="button" size="sm" variant="secondary" className="min-h-9 h-9" onClick={(e) => { e.stopPropagation(); openEditMessageModal(item.message); }}>
+                            Edit
+                          </Button>
+                          <Button type="button" size="sm" variant="danger" className="min-h-9 h-9" onClick={(e) => { e.stopPropagation(); handleDeleteMessage(item.message); }}>
+                            Delete
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
-                    {isAdmin ? (
-                      <div className="grid grid-cols-2 gap-2 sm:flex">
-                        <Button type="button" size="sm" variant="secondary" onClick={() => openEditMessageModal(item.message)}>
-                          Edit
-                        </Button>
-                        <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteMessage(item.message)}>
-                          Delete
-                        </Button>
-                      </div>
-                    ) : null}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
@@ -1847,12 +2073,12 @@ export default function ClubHomePage() {
                           : 'text-slate-400 bg-slate-50/50 border-slate-100'
                       } ${
                         isSelected 
-                          ? 'ring-2 ring-emerald-600 bg-emerald-50/20 border-emerald-500' 
+                          ? `ring-2 ${theme.ring} ${theme.bgLight}/20 ${theme.border}` 
                           : 'hover:bg-slate-50'
                       }`}
                     >
                       <span className={`text-xs font-bold ${
-                        isToday ? 'bg-emerald-600 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold' : ''
+                        isToday ? `${theme.bg} text-white rounded-full w-5 h-5 flex items-center justify-center font-bold` : ''
                       }`}>
                         {cell.day}
                       </span>
@@ -1862,7 +2088,7 @@ export default function ClubHomePage() {
                             <span 
                               key={i} 
                               className={`w-1.5 h-1.5 rounded-full ${
-                                isSelected ? 'bg-emerald-600' : 'bg-slate-400'
+                                isSelected ? theme.bg : 'bg-slate-400'
                               }`} 
                             />
                           ))}
@@ -2048,7 +2274,7 @@ export default function ClubHomePage() {
                   onClick={() => setSortBy('elo')}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                     sortBy === 'elo'
-                      ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
+                      ? `bg-white ${theme.text} shadow-sm border border-slate-200/50`
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -2059,7 +2285,7 @@ export default function ClubHomePage() {
                   onClick={() => setSortBy('win-rate')}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                     sortBy === 'win-rate'
-                      ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
+                      ? `bg-white ${theme.text} shadow-sm border border-slate-200/50`
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -2079,7 +2305,7 @@ export default function ClubHomePage() {
                     onClick={() => setTimeframe(tab.id)}
                     className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                       timeframe === tab.id
-                        ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
+                        ? `bg-white ${theme.text} shadow-sm border border-slate-200/50`
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
@@ -2097,7 +2323,7 @@ export default function ClubHomePage() {
                         setTimeframe(e.target.value)
                       }
                     }}
-                    className="min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-white text-slate-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                    className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-white text-slate-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
                   >
                     <option value="">🎯 Filter by Session</option>
                     {events
@@ -2126,7 +2352,7 @@ export default function ClubHomePage() {
                       <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">Weekly MVP</span>
                       <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
                         {m?.user_id ? (
-                          <Link to={`/member/${m.user_id}`} className="hover:underline text-emerald-700 dark:text-emerald-400">
+                          <Link to={`/member/${m.user_id}`} className={`hover:underline ${theme.text} dark:${theme.textLight}`}>
                             {mvp.name}
                           </Link>
                         ) : (
@@ -2152,7 +2378,7 @@ export default function ClubHomePage() {
                       <span className="text-[10px] font-extrabold text-orange-705 dark:text-orange-400 uppercase tracking-wider block">Streak Star</span>
                       <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
                         {m?.user_id ? (
-                          <Link to={`/member/${m.user_id}`} className="hover:underline text-emerald-700 dark:text-emerald-400">
+                          <Link to={`/member/${m.user_id}`} className={`hover:underline ${theme.text} dark:${theme.textLight}`}>
                             {streakStar.name}
                           </Link>
                         ) : (
@@ -2172,13 +2398,13 @@ export default function ClubHomePage() {
                 const resilience = weeklyHighlights.resilience
                 const m = members.find(mem => mem.name?.toLowerCase() === resilience.name.toLowerCase())
                 return (
-                  <div className="relative overflow-hidden rounded-lg border border-emerald-250 bg-emerald-500/5 dark:bg-emerald-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]">
+                  <div className={`relative overflow-hidden rounded-lg border border-${accent}-250 bg-${accent}-500/5 dark:bg-${accent}-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]`}>
                     <div className="absolute top-2 right-2 text-sm">💪</div>
                     <div>
-                      <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">Resilience</span>
+                      <span className={`text-[10px] font-extrabold ${theme.text} dark:${theme.textLight} uppercase tracking-wider block`}>Resilience</span>
                       <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
                         {m?.user_id ? (
-                          <Link to={`/member/${m.user_id}`} className="hover:underline text-emerald-700 dark:text-emerald-400">
+                          <Link to={`/member/${m.user_id}`} className={`hover:underline ${theme.text} dark:${theme.textLight}`}>
                             {resilience.name}
                           </Link>
                         ) : (
@@ -2186,7 +2412,7 @@ export default function ClubHomePage() {
                         )}
                       </h4>
                     </div>
-                    <div className="mt-2 flex items-center justify-between text-xs font-bold text-emerald-750 dark:text-emerald-400">
+                    <div className={`mt-2 flex items-center justify-between text-xs font-bold text-${accent}-750 dark:${theme.textLight}`}>
                       <span>{resilience.games} Matches</span>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">({resilience.wins}W-{resilience.losses}L)</span>
                     </div>
@@ -2215,7 +2441,7 @@ export default function ClubHomePage() {
                           {(() => {
                             const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
                             return match?.user_id ? (
-                              <Link to={`/member/${match.user_id}`} className="truncate font-semibold hover:underline text-emerald-700">
+                              <Link to={`/member/${match.user_id}`} className={`truncate font-semibold hover:underline ${theme.text}`}>
                                 {player.name}
                               </Link>
                             ) : (
@@ -2225,7 +2451,7 @@ export default function ClubHomePage() {
                           {user && !isMe && (
                             <Link
                               to={`/dashboard?rival=${player.name}`}
-                              className="inline-flex items-center gap-0.5 text-[10px] font-extrabold text-emerald-750 hover:text-emerald-850 hover:underline shrink-0 ml-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm"
+                              className={`inline-flex items-center gap-0.5 text-[10px] font-extrabold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0 ml-1 bg-${accent}-50 px-1.5 py-0.5 rounded border border-${accent}-100 shadow-sm`}
                               title={`Compare Head-to-Head with ${player.name}`}
                             >
                               ⚔️ H2H
@@ -2235,7 +2461,7 @@ export default function ClubHomePage() {
                             const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
                             const elo = match?.elo_rating || 1200
                             return (
-                              <Badge className="border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 gap-0.5 font-extrabold shadow-sm shrink-0">
+                              <Badge className={`border-${accent}-200 dark:border-${accent}-900 bg-${accent}-50 dark:bg-${accent}-950/30 text-${accent}-800 dark:text-${accent}-400 gap-0.5 font-extrabold shadow-sm shrink-0`}>
                                 ⚡ {elo} Elo
                               </Badge>
                             )
@@ -2337,7 +2563,7 @@ export default function ClubHomePage() {
             <CardContent className="space-y-4 pt-4 sm:pt-5">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-slate-950">Members</h2>
-                <Link to={`/club/${clubId}/members`} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                <Link to={`/club/${clubId}/members`} className={`inline-flex items-center gap-1 text-sm font-semibold ${theme.text}`}>
                   View all <ArrowRight size={15} aria-hidden="true" />
                 </Link>
               </div>
@@ -2350,7 +2576,7 @@ export default function ClubHomePage() {
                       <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white shadow-sm hover:border-slate-350 transition">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="min-w-0 truncate font-semibold text-slate-950">
-                            <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
+                            <Link to={`/member/${member.user_id}`} className={`hover:underline ${theme.text}`}>
                               {member.name || 'Unknown member'}
                             </Link>
                           </span>
@@ -2359,7 +2585,7 @@ export default function ClubHomePage() {
                         {user && !isCurrentUser && (
                           <Link
                             to={`/dashboard?rival=${member.name}`}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-850 hover:underline shrink-0"
+                            className={`inline-flex items-center gap-1 text-xs font-bold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0`}
                             title={`Compare Head-to-Head with ${member.name}`}
                           >
                             ⚔️ Compare

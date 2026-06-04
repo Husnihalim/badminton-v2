@@ -5,7 +5,7 @@ ALTER TABLE memberships ADD COLUMN IF NOT EXISTS elo_rating INTEGER NOT NULL DEF
 
 -- 2. Create elo_history table
 CREATE TABLE IF NOT EXISTS elo_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     membership_id UUID REFERENCES memberships(id) ON DELETE CASCADE NOT NULL,
     match_id UUID REFERENCES matches(id) ON DELETE CASCADE NOT NULL,
     rating_before INTEGER NOT NULL,
@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS elo_history (
 ALTER TABLE elo_history ENABLE ROW LEVEL SECURITY;
 
 -- Select policy: Viewable by club members
+DROP POLICY IF EXISTS "Elo history viewable by active club members" ON elo_history;
 CREATE POLICY "Elo history viewable by active club members"
     ON elo_history FOR SELECT
     TO authenticated
@@ -29,6 +30,7 @@ CREATE POLICY "Elo history viewable by active club members"
               AND m2.status = 'active'
         )
     );
+
 
 -- 3. PL/pgSQL function to recalculate Club Elo Ratings
 CREATE OR REPLACE FUNCTION public.recalculate_club_elo(p_club_id UUID)
