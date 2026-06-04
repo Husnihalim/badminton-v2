@@ -143,6 +143,82 @@ export default function DashboardPage() {
     }
   }, [selectedRival, allUserMatches, user, comparisonMode])
 
+  const recommendedInsights = useMemo(() => {
+    if (!user || allUserMatches.length === 0) return null
+
+    const partners = new Map<string, { wins: number; matches: number }>()
+    const rivals = new Map<string, { wins: number; matches: number }>()
+
+    allUserMatches.forEach((m) => {
+      const userPart = m.participants.find((p) => p.user_id === user.id)
+      if (!userPart) return
+
+      const scoreSets = m.score_sets || []
+      if (scoreSets.length === 0) return
+
+      const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
+      const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
+      if (team1Sets === team2Sets) return
+
+      const winningTeam = team1Sets > team2Sets ? 1 : 2
+      const isWin = userPart.team === winningTeam
+
+      m.participants.forEach((p) => {
+        const pName = p.name || p.guest_name
+        if (!pName || pName.toLowerCase() === user.name.toLowerCase()) return
+
+        if (userPart.team === p.team) {
+          // Teammate (Partner) in doubles
+          if (m.match_type === 'doubles') {
+            const stats = partners.get(pName) ?? { wins: 0, matches: 0 }
+            stats.matches++
+            if (isWin) stats.wins++
+            partners.set(pName, stats)
+          }
+        } else {
+          // Opponent (Rival)
+          const stats = rivals.get(pName) ?? { wins: 0, matches: 0 }
+          stats.matches++
+          if (isWin) stats.wins++ // User won against this opponent
+          rivals.set(pName, stats)
+        }
+      })
+    })
+
+    // Find best partner: highest win rate (min 2 matches if possible, otherwise 1)
+    const partnersList = Array.from(partners.entries()).map(([name, stats]) => ({
+      name,
+      ...stats,
+      winRate: (stats.wins / stats.matches) * 100,
+    }))
+
+    let bestPartner = null
+    const partnerCandidates = partnersList.filter((p) => p.matches >= 2)
+    const targetPartners = partnerCandidates.length > 0 ? partnerCandidates : partnersList
+    if (targetPartners.length > 0) {
+      bestPartner = [...targetPartners].sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.matches - a.matches)[0]
+    }
+
+    // Find biggest rival: most matches played against
+    const rivalsList = Array.from(rivals.entries()).map(([name, stats]) => ({
+      name,
+      ...stats,
+      winRate: (stats.wins / stats.matches) * 100,
+    }))
+
+    let topRival = null
+    const rivalCandidates = rivalsList.filter((r) => r.matches >= 2)
+    const targetRivals = rivalCandidates.length > 0 ? rivalCandidates : rivalsList
+    if (targetRivals.length > 0) {
+      topRival = [...targetRivals].sort((a, b) => b.matches - a.matches || Math.abs(50 - a.winRate) - Math.abs(50 - b.winRate))[0]
+    }
+
+    return {
+      bestPartner,
+      topRival,
+    }
+  }, [allUserMatches, user])
+
   const loadDashboardData = useCallback(async () => {
     if (!user) return
     setIsLoading(true)
@@ -666,36 +742,79 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Mode Switcher Toggle */}
-        <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1 w-full max-w-xs shadow-sm">
-          <button
-            type="button"
-            className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
-              comparisonMode === 'partner'
-                ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
-                : 'text-slate-600 hover:text-slate-900 font-bold'
-            }`}
-            onClick={() => {
-              setComparisonMode('partner')
-              setSelectedRival('')
-            }}
-          >
-            🤝 Partner Stats
-          </button>
-          <button
-            type="button"
-            className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
-              comparisonMode === 'rival'
-                ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
-                : 'text-slate-600 hover:text-slate-900 font-bold'
-            }`}
-            onClick={() => {
-              setComparisonMode('rival')
-              setSelectedRival('')
-            }}
-          >
-            ⚔️ Rival Stats
-          </button>
+        {/* Mode Switcher Toggle and Recommendations */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1 w-full max-w-xs shadow-sm">
+            <button
+              type="button"
+              className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
+                comparisonMode === 'partner'
+                  ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
+                  : 'text-slate-600 hover:text-slate-900 font-bold'
+              }`}
+              onClick={() => {
+                setComparisonMode('partner')
+                setSelectedRival('')
+              }}
+            >
+              🤝 Partner Stats
+            </button>
+            <button
+              type="button"
+              className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
+                comparisonMode === 'rival'
+                  ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
+                  : 'text-slate-600 hover:text-slate-900 font-bold'
+              }`}
+              onClick={() => {
+                setComparisonMode('rival')
+                setSelectedRival('')
+              }}
+            >
+              ⚔️ Rival Stats
+            </button>
+          </div>
+
+          {/* Quick Recommendations */}
+          {recommendedInsights && (recommendedInsights.bestPartner || recommendedInsights.topRival) && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">Quick recommendations:</span>
+              {recommendedInsights.bestPartner && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComparisonMode('partner')
+                    setSelectedRival(recommendedInsights.bestPartner!.name)
+                  }}
+                  className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
+                    comparisonMode === 'partner' && selectedRival === recommendedInsights.bestPartner.name
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-500/10'
+                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-950'
+                  }`}
+                  title={`Recommended Teammate: ${recommendedInsights.bestPartner.name}`}
+                >
+                  🤝 Teammate: {recommendedInsights.bestPartner.name}
+                </button>
+              )}
+              {recommendedInsights.topRival && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComparisonMode('rival')
+                    setSelectedRival(recommendedInsights.topRival!.name)
+                  }}
+                  className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
+                    comparisonMode === 'rival' && selectedRival === recommendedInsights.topRival.name
+                      ? 'bg-red-50 text-red-700 border-red-300 ring-2 ring-red-500/10'
+                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-950'
+                  }`}
+                  title={`Recommended Opponent: ${recommendedInsights.topRival.name}`}
+                >
+                  ⚔️ Opponent: {recommendedInsights.topRival.name}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">

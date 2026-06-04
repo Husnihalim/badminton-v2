@@ -476,6 +476,41 @@ export default function ClubHomePage() {
     return calculateLeaderboard(filteredMatchesForLeaderboard)
   }, [filteredMatchesForLeaderboard])
 
+  const latestSessionWithMatches = useMemo(() => {
+    if (matches.length === 0) return null
+
+    // Method 1: Find the most recent event that has matches linked to it
+    const sortedEvents = [...events].sort(
+      (a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+    )
+    for (const event of sortedEvents) {
+      const eventMatches = matches.filter((m) => m.event_id === event.id)
+      if (eventMatches.length > 0) {
+        return {
+          title: event.title,
+          date: event.event_date,
+          location: event.location,
+          matches: eventMatches,
+          highlights: calculateSessionHighlights(eventMatches),
+        }
+      }
+    }
+
+    // Method 2: Fallback to the latest match date
+    const sortedMatches = [...matches].sort(
+      (a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime()
+    )
+    const latestDate = sortedMatches[0].match_date
+    const dayMatches = matches.filter((m) => m.match_date === latestDate)
+    return {
+      title: `Match Day (${new Date(latestDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })})`,
+      date: latestDate,
+      location: null,
+      matches: dayMatches,
+      highlights: calculateSessionHighlights(dayMatches),
+    }
+  }, [events, matches])
+
   const closeScoreModal = () => {
     setShowScoreModal(false)
     setEditingMatch(null)
@@ -1843,7 +1878,248 @@ export default function ClubHomePage() {
         </CardContent>
       </Card>
 
+      {/* Latest Session Summary (Full Width) */}
+      {latestSessionWithMatches && (
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <div className="flex flex-col gap-2 border-b border-slate-100 pb-3">
+              <Badge className="w-fit border-emerald-250 bg-emerald-50 text-emerald-800 font-extrabold uppercase tracking-wider text-[10px]">
+                ⭐ Latest Session Summary
+              </Badge>
+              <h2 className="text-xl font-bold text-slate-950">
+                {latestSessionWithMatches.title}
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                📅 {new Date(latestSessionWithMatches.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                {latestSessionWithMatches.location ? ` · 📍 ${latestSessionWithMatches.location}` : ''}
+              </p>
+            </div>
+
+            {/* Quick stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Total Matches', val: latestSessionWithMatches.highlights.stats.totalMatches, emoji: '🎾' },
+                { label: 'Total Points', val: latestSessionWithMatches.highlights.stats.totalPoints, emoji: '🔢' },
+                { label: 'Avg Sets/Match', val: latestSessionWithMatches.highlights.stats.avgSetsPerMatch, emoji: '📊' },
+                { label: 'Avg Points/Set', val: latestSessionWithMatches.highlights.stats.avgPointsPerSet, emoji: '📈' }
+              ].map((stat) => (
+                <div key={stat.label} className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center shadow-sm">
+                  <span className="text-xl mb-0.5 block">{stat.emoji}</span>
+                  <span className="block text-base font-bold text-slate-900">{stat.val}</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{stat.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Highlights Grid */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {/* MVP */}
+              {latestSessionWithMatches.highlights.mvp && (
+                <div className="relative overflow-hidden rounded-xl border border-amber-200 bg-amber-50/20 p-4 shadow-sm">
+                  <div className="absolute top-2 right-2 text-xl">👑</div>
+                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest block">King of the Court</span>
+                  <h4 className="mt-1 text-sm font-extrabold text-slate-900 truncate">{latestSessionWithMatches.highlights.mvp.name}</h4>
+                  <p className="mt-1 text-xs font-semibold text-amber-750">
+                    🔥 {Math.round(latestSessionWithMatches.highlights.mvp.winRate)}% Win Rate ({latestSessionWithMatches.highlights.mvp.wins}W-{latestSessionWithMatches.highlights.mvp.losses}L)
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Point Diff: <span className="font-semibold text-emerald-600">+{latestSessionWithMatches.highlights.mvp.pointDiff}</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Streak Star */}
+              {latestSessionWithMatches.highlights.streakStar && (
+                <div className="relative overflow-hidden rounded-xl border border-orange-200 bg-orange-50/20 p-4 shadow-sm">
+                  <div className="absolute top-2 right-2 text-xl">🔥</div>
+                  <span className="text-[10px] font-bold text-orange-700 uppercase tracking-widest block">Streak Star</span>
+                  <h4 className="mt-1 text-sm font-extrabold text-slate-900 truncate">{latestSessionWithMatches.highlights.streakStar.name}</h4>
+                  <p className="mt-1 text-xs font-semibold text-orange-700">
+                    📈 {latestSessionWithMatches.highlights.streakStar.longestStreak} Win Streak
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Total Wins: <span className="font-semibold text-slate-700">{latestSessionWithMatches.highlights.streakStar.wins}</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Resilience */}
+              {latestSessionWithMatches.highlights.resilience && (
+                <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/20 p-4 shadow-sm">
+                  <div className="absolute top-2 right-2 text-xl">🛠️</div>
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest block">Resilience Award</span>
+                  <h4 className="mt-1 text-sm font-extrabold text-slate-900 truncate">{latestSessionWithMatches.highlights.resilience.name}</h4>
+                  <p className="mt-1 text-xs font-semibold text-emerald-700">
+                    💪 Played {latestSessionWithMatches.highlights.resilience.games} Matches
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Record: {latestSessionWithMatches.highlights.resilience.wins}W - {latestSessionWithMatches.highlights.resilience.losses}L
+                  </p>
+                </div>
+              )}
+
+              {/* Power Duo */}
+              {latestSessionWithMatches.highlights.powerDuo && (
+                <div className="relative overflow-hidden rounded-xl border border-indigo-200 bg-indigo-50/20 p-4 shadow-sm">
+                  <div className="absolute top-2 right-2 text-xl">🤝</div>
+                  <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest block">Power Duo</span>
+                  <h4 className="mt-1 text-sm font-extrabold text-slate-900 truncate" title={latestSessionWithMatches.highlights.powerDuo.names}>
+                    {latestSessionWithMatches.highlights.powerDuo.names}
+                  </h4>
+                  <p className="mt-1 text-xs font-semibold text-indigo-750">
+                    🏆 {Math.round(latestSessionWithMatches.highlights.powerDuo.winRate)}% Win Rate
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Record: {latestSessionWithMatches.highlights.powerDuo.wins}W / {latestSessionWithMatches.highlights.powerDuo.matches}M
+                  </p>
+                </div>
+              )}
+
+              {/* Rivalry */}
+              {latestSessionWithMatches.highlights.rivalry && (
+                <div className="relative overflow-hidden rounded-xl border border-red-200 bg-red-50/20 p-4 shadow-sm">
+                  <div className="absolute top-2 right-2 text-xl">⚔️</div>
+                  <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest block">Night's Rivalry</span>
+                  <h4 className="mt-1 text-sm font-extrabold text-slate-900 truncate" title={latestSessionWithMatches.highlights.rivalry.names}>
+                    {latestSessionWithMatches.highlights.rivalry.names}
+                  </h4>
+                  <p className="mt-1 text-xs font-semibold text-red-700">
+                    💥 Faced Off {latestSessionWithMatches.highlights.rivalry.count} Times
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Most matches played on opposing teams.
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Club Leaderboard (Full Width) */}
+      <Card>
+        <CardContent className="space-y-4 pt-4 sm:pt-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Rankings based on win rate for the selected timeframe.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
+                {[
+                  { id: 'all-time', label: '🏆 All-Time' },
+                  { id: 'week', label: '📅 This Week' },
+                  { id: 'month', label: '📅 This Month' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setTimeframe(tab.id)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
+                      timeframe === tab.id
+                        ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {events.length > 0 && (
+                <div className="relative">
+                  <select
+                    value={['all-time', 'week', 'month'].includes(timeframe) ? '' : timeframe}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setTimeframe(e.target.value)
+                      }
+                    }}
+                    className="min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-white text-slate-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                  >
+                    <option value="">🎯 Filter by Session</option>
+                    {events
+                      .slice()
+                      .reverse()
+                      .map((event) => (
+                        <option key={event.id} value={event.id}>
+                          {event.title}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+          {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
+          {computedLeaderboard.length ? (
+            <div className="space-y-2">
+              {computedLeaderboard.slice(0, 10).map((player, index) => {
+                const streak = playerStreaks.get(player.name)
+                const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
+                const isMe = user && (
+                  user.name?.toLowerCase() === player.name.toLowerCase() ||
+                  user.display_name?.toLowerCase() === player.name.toLowerCase()
+                )
+
+                return (
+                  <div key={player.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {renderRankBadge(index + 1)}
+                          {(() => {
+                            const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
+                            return match?.user_id ? (
+                              <Link to={`/member/${match.user_id}`} className="truncate font-semibold hover:underline text-emerald-700">
+                                {player.name}
+                              </Link>
+                            ) : (
+                              <span className="truncate font-semibold text-slate-950">{player.name}</span>
+                            )
+                          })()}
+                          {user && !isMe && (
+                            <Link
+                              to={`/dashboard?rival=${player.name}`}
+                              className="inline-flex items-center gap-0.5 text-[10px] font-extrabold text-emerald-750 hover:text-emerald-850 hover:underline shrink-0 ml-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm"
+                              title={`Compare Head-to-Head with ${player.name}`}
+                            >
+                              ⚔️ H2H
+                            </Link>
+                          )}
+                          {hasWinStreak ? (
+                            <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 font-extrabold shadow-sm shrink-0">
+                              <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
+                              {streak.count} Hot Run
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                          <span>{player.games} GP</span>
+                          <span>{player.wins}W</span>
+                          <span>{player.losses}L</span>
+                          <span>{player.winPercentage}%</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-slate-950">{player.pointsFor} / {player.pointsAgainst} pts</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+              {isSecondaryLoading ? 'Loading leaderboard...' : 'No matches recorded for this timeframe.'}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Balanced Bottom Grid layout (Recent scores vs stacked Top Pairs/Members) */}
       <div className="grid gap-5 lg:grid-cols-2">
+        {/* Column 1: Recent Scores */}
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
             <h2 className="text-lg font-bold text-slate-950">Recent scores</h2>
@@ -1870,202 +2146,85 @@ export default function ClubHomePage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Rankings based on win rate for the selected timeframe.</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
-                  {[
-                    { id: 'all-time', label: '🏆 All-Time' },
-                    { id: 'week', label: '📅 This Week' },
-                    { id: 'month', label: '📅 This Month' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setTimeframe(tab.id)}
-                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
-                        timeframe === tab.id
-                          ? "bg-white text-emerald-700 shadow-sm border border-slate-200/50"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {events.length > 0 && (
-                  <div className="relative">
-                    <select
-                      value={['all-time', 'week', 'month'].includes(timeframe) ? '' : timeframe}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          setTimeframe(e.target.value)
-                        }
-                      }}
-                      className="min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-white text-slate-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
-                    >
-                      <option value="">🎯 Filter by Session</option>
-                      {events
-                        .slice()
-                        .reverse()
-                        .map((event) => (
-                          <option key={event.id} value={event.id}>
-                            {event.title}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            </div>
-            {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
-            {computedLeaderboard.length ? (
-              <div className="space-y-2">
-                {computedLeaderboard.slice(0, 10).map((player, index) => {
-                  const streak = playerStreaks.get(player.name)
-                  const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
-                  const isMe = user && (
-                    user.name?.toLowerCase() === player.name.toLowerCase() ||
-                    user.display_name?.toLowerCase() === player.name.toLowerCase()
-                  )
-
-                  return (
-                    <div key={player.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            {renderRankBadge(index + 1)}
-                            {(() => {
-                              const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
-                              return match?.user_id ? (
-                                <Link to={`/member/${match.user_id}`} className="truncate font-semibold hover:underline text-emerald-700">
-                                  {player.name}
-                                </Link>
-                              ) : (
-                                <span className="truncate font-semibold text-slate-950">{player.name}</span>
-                              )
-                            })()}
-                            {user && !isMe && (
-                              <Link
-                                to={`/dashboard?rival=${player.name}`}
-                                className="inline-flex items-center gap-0.5 text-[10px] font-extrabold text-emerald-750 hover:text-emerald-850 hover:underline shrink-0 ml-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm"
-                                title={`Compare Head-to-Head with ${player.name}`}
-                              >
-                                ⚔️ H2H
-                              </Link>
-                            )}
-                            {hasWinStreak ? (
-                              <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 font-extrabold shadow-sm shrink-0">
-                                <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
-                                {streak.count} Hot Run
-                              </Badge>
-                            ) : null}
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                            <span>{player.games} GP</span>
-                            <span>{player.wins}W</span>
-                            <span>{player.losses}L</span>
-                            <span>{player.winPercentage}%</span>
-                          </div>
+        {/* Column 2: Top Doubles Pairs & Members stacked */}
+        <div className="space-y-5">
+          {topDoublesPairs.length ? (
+            <Card>
+              <CardContent className="space-y-4 pt-4 sm:pt-5">
+                <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+                  <Trophy size={18} className="text-amber-500 font-bold" />
+                  Top Doubles Pairs
+                </h2>
+                <p className="text-xs text-slate-500">Unbeatable combinations (played at least 2 matches together).</p>
+                <div className="space-y-2">
+                  {topDoublesPairs.map((pair, index) => (
+                    <div key={pair.names} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-extrabold text-slate-500">#{index + 1}</span>
+                          <span className="truncate font-semibold text-slate-950 text-sm">{pair.names}</span>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-semibold text-slate-950">{player.pointsFor} / {player.pointsAgainst} pts</div>
+                        <div className="mt-1 flex gap-2 text-xs text-slate-500">
+                          <span>{pair.matches} Matches</span>
+                          <span>{pair.wins} Wins</span>
+                          <span>{pair.winRate}% Win Rate</span>
                         </div>
                       </div>
+                      <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 font-bold shrink-0">
+                        {pair.wins} - {pair.losses}
+                      </Badge>
                     </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
-                {isSecondaryLoading ? 'Loading leaderboard...' : 'No matches recorded for this timeframe.'}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {topDoublesPairs.length ? (
-        <Card>
-          <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
-              <Trophy size={18} className="text-amber-500 font-bold" />
-              Top Doubles Pairs
-            </h2>
-            <p className="text-xs text-slate-500">Unbeatable combinations (played at least 2 matches together).</p>
-            <div className="space-y-2">
-              {topDoublesPairs.map((pair, index) => (
-                <div key={pair.names} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-extrabold text-slate-500">#{index + 1}</span>
-                      <span className="truncate font-semibold text-slate-950 text-sm">{pair.names}</span>
-                    </div>
-                    <div className="mt-1 flex gap-2 text-xs text-slate-500">
-                      <span>{pair.matches} Matches</span>
-                      <span>{pair.wins} Wins</span>
-                      <span>{pair.winRate}% Win Rate</span>
-                    </div>
-                  </div>
-                  <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 font-bold shrink-0">
-                    {pair.wins} - {pair.losses}
-                  </Badge>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
-      <Card>
-        <CardContent className="space-y-4 pt-4 sm:pt-5">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold text-slate-950">Members</h2>
-            <Link to={`/club/${clubId}/members`} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
-              View all <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-          {sectionErrors.members ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.members}</p> : null}
-          {members.length ? (
-            <div className="space-y-2">
-              {members.slice(0, 5).map((member) => {
-                const isCurrentUser = user && user.id === member.user_id
-                return (
-                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white shadow-sm hover:border-slate-350 transition">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="min-w-0 truncate font-semibold text-slate-950">
-                        <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
-                          {member.name || 'Unknown member'}
-                        </Link>
-                      </span>
-                      <Badge className="text-[9px] bg-slate-50 border-slate-200 text-slate-700 capitalize font-medium">{member.role}</Badge>
-                    </div>
-                    {user && !isCurrentUser && (
-                      <Link
-                        to={`/dashboard?rival=${member.name}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-850 hover:underline shrink-0"
-                        title={`Compare Head-to-Head with ${member.name}`}
-                      >
-                        ⚔️ Compare
-                      </Link>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-650">
-              {isSecondaryLoading ? 'Loading members...' : 'No members yet.'}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          <Card>
+            <CardContent className="space-y-4 pt-4 sm:pt-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-slate-950">Members</h2>
+                <Link to={`/club/${clubId}/members`} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                  View all <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              </div>
+              {sectionErrors.members ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.members}</p> : null}
+              {members.length ? (
+                <div className="space-y-2">
+                  {members.slice(0, 5).map((member) => {
+                    const isCurrentUser = user && user.id === member.user_id
+                    return (
+                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white shadow-sm hover:border-slate-350 transition">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="min-w-0 truncate font-semibold text-slate-950">
+                            <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
+                              {member.name || 'Unknown member'}
+                            </Link>
+                          </span>
+                          <Badge className="text-[9px] bg-slate-50 border-slate-200 text-slate-700 capitalize font-medium">{member.role}</Badge>
+                        </div>
+                        {user && !isCurrentUser && (
+                          <Link
+                            to={`/dashboard?rival=${member.name}`}
+                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-850 hover:underline shrink-0"
+                            title={`Compare Head-to-Head with ${member.name}`}
+                          >
+                            ⚔️ Compare
+                          </Link>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-650">
+                  {isSecondaryLoading ? 'Loading members...' : 'No members yet.'}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {showEventModal && isAdmin ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => { setShowEventModal(false); setEditingEvent(null) }}>
