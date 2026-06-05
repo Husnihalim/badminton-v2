@@ -1442,7 +1442,7 @@ export default function ClubHomePage() {
               No matches recorded yet.
             </div>
           )}
-          {isAdmin ? (
+          {isMember ? (
             <Button
               type="button"
               size="sm"
@@ -2516,7 +2516,21 @@ export default function ClubHomePage() {
         {/* Column 1: Recent Scores */}
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
-            <h2 className="text-lg font-bold text-slate-950">Recent scores</h2>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="text-lg font-bold text-slate-950">Recent scores</h2>
+              {isMember && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="flex items-center justify-center gap-1.5"
+                  onClick={handleCreateScore}
+                >
+                  <ClipboardPenLine size={14} className="text-slate-600" />
+                  Record Score
+                </Button>
+              )}
+            </div>
             {sectionErrors.scores ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.scores}</p> : null}
             {matches.length ? (
               <div className="space-y-3">

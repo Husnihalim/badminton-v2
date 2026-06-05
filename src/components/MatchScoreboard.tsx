@@ -301,6 +301,7 @@ export function MatchScoreboard({
           <span className={`text-[10px] font-medium block truncate ${s.meta}`}>
             {match.sport} • {match.match_type} • {showClubName && match.clubName ? `${match.clubName} • ` : ''}
             {new Date(match.match_date).toLocaleDateString()}
+            {match.recorded_by_profile && ` • Recorded by ${match.recorded_by_profile.display_name || match.recorded_by_profile.name}`}
           </span>
         </div>
 

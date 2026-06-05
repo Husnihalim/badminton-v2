@@ -82,6 +82,7 @@ type MatchQueryRow = Match & {
   score_sets?: ScoreSet[] | null
   match_reactions?: MatchReactionQueryRow[] | null
   match_comments?: MatchCommentQueryRow[] | null
+  recorded_by_profile?: ProfileSummary | null
 }
 
 type ClubMessageProfileRow = ClubMessage & {
@@ -743,6 +744,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
     .from('matches')
     .select(`
       *,
+      recorded_by_profile:profiles!matches_recorded_by_profiles_fkey(name, display_name),
       match_participants(*, profiles(name, display_name)),
       score_sets(*),
       match_reactions(*, profiles(name, display_name)),
@@ -779,6 +781,12 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
         score_sets: (match.score_sets || []) as ScoreSet[],
         reactions,
         comments,
+        recorded_by_profile: match.recorded_by_profile
+          ? {
+              name: match.recorded_by_profile.name,
+              display_name: match.recorded_by_profile.display_name,
+            }
+          : null,
       }
     }
   )

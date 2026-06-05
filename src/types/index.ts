@@ -5,6 +5,7 @@ export interface User {
   name: string
   email: string
   role: UserRole
+  wants_create_club?: boolean | null
   display_name?: string | null
   phone?: string | null
   city?: string | null
@@ -159,6 +160,10 @@ export interface MatchWithDetails extends Match {
   comments?: MatchComment[]
   // Joined fields
   clubName?: string
+  recorded_by_profile?: {
+    name?: string | null
+    display_name?: string | null
+  } | null
 }
 
 export interface AnalyticsCard {
