@@ -49,17 +49,18 @@ export default function RegisterPage() {
       setError('')
       setSuccessMessage('')
 
-      const result = await register(email, name, password, getInviteTokenFromRedirect(targetRedirect))
+      const result = await register(email, name, password, getInviteTokenFromRedirect(targetRedirect), wantCreateClub, targetRedirect)
       if (!result.success) {
         setError(result.error || 'Could not create account. Please try again.')
         return
       }
       if (result.emailVerificationRequired) {
-        window.localStorage.setItem('kelabsukan.postLoginRedirect', targetRedirect)
         setSuccessMessage(
           targetRedirect.startsWith('/invite/') || targetRedirect.startsWith('/join/')
             ? 'Account created. Please verify your email, then log in. We will continue the invite flow from your link.'
-            : 'Account created. Please verify your email, then log in to continue.'
+            : wantCreateClub
+              ? 'Account created. Please verify your email, then log in. We will open the club registration form for you.'
+              : 'Account created. Please verify your email, then log in to continue.'
         )
         return
       }
@@ -89,7 +90,7 @@ export default function RegisterPage() {
             {successMessage && (
               <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
                 <p>{successMessage}</p>
-                <Link className="inline-flex font-semibold text-emerald-900" to={`/login?redirect=${encodeURIComponent(redirectTo)}`}>
+                <Link className="inline-flex font-semibold text-emerald-900" to={`/login?redirect=${encodeURIComponent(targetRedirect)}`}>
                   Go to login
                 </Link>
               </div>

@@ -64,8 +64,7 @@ export default function LoginPage() {
       } else {
         window.localStorage.removeItem(rememberedEmailKey)
       }
-      window.localStorage.removeItem('kelabsukan.postLoginRedirect')
-      navigate(redirectTo)
+      navigate(result.redirectTo || redirectTo)
     } finally {
       setIsSubmitting(false)
     }

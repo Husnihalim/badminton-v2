@@ -1,17 +1,25 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield, Sun, Moon } from 'lucide-react'
+import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield, Sun, Moon, Users, ChevronDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import NotificationsPanel from './NotificationsPanel'
 import logoImg from '../assets/logo.png'
+import { getMyClubs } from '../lib/api'
+import type { Club } from '../types'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const { unreadCount } = useNotifications()
+  const location = useLocation()
+  
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [clubs, setClubs] = useState<(Club & { role: string })[]>([])
+  const [isClubsDropdownOpen, setIsClubsDropdownOpen] = useState(false)
+  
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const clubsDropdownRef = useRef<HTMLDivElement>(null)
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('theme') || 'light'
@@ -31,11 +39,15 @@ export default function Navbar() {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'))
   }
 
-  // Handle click outside dropdown to close it
+  // Handle click outside dropdowns to close them
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false)
+      }
+      if (clubsDropdownRef.current && !clubsDropdownRef.current.contains(target)) {
+        setIsClubsDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -43,6 +55,29 @@ export default function Navbar() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  // Fetch user's active clubs
+  useEffect(() => {
+    if (!user) {
+      setClubs([])
+      return
+    }
+
+    let isMounted = true
+    getMyClubs()
+      .then((data) => {
+        if (isMounted) {
+          setClubs(data)
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching clubs for navbar:', err)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, location.pathname])
 
   // Helper to extract user initials for the avatar fallback
   const getInitials = (name: string) => {
@@ -80,6 +115,79 @@ export default function Navbar() {
             <LayoutDashboard size={16} aria-hidden="true" />
             Dashboard
           </Link>
+
+          {user && (
+            <>
+              {clubs.length === 0 ? (
+                <Link className="nav-link" to="/dashboard" aria-label="Find clubs">
+                  <Users size={16} aria-hidden="true" />
+                  Find Clubs
+                </Link>
+              ) : clubs.length === 1 ? (
+                <Link className="nav-link" to={`/club/${clubs[0].id}`} aria-label={`Go to ${clubs[0].name}`}>
+                  <Users size={16} aria-hidden="true" />
+                  <span style={{ 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    whiteSpace: 'nowrap',
+                    maxWidth: '120px'
+                  }}>
+                    {clubs[0].name}
+                  </span>
+                </Link>
+              ) : (
+                <div className="nav-user-container" ref={clubsDropdownRef}>
+                  <button
+                    type="button"
+                    className="nav-link"
+                    onClick={() => setIsClubsDropdownOpen(prev => !prev)}
+                    aria-expanded={isClubsDropdownOpen}
+                    aria-haspopup="true"
+                    style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Users size={16} aria-hidden="true" />
+                    <span>Clubs</span>
+                    <ChevronDown size={14} aria-hidden="true" style={{ 
+                      transform: isClubsDropdownOpen ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s ease'
+                    }} />
+                  </button>
+                  {isClubsDropdownOpen && (
+                    <div className="nav-dropdown-menu" style={{ right: 'auto', left: 0 }}>
+                      {clubs.map((club) => (
+                        <Link
+                          key={club.id}
+                          className="nav-dropdown-item"
+                          to={`/club/${club.id}`}
+                          onClick={() => setIsClubsDropdownOpen(false)}
+                        >
+                          <Users size={15} aria-hidden="true" style={{ flexShrink: 0 }} />
+                          <span style={{ 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis', 
+                            whiteSpace: 'nowrap',
+                            maxWidth: '180px'
+                          }}>
+                            {club.name}
+                          </span>
+                        </Link>
+                      ))}
+                      <div className="nav-dropdown-divider" />
+                      <Link
+                        className="nav-dropdown-item"
+                        to="/dashboard"
+                        onClick={() => setIsClubsDropdownOpen(false)}
+                        style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
+                      >
+                        <LayoutDashboard size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
+                        Find more clubs
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className="nav-links">
           {/* Theme Toggle */}

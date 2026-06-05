@@ -288,7 +288,6 @@ export default function DashboardPage() {
       limit: 4,
     })
   }, [allUserMatches, user])
-
   const filteredDiscoverableClubs = useMemo(() => {
     const query = clubSearchQuery.trim().toLowerCase()
     const clubsToShow = query
