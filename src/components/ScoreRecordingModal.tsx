@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ClipboardPenLine, Plus, X } from 'lucide-react'
 import { createMatch, getClubMembers, updateMatch } from '../lib/api'
 import { getErrorMessage } from '../lib/utils'
@@ -77,6 +77,7 @@ export default function ScoreRecordingModal({
   const [showCelebration, setShowCelebration] = useState(false)
   const [celebrationWinners, setCelebrationWinners] = useState('')
   const [celebrationScore, setCelebrationScore] = useState('')
+  const celebrationTimerRef = useRef<NodeJS.Timeout | number | null>(null)
 
   const loadMembers = useCallback(async () => {
     if (!clubId) return
@@ -298,7 +299,7 @@ export default function ScoreRecordingModal({
           onScoreRecorded?.()
         }, 4000)
         
-        ;(window as any)._celebrationTimer = timer
+        celebrationTimerRef.current = timer
       } else {
         onClose()
         onScoreRecorded?.()
@@ -612,8 +613,8 @@ export default function ScoreRecordingModal({
         <>
           <CelebrationConfetti />
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm animate-fade-in" onClick={() => {
-            if ((window as any)._celebrationTimer) {
-              clearTimeout((window as any)._celebrationTimer)
+            if (celebrationTimerRef.current) {
+              clearTimeout(celebrationTimerRef.current)
             }
             setShowCelebration(false)
             onClose()
@@ -637,8 +638,8 @@ export default function ScoreRecordingModal({
                     type="button"
                     fullWidth
                     onClick={() => {
-                      if ((window as any)._celebrationTimer) {
-                        clearTimeout((window as any)._celebrationTimer)
+                      if (celebrationTimerRef.current) {
+                        clearTimeout(celebrationTimerRef.current)
                       }
                       setShowCelebration(false)
                       onClose()

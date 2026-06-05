@@ -59,6 +59,7 @@ export default function Navbar() {
   // Fetch user's active clubs
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setClubs([])
       return
     }

@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       wh.verify(payload, headers);
     }
 
-    const { mailer, template } = JSON.parse(payload);
+    const { template } = JSON.parse(payload);
     const { email, token, redirect_to } = template.data;
 
     let subject = "Verify your email - KelabSukan";

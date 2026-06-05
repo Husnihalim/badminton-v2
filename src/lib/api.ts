@@ -603,7 +603,8 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
               .select('display_name, name')
               .eq('id', p.user_id)
               .maybeSingle()
-            return (profile as any)?.display_name || (profile as any)?.name || 'Member'
+            const profileData = profile as { display_name?: string | null; name?: string | null } | null
+            return profileData?.display_name || profileData?.name || 'Member'
           }
           return 'Player'
         }))
