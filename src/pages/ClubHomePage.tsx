@@ -21,6 +21,7 @@ import {
   Flame,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import ScorecardShareModal from '../components/ScorecardShareModal'
@@ -545,6 +546,8 @@ export default function ClubHomePage() {
   const [showHighlightsEvent, setShowHighlightsEvent] = useState<ClubEvent | null>(null)
   const [timeframe, setTimeframe] = useState<string>('all-time')
   const [sortBy, setSortBy] = useState<'win-rate' | 'elo'>('elo')
+  const [showAllMatches, setShowAllMatches] = useState(false)
+  const [matchSearchQuery, setMatchSearchQuery] = useState('')
 
   const [eventsViewMode, setEventsViewMode] = useState<'list' | 'calendar'>('list')
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
@@ -1672,6 +1675,15 @@ export default function ClubHomePage() {
     .sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.matches - a.matches)
     .slice(0, 3)
 
+  const filteredMatches = matches.filter((match) => {
+    if (!matchSearchQuery.trim()) return true
+    const query = matchSearchQuery.toLowerCase().trim()
+    return match.participants.some((p) => {
+      const name = p.name || p.guest_name || ''
+      return name.toLowerCase().includes(query)
+    })
+  })
+
   return (
     <Page>
       {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
@@ -2535,17 +2547,50 @@ export default function ClubHomePage() {
             {sectionErrors.scores ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.scores}</p> : null}
             {matches.length ? (
               <div className="space-y-3">
-                {matches.slice(0, 5).map((match) => (
-                  <MatchScoreboard
-                    key={match.id}
-                    match={match}
-                    onShare={setShareMatch}
-                    isAdmin={isAdmin}
-                    onEdit={handleEditMatch}
-                    onDelete={handleDeleteMatch}
-                    showClubName={false}
-                  />
-                ))}
+                {showAllMatches && (
+                  <div className="relative block">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
+                    <Input
+                      type="text"
+                      value={matchSearchQuery}
+                      onChange={(e) => setMatchSearchQuery(e.target.value)}
+                      className="pl-9 text-xs"
+                      placeholder="Search matches by player name..."
+                    />
+                  </div>
+                )}
+                {showAllMatches && filteredMatches.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+                    No matches found matching "{matchSearchQuery}".
+                  </p>
+                ) : (
+                  (showAllMatches ? filteredMatches : matches.slice(0, 5)).map((match) => (
+                    <MatchScoreboard
+                      key={match.id}
+                      match={match}
+                      onShare={setShareMatch}
+                      isAdmin={isAdmin}
+                      onEdit={handleEditMatch}
+                      onDelete={handleDeleteMatch}
+                      showClubName={false}
+                    />
+                  ))
+                )}
+                {matches.length > 5 && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => {
+                      setShowAllMatches(!showAllMatches)
+                      if (showAllMatches) {
+                        setMatchSearchQuery('')
+                      }
+                    }}
+                  >
+                    {showAllMatches ? 'Show Less' : `View All Matches (${matches.length})`}
+                  </Button>
+                )}
               </div>
             ) : (
               <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
