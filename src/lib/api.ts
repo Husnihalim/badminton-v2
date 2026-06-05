@@ -43,6 +43,15 @@ type EventRsvpProfileRow = EventRsvp & {
   events?: ClubEvent | null
 }
 
+type AdminEventRsvpPayload = {
+  event_id: string
+  user_id: string
+  status: 'going' | 'maybe' | 'not_going'
+  updated_at: string
+  attended?: boolean
+  paid?: boolean
+}
+
 type EventClubRow = ClubEvent & {
   clubs?: Pick<Club, 'id' | 'name' | 'description' | 'open_join' | 'approval_required'> | null
 }
@@ -58,6 +67,14 @@ type MatchReactionQueryRow = MatchReaction & {
 
 type MatchCommentQueryRow = MatchComment & {
   profiles?: ProfileSummary | null
+}
+
+type EloHistoryQueryRow = EloHistory & {
+  matches?: {
+    title?: string | null
+    match_date?: string | null
+    created_at?: string | null
+  } | null
 }
 
 type MatchQueryRow = Match & {
@@ -81,6 +98,24 @@ export type ClubLeaderboardRow = {
   pointsAgainst: number
   points: number
   elo_rating?: number
+}
+
+export type InviteJoinResult = {
+  status: 'active' | 'pending'
+  club_id: string
+  membership_id?: string
+  join_request_id?: string
+}
+
+export type SpecificClubInvite = {
+  id: string
+  club_id: string
+  token: string
+  max_uses: number
+  used_count: number
+  expires_at: string | null
+  revoked_at: string | null
+  created_at: string
 }
 
 export async function ensureCurrentUserProfile(): Promise<void> {
@@ -974,7 +1009,7 @@ export async function adminUpdateEventRsvp(
   attended?: boolean,
   paid?: boolean
 ): Promise<EventRsvp | null> {
-  const payload: Record<string, any> = {
+  const payload: AdminEventRsvpPayload = {
     event_id: eventId,
     user_id: userId,
     status,
@@ -1189,7 +1224,6 @@ export async function uploadClubLogo(clubId: string, file: File): Promise<string
     .from('club-logos')
     .upload(filePath, file, {
       cacheControl: '3600',
-      upsert: true,
     })
 
   if (uploadError) {
@@ -1213,7 +1247,6 @@ export async function uploadClubBanner(clubId: string, file: File): Promise<stri
     .from('club-banners')
     .upload(filePath, file, {
       cacheControl: '3600',
-      upsert: true,
     })
 
   if (uploadError) {
@@ -1229,7 +1262,7 @@ export async function uploadClubBanner(clubId: string, file: File): Promise<stri
   return data.publicUrl
 }
 
-export async function joinClubByInviteLinkToken(inviteToken: string): Promise<Membership | null> {
+export async function joinClubByInviteLinkToken(inviteToken: string): Promise<InviteJoinResult | null> {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -1247,7 +1280,7 @@ export async function joinClubByInviteLinkToken(inviteToken: string): Promise<Me
     throw error
   }
 
-  return data as Membership
+  return data as InviteJoinResult
 }
 
 export function buildInvitePath(inviteToken: string): string {
@@ -1273,16 +1306,60 @@ export async function regenerateInviteLink(clubId: string): Promise<string | nul
   return data || null
 }
 
+export async function createSpecificInviteLink(clubId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('create_specific_club_invite_code', {
+    target_club_id: clubId,
+  })
+
+  if (error) {
+    console.error('Error creating specific invite link:', error)
+    throw error
+  }
+
+  return data || null
+}
+
+export async function getSpecificInviteLinks(clubId: string): Promise<SpecificClubInvite[]> {
+  const { data, error } = await supabase
+    .from('club_specific_invites')
+    .select('id, club_id, token, max_uses, used_count, expires_at, revoked_at, created_at')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (error) {
+    console.error('Error fetching specific invite links:', error)
+    throw error
+  }
+
+  return (data as SpecificClubInvite[]) || []
+}
+
+export async function revokeSpecificInviteLink(inviteId: string): Promise<void> {
+  const { error } = await supabase.rpc('revoke_specific_club_invite_code', {
+    target_invite_id: inviteId,
+  })
+
+  if (error) {
+    console.error('Error revoking specific invite link:', error)
+    throw error
+  }
+}
+
 // ============================================
 // MEMBER MANAGEMENT
 // ============================================
 
 export async function updateMemberRole(clubId: string, userId: string, role: 'owner' | 'admin' | 'member'): Promise<void> {
-  const { error } = await supabase
-    .from('memberships')
-    .update({ role } as never)
-    .eq('club_id', clubId)
-    .eq('user_id', userId)
+  if (role === 'owner') {
+    throw new Error('Ownership transfers are not supported here.')
+  }
+
+  const { error } = await supabase.rpc('update_member_role', {
+    target_club_id: clubId,
+    target_user_id: userId,
+    new_role: role,
+  })
 
   if (error) {
     console.error('Error updating member role:', error)
@@ -1916,7 +1993,7 @@ export async function getMemberEloHistory(clubId: string, userId: string): Promi
     return []
   }
 
-  return (data || []).map((row: any) => ({
+  return ((data || []) as unknown as EloHistoryQueryRow[]).map((row) => ({
     id: row.id,
     membership_id: row.membership_id,
     match_id: row.match_id,

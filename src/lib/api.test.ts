@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { getClubMatches, deleteClub, createClub } from './api'
+import { getClubMatches, deleteClub, createClub, updateMemberRole } from './api'
 import { supabase } from './supabase'
 
 // Mock Supabase client
@@ -22,8 +22,8 @@ describe('api.ts - Critical Database Methods', () => {
     vi.clearAllMocks()
     vi.mocked(supabase.from).mockReset()
     vi.mocked(supabase.rpc).mockReset()
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'MOCK_INVITE_CODE', error: null } as any)
-    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null } as any)
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'MOCK_INVITE_CODE', error: null } as never)
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null } as never)
   })
 
 
@@ -82,7 +82,7 @@ describe('api.ts - Critical Database Methods', () => {
         select: vi.fn().mockReturnThis(),
         eq: mockEq,
         order: mockOrder,
-      } as any)
+      } as never)
 
       const result = await getClubMatches('club-1')
 
@@ -112,7 +112,7 @@ describe('api.ts - Critical Database Methods', () => {
       mockFrom.mockReturnValue({
         delete: mockDelete,
         eq: mockEq,
-      } as any)
+      } as never)
 
       await deleteClub('club-to-delete')
 
@@ -136,7 +136,7 @@ describe('api.ts - Critical Database Methods', () => {
         insert: mockInsert,
         select: mockSelect,
         single: mockSingle,
-      } as any)
+      } as never)
 
       const result = await createClub({
         name: 'Ace Smash Club',
@@ -157,6 +157,27 @@ describe('api.ts - Critical Database Methods', () => {
     })
   })
 
+  describe('updateMemberRole', () => {
+    it('uses the hardened update_member_role RPC for admin and member role changes', async () => {
+      const mockRpc = vi.mocked(supabase.rpc)
+      mockRpc.mockResolvedValue({ data: null, error: null } as never)
+
+      await updateMemberRole('club-1', 'user-2', 'admin')
+
+      expect(mockRpc).toHaveBeenCalledWith('update_member_role', {
+        target_club_id: 'club-1',
+        target_user_id: 'user-2',
+        new_role: 'admin',
+      })
+      expect(supabase.from).not.toHaveBeenCalledWith('memberships')
+    })
+
+    it('blocks ownership transfers from the browser role update path', async () => {
+      await expect(updateMemberRole('club-1', 'user-2', 'owner')).rejects.toThrow('Ownership transfers are not supported here.')
+      expect(supabase.rpc).not.toHaveBeenCalledWith('update_member_role', expect.any(Object))
+    })
+  })
+
   describe('createMatch and automated announcement', () => {
     it('creates a match and posts an automated completion announcement to the club message board', async () => {
       const mockRpcMatch = {
@@ -170,7 +191,7 @@ describe('api.ts - Critical Database Methods', () => {
       }
 
       const mockRpc = vi.mocked(supabase.rpc)
-      mockRpc.mockResolvedValue({ data: mockRpcMatch, error: null } as any)
+      mockRpc.mockResolvedValue({ data: mockRpcMatch, error: null } as never)
 
       const mockProfiles = [
         { id: 'user-1', name: 'Alice' },
@@ -186,7 +207,7 @@ describe('api.ts - Critical Database Methods', () => {
       }))
 
       const mockFrom = vi.mocked(supabase.from)
-      mockFrom.mockImplementation((_table: string) => {
+      mockFrom.mockImplementation(() => {
         const chain = {
           select: vi.fn().mockReturnThis(),
           in: mockIn,
@@ -194,7 +215,7 @@ describe('api.ts - Critical Database Methods', () => {
           insert: mockInsert,
           single: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
           maybeSingle: mockMaybeSingle
-        } as any
+        } as never
         return chain
       })
 

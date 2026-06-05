@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useState, useMemo, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity } from 'lucide-react'
+import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Search, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity, UserPlus, Newspaper } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
-import { buildEventShareText, buildEventShareUrl, getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent, getClubLeaderboard, getClubMembers } from '../lib/api'
+import { buildEventShareText, buildEventShareUrl, getClubs, getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent, getClubLeaderboard, getClubMembers, requestJoinClub } from '../lib/api'
 import type { Club, ClubEvent, EventRsvp, MatchWithDetails } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
+import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import RivalryShareModal from '../components/RivalryShareModal'
 import { cn } from '../lib/utils'
 import { MatchScoreboard } from '../components/MatchScoreboard'
+import { MomentCard } from '../components/MomentCard'
+import { buildStoryMomentShareText, generateStoryMoments, type StoryMoment } from '../lib/storyMoments'
 
 type DashboardClub = Club & { role?: string }
 type DashboardEvent = ClubEvent & { clubName?: string }
@@ -37,12 +40,15 @@ export default function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   
   const [clubs, setClubs] = useState<DashboardClub[]>([])
+  const [discoverableClubs, setDiscoverableClubs] = useState<Club[]>([])
   const [events, setEvents] = useState<DashboardEvent[]>([])
   const [matches, setMatches] = useState<DashboardMatch[]>([])
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [shareMatch, setShareMatch] = useState<DashboardMatch | null>(null)
+  const [clubSearchQuery, setClubSearchQuery] = useState('')
+  const [joiningClubId, setJoiningClubId] = useState<string | null>(null)
   
   const [personalStats, setPersonalStats] = useState<{
     matchesPlayed: number
@@ -273,12 +279,46 @@ export default function DashboardPage() {
     }
   }, [allUserMatches, user])
 
+  const storyMoments = useMemo(() => {
+    if (!user) return []
+
+    return generateStoryMoments({
+      user,
+      matches: allUserMatches,
+      limit: 4,
+    })
+  }, [allUserMatches, user])
+
+  const filteredDiscoverableClubs = useMemo(() => {
+    const query = clubSearchQuery.trim().toLowerCase()
+    const clubsToShow = query
+      ? discoverableClubs.filter((club) => {
+          const searchableText = [
+            club.name,
+            club.description,
+            club.city,
+            club.location,
+            ...(club.sport_focus || []),
+          ].filter(Boolean).join(' ').toLowerCase()
+
+          return searchableText.includes(query)
+        })
+      : discoverableClubs
+
+    return clubsToShow.slice(0, query ? 12 : 8)
+  }, [clubSearchQuery, discoverableClubs])
+
   const loadDashboardData = useCallback(async () => {
     if (!user) return
     setIsLoading(true)
     try {
-      const myClubs = await getMyClubs()
+      const [myClubs, platformClubs] = await Promise.all([
+        getMyClubs(),
+        getClubs(),
+      ])
       setClubs(myClubs)
+      const joinedClubIds = new Set(myClubs.map((club) => club.id))
+      setDiscoverableClubs(platformClubs.filter((club) => !joinedClubIds.has(club.id)))
       
       const allEvents: DashboardEvent[] = []
       const allMatches: DashboardMatch[] = []
@@ -567,9 +607,29 @@ export default function DashboardPage() {
     }
   }
 
+  const handleRequestJoinClub = async (club: Club) => {
+    try {
+      setJoiningClubId(club.id)
+      await requestJoinClub(club.id)
+      showToast(`Join request sent to ${club.name}.`, 'success')
+      setDiscoverableClubs((current) => current.filter((item) => item.id !== club.id))
+    } catch (err) {
+      console.error('Error requesting club join from dashboard:', err)
+      showToast(err instanceof Error ? err.message : 'Could not send join request.', 'error')
+    } finally {
+      setJoiningClubId(null)
+    }
+  }
+
   const handleCopyEventShareLink = async (event: DashboardEvent) => {
     await navigator.clipboard.writeText(buildEventShareUrl(event.id))
     showToast('Game day link copied.', 'success')
+  }
+
+  const handleCopyStoryMoment = async (moment: StoryMoment) => {
+    if (!user) return
+    await navigator.clipboard.writeText(buildStoryMomentShareText(moment, user.display_name || user.name))
+    showToast('Story copied with proof.', 'success')
   }
 
   const handleNativeEventShare = async (event: DashboardEvent) => {
@@ -730,6 +790,35 @@ export default function DashboardPage() {
             <span className="text-[10px] text-slate-400">Current Run</span>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-950">
+              <Newspaper size={18} className="text-emerald-700" aria-hidden="true" />
+              My Sports Story
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">Latest proof-backed moments from your recorded matches.</p>
+          </div>
+          {storyMoments.length ? (
+            <Badge className="w-fit border-emerald-200 bg-emerald-50 text-emerald-800">
+              {storyMoments.length} moments
+            </Badge>
+          ) : null}
+        </div>
+
+        {storyMoments.length ? (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {storyMoments.map((moment) => (
+              <MomentCard key={moment.id} moment={moment} onShare={handleCopyStoryMoment} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 p-5 text-center">
+            <p className="text-sm font-semibold text-slate-700">Record a scored match to unlock your first match report.</p>
+          </div>
+        )}
       </section>
 
       {/* Achievements Section */}
@@ -1192,9 +1281,81 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="space-y-3 pt-5 text-center">
               <p className="text-sm text-slate-600">You have not joined any clubs yet.</p>
-              <Link to="/" className="brand-button">
+              <a href="#club-discovery" className="brand-button">
                 Find clubs
-              </Link>
+              </a>
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      <section id="club-discovery" className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-950">Find another club</h2>
+            <p className="text-sm text-slate-600">Search public clubs and request access from your dashboard.</p>
+          </div>
+          <label className="relative block sm:w-80">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
+            <Input
+              value={clubSearchQuery}
+              onChange={(event) => setClubSearchQuery(event.target.value)}
+              className="pl-9"
+              placeholder="Search by club, city, or sport"
+            />
+          </label>
+        </div>
+
+        {filteredDiscoverableClubs.length ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredDiscoverableClubs.map((club) => (
+              <Card key={club.id} className="h-full">
+                <CardContent className="space-y-3 pt-4 sm:pt-5">
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="truncate text-base font-bold text-slate-950">{club.name}</h3>
+                    <p className="line-clamp-2 text-sm leading-6 text-slate-600">{club.description || 'Club workspace for members, sessions, and scores.'}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                    {club.city ? <span>{club.city}</span> : null}
+                    {club.sport_focus?.slice(0, 3).map((sport) => (
+                      <Badge key={sport}>{sport}</Badge>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link to={`/club/${club.id}`}>
+                      <Button variant="secondary" fullWidth>
+                        View
+                      </Button>
+                    </Link>
+                    {club.open_join !== false ? (
+                      <Button
+                        type="button"
+                        fullWidth
+                        onClick={() => handleRequestJoinClub(club)}
+                        disabled={joiningClubId === club.id}
+                      >
+                        <UserPlus size={16} aria-hidden="true" />
+                        {joiningClubId === club.id ? 'Sending...' : 'Join'}
+                      </Button>
+                    ) : (
+                      <Button type="button" variant="secondary" fullWidth disabled>
+                        Invite only
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="space-y-2 pt-5 text-center">
+              <p className="text-sm text-slate-600">
+                {clubSearchQuery.trim() ? 'No clubs match your search.' : 'No other clubs are available right now.'}
+              </p>
+              <Button type="button" variant="secondary" onClick={() => navigate('/profile?create_club=true')}>
+                Create a club
+              </Button>
             </CardContent>
           </Card>
         )}

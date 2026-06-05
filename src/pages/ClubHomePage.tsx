@@ -475,10 +475,14 @@ export default function ClubHomePage() {
 
   useEffect(() => {
     if (searchParams.get('celebrate') === 'true') {
-      setShowCelebrationModal(true)
-      const newParams = new URLSearchParams(searchParams)
-      newParams.delete('celebrate')
-      setSearchParams(newParams, { replace: true })
+      const timeout = window.setTimeout(() => {
+        setShowCelebrationModal(true)
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete('celebrate')
+        setSearchParams(newParams, { replace: true })
+      }, 0)
+
+      return () => window.clearTimeout(timeout)
     }
   }, [searchParams, setSearchParams])
 
@@ -991,7 +995,7 @@ export default function ClubHomePage() {
   const handleCopyInviteLink = async () => {
     if (!inviteUrl) return
     await navigator.clipboard.writeText(inviteUrl)
-    setSuccessMessage('Invite link copied.')
+    setSuccessMessage('General request link copied.')
     setTimeout(() => setSuccessMessage(''), 3000)
   }
 
@@ -1008,7 +1012,7 @@ export default function ClubHomePage() {
       }
 
       setClub((currentClub) => (currentClub ? { ...currentClub, invite_code: newCode } : currentClub))
-      setSuccessMessage('Invite link generated.')
+      setSuccessMessage('General request link generated.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
       console.error('Generate invite link failed:', err)
@@ -1048,13 +1052,13 @@ export default function ClubHomePage() {
     const shareText = [
       `${club.name} club board`,
       club.description,
-      'Join the club to follow messages, announcements, and activity.',
+      'Request access to follow messages, announcements, and activity.',
       inviteUrl,
     ].filter(Boolean).join('\n')
 
     if (!navigator.share) {
       await navigator.clipboard.writeText(inviteUrl)
-      setSuccessMessage('Board link copied.')
+      setSuccessMessage('General request link copied.')
       setTimeout(() => setSuccessMessage(''), 3000)
       return
     }
@@ -1352,8 +1356,8 @@ export default function ClubHomePage() {
                                   value={rsvpStatus}
                                   onChange={(e) => {
                                     const val = e.target.value
-                                    if (val !== 'no_response') {
-                                      handleAdminRsvpUpdate(event.id, member.user_id, val as any, rsvp?.attended, rsvp?.paid)
+                                    if (val === 'going' || val === 'maybe' || val === 'not_going') {
+                                      handleAdminRsvpUpdate(event.id, member.user_id, val, rsvp?.attended, rsvp?.paid)
                                     }
                                   }}
                                   className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-slate-200 rounded-md w-20 font-bold bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-500`}
@@ -1788,7 +1792,7 @@ export default function ClubHomePage() {
             club.invite_code ? (
               <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-650 sm:grid-cols-[1fr_auto] sm:items-center">
                 <p className="min-w-0">
-                  Invite link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
+                  General invite request link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
                 </p>
                 <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink}>
                   Copy Link
@@ -1797,7 +1801,7 @@ export default function ClubHomePage() {
             ) : (
               <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-650">
                 <p className="text-slate-900">No invite link is available yet.</p>
-                <p>Generate one now so members and guests can join directly.</p>
+                <p>Generate a general link so new people can request admin approval.</p>
                 <Button type="button" size="sm" variant="secondary" onClick={handleGenerateInviteLink} disabled={isSecondaryLoading}>
                   Generate invite link
                 </Button>
@@ -2705,7 +2709,7 @@ export default function ClubHomePage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-slate-950">Join requests</h2>
-                  <p className="text-sm text-slate-600">Approve or reject pending member requests.</p>
+                  <p className="text-sm text-slate-600">Approve or reject pending member requests. Email verification is required before approval.</p>
                 </div>
                 <Button type="button" variant="ghost" size="icon" onClick={() => setShowJoinRequestsModal(false)} aria-label="Close">
                   <X size={18} aria-hidden="true" />
@@ -3079,15 +3083,20 @@ export default function ClubHomePage() {
 
 function CelebrationConfetti() {
   const particles = useMemo(() => {
+    const particleValue = (index: number, salt: number) => {
+      const raw = (index * 9301 + salt * 49297 + 233280) % 1000
+      return raw / 1000
+    }
+    const colors = ['#10b981', '#34d399', '#f59e0b', '#fbbf24', '#3b82f6', '#60a5fa', '#ec4899', '#f472b6', '#8b5cf6', '#a78bfa']
+
     return Array.from({ length: 120 }).map((_, i) => {
-      const size = Math.random() * 10 + 6
-      const left = Math.random() * 100
-      const delay = Math.random() * 2
-      const duration = Math.random() * 3 + 2
-      const colors = ['#10b981', '#34d399', '#f59e0b', '#fbbf24', '#3b82f6', '#60a5fa', '#ec4899', '#f472b6', '#8b5cf6', '#a78bfa']
-      const color = colors[Math.floor(Math.random() * colors.length)]
-      const rotation = Math.random() * 360
-      const shape = Math.random() > 0.5 ? 'circle' : 'square'
+      const size = particleValue(i, 1) * 10 + 6
+      const left = particleValue(i, 2) * 100
+      const delay = particleValue(i, 3) * 2
+      const duration = particleValue(i, 4) * 3 + 2
+      const color = colors[Math.floor(particleValue(i, 5) * colors.length)]
+      const rotation = particleValue(i, 6) * 360
+      const shape = particleValue(i, 7) > 0.5 ? 'circle' : 'square'
       return {
         id: i,
         size,

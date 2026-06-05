@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Activity, Flame, MapPin, Percent, Shield, Trophy, UserRound, ChevronLeft } from 'lucide-react'
-import { getProfile, getClubMatches } from '../lib/api'
+import { getProfile, getClubMatches, getClubLeaderboard } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { Club, MatchWithDetails, User } from '../types'
@@ -12,6 +12,22 @@ import { Page } from '../components/ui/page'
 import { cn } from '../lib/utils'
 import { MatchScoreboard } from '../components/MatchScoreboard'
 import ScorecardShareModal from '../components/ScorecardShareModal'
+
+type MemberEloHistoryRow = {
+  id: string
+  rating_before: number
+  rating_after: number
+  created_at: string
+  memberships?: {
+    clubs?: {
+      name?: string | null
+    } | null
+  } | null
+  matches?: {
+    title?: string | null
+    match_date?: string | null
+  } | null
+}
 
 export default function MemberProfilePage() {
   const { userId } = useParams<{ userId: string }>()
@@ -25,7 +41,7 @@ export default function MemberProfilePage() {
   const [error, setError] = useState('')
   const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
   const [clubElos, setClubElos] = useState<Record<string, number>>({})
-  const [eloHistory, setEloHistory] = useState<any[]>([])
+  const [eloHistory, setEloHistory] = useState<MemberEloHistoryRow[]>([])
 
   const [personalStats, setPersonalStats] = useState({
     matchesPlayed: 0,
@@ -108,7 +124,7 @@ export default function MemberProfilePage() {
             if (eloError) {
               console.error('Error fetching Elo history:', eloError)
             } else {
-              setEloHistory(eloData || [])
+              setEloHistory((eloData || []) as unknown as MemberEloHistoryRow[])
             }
           })
 
@@ -116,18 +132,17 @@ export default function MemberProfilePage() {
         await Promise.all(
           userClubs.map(async (club) => {
             try {
-              const [clubMatches, { data: lbData }] = await Promise.all([
+              const [clubMatches, leaderboardRows] = await Promise.all([
                 getClubMatches(club.id),
-                supabase.rpc('get_club_leaderboard', { _club_id: club.id, _limit_num: 100 })
+                getClubLeaderboard(club.id, 100)
               ])
               
               allMatches.push(...clubMatches)
 
               // Build leaderboard map for Giant Slayer calculations
               const lbMap: Record<string, number> = {}
-              if (lbData) {
-                const lbRows = lbData as { name: string }[]
-                lbRows.forEach((row, rIdx) => {
+              if (leaderboardRows.length) {
+                leaderboardRows.forEach((row, rIdx) => {
                   lbMap[row.name.toLowerCase()] = rIdx + 1
                 })
               }

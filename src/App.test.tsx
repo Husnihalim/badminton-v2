@@ -49,7 +49,7 @@ const renderApp = (path = '/') => {
 beforeEach(() => {
   window.localStorage.clear()
   vi.clearAllMocks()
-  vi.mocked(supabase.from).mockImplementation(() => createMockChain() as any)
+  vi.mocked(supabase.from).mockImplementation(() => createMockChain() as never)
 })
 
 describe('KelabSukan App - Core Features', () => {

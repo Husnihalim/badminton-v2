@@ -52,9 +52,9 @@ describe('AuthContext - Security & Role Assignment', () => {
       user_metadata: { name: 'Super Admin' }
     }
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
-      data: { user: mockAuthUser as any, session: {} as any },
+      data: { user: mockAuthUser, session: {} },
       error: null
-    })
+    } as never)
 
     // Setup supabase database profile mock
     const mockProfileRow = {
@@ -74,7 +74,7 @@ describe('AuthContext - Security & Role Assignment', () => {
       select: mockSelect,
       eq: mockEq,
       single: mockSingle
-    } as any)
+    } as never)
 
     render(
       <AuthProvider>
@@ -112,9 +112,9 @@ describe('AuthContext - Security & Role Assignment', () => {
       user_metadata: { name: 'New Member' }
     }
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
-      data: { user: mockAuthUser as any, session: {} as any },
+      data: { user: mockAuthUser, session: {} },
       error: null
-    })
+    } as never)
 
     // Database lookup fails (e.g. not created yet or missing)
     const mockSingle = vi.fn().mockResolvedValue({ data: null, error: { message: 'Profile not found' } })
@@ -126,7 +126,7 @@ describe('AuthContext - Security & Role Assignment', () => {
       select: mockSelect,
       eq: mockEq,
       single: mockSingle
-    } as any)
+    } as never)
 
     render(
       <AuthProvider>

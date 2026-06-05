@@ -18,7 +18,7 @@ export default function InviteJoinPage() {
   const normalizedInviteToken = (inviteToken || inviteCode).trim().toUpperCase()
   const { user, isLoading } = useAuth()
   const navigate = useNavigate()
-  const [status, setStatus] = useState<'idle' | 'joining' | 'joined' | 'error'>('idle')
+  const [status, setStatus] = useState<'idle' | 'joining' | 'joined' | 'pending' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -39,12 +39,18 @@ export default function InviteJoinPage() {
         const membership = await joinClubByInviteLinkToken(normalizedInviteToken)
         window.localStorage.removeItem(pendingInviteKey)
         window.localStorage.removeItem(postLoginRedirectKey)
-        setStatus('joined')
-        setMessage('You joined the club from the invite link.')
-        const target = membership?.club_id 
-          ? `/club/${encodeURIComponent(membership.club_id)}?celebrate=true`
-          : '/dashboard'
-        setTimeout(() => navigate(target), 1200)
+        if (membership?.status === 'active') {
+          setStatus('joined')
+          setMessage('You joined the club from a specific invite link.')
+          const target = membership.club_id
+            ? `/club/${encodeURIComponent(membership.club_id)}?celebrate=true`
+            : '/dashboard'
+          setTimeout(() => navigate(target), 1200)
+          return
+        }
+
+        setStatus('pending')
+        setMessage('Join request sent. A club admin will review and approve it.')
       } catch (err) {
         setStatus('error')
         setMessage(err instanceof Error ? err.message : 'Could not join from this invite link.')
@@ -103,12 +109,12 @@ export default function InviteJoinPage() {
         <CardHeader>
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Club invite</p>
           <h1 className="text-2xl font-bold leading-tight text-slate-950">
-            {status === 'joined' ? 'Joined club' : 'Invite link issue'}
+            {status === 'joined' ? 'Joined club' : status === 'pending' ? 'Request sent' : 'Invite link issue'}
           </h1>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className={`rounded-lg border p-3 text-sm ${status === 'joined' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-700'}`}>
-            {status === 'joined' ? <CheckCircle2 className="mr-1 inline" size={16} aria-hidden="true" /> : null}
+          <p className={`rounded-lg border p-3 text-sm ${status === 'joined' || status === 'pending' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-700'}`}>
+            {status === 'joined' || status === 'pending' ? <CheckCircle2 className="mr-1 inline" size={16} aria-hidden="true" /> : null}
             {message}
           </p>
           <Button onClick={() => navigate('/dashboard')} fullWidth>

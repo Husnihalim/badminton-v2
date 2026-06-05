@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette } from 'lucide-react'
+import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette, UserCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { buildInviteUrl, getClub, getMyMembership, regenerateInviteLink, updateClub, uploadClubLogo, uploadClubBanner } from '../lib/api'
+import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite } from '../lib/api'
 import type { Club, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -50,6 +50,9 @@ export default function ClubSettingsPage() {
   const [openJoin, setOpenJoin] = useState(true)
   const [approvalRequired, setApprovalRequired] = useState(true)
   const [inviteToken, setInviteToken] = useState('')
+  const [specificInviteUrl, setSpecificInviteUrl] = useState('')
+  const [specificInvites, setSpecificInvites] = useState<SpecificClubInvite[]>([])
+  const [inviteStatusTime, setInviteStatusTime] = useState(0)
 
   // Custom branding states
   const [logoUrl, setLogoUrl] = useState('')
@@ -94,6 +97,17 @@ export default function ClubSettingsPage() {
       setBannerPreset(clubData.banner_preset || 'court_green')
       setAccentColor(clubData.accent_color || 'emerald')
       setAnnouncement(clubData.announcement || '')
+      setInviteStatusTime(Date.now())
+      if (user && (
+        membershipData?.role === 'owner' ||
+        membershipData?.role === 'admin' ||
+        user.role === 'superadmin'
+      )) {
+        const inviteRows = await getSpecificInviteLinks(clubId)
+        setSpecificInvites(inviteRows)
+      } else {
+        setSpecificInvites([])
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to load club data'))
     } finally {
@@ -188,7 +202,7 @@ export default function ClubSettingsPage() {
     try {
       const newToken = await regenerateInviteLink(clubId)
       setInviteToken(newToken || '')
-      setSuccessMessage('New invite link generated.')
+      setSuccessMessage('New general request link generated.')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to generate new invite link'))
@@ -197,8 +211,42 @@ export default function ClubSettingsPage() {
 
   const handleCopyInviteLink = async () => {
     await navigator.clipboard.writeText(inviteUrl)
-    setSuccessMessage('Invite link copied.')
+    setSuccessMessage('General request link copied.')
     setTimeout(() => setSuccessMessage(''), 3000)
+  }
+
+  const handleCreateSpecificInviteLink = async () => {
+    if (!clubId) return
+
+    try {
+      const token = await createSpecificInviteLink(clubId)
+      if (!token) throw new Error('No specific invite code returned')
+      const url = buildInviteUrl(token)
+      setSpecificInviteUrl(url)
+      await loadClubData()
+      await navigator.clipboard.writeText(url)
+      setSuccessMessage('Specific auto-approve invite copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to create specific invite link'))
+    }
+  }
+
+  const handleCopySpecificInviteLink = async (token: string) => {
+    await navigator.clipboard.writeText(buildInviteUrl(token))
+    setSuccessMessage('Specific invite copied.')
+    setTimeout(() => setSuccessMessage(''), 3000)
+  }
+
+  const handleRevokeSpecificInviteLink = async (inviteId: string) => {
+    try {
+      await revokeSpecificInviteLink(inviteId)
+      await loadClubData()
+      setSuccessMessage('Specific invite revoked.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to revoke specific invite link'))
+    }
   }
 
   const isAdmin = membership?.role === 'owner' || membership?.role === 'admin' || user?.role === 'superadmin'
@@ -211,7 +259,7 @@ export default function ClubSettingsPage() {
     )
   }
 
-  if (error || !club) return <Navigate to="/not-found" replace />
+  if (!club) return <Navigate to="/not-found" replace />
   if (!isAdmin) return <Navigate to={`/club/${clubId}`} replace />
 
   return (
@@ -455,7 +503,7 @@ export default function ClubSettingsPage() {
                   <input className="mt-1 h-4 w-4 accent-emerald-700" type="checkbox" checked={approvalRequired} onChange={(e) => setApprovalRequired(e.target.checked)} disabled={!openJoin} />
                   <span>
                     <span className="block text-sm font-semibold text-slate-900">Require approval for strangers</span>
-                    <span className="text-sm text-slate-600">Invite links still let friends join directly.</span>
+                    <span className="text-sm text-slate-600">General invite links create requests. Specific invites can auto-approve one person.</span>
                   </span>
                 </label>
               </CardContent>
@@ -465,9 +513,12 @@ export default function ClubSettingsPage() {
             <Card>
               <CardContent className="space-y-3 pt-4 sm:pt-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold text-slate-950">Invite link</h2>
-                  <Badge>Instant join</Badge>
+                  <h2 className="text-lg font-bold text-slate-950">General invite link</h2>
+                  <Badge>Admin approval</Badge>
                 </div>
+                <p className="text-sm leading-6 text-slate-600">
+                  Share this broadly. Anyone using it will send a join request for admin approval.
+                </p>
                 <Input value={inviteUrl} readOnly className="font-mono text-sm" />
                 <div className="grid grid-cols-2 gap-2">
                   <Button type="button" variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
@@ -479,6 +530,57 @@ export default function ClubSettingsPage() {
                     Refresh link
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="space-y-3 pt-4 sm:pt-5">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-bold text-slate-950">Specific invite</h2>
+                  <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">Auto-approve</Badge>
+                </div>
+                <p className="text-sm leading-6 text-slate-600">
+                  Generate this only for a specific person. It auto-approves one account, then cannot be reused.
+                </p>
+                {specificInviteUrl ? (
+                  <Input value={specificInviteUrl} readOnly className="font-mono text-sm" />
+                ) : null}
+                <Button type="button" variant="secondary" onClick={handleCreateSpecificInviteLink}>
+                  <UserCheck size={17} aria-hidden="true" />
+                  Generate and copy specific invite
+                </Button>
+                {specificInvites.length ? (
+                  <div className="space-y-2 border-t border-slate-200 pt-3">
+                    <h3 className="text-sm font-bold text-slate-950">Recent specific invites</h3>
+                    <div className="space-y-2">
+                      {specificInvites.map((invite) => {
+                        const isUsed = invite.used_count >= invite.max_uses
+                        const isRevoked = Boolean(invite.revoked_at)
+                        const isExpired = invite.expires_at ? new Date(invite.expires_at).getTime() < inviteStatusTime : false
+                        const isActiveInvite = !isUsed && !isRevoked && !isExpired
+
+                        return (
+                          <div key={invite.id} className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                            <div className="min-w-0">
+                              <p className="truncate font-mono text-xs font-semibold text-slate-900">{buildInviteUrl(invite.token)}</p>
+                              <p className="text-xs text-slate-500">
+                                {isRevoked ? 'Revoked' : isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'} · Created {new Date(invite.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button type="button" size="sm" variant="secondary" onClick={() => handleCopySpecificInviteLink(invite.token)} disabled={!isActiveInvite}>
+                                Copy
+                              </Button>
+                              <Button type="button" size="sm" variant="secondary" onClick={() => handleRevokeSpecificInviteLink(invite.id)} disabled={!isActiveInvite}>
+                                Revoke
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           </div>

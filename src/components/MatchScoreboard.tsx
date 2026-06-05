@@ -53,10 +53,15 @@ export function MatchScoreboard({
   const [showComments, setShowComments] = useState(false)
   const [newCommentText, setNewCommentText] = useState('')
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+  const optimisticReactionCounterRef = useRef(0)
 
   useEffect(() => {
-    setReactions(match.reactions || [])
-    setComments(match.comments || [])
+    const timeout = window.setTimeout(() => {
+      setReactions(match.reactions || [])
+      setComments(match.comments || [])
+    }, 0)
+
+    return () => window.clearTimeout(timeout)
   }, [match.reactions, match.comments])
 
   const handleToggleReaction = async (emoji: string) => {
@@ -69,8 +74,9 @@ export function MatchScoreboard({
     if (hasAlreadyReacted) {
       updatedReactions = updatedReactions.filter(r => !(r.user_id === user.id && r.reaction === emoji))
     } else {
+      optimisticReactionCounterRef.current += 1
       updatedReactions.push({
-        id: 'temp-id-' + Date.now(),
+        id: `temp-id-${optimisticReactionCounterRef.current}`,
         match_id: match.id,
         user_id: user.id,
         reaction: emoji,

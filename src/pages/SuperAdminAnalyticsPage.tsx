@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import {
   Users,
   Shield,
@@ -66,12 +66,12 @@ export default function SuperAdminAnalyticsPage() {
   const [hoveredRegIndex, setHoveredRegIndex] = useState<number | null>(null)
   const [hoveredMatchIndex, setHoveredMatchIndex] = useState<number | null>(null)
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
-  }
+  }, [])
 
-  const loadAllData = async (isSilent = false) => {
+  const loadAllData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true)
     else setRefreshing(true)
     
@@ -98,41 +98,24 @@ export default function SuperAdminAnalyticsPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [showToast])
 
   useEffect(() => {
     if (user && user.role === 'superadmin') {
-      loadAllData()
-    }
-  }, [user])
+      const timeout = window.setTimeout(() => {
+        void loadAllData()
+      }, 0)
 
-  // Access check guard
-  if (!user || user.role !== 'superadmin') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
-        <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-full mb-4 animate-bounce">
-          <Shield size={48} />
-        </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Access Denied</h1>
-        <p className="max-w-md text-slate-600 mb-6">
-          This panel is restricted to platform superadmins managed by mohdhusni@gmail.com.
-        </p>
-        <button
-          onClick={() => window.location.href = '/dashboard'}
-          className="brand-button"
-        >
-          Return to Dashboard
-        </button>
-      </div>
-    )
-  }
+      return () => window.clearTimeout(timeout)
+    }
+  }, [user, loadAllData])
 
   // Handle user promotion/demotion
   const handleRoleChange = async (targetUserId: string, newRole: 'superadmin' | 'member', userEmail: string) => {
     try {
       await superadminUpdateUserRole(targetUserId, newRole)
       showToast(`Successfully updated role for ${userEmail} to ${newRole === 'superadmin' ? 'Super Admin' : 'Member'}.`)
-      loadAllData(true)
+      void loadAllData(true)
     } catch (err: unknown) {
       console.error('Role update error:', err)
       const msg = err instanceof Error ? err.message : 'Failed to update user role.'
@@ -147,7 +130,7 @@ export default function SuperAdminAnalyticsPage() {
       await deleteClub(clubToDelete.id)
       showToast(`Club "${clubToDelete.name}" deleted successfully.`)
       setClubToDelete(null)
-      loadAllData(true)
+      void loadAllData(true)
     } catch (err: unknown) {
       console.error('Club delete error:', err)
       showToast('Failed to delete club.', 'error')
@@ -209,7 +192,7 @@ export default function SuperAdminAnalyticsPage() {
   }, [stats])
 
   // Chart drawing helper (SVG path string generator)
-  const drawChart = (
+  const drawChart = useCallback((
     data: { date: string; count: number }[],
     width = 500,
     height = 200
@@ -235,19 +218,39 @@ export default function SuperAdminAnalyticsPage() {
       : ''
 
     return { linePath, areaPath, coords }
-  }
+  }, [])
 
   // Compile registration trend paths
   const regChartData = useMemo(() => {
     if (!stats || !stats.user_registration_trend) return null
     return drawChart(stats.user_registration_trend, 600, 220)
-  }, [stats])
+  }, [drawChart, stats])
 
   // Compile match trend paths
   const matchChartData = useMemo(() => {
     if (!stats || !stats.matches_trend) return null
     return drawChart(stats.matches_trend, 600, 220)
-  }, [stats])
+  }, [drawChart, stats])
+
+  if (!user || user.role !== 'superadmin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
+        <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-full mb-4 animate-bounce">
+          <Shield size={48} />
+        </div>
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Access Denied</h1>
+        <p className="max-w-md text-slate-600 mb-6">
+          This panel is restricted to platform superadmins managed by mohdhusni@gmail.com.
+        </p>
+        <button
+          onClick={() => window.location.href = '/dashboard'}
+          className="brand-button"
+        >
+          Return to Dashboard
+        </button>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
