@@ -43,6 +43,8 @@ export default function DashboardPage() {
   const [discoverableClubs, setDiscoverableClubs] = useState<Club[]>([])
   const [events, setEvents] = useState<DashboardEvent[]>([])
   const [matches, setMatches] = useState<DashboardMatch[]>([])
+  const [totalMatchesCount, setTotalMatchesCount] = useState(0)
+  const [upcomingEventsCount, setUpcomingEventsCount] = useState(0)
   const [myRsvps, setMyRsvps] = useState<EventRsvp[]>([])
   const [eventRsvpsByEvent, setEventRsvpsByEvent] = useState<Record<string, EventRsvp[]>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -356,6 +358,8 @@ export default function DashboardPage() {
       const visibleEvents = allEvents.slice(0, 5)
       setEvents(visibleEvents)
       setMatches(allMatches.slice(0, 5))
+      setTotalMatchesCount(allMatches.length)
+      setUpcomingEventsCount(allEvents.length)
 
       // Calculate personal stats from the full list of matches
       const userMatches = allMatches.filter((m) =>
@@ -716,8 +720,8 @@ export default function DashboardPage() {
   }
 
   // Calculate stats
-  const totalMatches = matches.length
-  const upcomingEvents = events.filter(e => new Date(e.event_date) > new Date()).length
+  const totalMatches = totalMatchesCount
+  const upcomingEvents = upcomingEventsCount
   const clubCount = clubs.length
 
   return (
