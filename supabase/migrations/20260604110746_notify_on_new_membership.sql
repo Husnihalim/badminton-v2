@@ -1,17 +1,5 @@
--- Update join_club_by_invite_code to return existing membership if already active instead of raising an exception.
-CREATE OR REPLACE FUNCTION public.join_club_by_invite_code(invite_code_input TEXT)
-RETURNS memberships
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  target_club clubs;
-  existing_membership memberships;
-  new_membership memberships;
-  current_user_id UUID := auth.uid();
-END;
-$$; -- Stub for dropping/recreating safely
+-- Drop function first to prevent return type mismatch issues in Postgres
+DROP FUNCTION IF EXISTS public.join_club_by_invite_code(TEXT);
 
 CREATE OR REPLACE FUNCTION public.join_club_by_invite_code(invite_code_input TEXT)
 RETURNS memberships
