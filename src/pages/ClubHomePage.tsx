@@ -547,6 +547,7 @@ export default function ClubHomePage() {
   const [timeframe, setTimeframe] = useState<string>('all-time')
   const [sortBy, setSortBy] = useState<'win-rate' | 'elo'>('elo')
   const [showAllMatches, setShowAllMatches] = useState(false)
+  const [showAllLeaderboard, setShowAllLeaderboard] = useState(false)
   const [matchSearchQuery, setMatchSearchQuery] = useState('')
 
   const [eventsViewMode, setEventsViewMode] = useState<'list' | 'calendar'>('list')
@@ -2452,7 +2453,7 @@ export default function ClubHomePage() {
 
           {computedLeaderboard.length ? (
             <div className="space-y-2">
-              {computedLeaderboard.slice(0, 10).map((player, index) => {
+              {computedLeaderboard.slice(0, showAllLeaderboard ? undefined : 10).map((player, index) => {
                 const streak = playerStreaks.get(player.name)
                 const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
                 const isMe = user && (
@@ -2501,7 +2502,7 @@ export default function ClubHomePage() {
                             </Badge>
                           ) : null}
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                        <div className="mt-1 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-semibold flex-wrap">
                           <span>{player.games} GP</span>
                           <span>{player.wins}W</span>
                           <span>{player.losses}L</span>
@@ -2515,6 +2516,17 @@ export default function ClubHomePage() {
                   </div>
                 )
               })}
+              {computedLeaderboard.length > 10 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="mt-3"
+                  onClick={() => setShowAllLeaderboard(!showAllLeaderboard)}
+                >
+                  {showAllLeaderboard ? 'Show Less' : `View All Players (${computedLeaderboard.length})`}
+                </Button>
+              )}
             </div>
           ) : (
             <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
