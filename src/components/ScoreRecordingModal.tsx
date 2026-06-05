@@ -7,6 +7,7 @@ import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { Input } from './ui/input'
 import { Select } from './ui/select'
+import CelebrationConfetti from './CelebrationConfetti'
 
 interface ScoreRecordingModalProps {
   isOpen: boolean
@@ -73,6 +74,9 @@ export default function ScoreRecordingModal({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [members, setMembers] = useState<Membership[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [celebrationWinners, setCelebrationWinners] = useState('')
+  const [celebrationScore, setCelebrationScore] = useState('')
 
   const loadMembers = useCallback(async () => {
     if (!clubId) return
@@ -246,6 +250,30 @@ export default function ScoreRecordingModal({
         })
       }
 
+      // Determine winner
+      let team1Wins = 0
+      let team2Wins = 0
+      sets.forEach((set) => {
+        const t1 = Number(set.team1)
+        const t2 = Number(set.team2)
+        if (t1 > t2) team1Wins++
+        if (t2 > t1) team2Wins++
+      })
+      const isTeam1Winner = team1Wins > team2Wins
+      const isTeam2Winner = team2Wins > team1Wins
+
+      const getTeamNames = (a: PlayerField, b: PlayerField) => {
+        const nameA = getPlayerName(a, members)
+        const nameB = matchType === 'doubles' ? getPlayerName(b, members) : ''
+        return nameB ? `${nameA} & ${nameB}` : nameA
+      }
+      
+      const winners = isTeam1Winner 
+        ? getTeamNames(player1A, player1B) 
+        : isTeam2Winner 
+          ? getTeamNames(player2A, player2B) 
+          : ''
+
       const scoreSummary = sets.map((set) => `${set.team1}-${set.team2}`).join(', ')
       showToast(isEditing ? `Score updated: ${scoreSummary}` : `Score recorded: ${scoreSummary}`)
       setMatchTitle('')
@@ -259,8 +287,22 @@ export default function ScoreRecordingModal({
       setPlayer2B(createPlayerField())
       setErrors({})
       
-      onClose()
-      onScoreRecorded?.()
+      if (winners && !isEditing) {
+        setCelebrationWinners(winners)
+        setCelebrationScore(scoreSummary)
+        setShowCelebration(true)
+        
+        const timer = setTimeout(() => {
+          setShowCelebration(false)
+          onClose()
+          onScoreRecorded?.()
+        }, 4000)
+        
+        ;(window as any)._celebrationTimer = timer
+      } else {
+        onClose()
+        onScoreRecorded?.()
+      }
     } catch (err) {
       console.error('Score recording failed:', err)
       const baseMessage = getErrorMessage(err, isEditing ? 'Failed to update score' : 'Failed to record score')
@@ -565,6 +607,53 @@ export default function ScoreRecordingModal({
         </Card>
       </div>
       {toast ? <div className="fixed bottom-4 left-4 right-4 z-[60] rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{toast}</div> : null}
+      
+      {showCelebration && (
+        <>
+          <CelebrationConfetti />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm animate-fade-in" onClick={() => {
+            if ((window as any)._celebrationTimer) {
+              clearTimeout((window as any)._celebrationTimer)
+            }
+            setShowCelebration(false)
+            onClose()
+            onScoreRecorded?.()
+          }}>
+            <Card className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl border-t-4 border-emerald-500 transform scale-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
+              <CardContent className="space-y-4 pt-4">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl animate-bounce">
+                  👑
+                </div>
+                <h3 className="text-xl font-black text-slate-900">Match Recorded!</h3>
+                <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">Winners</p>
+                <h2 className="text-2xl font-extrabold text-slate-950 leading-tight">
+                  {celebrationWinners}
+                </h2>
+                <div className="text-xs font-bold text-slate-500">
+                  Score: {celebrationScore}
+                </div>
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    fullWidth
+                    onClick={() => {
+                      if ((window as any)._celebrationTimer) {
+                        clearTimeout((window as any)._celebrationTimer)
+                      }
+                      setShowCelebration(false)
+                      onClose()
+                      onScoreRecorded?.()
+                    }}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold"
+                  >
+                    Awesome! 🎉
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </>
   )
 }

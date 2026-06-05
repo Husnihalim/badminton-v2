@@ -578,18 +578,58 @@ export async function createMatch(data: CreateMatchData): Promise<Match | null> 
   }
 
   const createdMatch = match as Match
-  notifyClubMembers({
-    clubId: data.club_id,
-    type: 'score_recorded',
-    title: 'New match score recorded',
-    message: `${createdMatch.title || `${createdMatch.sport} match`} score was added.`,
-    data: { clubId: data.club_id, matchId: createdMatch.id },
-    activityTitle: 'New match score recorded',
-    activityDescription: `${createdMatch.title || `${createdMatch.sport} match`} score was added.`,
-    actorFallback: 'Club member',
-  }).catch((notificationError) => {
-    console.error('Error sending score notifications:', notificationError)
-  })
+
+  // Run winner name calculations and notification formatting asynchronously
+  // to avoid blocking the main UI response flow.
+  ;(async () => {
+    try {
+      let team1Wins = 0
+      let team2Wins = 0
+      data.score_sets.forEach((set) => {
+        if (set.team1_score > set.team2_score) team1Wins++
+        if (set.team2_score > set.team1_score) team2Wins++
+      })
+      const winnerTeam = team1Wins > team2Wins ? 1 : (team2Wins > team1Wins ? 2 : null)
+
+      let winnerNames = ''
+      if (winnerTeam) {
+        const winnerParticipants = data.participants.filter(p => p.team === winnerTeam)
+        const names = await Promise.all(winnerParticipants.map(async (p) => {
+          if (p.is_guest) {
+            return p.guest_name || 'Guest'
+          } else if (p.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name, name')
+              .eq('id', p.user_id)
+              .maybeSingle()
+            return (profile as any)?.display_name || (profile as any)?.name || 'Member'
+          }
+          return 'Player'
+        }))
+        winnerNames = names.join(' & ')
+      }
+
+      const scoreText = data.score_sets.map((set) => `${set.team1_score}-${set.team2_score}`).join(', ')
+      const notificationTitle = winnerNames ? '🏆 Match Won!' : 'New match score recorded'
+      const notificationMessage = winnerNames
+        ? `🎉 ${winnerNames} won the match! Score: ${scoreText}`
+        : `${createdMatch.title || `${createdMatch.sport} match`} score was added: ${scoreText}.`
+
+      await notifyClubMembers({
+        clubId: data.club_id,
+        type: 'score_recorded',
+        title: notificationTitle,
+        message: notificationMessage,
+        data: { clubId: data.club_id, matchId: createdMatch.id },
+        activityTitle: notificationTitle,
+        activityDescription: notificationMessage,
+        actorFallback: 'Club member',
+      })
+    } catch (notificationError) {
+      console.error('Error sending score notifications:', notificationError)
+    }
+  })()
 
   await postMatchAnnouncement(data, user.id)
 
