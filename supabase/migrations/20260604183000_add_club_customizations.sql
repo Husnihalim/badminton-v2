@@ -154,6 +154,7 @@ BEGIN
 END $$;
 
 -- Allow active club members to insert into club_messages so automatic match notifications can be posted by any active member recording a match
+DROP POLICY IF EXISTS "Club members can create messages" ON club_messages;
 DROP POLICY IF EXISTS "Club admins can create messages" ON club_messages;
 CREATE POLICY "Club members can create messages"
   ON club_messages FOR INSERT
