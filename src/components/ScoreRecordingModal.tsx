@@ -18,6 +18,7 @@ interface ScoreRecordingModalProps {
   eventId?: string
   eventTitle?: string
   eventDate?: string
+  clubName?: string
 }
 
 type PlayerField = {
@@ -60,6 +61,7 @@ export default function ScoreRecordingModal({
   eventId,
   eventTitle,
   eventDate,
+  clubName,
 }: ScoreRecordingModalProps) {
   const [matchTitle, setMatchTitle] = useState('')
   const [matchDate, setMatchDate] = useState<string>('')
@@ -797,8 +799,9 @@ export default function ScoreRecordingModal({
                 </span>
                 Point-by-Point Scorekeeper
               </h3>
-              <p className="text-xs text-slate-400">
-                {matchType === 'doubles' ? 'Doubles Match' : 'Singles Match'} • Set {currentSetIdx + 1}
+              <p className="text-xs text-slate-400 font-semibold">
+                {clubName ? `${clubName} • ` : ''}
+                {matchType === 'doubles' ? 'Doubles' : 'Singles'} • Set {currentSetIdx + 1}
               </p>
             </div>
             <button
@@ -848,12 +851,12 @@ export default function ScoreRecordingModal({
               type="button"
               disabled={isMatchFinished}
               onClick={() => handleScorePoint(1)}
-              className="flex-1 flex flex-col items-center justify-center p-6 text-center transition-all bg-emerald-950/5 hover:bg-emerald-950/10 active:bg-emerald-950/25 group focus:outline-none cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
+              className="flex-1 flex flex-col items-center justify-center p-6 text-center transition-all bg-orange-950/5 hover:bg-orange-950/10 active:bg-orange-950/25 group focus:outline-none cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
+              <span className="text-xs font-bold uppercase tracking-wider text-orange-500 mb-2 group-hover:scale-105 transition-transform">
                 {team1Name}
               </span>
-              <div className="text-8xl md:text-9xl font-black font-mono text-emerald-400 tracking-tighter select-none animate-in zoom-in duration-150">
+              <div className="text-8xl md:text-9xl font-black font-mono text-orange-500 tracking-tighter select-none animate-in zoom-in duration-150">
                 {refereeSets[currentSetIdx]?.team1 ?? 0}
               </div>
               <span className="mt-4 text-xs font-medium text-slate-500 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -866,12 +869,12 @@ export default function ScoreRecordingModal({
               type="button"
               disabled={isMatchFinished}
               onClick={() => handleScorePoint(2)}
-              className="flex-1 flex flex-col items-center justify-center p-6 text-center transition-all bg-indigo-950/5 hover:bg-indigo-950/10 active:bg-indigo-950/25 group focus:outline-none cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
+              className="flex-1 flex flex-col items-center justify-center p-6 text-center transition-all bg-emerald-950/5 hover:bg-emerald-950/10 active:bg-emerald-950/25 group focus:outline-none cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2 group-hover:scale-105 transition-transform">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
                 {team2Name}
               </span>
-              <div className="text-8xl md:text-9xl font-black font-mono text-indigo-400 tracking-tighter select-none animate-in zoom-in duration-150">
+              <div className="text-8xl md:text-9xl font-black font-mono text-emerald-400 tracking-tighter select-none animate-in zoom-in duration-150">
                 {refereeSets[currentSetIdx]?.team2 ?? 0}
               </div>
               <span className="mt-4 text-xs font-medium text-slate-500 opacity-60 group-hover:opacity-100 transition-opacity">

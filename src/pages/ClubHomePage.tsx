@@ -2859,6 +2859,7 @@ export default function ClubHomePage() {
         eventId={selectedScoreEventId || undefined}
         eventTitle={selectedScoreEventTitle || undefined}
         eventDate={selectedScoreEventDate || undefined}
+        clubName={club?.name}
         onScoreRecorded={() => {
           loadClubData()
           closeScoreModal()
