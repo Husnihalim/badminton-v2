@@ -349,13 +349,48 @@ function calculateSessionHighlights(eventMatches: MatchWithDetails[]) {
   const totalMatches = eventMatches.length
   let totalPoints = 0
   let totalSets = 0
+  const uniquePlayers = new Set<string>()
+  let clutchMatches = 0
+  let maxScoreSum = 0
+  let highestScoreStr = '-'
+  let maxMargin = -1
+  let dominantScoreStr = '-'
+
   for (const match of eventMatches) {
-    for (const set of match.score_sets || []) {
+    for (const p of match.participants) {
+      const name = p.name || p.guest_name || 'Guest'
+      uniquePlayers.add(name)
+    }
+
+    let matchIsClutch = false
+    const scoreSets = match.score_sets || []
+    for (const set of scoreSets) {
       totalPoints += set.team1_score + set.team2_score
       totalSets++
+
+      const scoreSum = set.team1_score + set.team2_score
+      const margin = Math.abs(set.team1_score - set.team2_score)
+
+      if (margin <= 3) {
+        matchIsClutch = true
+      }
+
+      if (scoreSum > maxScoreSum) {
+        maxScoreSum = scoreSum
+        highestScoreStr = `${Math.max(set.team1_score, set.team2_score)} - ${Math.min(set.team1_score, set.team2_score)}`
+      }
+
+      if (margin > maxMargin) {
+        maxMargin = margin
+        dominantScoreStr = `${Math.max(set.team1_score, set.team2_score)} - ${Math.min(set.team1_score, set.team2_score)}`
+      }
+    }
+    if (matchIsClutch) {
+      clutchMatches++
     }
   }
 
+  const totalPlayers = uniquePlayers.size
   const avgSetsPerMatch = totalMatches > 0 ? (totalSets / totalMatches).toFixed(1) : '0.0'
   const avgPointsPerSet = totalSets > 0 ? (totalPoints / totalSets).toFixed(1) : '0.0'
 
@@ -370,6 +405,10 @@ function calculateSessionHighlights(eventMatches: MatchWithDetails[]) {
       totalPoints,
       avgSetsPerMatch,
       avgPointsPerSet,
+      totalPlayers,
+      clutchMatches,
+      highestScoreStr,
+      dominantScoreStr,
     },
     playersList: playersList.sort((a, b) => b.pointDiff - a.pointDiff || b.winRate - a.winRate)
   }
@@ -2187,12 +2226,12 @@ export default function ClubHomePage() {
             {/* Quick stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Total Matches', val: latestSessionWithMatches.highlights.stats.totalMatches, emoji: '🎾' },
-                { label: 'Total Points', val: latestSessionWithMatches.highlights.stats.totalPoints, emoji: '🔢' },
-                { label: 'Avg Sets/Match', val: latestSessionWithMatches.highlights.stats.avgSetsPerMatch, emoji: '📊' },
-                { label: 'Avg Points/Set', val: latestSessionWithMatches.highlights.stats.avgPointsPerSet, emoji: '📈' }
+                { label: 'Active Players', val: latestSessionWithMatches.highlights.stats.totalPlayers, emoji: '👥' },
+                { label: 'Matches Played', val: latestSessionWithMatches.highlights.stats.totalMatches, emoji: '🎾' },
+                { label: 'Clutch Matches', val: latestSessionWithMatches.highlights.stats.clutchMatches, emoji: '🔥', tooltip: 'Matches decided by 3 points or fewer in any set' },
+                { label: 'Highest Set Score', val: latestSessionWithMatches.highlights.stats.highestScoreStr, emoji: '⚡' }
               ].map((stat) => (
-                <div key={stat.label} className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center shadow-sm">
+                <div key={stat.label} className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center shadow-sm" title={stat.tooltip}>
                   <span className="text-xl mb-0.5 block">{stat.emoji}</span>
                   <span className="block text-base font-bold text-slate-900">{stat.val}</span>
                   <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{stat.label}</span>
@@ -2859,10 +2898,10 @@ export default function ClubHomePage() {
                 {/* Session Quick Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   {[
-                    ['Total Matches', highlights.stats.totalMatches, '🎾'],
-                    ['Total Points Scored', highlights.stats.totalPoints, '🔢'],
-                    ['Avg Sets / Match', highlights.stats.avgSetsPerMatch, '📊'],
-                    ['Avg Points / Set', highlights.stats.avgPointsPerSet, '📈']
+                    ['Active Players', highlights.stats.totalPlayers, '👥'],
+                    ['Matches Played', highlights.stats.totalMatches, '🎾'],
+                    ['Clutch Matches', highlights.stats.clutchMatches, '🔥'],
+                    ['Highest Set Score', highlights.stats.highestScoreStr, '⚡']
                   ].map(([label, val, emoji]) => (
                     <div key={label} className="bg-slate-950/40 rounded-lg p-3 border border-slate-800/60 text-center">
                       <span className="text-2xl mb-1 block">{emoji}</span>

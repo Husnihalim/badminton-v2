@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useMemo, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { CalendarDays, Check, Club as ClubIcon, Copy, MessageCircle, Search, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity, UserPlus, Newspaper } from 'lucide-react'
+import { CalendarDays, Check, Club as ClubIcon, Copy, Edit3, MapPin, MessageCircle, Search, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity, UserPlus, Newspaper, UserRound } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import { buildEventShareText, buildEventShareUrl, getClubs, getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent, getClubLeaderboard, getClubMembers, requestJoinClub } from '../lib/api'
@@ -723,14 +723,118 @@ export default function DashboardPage() {
   const totalMatches = totalMatchesCount
   const upcomingEvents = upcomingEventsCount
   const clubCount = clubs.length
+  const displayName = user.display_name || user.name
+  const firstName = displayName.split(' ')[0] || displayName
+  const primaryClub = clubs[0]
+  const primaryRank = primaryClub ? clubRanks[primaryClub.id] : null
+  const latestHeadline = storyMoments[0]?.title || (personalStats.matchesPlayed ? 'Building match history' : 'Ready for first recorded match')
+  const signatureStat = personalStats.matchesPlayed
+    ? `${personalStats.winRate}% win rate`
+    : `${clubCount} ${clubCount === 1 ? 'club' : 'clubs'} joined`
+  const formLabel = personalStats.streakType
+    ? `${personalStats.streak} ${personalStats.streakType === 'win' ? 'win' : 'loss'} run`
+    : 'No active streak'
 
   return (
     <Page>
       <PageHeader
-        eyebrow="Dashboard"
-        title={`Welcome back, ${user.name.split(' ')[0]}`}
-        description="Your next sessions, club actions, and recent updates in one place."
+        eyebrow="Personal home"
+        title={`Welcome back, ${firstName}`}
+        description="Your profile, player card, stats, stories, clubs, and next actions in one place."
+        actions={
+          <Button type="button" variant="secondary" onClick={() => navigate('/profile')}>
+            <Edit3 size={16} aria-hidden="true" />
+            Edit profile
+          </Button>
+        }
       />
+
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+        <Card className="overflow-hidden border-slate-900 bg-slate-950 text-white">
+          <CardContent className="space-y-5 p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900">
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-emerald-300">
+                    <UserRound size={42} aria-hidden="true" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-3">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="border-emerald-400/30 bg-emerald-400/10 text-emerald-100">Player card</Badge>
+                    {user.is_private ? (
+                      <Badge className="border-slate-700 bg-slate-900 text-slate-300">Private profile</Badge>
+                    ) : (
+                      <Badge className="border-sky-400/30 bg-sky-400/10 text-sky-100">Public profile</Badge>
+                    )}
+                  </div>
+                  <h2 className="truncate text-2xl font-extrabold tracking-normal text-white sm:text-3xl">{displayName}</h2>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
+                    <span className="capitalize">{user.preferred_sport || 'badminton'}</span>
+                    {primaryClub ? <span>{primaryClub.name}</span> : null}
+                    {user.city ? (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={14} aria-hidden="true" />
+                        {user.city}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                {user.bio ? (
+                  <p className="line-clamp-3 max-w-2xl text-sm leading-6 text-slate-300">{user.bio}</p>
+                ) : (
+                  <p className="max-w-2xl text-sm leading-6 text-slate-400">Add a short playing bio, social handles, and gear later to make this card feel complete.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-4">
+              <PlayerCardMetric label="Record" value={`${personalStats.wins}W-${personalStats.losses}L`} />
+              <PlayerCardMetric label="Signature" value={signatureStat} />
+              <PlayerCardMetric label="Form" value={formLabel} />
+              <PlayerCardMetric label="Rank" value={primaryRank ? `#${primaryRank.rank} / ${primaryRank.total}` : 'Unranked'} />
+            </div>
+
+            <div className="grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-3">
+              <PlayerCardDetail label="Latest headline" value={latestHeadline} />
+              <PlayerCardDetail label="Best partner" value={recommendedInsights?.bestPartner?.name || 'Needs doubles data'} />
+              <PlayerCardDetail label="Top rival" value={recommendedInsights?.topRival?.name || 'Needs match history'} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 p-4 sm:p-5">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">Quick actions</h2>
+              <p className="text-sm leading-6 text-slate-600">Move from your personal page into the next useful task.</p>
+            </div>
+            <div className="grid gap-2">
+              <Button type="button" onClick={() => navigate(primaryClub ? `/club/${primaryClub.id}` : '/profile?create_club=true')} fullWidth>
+                <ClubIcon size={16} aria-hidden="true" />
+                {primaryClub ? 'Open club home' : 'Create first club'}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => navigate(primaryClub ? `/club/${primaryClub.id}` : '/dashboard#club-discovery')} fullWidth>
+                <Trophy size={16} aria-hidden="true" />
+                Club score tools
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => document.getElementById('club-discovery')?.scrollIntoView({ behavior: 'smooth' })} fullWidth>
+                <UserPlus size={16} aria-hidden="true" />
+                Join another club
+              </Button>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Next build</p>
+              <p className="mt-1 text-sm leading-6 text-slate-700">Social handles, gear, and generated card backgrounds will live here once the profile fields are added.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <StatCard icon={<Users size={17} />} label="Clubs" value={clubCount} />
@@ -739,70 +843,70 @@ export default function DashboardPage() {
       </div>
 
       {/* Personal Player Performance Section */}
-      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div>
-          <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+      <section className="app-section space-y-4">
+        <div className="app-section-header">
+          <h2 className="app-section-title">
             <Activity size={18} className="text-emerald-700" />
             Your Performance
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Calculated from all matches played across your clubs.</p>
+          <p className="app-section-subtitle">Calculated from all matches played across your clubs.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-            <span className="text-xs font-semibold text-slate-500">Played</span>
-            <p className="text-xl font-extrabold text-slate-950">{personalStats.matchesPlayed}</p>
-            <span className="text-[10px] text-slate-400">Total Matches</span>
+          <div className="metric-tile space-y-1 text-center">
+            <span className="metric-label">Played</span>
+            <p className="metric-value">{personalStats.matchesPlayed}</p>
+            <span className="metric-note">Total Matches</span>
           </div>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-            <span className="text-xs font-semibold text-slate-500">Win / Loss</span>
-            <p className="text-xl font-extrabold text-slate-950">
+          <div className="metric-tile space-y-1 text-center">
+            <span className="metric-label">Win / Loss</span>
+            <p className="metric-value">
               <span className="text-emerald-700">{personalStats.wins}W</span>
               <span className="text-slate-400 mx-1">-</span>
               <span className="text-red-600">{personalStats.losses}L</span>
             </p>
-            <span className="text-[10px] text-slate-400">Record</span>
+            <span className="metric-note">Record</span>
           </div>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-            <span className="text-xs font-semibold text-slate-500">Win Rate</span>
+          <div className="metric-tile space-y-1 text-center">
+            <span className="metric-label">Win Rate</span>
             <div className="flex items-center justify-center gap-1">
               <Percent size={14} className="text-emerald-700 shrink-0" />
-              <span className="text-xl font-extrabold text-slate-950">{personalStats.winRate}%</span>
+              <span className="metric-value">{personalStats.winRate}%</span>
             </div>
             <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden max-w-[80px] mx-auto">
               <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-            <span className="text-xs font-semibold text-slate-500">Active Streak</span>
+          <div className="metric-tile space-y-1 text-center">
+            <span className="metric-label">Active Streak</span>
             <div className="flex items-center justify-center gap-1">
               {personalStats.streakType === 'win' ? (
                 <>
                   <Flame size={16} className="text-amber-500 animate-pulse" />
-                  <span className="text-xl font-extrabold text-amber-600">{personalStats.streak} Win</span>
+                  <span className="metric-value text-amber-600">{personalStats.streak} Win</span>
                 </>
               ) : personalStats.streakType === 'loss' ? (
-                <span className="text-xl font-extrabold text-slate-600">-{personalStats.streak} Loss</span>
+                <span className="metric-value text-slate-600">-{personalStats.streak} Loss</span>
               ) : (
-                <span className="text-xl font-extrabold text-slate-500">0</span>
+                <span className="metric-value text-slate-500">0</span>
               )}
             </div>
-            <span className="text-[10px] text-slate-400">Current Run</span>
+            <span className="metric-note">Current Run</span>
           </div>
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="app-section space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-950">
+          <div className="app-section-header">
+            <h2 className="app-section-title">
               <Newspaper size={18} className="text-emerald-700" aria-hidden="true" />
               My Sports Story
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">Latest proof-backed moments from your recorded matches.</p>
+            <p className="app-section-subtitle">Latest proof-backed moments from your recorded matches.</p>
           </div>
           {storyMoments.length ? (
             <Badge className="w-fit border-emerald-200 bg-emerald-50 text-emerald-800">
@@ -825,13 +929,13 @@ export default function DashboardPage() {
       </section>
 
       {/* Achievements Section */}
-      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div>
-          <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+      <section className="app-section space-y-4">
+        <div className="app-section-header">
+          <h2 className="app-section-title">
             <Trophy size={18} className="text-amber-500 shrink-0" />
             Achievements & Milestones
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Unlock badges by playing and winning matches in your clubs.</p>
+          <p className="app-section-subtitle">Unlock badges by playing and winning matches in your clubs.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -879,13 +983,13 @@ export default function DashboardPage() {
       </section>
 
       {/* Head-to-Head Rivalry Tool */}
-      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div>
-          <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+      <section className="app-section space-y-4">
+        <div className="app-section-header">
+          <h2 className="app-section-title">
             <Users size={18} className="text-emerald-700 shrink-0" />
             {comparisonMode === 'partner' ? 'Doubles Partnership Checker' : 'Head-to-Head Rivalry Checker'}
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="app-section-subtitle">
             {comparisonMode === 'partner'
               ? 'Select a club member to analyze your performance playing together on the same team.'
               : 'Select a club member to analyze your head-to-head match history.'}
@@ -1497,15 +1601,33 @@ export default function DashboardPage() {
 
 function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="space-y-2 p-3 sm:p-4">
         <div className="flex items-center justify-between gap-2 text-slate-500">
           <span className="text-xs font-semibold sm:text-sm">{label}</span>
-          <span className="text-emerald-700">{icon}</span>
+          <span className="rounded-md bg-emerald-50 p-1.5 text-emerald-700">{icon}</span>
         </div>
-        <p className="text-2xl font-bold leading-none text-slate-950 sm:text-3xl">{value}</p>
+        <p className="text-2xl font-semibold leading-none text-slate-950 sm:text-3xl">{value}</p>
       </CardContent>
     </Card>
+  )
+}
+
+function PlayerCardMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+      <p className="text-xs font-semibold uppercase text-slate-400">{label}</p>
+      <p className="mt-1 truncate text-lg font-extrabold text-white">{value}</p>
+    </div>
+  )
+}
+
+function PlayerCardDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold text-slate-100">{value}</p>
+    </div>
   )
 }
 
@@ -1527,9 +1649,9 @@ function AchievementBadge({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center p-3 rounded-xl border text-center space-y-1 transition duration-300 shadow-sm",
+        "flex min-h-28 flex-col items-center justify-center rounded-lg border p-3 text-center space-y-1 transition-colors duration-150 shadow-sm",
         unlocked ? glowClass : lockedClass,
-        unlocked && "hover:-translate-y-1 hover:shadow-md"
+        unlocked && "hover:border-slate-300 hover:bg-white"
       )}
     >
       <span className={cn("text-2xl", !unlocked && "grayscale filter")}>{icon}</span>

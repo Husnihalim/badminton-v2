@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @theme {
-  --font-sans: Outfit, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
 
   /* Dynamically mapped slate colors supporting both light and dark modes */
   --color-slate-50: var(--theme-slate-50);
@@ -39,17 +38,19 @@
   font-size: 16px;
   
   /* Core Variables - Light Mode */
-  --bg: #f8fafc;
+  --bg: #f6f7f9;
   --surface: #ffffff;
-  --surface-muted: #f1f5f9;
+  --surface-muted: #f4f6f8;
   --text: #0f172a;
-  --text-muted: #334155;
-  --nav-bg: rgba(255, 255, 255, 0.85);
-  --primary: #0d9488;
-  --primary-hover: #14b8a6;
+  --text-muted: #475569;
+  --nav-bg: rgba(255, 255, 255, 0.92);
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
   --primary-text: #ffffff;
-  --border: #e2e8f0;
-  --shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.02);
+  --accent: #0f766e;
+  --accent-soft: #ecfdf5;
+  --border: #d9dee7;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
 
   /* Theme Slate Mapping - Light Mode */
   --theme-slate-50: #f8fafc;
@@ -72,7 +73,7 @@
   --theme-emerald-400: #4ade80;
   --theme-emerald-500: #22c55e;
   --theme-emerald-600: #16a34a;
-  --theme-emerald-700: #15803d;
+  --theme-emerald-700: #0f766e;
   --theme-emerald-800: #166534;
   --theme-emerald-900: #14532d;
 }
@@ -81,17 +82,19 @@
   color-scheme: dark;
   
   /* Core Variables - Dark Mode (Midnight Black & Electric Lime) */
-  --bg: #0b0f19;
-  --surface: #121824;
-  --surface-muted: #1c2436;
+  --bg: #0b1020;
+  --surface: #111827;
+  --surface-muted: #1b2435;
   --text: #f8fafc;
   --text-muted: #94a3b8;
-  --nav-bg: rgba(18, 24, 38, 0.85);
-  --primary: #ccff00;
-  --primary-hover: #ddff33;
-  --primary-text: #0b0f19;
-  --border: rgba(204, 255, 0, 0.15);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --nav-bg: rgba(17, 24, 39, 0.92);
+  --primary: #60a5fa;
+  --primary-hover: #93c5fd;
+  --primary-text: #08111f;
+  --accent: #34d399;
+  --accent-soft: rgba(52, 211, 153, 0.1);
+  --border: rgba(148, 163, 184, 0.22);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 48px rgba(0, 0, 0, 0.28);
 
   /* Theme Slate Mapping - Dark Mode (Contrast-Preserving) */
   --theme-slate-50: #0b0f19;
@@ -131,13 +134,19 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(246, 247, 249, 0.92)),
+    var(--bg);
   color: var(--text);
   transition: background-color 0.2s ease, color 0.2s ease;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 .dark body {
-  background: radial-gradient(circle at 50% 0%, #141c2f 0%, #0b0f19 80%) no-repeat fixed;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.62), rgba(11, 16, 32, 0.95)),
+    var(--bg);
 }
 
 a {
@@ -166,9 +175,9 @@ button:disabled {
 
 main {
   flex: 1;
-  width: min(1120px, 100% - 32px);
+  width: min(1180px, 100% - 32px);
   margin: 0 auto;
-  padding: 18px 0 88px;
+  padding: 20px 0 88px;
 }
 
 .empty-state {

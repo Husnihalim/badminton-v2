@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ClipboardPenLine, Plus, X } from 'lucide-react'
+import { ClipboardPenLine, Plus, X, RotateCcw, Trophy } from 'lucide-react'
 import { createMatch, getClubMembers, updateMatch } from '../lib/api'
 import { getErrorMessage } from '../lib/utils'
 import type { MatchWithDetails, Membership } from '../types'
@@ -78,6 +78,23 @@ export default function ScoreRecordingModal({
   const [celebrationWinners, setCelebrationWinners] = useState('')
   const [celebrationScore, setCelebrationScore] = useState('')
   const celebrationTimerRef = useRef<NodeJS.Timeout | number | null>(null)
+
+  // Point-by-point live referee scoring state
+  const [showScorekeeper, setShowScorekeeper] = useState(false)
+  const [refereeSets, setRefereeSets] = useState<{ team1: number; team2: number }[]>([{ team1: 0, team2: 0 }])
+  const [currentSetIdx, setCurrentSetIdx] = useState(0)
+  const [refereeHistory, setRefereeHistory] = useState<{
+    sets: { team1: number; team2: number }[]
+    currentSetIdx: number
+    logs: string[]
+  }[]>([])
+  const [refereeLogs, setRefereeLogs] = useState<string[]>([])
+
+  const getTeamNames = (a: PlayerField, b: PlayerField) => {
+    const nameA = getPlayerName(a, members) || (a === player1A ? 'Team 1' : 'Team 2')
+    const nameB = matchType === 'doubles' ? getPlayerName(b, members) : ''
+    return nameB ? `${nameA} & ${nameB}` : nameA
+  }
 
   const loadMembers = useCallback(async () => {
     if (!clubId) return
@@ -262,12 +279,6 @@ export default function ScoreRecordingModal({
       })
       const isTeam1Winner = team1Wins > team2Wins
       const isTeam2Winner = team2Wins > team1Wins
-
-      const getTeamNames = (a: PlayerField, b: PlayerField) => {
-        const nameA = getPlayerName(a, members)
-        const nameB = matchType === 'doubles' ? getPlayerName(b, members) : ''
-        return nameB ? `${nameA} & ${nameB}` : nameA
-      }
       
       const winners = isTeam1Winner 
         ? getTeamNames(player1A, player1B) 
@@ -314,6 +325,109 @@ export default function ScoreRecordingModal({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Referee Mode Handlers
+  const checkSetWinner = (t1: number, t2: number): 1 | 2 | 0 => {
+    if (t1 >= 21 && t1 - t2 >= 2) return 1
+    if (t2 >= 21 && t2 - t1 >= 2) return 2
+    if (t1 === 30) return 1
+    if (t2 === 30) return 2
+    return 0
+  }
+
+  const getMatchWinner = (completedSets: { team1: number; team2: number }[]): 1 | 2 | 0 => {
+    let team1Wins = 0
+    let team2Wins = 0
+    completedSets.forEach((s) => {
+      const winner = checkSetWinner(s.team1, s.team2)
+      if (winner === 1) team1Wins++
+      if (winner === 2) team2Wins++
+    })
+    if (team1Wins >= 2) return 1
+    if (team2Wins >= 2) return 2
+    return 0
+  }
+
+  const openPointByPointScorekeeper = () => {
+    setRefereeSets([{ team1: 0, team2: 0 }])
+    setCurrentSetIdx(0)
+    setRefereeHistory([])
+    setRefereeLogs([])
+    setShowScorekeeper(true)
+  }
+
+  const handleScorePoint = (team: 1 | 2) => {
+    const currentMatchWinner = getMatchWinner(refereeSets)
+    if (currentMatchWinner !== 0) return
+
+    // Save history for undo
+    const stateCopy = {
+      sets: refereeSets.map((s) => ({ ...s })),
+      currentSetIdx,
+      logs: [...refereeLogs],
+    }
+    setRefereeHistory((prev) => [...prev, stateCopy])
+
+    const nextSets = refereeSets.map((s) => ({ ...s }))
+    if (team === 1) {
+      nextSets[currentSetIdx].team1++
+    } else {
+      nextSets[currentSetIdx].team2++
+    }
+
+    const t1 = nextSets[currentSetIdx].team1
+    const t2 = nextSets[currentSetIdx].team2
+    
+    const team1Name = getTeamNames(player1A, player1B)
+    const team2Name = getTeamNames(player2A, player2B)
+    const scorerName = team === 1 ? team1Name : team2Name
+    const logMsg = `${scorerName} scores (${t1} - ${t2})`
+    const nextLogs = [logMsg, ...refereeLogs]
+
+    const setWinner = checkSetWinner(t1, t2)
+    if (setWinner !== 0) {
+      const setWinnerName = setWinner === 1 ? team1Name : team2Name
+      nextLogs.unshift(`🏆 Set ${currentSetIdx + 1} won by ${setWinnerName} (${t1} - ${t2})`)
+      
+      setRefereeSets(nextSets)
+      setRefereeLogs(nextLogs)
+
+      const matchWinner = getMatchWinner(nextSets)
+      if (matchWinner !== 0) {
+        const matchWinnerName = matchWinner === 1 ? team1Name : team2Name
+        nextLogs.unshift(`🎉 Match won by ${matchWinnerName}! Final score: ${nextSets.map(s => `${s.team1}-${s.team2}`).join(', ')}`)
+        setRefereeLogs(nextLogs)
+        return
+      }
+
+      if (currentSetIdx < 2) {
+        setRefereeSets([...nextSets, { team1: 0, team2: 0 }])
+        setCurrentSetIdx(currentSetIdx + 1)
+      }
+    } else {
+      setRefereeSets(nextSets)
+      setRefereeLogs(nextLogs)
+    }
+  }
+
+  const handleUndo = () => {
+    if (refereeHistory.length === 0) return
+    const prevHistory = [...refereeHistory]
+    const prevState = prevHistory.pop()!
+    setRefereeHistory(prevHistory)
+    setRefereeSets(prevState.sets)
+    setCurrentSetIdx(prevState.currentSetIdx)
+    setRefereeLogs(prevState.logs)
+  }
+
+  const applyRefereeScores = () => {
+    const converted = refereeSets.map((s) => ({
+      team1: String(s.team1),
+      team2: String(s.team2),
+    }))
+    setSets(converted)
+    setShowScorekeeper(false)
   }
 
   const renderPlayerField = (
@@ -363,6 +477,11 @@ export default function ScoreRecordingModal({
       : currentSets.filter((_, setIndex) => setIndex !== index)
     )
   }
+
+  const team1Name = getTeamNames(player1A, player1B)
+  const team2Name = getTeamNames(player2A, player2B)
+  const matchWinner = getMatchWinner(refereeSets)
+  const isMatchFinished = matchWinner !== 0
 
   return (
     <>
@@ -509,10 +628,21 @@ export default function ScoreRecordingModal({
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-slate-700">Score sets</p>
-                  <Button type="button" size="sm" variant="secondary" onClick={addSet} disabled={sets.length >= 3}>
-                    <Plus size={15} aria-hidden="true" />
-                    Add set
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="border border-emerald-600/30 text-emerald-700 dark:text-emerald-450 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      onClick={openPointByPointScorekeeper}
+                    >
+                      📱 Point-by-Point Scorekeeper
+                    </Button>
+                    <Button type="button" size="sm" variant="secondary" onClick={addSet} disabled={sets.length >= 3}>
+                      <Plus size={15} aria-hidden="true" />
+                      Add set
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -654,6 +784,168 @@ export default function ScoreRecordingModal({
             </Card>
           </div>
         </>
+      )}
+      
+      {showScorekeeper && (
+        <div className="fixed inset-0 z-[60] flex flex-col bg-slate-950 text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 px-4 py-3">
+            <div>
+              <h3 className="text-lg font-black text-white flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded bg-emerald-500/20 text-emerald-400 text-xs">
+                  Ref
+                </span>
+                Point-by-Point Scorekeeper
+              </h3>
+              <p className="text-xs text-slate-400">
+                {matchType === 'doubles' ? 'Doubles Match' : 'Singles Match'} • Set {currentSetIdx + 1}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Discard current live scoring progress?')) {
+                  setShowScorekeeper(false)
+                }
+              }}
+              className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Sets Tracker Header */}
+          <div className="flex justify-center gap-3 border-b border-slate-800 bg-slate-900/35 py-3">
+            {[0, 1, 2].map((idx) => {
+              const setScore = refereeSets[idx]
+              const isActive = idx === currentSetIdx
+              const isFuture = idx >= refereeSets.length
+              
+              return (
+                <div
+                  key={idx}
+                  className={`flex flex-col items-center rounded-lg px-4 py-1.5 transition-all ${
+                    isActive
+                      ? 'bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 font-bold scale-105 shadow shadow-emerald-500/5'
+                      : isFuture
+                        ? 'border border-transparent text-slate-600 font-medium'
+                        : 'bg-slate-900 border border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <span className="text-[10px] uppercase tracking-wider">Set {idx + 1}</span>
+                  <span className="text-sm font-mono mt-0.5">
+                    {isFuture ? '-' : `${setScore.team1} - ${setScore.team2}`}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Main Scoring Area */}
+          <div className="flex flex-1 flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-800">
+            {/* Team 1 Score Area */}
+            <button
+              type="button"
+              disabled={isMatchFinished}
+              onClick={() => handleScorePoint(1)}
+              className="flex-1 flex flex-col items-center justify-center p-6 text-center transition-all bg-emerald-950/5 hover:bg-emerald-950/10 active:bg-emerald-950/25 group focus:outline-none cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
+                {team1Name}
+              </span>
+              <div className="text-8xl md:text-9xl font-black font-mono text-emerald-400 tracking-tighter select-none animate-in zoom-in duration-150">
+                {refereeSets[currentSetIdx]?.team1 ?? 0}
+              </div>
+              <span className="mt-4 text-xs font-medium text-slate-500 opacity-60 group-hover:opacity-100 transition-opacity">
+                {isMatchFinished ? 'Match finished' : 'Tap to score point'}
+              </span>
+            </button>
+
+            {/* Team 2 Score Area */}
+            <button
+              type="button"
+              disabled={isMatchFinished}
+              onClick={() => handleScorePoint(2)}
+              className="flex-1 flex flex-col items-center justify-center p-6 text-center transition-all bg-indigo-950/5 hover:bg-indigo-950/10 active:bg-indigo-950/25 group focus:outline-none cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2 group-hover:scale-105 transition-transform">
+                {team2Name}
+              </span>
+              <div className="text-8xl md:text-9xl font-black font-mono text-indigo-400 tracking-tighter select-none animate-in zoom-in duration-150">
+                {refereeSets[currentSetIdx]?.team2 ?? 0}
+              </div>
+              <span className="mt-4 text-xs font-medium text-slate-500 opacity-60 group-hover:opacity-100 transition-opacity">
+                {isMatchFinished ? 'Match finished' : 'Tap to score point'}
+              </span>
+            </button>
+          </div>
+
+          {/* Winner announcement / Match controls */}
+          {isMatchFinished && (
+            <div className="bg-emerald-950/25 border-y border-emerald-800/40 p-4 text-center animate-in slide-in-from-bottom duration-300">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-xl mb-2">
+                👑
+              </div>
+              <h4 className="text-md font-extrabold text-emerald-400">
+                Match Complete!
+              </h4>
+              <p className="text-xs text-slate-300 mt-1">
+                {matchWinner === 1 ? team1Name : team2Name} wins the match.
+              </p>
+            </div>
+          )}
+
+          {/* Bottom Area: Controls & Timeline */}
+          <div className="border-t border-slate-800 bg-slate-900/60 p-4 flex flex-col md:flex-row gap-4">
+            {/* Timeline */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1.5">
+                <Trophy size={11} /> Point Timeline
+              </span>
+              <div className="h-28 overflow-y-auto bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 text-xs font-mono space-y-1.5">
+                {refereeLogs.length === 0 ? (
+                  <span className="text-slate-600 italic block py-0.5">No points scored yet. Tap above to begin refereeing.</span>
+                ) : (
+                  refereeLogs.map((log, logIdx) => (
+                    <div
+                      key={logIdx}
+                      className={`py-0.5 border-b border-slate-900 last:border-b-0 ${
+                        log.includes('🏆')
+                          ? 'text-emerald-400 font-bold'
+                          : log.includes('🎉')
+                            ? 'text-yellow-400 font-extrabold'
+                            : 'text-slate-300'
+                      }`}
+                    >
+                      {log}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-row md:flex-col justify-end gap-2.5 shrink-0 min-w-[180px]">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleUndo}
+                disabled={refereeHistory.length === 0}
+                className="flex-1 md:flex-initial bg-slate-800 hover:bg-slate-700 text-slate-200 border-none h-11"
+              >
+                <RotateCcw size={16} />
+                Undo Point
+              </Button>
+              <Button
+                type="button"
+                onClick={applyRefereeScores}
+                className="flex-1 md:flex-initial bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold h-11 shadow-lg"
+              >
+                Apply & Exit
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

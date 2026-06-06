@@ -58,22 +58,22 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run racket clubs, sessions, scores, and members/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /see what clubs are playing tonight/i })).toBeInTheDocument()
       })
       
-      expect(screen.getAllByRole('link', { name: /get started/i }).length).toBeGreaterThan(0)
+      expect(screen.getAllByRole('link', { name: /put your club here/i }).length).toBeGreaterThan(0)
       expect(screen.queryByText(/mobile-first club operations/i)).not.toBeInTheDocument()
     })
 
-    it('shows trust indicators', async () => {
+    it('shows public club showcase signals', async () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByText(/club-ready/i)).toBeInTheDocument()
+        expect(screen.getByText(/live club channels/i)).toBeInTheDocument()
       })
       
-      expect(screen.getAllByText(/fast scoring/i).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/phone-first/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/players become visible/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/normal sessions become headlines/i).length).toBeGreaterThan(0)
     })
   })
 
@@ -143,7 +143,7 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run racket clubs, sessions, scores, and members/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /see what clubs are playing tonight/i })).toBeInTheDocument()
       })
 
       const loginLinks = screen.getAllByRole('link', { name: /log in/i })

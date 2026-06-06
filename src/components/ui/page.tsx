@@ -9,15 +9,15 @@ type PageHeaderProps = {
 }
 
 export function Page({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('space-y-8 sm:space-y-10', className)} {...props} />
+  return <div className={cn('space-y-6 sm:space-y-7', className)} {...props} />
 }
 
 export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
   return (
     <div className="space-y-4 sm:flex sm:items-start sm:justify-between sm:gap-6 sm:space-y-0">
       <div className="min-w-0 space-y-2">
-        {eyebrow ? <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{eyebrow}</p> : null}
-        <h1 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">{title}</h1>
+        {eyebrow ? <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">{eyebrow}</p> : null}
+        <h1 className="text-2xl font-semibold leading-tight text-slate-950 sm:text-[1.9rem]">{title}</h1>
         {description ? <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">{description}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}

@@ -100,6 +100,13 @@ export default function Navbar() {
     }
   }
 
+  const navClass = (path: string) => {
+    const isActive = path === '/'
+      ? location.pathname === '/'
+      : location.pathname.startsWith(path)
+    return `nav-link${isActive ? ' active' : ''}`
+  }
+
   return (
     <>
       <nav className="nav-bar">
@@ -108,11 +115,11 @@ export default function Navbar() {
           <span className="site-brand-text">kelabsukan.com</span>
         </Link>
         <div className="nav-links">
-          <Link className="nav-link" to="/">
+          <Link className={navClass('/')} to="/">
             <Home size={16} aria-hidden="true" />
             Home
           </Link>
-          <Link className="nav-link" to="/dashboard">
+          <Link className={navClass('/dashboard')} to="/dashboard">
             <LayoutDashboard size={16} aria-hidden="true" />
             Dashboard
           </Link>
@@ -120,12 +127,12 @@ export default function Navbar() {
           {user && (
             <>
               {clubs.length === 0 ? (
-                <Link className="nav-link" to="/dashboard" aria-label="Find clubs">
+                <Link className={navClass('/dashboard')} to="/dashboard" aria-label="Find clubs">
                   <Users size={16} aria-hidden="true" />
                   Find Clubs
                 </Link>
               ) : clubs.length === 1 ? (
-                <Link className="nav-link" to={`/club/${clubs[0].id}`} aria-label={`Go to ${clubs[0].name}`}>
+                <Link className={navClass('/club')} to={`/club/${clubs[0].id}`} aria-label={`Go to ${clubs[0].name}`}>
                   <Users size={16} aria-hidden="true" />
                   <span style={{ 
                     overflow: 'hidden', 
@@ -348,4 +355,3 @@ export default function Navbar() {
     </>
   )
 }
-
