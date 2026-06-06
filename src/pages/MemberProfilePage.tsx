@@ -410,6 +410,35 @@ export default function MemberProfilePage() {
             </div>
           )}
 
+          {(profile.social_links && Object.values(profile.social_links).some(Boolean)) || (profile.gear && Object.values(profile.gear).some(Boolean)) ? (
+            <div className="grid gap-4 border-t border-slate-800 pt-4 sm:grid-cols-2">
+              {profile.social_links && Object.values(profile.social_links).some(Boolean) ? (
+                <div className="space-y-1.5">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Social</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.values(profile.social_links).filter(Boolean).map((handle) => (
+                      <Badge key={handle} className="bg-slate-800 border-slate-700 text-slate-250">
+                        {handle}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {profile.gear && Object.values(profile.gear).some(Boolean) ? (
+                <div className="space-y-1.5">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gear</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.values(profile.gear).filter(Boolean).map((item) => (
+                      <Badge key={item} className="bg-slate-800 border-slate-700 text-slate-250">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {clubs.length > 0 && (
             <div className="border-t border-slate-800 pt-4 space-y-1.5">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Clubs</h3>

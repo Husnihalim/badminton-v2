@@ -29,6 +29,9 @@ type ProfileRow = {
   bio?: string | null
   preferred_sport?: string | null
   avatar_url?: string | null
+  is_private?: boolean | null
+  social_links?: User['social_links'] | null
+  gear?: User['gear'] | null
 }
 
 type AuthUserFallback = {
@@ -80,6 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               bio: profile.bio,
               preferred_sport: profile.preferred_sport,
               avatar_url: profile.avatar_url,
+              is_private: profile.is_private,
+              social_links: profile.social_links,
+              gear: profile.gear,
             }
           }
         } catch (profileError) {
@@ -113,6 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       bio: profile.bio,
       preferred_sport: profile.preferred_sport,
       avatar_url: profile.avatar_url,
+      is_private: profile.is_private,
+      social_links: profile.social_links,
+      gear: profile.gear,
     }
   }, [])
 

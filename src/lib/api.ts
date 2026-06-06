@@ -15,7 +15,9 @@ import type {
   MatchReaction,
   MatchComment,
   MatchWithDetails,
-  EloHistory
+  EloHistory,
+  PlayerGear,
+  PlayerSocialLinks
 } from '../types'
 
 type ProfileSummary = {
@@ -1189,6 +1191,8 @@ export type ProfileUpdates = {
   preferred_sport?: string | null
   avatar_url?: string | null
   is_private?: boolean | null
+  social_links?: PlayerSocialLinks | null
+  gear?: PlayerGear | null
 }
 
 export async function updateProfile(userId: string, updates: ProfileUpdates) {

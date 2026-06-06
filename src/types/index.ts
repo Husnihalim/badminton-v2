@@ -13,6 +13,24 @@ export interface User {
   preferred_sport?: string | null
   avatar_url?: string | null
   is_private?: boolean | null
+  social_links?: PlayerSocialLinks | null
+  gear?: PlayerGear | null
+}
+
+export type PlayerSocialLinks = {
+  instagram?: string | null
+  tiktok?: string | null
+  facebook?: string | null
+  youtube?: string | null
+  x?: string | null
+}
+
+export type PlayerGear = {
+  racket?: string | null
+  strings?: string | null
+  tension?: string | null
+  grip?: string | null
+  shoes?: string | null
 }
 
 // Extended User with metadata

@@ -4,7 +4,7 @@ import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, UserRound, Users
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { createClub, getMyClubs, updateProfile, uploadProfilePhoto } from '../lib/api'
-import type { Club } from '../types'
+import type { Club, PlayerGear, PlayerSocialLinks } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -16,6 +16,12 @@ import { Textarea } from '../components/ui/textarea'
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
+}
+
+function cleanProfileObject<T extends Record<string, string | null | undefined>>(input: T) {
+  return Object.fromEntries(
+    Object.entries(input).map(([key, value]) => [key, value?.trim() || null])
+  ) as T
 }
 
 export default function ProfilePage() {
@@ -38,6 +44,8 @@ export default function ProfilePage() {
   const [city, setCity] = useState('')
   const [preferredSport, setPreferredSport] = useState('badminton')
   const [bio, setBio] = useState('')
+  const [socialLinks, setSocialLinks] = useState<PlayerSocialLinks>({})
+  const [gear, setGear] = useState<PlayerGear>({})
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isPrivate, setIsPrivate] = useState(false)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
@@ -72,6 +80,8 @@ export default function ProfilePage() {
       setCity(user.city || '')
       setPreferredSport(user.preferred_sport || 'badminton')
       setBio(user.bio || '')
+      setSocialLinks(user.social_links || {})
+      setGear(user.gear || {})
       setAvatarUrl(user.avatar_url || null)
       setIsPrivate(user.is_private || false)
       loadMyClubs()
@@ -151,6 +161,8 @@ export default function ProfilePage() {
         city: city.trim() || null,
         preferred_sport: preferredSport || null,
         bio: bio.trim() || null,
+        social_links: cleanProfileObject(socialLinks),
+        gear: cleanProfileObject(gear),
         is_private: isPrivate,
       })
       await refreshUser()
@@ -314,6 +326,56 @@ export default function ProfilePage() {
               <span>Bio</span>
               <Textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={1000} placeholder="Short note about your playing level, availability, or club interests." />
             </label>
+
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
+              <div>
+                <h3 className="text-sm font-bold text-slate-950">Social handles</h3>
+                <p className="text-xs leading-5 text-slate-500">Shown on your player card when your profile is public.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Instagram</span>
+                  <Input value={socialLinks.instagram || ''} onChange={(e) => setSocialLinks((current) => ({ ...current, instagram: e.target.value }))} maxLength={80} placeholder="@playername" />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>TikTok</span>
+                  <Input value={socialLinks.tiktok || ''} onChange={(e) => setSocialLinks((current) => ({ ...current, tiktok: e.target.value }))} maxLength={80} placeholder="@playername" />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Facebook</span>
+                  <Input value={socialLinks.facebook || ''} onChange={(e) => setSocialLinks((current) => ({ ...current, facebook: e.target.value }))} maxLength={120} placeholder="Profile name or URL" />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>YouTube</span>
+                  <Input value={socialLinks.youtube || ''} onChange={(e) => setSocialLinks((current) => ({ ...current, youtube: e.target.value }))} maxLength={120} placeholder="Channel name or URL" />
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
+              <div>
+                <h3 className="text-sm font-bold text-slate-950">Gear and tools</h3>
+                <p className="text-xs leading-5 text-slate-500">Useful for player cards, club stories, and future sponsor/brand surfaces.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Racket</span>
+                  <Input value={gear.racket || ''} onChange={(e) => setGear((current) => ({ ...current, racket: e.target.value }))} maxLength={120} placeholder="Yonex Astrox 88D Pro" />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Strings</span>
+                  <Input value={gear.strings || ''} onChange={(e) => setGear((current) => ({ ...current, strings: e.target.value }))} maxLength={120} placeholder="BG66 Ultimax" />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Tension</span>
+                  <Input value={gear.tension || ''} onChange={(e) => setGear((current) => ({ ...current, tension: e.target.value }))} maxLength={40} placeholder="27 lbs" />
+                </label>
+                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                  <span>Shoes</span>
+                  <Input value={gear.shoes || ''} onChange={(e) => setGear((current) => ({ ...current, shoes: e.target.value }))} maxLength={120} placeholder="Court shoes" />
+                </label>
+              </div>
+            </div>
 
             <div className="flex items-center gap-2 py-2">
               <input

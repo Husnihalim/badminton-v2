@@ -734,6 +734,18 @@ export default function DashboardPage() {
   const formLabel = personalStats.streakType
     ? `${personalStats.streak} ${personalStats.streakType === 'win' ? 'win' : 'loss'} run`
     : 'No active streak'
+  const socialHandles = [
+    user.social_links?.instagram,
+    user.social_links?.tiktok,
+    user.social_links?.facebook,
+    user.social_links?.youtube,
+  ].filter((handle): handle is string => Boolean(handle))
+  const gearItems = [
+    user.gear?.racket,
+    user.gear?.strings,
+    user.gear?.tension,
+    user.gear?.shoes,
+  ].filter((item): item is string => Boolean(item))
 
   return (
     <Page>
@@ -790,6 +802,16 @@ export default function DashboardPage() {
                 ) : (
                   <p className="max-w-2xl text-sm leading-6 text-slate-400">Add a short playing bio, social handles, and gear later to make this card feel complete.</p>
                 )}
+
+                {socialHandles.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {socialHandles.slice(0, 4).map((handle) => (
+                      <span key={handle} className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-xs font-semibold text-slate-200">
+                        {handle}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -800,10 +822,11 @@ export default function DashboardPage() {
               <PlayerCardMetric label="Rank" value={primaryRank ? `#${primaryRank.rank} / ${primaryRank.total}` : 'Unranked'} />
             </div>
 
-            <div className="grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-3">
+            <div className="grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-4">
               <PlayerCardDetail label="Latest headline" value={latestHeadline} />
               <PlayerCardDetail label="Best partner" value={recommendedInsights?.bestPartner?.name || 'Needs doubles data'} />
               <PlayerCardDetail label="Top rival" value={recommendedInsights?.topRival?.name || 'Needs match history'} />
+              <PlayerCardDetail label="Gear" value={gearItems.length ? gearItems.slice(0, 2).join(' / ') : 'Add racket and shoes'} />
             </div>
           </CardContent>
         </Card>
@@ -830,7 +853,7 @@ export default function DashboardPage() {
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs font-semibold uppercase text-slate-500">Next build</p>
-              <p className="mt-1 text-sm leading-6 text-slate-700">Social handles, gear, and generated card backgrounds will live here once the profile fields are added.</p>
+              <p className="mt-1 text-sm leading-6 text-slate-700">Generated card backgrounds and optional portrait enhancement come after the player-card profile fields are proven in daily use.</p>
             </div>
           </CardContent>
         </Card>
