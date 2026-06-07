@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Share2, MoreVertical, Users, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Users, CheckCircle2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { FriendlyScoreboard } from '../components/friendly/FriendlyScoreboard'
 import { MatchmakingGrid } from '../components/friendly/MatchmakingGrid'
 import { PairRegistrationForm } from '../components/friendly/PairRegistrationForm'
+import { FriendlyStoryList } from '../components/friendly/FriendlyStoryCard'
+import { FriendlyShareButton } from '../components/friendly/FriendlyShareCard'
+import { generateFriendlyStories } from '../lib/friendlyStoryMoments'
 import { ScoreRecordingModal } from '../components/ScoreRecordingModal'
 import {
   getFriendly,
@@ -19,7 +22,7 @@ import {
 } from '../lib/friendlyApi'
 import { useAuth } from '../context/AuthContext'
 import { useClub } from '../context/ClubContext'
-import type { Friendly, FriendlyPair, FriendlyMatchup } from '../types/friendly'
+import type { Friendly, FriendlyPair, FriendlyMatchup, FriendlyStoryMoment } from '../types/friendly'
 import type { User } from '../types'
 
 export function FriendlyPage() {
@@ -35,6 +38,7 @@ export function FriendlyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [recordingMatchup, setRecordingMatchup] = useState<FriendlyMatchup | null>(null)
   const [showScoreModal, setShowScoreModal] = useState(false)
+  const [stories, setStories] = useState<FriendlyStoryMoment[]>([])
   
   // Mock club members - replace with actual data
   const [clubMembers] = useState<User[]>([])
@@ -57,6 +61,10 @@ export function FriendlyPage() {
       setFriendly(friendly)
       setPairs(friendlyPairs || [])
       setMatchups(friendlyMatchups || [])
+      
+      // Generate stories
+      const generatedStories = generateFriendlyStories(friendly, friendlyMatchups || [])
+      setStories(generatedStories)
     }
     
     setIsLoading(false)
@@ -150,10 +158,13 @@ export function FriendlyPage() {
         </button>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Share2 size={16} />
-            <span className="hidden sm:inline">Share</span>
-          </Button>
+          {friendly && (
+            <FriendlyShareButton 
+              friendly={friendly} 
+              matchups={matchups} 
+              story={stories[0]}
+            />
+          )}
           <Button variant="ghost" size="icon">
             <MoreVertical size={20} />
           </Button>
@@ -251,10 +262,22 @@ export function FriendlyPage() {
       )}
 
       {(friendly.status === 'live' || friendly.status === 'completed') && (
-        <FriendlyScoreboard
-          friendly={friendly}
-          onRecordMatch={handleRecordMatch}
-        />
+        <>
+          <FriendlyScoreboard
+            friendly={friendly}
+            onRecordMatch={handleRecordMatch}
+          />
+          
+          {/* Stories */}
+          <div className="mt-6">
+            <FriendlyStoryList 
+              stories={stories}
+              onShareStory={(story) => {
+                // Handle share
+              }}
+            />
+          </div>
+        </>
       )}
 
       {/* Score Recording Modal */}
