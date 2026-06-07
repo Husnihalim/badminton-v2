@@ -19,8 +19,13 @@ const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/Auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'))
 const MemberProfilePage = lazy(() => import('./pages/MemberProfilePage'))
+const PlayerHomePreviewPage = lazy(() => import('./pages/PlayerHomePreviewPage'))
+const UiPreviewPage = lazy(() => import('./pages/UiPreviewPage'))
 const SuperAdminAnalyticsPage = lazy(() => import('./pages/SuperAdminAnalyticsPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const FriendliesListPage = lazy(() => import('./pages/FriendliesListPage'))
+const FriendlyPage = lazy(() => import('./pages/FriendlyPage'))
+const FriendlyLandingPage = lazy(() => import('./pages/FriendlyLandingPage'))
 
 function App() {
   return (
@@ -37,6 +42,8 @@ function App() {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/player-home-preview" element={<PlayerHomePreviewPage />} />
+                  <Route path="/ui-preview" element={<UiPreviewPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/member/:userId" element={<MemberProfilePage />} />
                   <Route path="/invite/:inviteToken" element={<InviteJoinPage />} />
@@ -46,6 +53,9 @@ function App() {
                   <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
                   <Route path="/club/:clubId/members" element={<ClubMembersPage />} />
                   <Route path="/superadmin/analytics" element={<SuperAdminAnalyticsPage />} />
+                  <Route path="/friendlies" element={<FriendliesListPage />} />
+                  <Route path="/friendly/:friendlyId" element={<FriendlyPage />} />
+                  <Route path="/f/:inviteCode" element={<FriendlyLandingPage />} />
                   <Route path="/not-found" element={<NotFoundPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

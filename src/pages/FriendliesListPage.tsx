@@ -1,0 +1,178 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Trophy, Clock, Users } from 'lucide-react'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { Badge } from '../components/ui/badge'
+import { listClubFriendlies } from '../lib/friendlyApi'
+import { useClub } from '../context/ClubContext'
+import type { Friendly } from '../types/friendly'
+
+export function FriendliesListPage() {
+  const navigate = useNavigate()
+  const { currentClub } = useClub()
+  const [friendlies, setFriendlies] = useState<Friendly[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!currentClub) return
+    loadFriendlies()
+  }, [currentClub])
+
+  const loadFriendlies = async () => {
+    if (!currentClub) return
+    
+    setIsLoading(true)
+    const { friendlies: data, error } = await listClubFriendlies(currentClub.id)
+    
+    if (!error && data) {
+      setFriendlies(data)
+    }
+    setIsLoading(false)
+  }
+
+  const activeFriendlies = friendlies.filter((f) => ['pending', 'accepted', 'matchmaking', 'live'].includes(f.status))
+  const completedFriendlies = friendlies.filter((f) => f.status === 'completed')
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#040d0f]">
+        <p className="text-slate-400">Loading...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-[#040d0f] p-4">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="arena-heading text-2xl">Friendlies</h1>
+        <Button
+          onClick={() => navigate('/friendly/create')}
+          className="gap-2 bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
+        >
+          <Plus size={16} />
+          New
+        </Button>
+      </div>
+
+      {/* Active Friendlies */}
+      {activeFriendlies.length > 0 && (
+        <div className="mb-8 space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Active ({activeFriendlies.length})
+          </p>
+          {activeFriendlies.map((friendly) => (
+            <FriendlyCard
+              key={friendly.id}
+              friendly={friendly}
+              currentClubId={currentClub?.id}
+              onClick={() => navigate(`/friendly/${friendly.id}`)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Completed Friendlies */}
+      {completedFriendlies.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            History ({completedFriendlies.length})
+          </p>
+          {completedFriendlies.map((friendly) => (
+            <FriendlyCard
+              key={friendly.id}
+              friendly={friendly}
+              currentClubId={currentClub?.id}
+              onClick={() => navigate(`/friendly/${friendly.id}`)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {friendlies.length === 0 && (
+        <Card className="border-white/10 bg-[#0a0f0e]">
+          <CardContent className="p-8 text-center">
+            <div className="mb-4 flex justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+                <Trophy size={32} className="text-slate-600" />
+              </div>
+            </div>
+            <h2 className="mb-2 text-xl font-bold text-white">No Friendlies Yet</h2>
+            <p className="mb-4 text-slate-400">
+              Challenge another club to a friendly match and build your rivalry history
+            </p>
+            <Button
+              onClick={() => navigate('/friendly/create')}
+              className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
+            >
+              Challenge a Club
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+interface FriendlyCardProps {
+  friendly: Friendly
+  currentClubId?: string
+  onClick: () => void
+}
+
+function FriendlyCard({ friendly, currentClubId, onClick }: FriendlyCardProps) {
+  const isInviting = currentClubId === friendly.inviting_club_id
+  const opponentName = isInviting
+    ? (friendly.invited_club?.name || friendly.invited_club_name)
+    : (friendly.inviting_club?.name || '')
+
+  const getStatusBadge = () => {
+    switch (friendly.status) {
+      case 'pending':
+        return <Badge variant="muted"><Clock size={12} className="mr-1" /> Pending</Badge>
+      case 'accepted':
+        return <Badge variant="blue"><Users size={12} className="mr-1" /> Setting Up</Badge>
+      case 'matchmaking':
+        return <Badge variant="heat">Matchmaking</Badge>
+      case 'live':
+        return <Badge variant="live">● Live</Badge>
+      case 'completed':
+        const won = friendly.winning_club_id === currentClubId
+        return <Badge variant={won ? 'live' : 'muted'}>{won ? '✓ Won' : '✗ Lost'}</Badge>
+      default:
+        return <Badge variant="muted">{friendly.status}</Badge>
+    }
+  }
+
+  return (
+    <Card
+      className="cursor-pointer border-white/10 bg-[#0a0f0e] transition-colors hover:border-white/20"
+      onClick={onClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="mb-1 flex items-center gap-2">
+              {getStatusBadge()}
+            </div>
+            <p className="font-bold text-white">
+              vs {opponentName}
+            </p>
+            <p className="text-xs text-slate-400">
+              {friendly.pair_count} pairs • {new Date(friendly.created_at).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="text-right">
+            {friendly.status === 'completed' && friendly.winning_club_id && (
+              <div className={`text-2xl font-bold ${friendly.winning_club_id === currentClubId ? 'text-[var(--arena-lime)]' : 'text-slate-500'}`}>
+                {friendly.winning_club_id === currentClubId ? 'W' : 'L'}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
