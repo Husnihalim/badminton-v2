@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Activity, Flame, MapPin, Percent, Shield, Trophy, UserRound, ChevronLeft } from 'lucide-react'
-import { getProfile, getClubMatches, getClubLeaderboard } from '../lib/api'
+import { Activity, Flame, Percent, Shield, Trophy, ChevronLeft } from 'lucide-react'
+import { getProfile, getClubMatches, getClubLeaderboard, getClubMembers } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { Club, MatchWithDetails, User } from '../types'
-import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Page } from '../components/ui/page'
 import { cn } from '../lib/utils'
 import { MatchScoreboard } from '../components/MatchScoreboard'
 import ScorecardShareModal from '../components/ScorecardShareModal'
+import { PlayerIdentityCard } from '../components/sports'
 
 type MemberEloHistoryRow = {
   id: string
@@ -40,8 +40,10 @@ export default function MemberProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
-  const [clubElos, setClubElos] = useState<Record<string, number>>({})
   const [eloHistory, setEloHistory] = useState<MemberEloHistoryRow[]>([])
+  const [allUserMatches, setAllUserMatches] = useState<MatchWithDetails[]>([])
+  const [clubRanks, setClubRanks] = useState<Record<string, { rank: number; total: number }>>({})
+  const [memberProfilesMap, setMemberProfilesMap] = useState<Record<string, { userId: string; avatarUrl: string | null }>>({})
 
   const [personalStats, setPersonalStats] = useState({
     matchesPlayed: 0,
@@ -89,17 +91,10 @@ export default function MemberProfilePage() {
         console.error('Error fetching memberships:', membershipError)
       }
 
-      const eloMap: Record<string, number> = {}
       const userClubs = (membershipData as unknown as Array<{ club_id: string; elo_rating: number | null; clubs: Club }> || [])
-        .map((m) => {
-          if (m.club_id && m.elo_rating != null) {
-            eloMap[m.club_id] = m.elo_rating
-          }
-          return m.clubs
-        })
+        .map((m) => m.clubs)
         .filter(Boolean)
       setClubs(userClubs)
-      setClubElos(eloMap)
 
       // 3. Fetch Matches if profile is public
       if (!userProfile.is_private || currentUser?.id === userId) {
@@ -128,13 +123,17 @@ export default function MemberProfilePage() {
             }
           })
 
-        // Fetch matches and leaderboards for each club
+        // Fetch matches, leaderboards and members for each club
+        const ranks: Record<string, { rank: number; total: number }> = {}
+        const profilesMap: Record<string, { userId: string; avatarUrl: string | null }> = {}
+
         await Promise.all(
           userClubs.map(async (club) => {
             try {
-              const [clubMatches, leaderboardRows] = await Promise.all([
+              const [clubMatches, leaderboardRows, members] = await Promise.all([
                 getClubMatches(club.id),
-                getClubLeaderboard(club.id, 100)
+                getClubLeaderboard(club.id, 100),
+                getClubMembers(club.id),
               ])
               
               allMatches.push(...clubMatches)
@@ -147,11 +146,32 @@ export default function MemberProfilePage() {
                 })
               }
               clubLeaderboards[club.id] = lbMap
+
+              const index = leaderboardRows.findIndex(
+                (row) => row.name.toLowerCase() === userProfile.name.toLowerCase() ||
+                        (userProfile.display_name && row.name.toLowerCase() === userProfile.display_name.toLowerCase())
+              )
+              if (index !== -1) {
+                ranks[club.id] = { rank: index + 1, total: leaderboardRows.length }
+              }
+
+              members.forEach((m) => {
+                const mName = m.name || 'Unknown'
+                if (m.user_id) {
+                  profilesMap[mName.toLowerCase()] = {
+                    userId: m.user_id,
+                    avatarUrl: m.avatar_url,
+                  }
+                }
+              })
             } catch (e) {
               console.error(`Error loading matches for club ${club.id}:`, e)
             }
           })
         )
+
+        setClubRanks(ranks)
+        setMemberProfilesMap(profilesMap)
 
         // Filter user matches
         const userMatches = allMatches.filter((m) =>
@@ -161,6 +181,7 @@ export default function MemberProfilePage() {
         // Sort user matches chronologically descending
         userMatches.sort((a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime())
         setMatches(userMatches.slice(0, 5))
+        setAllUserMatches(userMatches)
 
         // Calculate personal stats
         let wins = 0
@@ -321,6 +342,125 @@ export default function MemberProfilePage() {
     }
   }, [userId, currentUser])
 
+  const recommendedInsights = useMemo(() => {
+    if (!profile || allUserMatches.length === 0) return null
+
+    const partners = new Map<string, { wins: number; matches: number }>()
+    const rivals = new Map<string, { wins: number; matches: number }>()
+
+    allUserMatches.forEach((m) => {
+      const userPart = m.participants.find((p) => p.user_id === profile.id)
+      if (!userPart) return
+
+      const scoreSets = m.score_sets || []
+      if (scoreSets.length === 0) return
+
+      const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
+      const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
+      if (team1Sets === team2Sets) return
+
+      const winningTeam = team1Sets > team2Sets ? 1 : 2
+      const isWin = userPart.team === winningTeam
+
+      m.participants.forEach((p) => {
+        const pName = p.name || p.guest_name
+        if (!pName) return
+
+        if (p.user_id === profile.id) return
+        if (pName.toLowerCase() === profile.name.toLowerCase()) return
+        if (profile.display_name && pName.toLowerCase() === profile.display_name.toLowerCase()) return
+
+        if (userPart.team === p.team) {
+          if (m.match_type === 'doubles') {
+            const stats = partners.get(pName) ?? { wins: 0, matches: 0 }
+            stats.matches++
+            if (isWin) stats.wins++
+            partners.set(pName, stats)
+          }
+        } else {
+          const stats = rivals.get(pName) ?? { wins: 0, matches: 0 }
+          stats.matches++
+          if (isWin) stats.wins++
+          rivals.set(pName, stats)
+        }
+      })
+    })
+
+    const partnersList = Array.from(partners.entries()).map(([name, stats]) => ({
+      name,
+      ...stats,
+      winRate: (stats.wins / stats.matches) * 100,
+    }))
+
+    let bestPartner = null
+    const partnerCandidates = partnersList.filter((p) => p.matches >= 2)
+    const targetPartners = partnerCandidates.length > 0 ? partnerCandidates : partnersList
+    if (targetPartners.length > 0) {
+      bestPartner = [...targetPartners].sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.matches - a.matches)[0]
+    }
+
+    const rivalsList = Array.from(rivals.entries()).map(([name, stats]) => ({
+      name,
+      ...stats,
+      winRate: (stats.wins / stats.matches) * 100,
+    }))
+
+    let topRival = null
+    const rivalCandidates = rivalsList.filter((r) => r.matches >= 2)
+    const targetRivals = rivalCandidates.length > 0 ? rivalCandidates : rivalsList
+    if (targetRivals.length > 0) {
+      topRival = [...targetRivals].sort((a, b) => b.matches - a.matches || Math.abs(50 - a.winRate) - Math.abs(50 - b.winRate))[0]
+    }
+
+    let nemesis = null
+    const nemesisList = rivalsList.filter((r) => r.matches - r.wins > 0)
+    if (nemesisList.length > 0) {
+      const nemesisCandidates = nemesisList.filter((r) => r.matches >= 2)
+      const targetNemesis = nemesisCandidates.length > 0 ? nemesisCandidates : nemesisList
+      nemesis = [...targetNemesis].sort(
+        (a, b) => a.winRate - b.winRate || b.matches - a.matches || (b.matches - b.wins) - (a.matches - a.wins)
+      )[0]
+    }
+
+    const toughestProfile = nemesis ? memberProfilesMap[nemesis.name.toLowerCase()] : null
+    const toughestOpponent = nemesis ? {
+      name: nemesis.name,
+      wins: nemesis.wins,
+      losses: nemesis.matches - nemesis.wins,
+      matches: nemesis.matches,
+      winRate: nemesis.winRate,
+      userId: toughestProfile?.userId || null,
+      avatarUrl: toughestProfile?.avatarUrl || null,
+    } : null
+
+    let mostDefeated = null
+    const defeatList = rivalsList.filter((r) => r.wins > 0)
+    if (defeatList.length > 0) {
+      mostDefeated = [...defeatList].sort(
+        (a, b) => b.wins - a.wins || b.winRate - a.winRate || b.matches - a.matches
+      )[0]
+    }
+
+    const defeatProfile = mostDefeated ? memberProfilesMap[mostDefeated.name.toLowerCase()] : null
+    const mostDefeatedOpponent = mostDefeated ? {
+      name: mostDefeated.name,
+      wins: mostDefeated.wins,
+      losses: mostDefeated.matches - mostDefeated.wins,
+      matches: mostDefeated.matches,
+      winRate: mostDefeated.winRate,
+      userId: defeatProfile?.userId || null,
+      avatarUrl: defeatProfile?.avatarUrl || null,
+    } : null
+
+    return {
+      bestPartner,
+      topRival,
+      nemesis,
+      toughestOpponent,
+      mostDefeatedOpponent
+    }
+  }, [allUserMatches, profile, memberProfilesMap])
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProfileData()
@@ -357,117 +497,58 @@ export default function MemberProfilePage() {
       </div>
 
       {/* Profile Header Card */}
-      <Card className="bg-slate-900 text-white border-slate-800 overflow-hidden relative">
-        <div className="absolute top-4 right-4 hidden sm:block">
-          {profile.is_private ? (
-            <Badge className="bg-slate-800 text-slate-400 border-slate-700">🔒 Private Profile</Badge>
-          ) : (
-            <Badge className="bg-emerald-950 text-emerald-400 border-emerald-800">🌐 Public Profile</Badge>
-          )}
+      <PlayerIdentityCard
+        name={displayName}
+        sport={profile.preferred_sport || 'badminton'}
+        clubName={clubs[0]?.name}
+        city={profile.city || undefined}
+        avatarUrl={profile.avatar_url}
+        isPrivate={Boolean(profile.is_private)}
+        bio={profile.bio}
+        socialHandles={[
+          profile.social_links?.instagram,
+          profile.social_links?.tiktok,
+          profile.social_links?.facebook,
+          profile.social_links?.youtube,
+        ].filter((handle): handle is string => Boolean(handle))}
+        metrics={[
+          { label: 'Record', value: `${personalStats.wins}W-${personalStats.losses}L` },
+          { label: 'Signature', value: personalStats.matchesPlayed ? `${personalStats.winRate}% win rate` : `${clubs.length} ${clubs.length === 1 ? 'club' : 'clubs'} joined` },
+          { label: 'Form', value: personalStats.streakType ? `${personalStats.streak} ${personalStats.streakType === 'win' ? 'win' : 'loss'}` : 'No streak' },
+          { label: 'Rank', value: clubs[0] && clubRanks[clubs[0].id] ? `#${clubRanks[clubs[0].id].rank} / ${clubRanks[clubs[0].id].total}` : 'Unranked' },
+        ]}
+        details={[
+          { label: 'Primary club', value: clubs[0]?.name || 'No clubs joined' },
+          { label: 'Best partner', value: recommendedInsights?.bestPartner?.name || 'Needs doubles data' },
+          { label: 'Top rival', value: recommendedInsights?.topRival?.name || 'Needs match history' },
+          { label: 'Clubs', value: clubs.map(c => c.name).join(', ') || 'None' },
+        ]}
+        gear={profile.gear}
+        rankings={clubs.map((c) => {
+          const r = clubRanks[c.id]
+          if (!r) return null
+          return {
+            clubId: c.id,
+            clubName: c.name,
+            rank: r.rank,
+            total: r.total
+          }
+        }).filter((r): r is { clubId: string; clubName: string; rank: number; total: number } => r !== null)}
+        toughestOpponent={recommendedInsights?.toughestOpponent}
+        mostDefeatedOpponent={recommendedInsights?.mostDefeatedOpponent}
+      />
+
+      {!isOwner && showFullProfile && personalStats.matchesPlayed > 0 && (
+        <div className="flex justify-end mt-4">
+          <Button
+            type="button"
+            onClick={() => navigate(`/dashboard?rival=${displayName}`)}
+            className="bg-emerald-700 hover:bg-emerald-800 font-bold border-none"
+          >
+            ⚔️ Compare Head-to-Head
+          </Button>
         </div>
-        <CardContent className="p-6 space-y-6">
-          <div className="flex flex-col items-center text-center space-y-4 sm:flex-row sm:items-start sm:text-left sm:space-y-0 sm:space-x-6">
-            <div className="avatar-gradient-outline shrink-0">
-              <div className="avatar-gradient-outline-inner h-24 w-24 flex items-center justify-center">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <UserRound size={48} className="text-[#ccff00]" />
-                )}
-              </div>
-            </div>
-            <div className="space-y-2 min-w-0 flex-1">
-              <h1 className="text-2xl font-extrabold tracking-tight truncate">{displayName}</h1>
-              <p className="text-sm text-slate-400">@{profile.name}</p>
-              
-              {profile.city && (
-                <p className="text-sm text-slate-300 flex items-center justify-center sm:justify-start gap-1">
-                  <MapPin size={14} className="text-slate-400" />
-                  {profile.city}
-                </p>
-              )}
-
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
-                <Badge className="bg-emerald-900 hover:bg-emerald-900 border-none capitalize text-white">
-                  {profile.preferred_sport || 'badminton'}
-                </Badge>
-                <Badge className="sm:hidden bg-slate-800 text-slate-400 border-slate-700">
-                  {profile.is_private ? '🔒 Private' : '🌐 Public'}
-                </Badge>
-                {isOwner && (
-                  <Badge className="bg-slate-800 border-slate-700 text-slate-200">
-                    You
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {profile.bio && (
-            <div className="border-t border-slate-800 pt-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">About</h3>
-              <p className="text-sm text-slate-250 leading-relaxed break-words">{profile.bio}</p>
-            </div>
-          )}
-
-          {(profile.social_links && Object.values(profile.social_links).some(Boolean)) || (profile.gear && Object.values(profile.gear).some(Boolean)) ? (
-            <div className="grid gap-4 border-t border-slate-800 pt-4 sm:grid-cols-2">
-              {profile.social_links && Object.values(profile.social_links).some(Boolean) ? (
-                <div className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Social</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Object.values(profile.social_links).filter(Boolean).map((handle) => (
-                      <Badge key={handle} className="bg-slate-800 border-slate-700 text-slate-250">
-                        {handle}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {profile.gear && Object.values(profile.gear).some(Boolean) ? (
-                <div className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gear</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Object.values(profile.gear).filter(Boolean).map((item) => (
-                      <Badge key={item} className="bg-slate-800 border-slate-700 text-slate-250">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {clubs.length > 0 && (
-            <div className="border-t border-slate-800 pt-4 space-y-1.5">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Clubs</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {clubs.map(c => (
-                  <Badge key={c.id} className="bg-slate-800 border-slate-700 text-slate-350 flex items-center gap-1.5">
-                    <span>{c.name}</span>
-                    <span className="text-emerald-400 font-extrabold text-[10px] bg-emerald-950/50 px-1.5 py-0.2 rounded">
-                      ⚡ {clubElos[c.id] ?? 1200}
-                    </span>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!isOwner && showFullProfile && personalStats.matchesPlayed > 0 && (
-            <div className="flex justify-end pt-2">
-              <Button
-                type="button"
-                onClick={() => navigate(`/dashboard?rival=${displayName}`)}
-                className="bg-emerald-700 hover:bg-emerald-800 font-bold border-none"
-              >
-                ⚔️ Compare Head-to-Head
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      )}
 
       {showFullProfile ? (
         <div className="space-y-6">

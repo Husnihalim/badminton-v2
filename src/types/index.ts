@@ -26,11 +26,21 @@ export type PlayerSocialLinks = {
 }
 
 export type PlayerGear = {
+  // Basic fields
   racket?: string | null
   strings?: string | null
   tension?: string | null
   grip?: string | null
   shoes?: string | null
+  // New Badminton specific specs
+  racket_weight?: '3U' | '4U' | '5U' | 'F' | string | null
+  racket_balance?: 'head_heavy' | 'even_balance' | 'head_light' | null
+  racket_stiffness?: 'stiff' | 'medium' | 'flexible' | null
+  grip_type?: 'towel' | 'overgrip' | 'replacement' | null
+  // Playstyle and preferences
+  play_style?: 'net_play' | 'aggressive' | 'dropshot_control' | 'defensive' | 'all_round' | null
+  dominant_hand?: 'right' | 'left' | null
+  player_type?: 'singles' | 'doubles' | 'both' | null
 }
 
 // Extended User with metadata

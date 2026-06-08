@@ -488,10 +488,10 @@
 }
 
 .app-section {
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--surface) 96%, transparent);
-  box-shadow: var(--shadow);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
   padding: 16px;
 }
 
@@ -506,38 +506,113 @@
   align-items: center;
   gap: 8px;
   color: var(--text);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 750;
   line-height: 1.25;
   margin: 0;
 }
 
 .app-section-subtitle {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   line-height: 1.5;
   margin: 0;
 }
 
 .metric-tile {
   min-width: 0;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   border-radius: 8px;
-  background: var(--surface-muted);
+  background: color-mix(in srgb, var(--surface-muted) 82%, white);
   padding: 12px;
 }
 
 .metric-label {
   color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 650;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .metric-value {
   color: var(--text);
-  font-size: 1.35rem;
-  font-weight: 750;
+  font-size: 1.45rem;
+  font-weight: 800;
   line-height: 1.1;
+}
+
+.arena-preview {
+  border: 1px solid var(--arena-line);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--arena-lime) 18%, transparent), transparent 34%),
+    radial-gradient(circle at 78% 10%, color-mix(in srgb, var(--arena-blue) 14%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--arena-bg), var(--arena-panel));
+  color: var(--arena-text);
+  box-shadow: var(--arena-glow);
+  overflow: hidden;
+}
+
+.arena-panel {
+  border: 1px solid var(--arena-line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--arena-lime) 6%, transparent), transparent 34%),
+    var(--arena-panel);
+  color: var(--arena-text);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+}
+
+.arena-panel-blue {
+  border-color: var(--arena-line-blue);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--arena-blue) 8%, transparent), transparent 34%),
+    var(--arena-panel);
+}
+
+.arena-admin-panel {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: var(--arena-admin);
+  color: var(--arena-text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+}
+
+.arena-heading {
+  color: var(--arena-text);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.arena-label {
+  color: var(--arena-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arena-meta {
+  color: var(--arena-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.arena-score-number {
+  color: var(--arena-text);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.arena-court-lines {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--arena-lime) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--arena-lime) 8%, transparent) 1px, transparent 1px);
+  background-size: 38px 38px;
 }
 
 .metric-note {

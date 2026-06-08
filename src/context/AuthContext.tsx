@@ -8,7 +8,19 @@ type AuthContextType = {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; redirectTo?: string }>
-  register: (email: string, name: string, password: string, inviteToken?: string | null, wantsCreateClub?: boolean, postLoginRedirect?: string) => Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }>
+  register: (
+    email: string,
+    name: string,
+    password: string,
+    inviteToken?: string | null,
+    wantsCreateClub?: boolean,
+    postLoginRedirect?: string,
+    additionalMetadata?: {
+      preferred_sport?: string
+      gear?: User['gear']
+      city?: string
+    }
+  ) => Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }>
   refreshUser: () => Promise<User | null>
   logout: () => Promise<void>
 }
@@ -258,7 +270,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     inviteToken?: string | null,
     wantsCreateClub = false,
-    postLoginRedirect?: string
+    postLoginRedirect?: string,
+    additionalMetadata?: {
+      preferred_sport?: string
+      gear?: User['gear']
+      city?: string
+    }
   ): Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase()
     const normalizedInviteToken = inviteToken?.trim().toUpperCase() || null
@@ -302,6 +319,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name,
           wants_create_club: wantsCreateClub,
           ...(normalizedInviteToken ? { invite_token: normalizedInviteToken } : {}),
+          preferred_sport: additionalMetadata?.preferred_sport || 'badminton',
+          gear: additionalMetadata?.gear || {},
+          city: additionalMetadata?.city || null,
         },
       },
     })
@@ -344,6 +364,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       wants_create_club: wantsCreateClub,
       display_name: name,
       avatar_url: null,
+      preferred_sport: additionalMetadata?.preferred_sport || 'badminton',
+      gear: additionalMetadata?.gear || {},
+      city: additionalMetadata?.city || null,
     }
 
     logPlatformEvent('registration_success', `User registered and signed in: ${normalizedEmail}`, 'info', {

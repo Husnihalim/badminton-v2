@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useMemo, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { CalendarDays, Check, Club as ClubIcon, Copy, Edit3, MapPin, MessageCircle, Search, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity, UserPlus, Newspaper, UserRound } from 'lucide-react'
+import { CalendarDays, Check, Club as ClubIcon, Copy, Edit3, MessageCircle, Search, Share2, ShieldCheck, Trophy, Users, Flame, Percent, Activity, UserPlus, Newspaper } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import { buildEventShareText, buildEventShareUrl, getClubs, getMyClubs, getClubEvents, getClubMatches, getEventRsvps, getMyEventRsvps, rsvpToEvent, getClubLeaderboard, getClubMembers, requestJoinClub } from '../lib/api'
@@ -15,6 +15,7 @@ import RivalryShareModal from '../components/RivalryShareModal'
 import { cn } from '../lib/utils'
 import { MatchScoreboard } from '../components/MatchScoreboard'
 import { MomentCard } from '../components/MomentCard'
+import { PlayerIdentityCard } from '../components/sports'
 import { buildStoryMomentShareText, generateStoryMoments, type StoryMoment } from '../lib/storyMoments'
 
 type DashboardClub = Club & { role?: string }
@@ -61,6 +62,8 @@ export default function DashboardPage() {
     streakType: 'win' | 'loss' | null
   }>({ matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, streak: 0, streakType: null })
   const [clubRanks, setClubRanks] = useState<Record<string, { rank: number; total: number }>>({})
+  const [memberProfilesMap, setMemberProfilesMap] = useState<Record<string, { userId: string; avatarUrl: string | null }>>({})
+  const [isBannerDismissed, setIsBannerDismissed] = useState(false)
   const [allUserMatches, setAllUserMatches] = useState<DashboardMatch[]>([])
   const [achievements, setAchievements] = useState<{
     onFire: boolean
@@ -259,6 +262,39 @@ export default function DashboardPage() {
       )[0]
     }
 
+    // Enriched toughest opponent (nemesis) with registered user profiles
+    const toughestProfile = nemesis ? memberProfilesMap[nemesis.name.toLowerCase()] : null
+    const toughestOpponent = nemesis ? {
+      name: nemesis.name,
+      wins: nemesis.wins,
+      losses: nemesis.matches - nemesis.wins,
+      matches: nemesis.matches,
+      winRate: nemesis.winRate,
+      userId: toughestProfile?.userId || null,
+      avatarUrl: toughestProfile?.avatarUrl || null,
+    } : null
+
+    // Find most defeated opponent: opponent with most user wins (stats.wins is user wins)
+    let mostDefeated = null
+    const defeatList = rivalsList.filter((r) => r.wins > 0)
+    if (defeatList.length > 0) {
+      mostDefeated = [...defeatList].sort(
+        (a, b) => b.wins - a.wins || b.winRate - a.winRate || b.matches - a.matches
+      )[0]
+    }
+
+    // Enriched most defeated opponent with registered user profiles
+    const defeatProfile = mostDefeated ? memberProfilesMap[mostDefeated.name.toLowerCase()] : null
+    const mostDefeatedOpponent = mostDefeated ? {
+      name: mostDefeated.name,
+      wins: mostDefeated.wins,
+      losses: mostDefeated.matches - mostDefeated.wins,
+      matches: mostDefeated.matches,
+      winRate: mostDefeated.winRate,
+      userId: defeatProfile?.userId || null,
+      avatarUrl: defeatProfile?.avatarUrl || null,
+    } : null
+
     // Find toughest opponent pairs (lost to them)
     const opponentPairsList = Array.from(opponentPairs.entries()).map(([names, stats]) => ({
       names,
@@ -275,11 +311,13 @@ export default function DashboardPage() {
       bestPartner,
       topRival,
       nemesis,
+      toughestOpponent,
+      mostDefeatedOpponent,
       worstOpponentPairs,
       bestPartnersList: partnersList.filter(p => p.matches >= 1).sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.matches - a.matches).slice(0, 3),
       topRivalsList: rivalsList.filter(r => r.matches >= 1).sort((a, b) => b.matches - a.matches || a.winRate - b.winRate).slice(0, 3)
     }
-  }, [allUserMatches, user])
+  }, [allUserMatches, user, memberProfilesMap])
 
   const storyMoments = useMemo(() => {
     if (!user) return []
@@ -290,6 +328,30 @@ export default function DashboardPage() {
       limit: 4,
     })
   }, [allUserMatches, user])
+
+  const profileCompleteness = useMemo(() => {
+    if (!user) return 0
+    let score = 0
+    if (user.bio?.trim()) score += 20
+    const hasSocial = user.social_links && Object.values(user.social_links).some(v => typeof v === 'string' && v.trim() !== '')
+    if (hasSocial) score += 20
+    if (user.gear?.racket?.trim()) score += 20
+    if (user.gear?.play_style) score += 20
+    if (user.city?.trim()) score += 20
+    return score
+  }, [user])
+
+  const missingFields = useMemo(() => {
+    if (!user) return []
+    const missing = []
+    if (!user.bio?.trim()) missing.push('Bio')
+    const hasSocial = user.social_links && Object.values(user.social_links).some(v => typeof v === 'string' && v.trim() !== '')
+    if (!hasSocial) missing.push('Social Links')
+    if (!user.gear?.racket?.trim()) missing.push('Racket Name')
+    if (!user.gear?.play_style) missing.push('Play Style')
+    if (!user.city?.trim()) missing.push('City')
+    return missing
+  }, [user])
   const filteredDiscoverableClubs = useMemo(() => {
     const query = clubSearchQuery.trim().toLowerCase()
     const clubsToShow = query
@@ -425,6 +487,7 @@ export default function DashboardPage() {
       const clubLeaderboards: Record<string, Record<string, number>> = {}
       const rivalsSet = new Set<string>()
       const rivalsList: { id?: string; name: string }[] = []
+      const profilesMap: Record<string, { userId: string; avatarUrl: string | null }> = {}
 
       for (const club of myClubs) {
         try {
@@ -446,6 +509,12 @@ export default function DashboardPage() {
           const members = await getClubMembers(club.id)
           members.forEach((m) => {
             const mName = m.name || 'Unknown'
+            if (m.user_id) {
+              profilesMap[mName.toLowerCase()] = {
+                userId: m.user_id,
+                avatarUrl: m.avatar_url,
+              }
+            }
             if (m.user_id !== user.id &&
                 mName.toLowerCase() !== user.name.toLowerCase() &&
                 (!user.display_name || mName.toLowerCase() !== user.display_name.toLowerCase()) &&
@@ -459,6 +528,7 @@ export default function DashboardPage() {
         }
       }
       setClubRanks(ranks)
+      setMemberProfilesMap(profilesMap)
       
       rivalsList.sort((a, b) => a.name.localeCompare(b.name))
       setClubMembers(rivalsList)
@@ -761,77 +831,91 @@ export default function DashboardPage() {
         }
       />
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-        <Card className="overflow-hidden border-slate-900 bg-slate-950 text-white">
-          <CardContent className="space-y-5 p-4 sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900">
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-emerald-300">
-                    <UserRound size={42} aria-hidden="true" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 space-y-3">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="border-emerald-400/30 bg-emerald-400/10 text-emerald-100">Player card</Badge>
-                    {user.is_private ? (
-                      <Badge className="border-slate-700 bg-slate-900 text-slate-300">Private profile</Badge>
-                    ) : (
-                      <Badge className="border-sky-400/30 bg-sky-400/10 text-sky-100">Public profile</Badge>
-                    )}
-                  </div>
-                  <h2 className="truncate text-2xl font-extrabold tracking-normal text-white sm:text-3xl">{displayName}</h2>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-                    <span className="capitalize">{user.preferred_sport || 'badminton'}</span>
-                    {primaryClub ? <span>{primaryClub.name}</span> : null}
-                    {user.city ? (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin size={14} aria-hidden="true" />
-                        {user.city}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-
-                {user.bio ? (
-                  <p className="line-clamp-3 max-w-2xl text-sm leading-6 text-slate-300">{user.bio}</p>
-                ) : (
-                  <p className="max-w-2xl text-sm leading-6 text-slate-400">Add a short playing bio, social handles, and gear later to make this card feel complete.</p>
-                )}
-
-                {socialHandles.length ? (
-                  <div className="flex flex-wrap gap-2">
-                    {socialHandles.slice(0, 4).map((handle) => (
-                      <span key={handle} className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-xs font-semibold text-slate-200">
-                        {handle}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
+      {!isBannerDismissed && profileCompleteness < 100 && (
+        <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 backdrop-blur-sm dark:border-amber-400/15 dark:bg-amber-400/[0.02]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                <span>⚡ Complete Your Player Card</span>
+                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-amber-800 dark:bg-amber-400/10 dark:text-amber-300">
+                  {profileCompleteness}% Complete
+                </span>
+              </h3>
+              <p className="text-xs text-amber-705/85 dark:text-amber-400/80">
+                Completing your player card makes it public and lets other members search for your play style, hand preferences, and racket specs.
+              </p>
+              {missingFields.length > 0 && (
+                <p className="text-[11px] font-semibold text-amber-705/65 dark:text-amber-400/60">
+                  Remaining: {missingFields.join(', ')}
+                </p>
+              )}
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-4">
-              <PlayerCardMetric label="Record" value={`${personalStats.wins}W-${personalStats.losses}L`} />
-              <PlayerCardMetric label="Signature" value={signatureStat} />
-              <PlayerCardMetric label="Form" value={formLabel} />
-              <PlayerCardMetric label="Rank" value={primaryRank ? `#${primaryRank.rank} / ${primaryRank.total}` : 'Unranked'} />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-amber-500/20 hover:bg-amber-500/10 text-amber-850 dark:text-amber-300 dark:border-amber-400/20 dark:hover:bg-amber-400/10 cursor-pointer"
+                onClick={() => navigate('/profile')}
+              >
+                Setup Now
+              </Button>
+              <button
+                type="button"
+                onClick={() => setIsBannerDismissed(true)}
+                className="text-xs text-amber-705/60 hover:text-amber-805 dark:text-amber-400/50 dark:hover:text-amber-300 px-2 py-1 cursor-pointer"
+              >
+                Dismiss
+              </button>
             </div>
+          </div>
+          <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div
+              className="h-full bg-amber-500 transition-all duration-500"
+              style={{ width: `${profileCompleteness}%` }}
+            />
+          </div>
+        </div>
+      )}
 
-            <div className="grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-4">
-              <PlayerCardDetail label="Latest headline" value={latestHeadline} />
-              <PlayerCardDetail label="Best partner" value={recommendedInsights?.bestPartner?.name || 'Needs doubles data'} />
-              <PlayerCardDetail label="Top rival" value={recommendedInsights?.topRival?.name || 'Needs match history'} />
-              <PlayerCardDetail label="Gear" value={gearItems.length ? gearItems.slice(0, 2).join(' / ') : 'Add racket and shoes'} />
-            </div>
-          </CardContent>
-        </Card>
+      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.32fr)_minmax(320px,0.68fr)]">
+        <PlayerIdentityCard
+          name={displayName}
+          sport={user.preferred_sport || 'badminton'}
+          clubName={primaryClub?.name}
+          city={user.city || undefined}
+          avatarUrl={user.avatar_url}
+          isPrivate={Boolean(user.is_private)}
+          bio={user.bio}
+          socialHandles={socialHandles}
+          metrics={[
+            { label: 'Record', value: `${personalStats.wins}W-${personalStats.losses}L` },
+            { label: 'Signature', value: signatureStat },
+            { label: 'Form', value: formLabel },
+            { label: 'Rank', value: primaryRank ? `#${primaryRank.rank} / ${primaryRank.total}` : 'Unranked' },
+          ]}
+          details={[
+            { label: 'Latest headline', value: latestHeadline },
+            { label: 'Best partner', value: recommendedInsights?.bestPartner?.name || 'Needs doubles data' },
+            { label: 'Top rival', value: recommendedInsights?.topRival?.name || 'Needs match history' },
+            { label: 'Gear', value: gearItems.length ? gearItems.slice(0, 2).join(' / ') : 'Add racket and shoes' },
+          ]}
+          gear={user.gear}
+          rankings={clubs.map((c) => {
+            const r = clubRanks[c.id]
+            if (!r) return null
+            return {
+              clubId: c.id,
+              clubName: c.name,
+              rank: r.rank,
+              total: r.total
+            }
+          }).filter((r): r is { clubId: string; clubName: string; rank: number; total: number } => r !== null)}
+          toughestOpponent={recommendedInsights?.toughestOpponent}
+          mostDefeatedOpponent={recommendedInsights?.mostDefeatedOpponent}
+        />
 
-        <Card>
+        <Card className="border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
           <CardContent className="space-y-4 p-4 sm:p-5">
             <div>
               <h2 className="text-lg font-bold text-slate-950">Quick actions</h2>
@@ -1624,7 +1708,7 @@ export default function DashboardPage() {
 
 function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
       <CardContent className="space-y-2 p-3 sm:p-4">
         <div className="flex items-center justify-between gap-2 text-slate-500">
           <span className="text-xs font-semibold sm:text-sm">{label}</span>
@@ -1633,24 +1717,6 @@ function StatCard({ icon, label, value }: { icon: ReactNode; label: string; valu
         <p className="text-2xl font-semibold leading-none text-slate-950 sm:text-3xl">{value}</p>
       </CardContent>
     </Card>
-  )
-}
-
-function PlayerCardMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-      <p className="text-xs font-semibold uppercase text-slate-400">{label}</p>
-      <p className="mt-1 truncate text-lg font-extrabold text-white">{value}</p>
-    </div>
-  )
-}
-
-function PlayerCardDetail({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
-      <p className="mt-1 truncate text-sm font-semibold text-slate-100">{value}</p>
-    </div>
   )
 }
 

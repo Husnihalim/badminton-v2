@@ -51,6 +51,19 @@
   --accent-soft: #ecfdf5;
   --border: #d9dee7;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
+  --arena-bg: #f8fafc;
+  --arena-panel: rgba(255, 255, 255, 0.95);
+  --arena-panel-elevated: rgba(248, 250, 252, 0.96);
+  --arena-admin: rgba(241, 245, 249, 0.94);
+  --arena-line: rgba(77, 124, 15, 0.22);
+  --arena-line-blue: rgba(2, 132, 199, 0.18);
+  --arena-lime: #4d7c0f;
+  --arena-blue: #0284c7;
+  --arena-heat: #d97706;
+  --arena-danger: #dc2626;
+  --arena-text: #0f172a;
+  --arena-muted: #64748b;
+  --arena-glow: 0 1px 3px rgba(77, 124, 15, 0.1), 0 12px 36px rgba(15, 23, 42, 0.08);
 
   /* Theme Slate Mapping - Light Mode */
   --theme-slate-50: #f8fafc;
@@ -95,6 +108,19 @@
   --accent-soft: rgba(52, 211, 153, 0.1);
   --border: rgba(148, 163, 184, 0.22);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 48px rgba(0, 0, 0, 0.28);
+  --arena-bg: #020706;
+  --arena-panel: rgba(4, 13, 15, 0.94);
+  --arena-panel-elevated: rgba(8, 22, 26, 0.96);
+  --arena-admin: rgba(12, 22, 27, 0.94);
+  --arena-line: rgba(163, 230, 53, 0.26);
+  --arena-line-blue: rgba(56, 189, 248, 0.32);
+  --arena-lime: #a3e635;
+  --arena-blue: #38bdf8;
+  --arena-heat: #f59e0b;
+  --arena-danger: #ef4444;
+  --arena-text: #f8fafc;
+  --arena-muted: #9aa8b5;
+  --arena-glow: 0 0 0 1px rgba(163, 230, 53, 0.18), 0 18px 52px rgba(0, 0, 0, 0.46);
 
   /* Theme Slate Mapping - Dark Mode (Contrast-Preserving) */
   --theme-slate-50: #0b0f19;
@@ -110,16 +136,16 @@
   --theme-slate-950: #ffffff;
 
   /* Theme Emerald Mapping - Dark Mode (Electric Lime) */
-  --theme-emerald-50: rgba(204, 255, 0, 0.05);
-  --theme-emerald-100: rgba(204, 255, 0, 0.1);
-  --theme-emerald-200: rgba(204, 255, 0, 0.2);
-  --theme-emerald-300: rgba(204, 255, 0, 0.35);
-  --theme-emerald-400: #ddff33;
-  --theme-emerald-500: #ccff00;
-  --theme-emerald-600: #b3e600;
-  --theme-emerald-700: #ccff00;
-  --theme-emerald-800: #b3e600;
-  --theme-emerald-900: #99cc00;
+  --theme-emerald-50: rgba(163, 230, 53, 0.05);
+  --theme-emerald-100: rgba(163, 230, 53, 0.1);
+  --theme-emerald-200: rgba(163, 230, 53, 0.2);
+  --theme-emerald-300: rgba(163, 230, 53, 0.35);
+  --theme-emerald-400: #bef264;
+  --theme-emerald-500: #a3e635;
+  --theme-emerald-600: #84cc16;
+  --theme-emerald-700: #a3e635;
+  --theme-emerald-800: #84cc16;
+  --theme-emerald-900: #65a30d;
 }
 
 * {
