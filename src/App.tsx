@@ -4,6 +4,8 @@ import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import { NotificationsProvider } from './context/NotificationsContext'
+import { ThemeProvider } from './context/ThemeContext';
+
 import './App.css'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
@@ -25,7 +27,8 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
         <NotificationsProvider>
           <BrowserRouter>
             <Layout>
@@ -54,6 +57,7 @@ function App() {
           </BrowserRouter>
         </NotificationsProvider>
       </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }

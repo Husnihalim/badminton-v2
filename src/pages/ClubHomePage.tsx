@@ -59,6 +59,7 @@ import {
 import type { Club, ClubEvent, ClubMessage, EventRsvp, JoinRequest, MatchWithDetails, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { Modal } from '../components/ui/Modal'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page } from '../components/ui/page'
@@ -1379,7 +1380,7 @@ export default function ClubHomePage() {
                       const isLoadingThis = isRsvpUpdating === loadingKey
 
                       return (
-                        <div key={member.user_id} className="flex items-center justify-between py-2 text-xs gap-3">
+                        <Card key={member.user_id} className="flex items-center justify-between py-2 text-xs gap-3">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className={`w-6 h-6 shrink-0 rounded-full ${theme.bg} text-white flex items-center justify-center font-bold text-[10px] uppercase shadow-sm`}>
                               {member.name ? member.name.slice(0, 2).toUpperCase() : 'M'}
@@ -1456,7 +1457,7 @@ export default function ClubHomePage() {
                               </>
                             )}
                           </div>
-                        </div>
+                        </Card>
                       )
                     })
                   ) : (
@@ -2731,87 +2732,74 @@ export default function ClubHomePage() {
         </div>
       </div>
 
-      {showEventModal && isAdmin ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => { setShowEventModal(false); setEditingEvent(null) }}>
-          <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
-            <CardContent className="space-y-4 pt-4 sm:pt-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-950">{editingEvent ? 'Edit event' : 'Create new event'}</h2>
-                  <p className="text-sm text-slate-600">{editingEvent ? 'Update the session details members see.' : 'Add the next game day for members.'}</p>
-                </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} aria-label="Close">
-                  <X size={18} aria-hidden="true" />
-                </Button>
-              </div>
-              <form className="space-y-4" onSubmit={handleCreateEvent}>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Event title *</span>
-                  <Input type="text" placeholder="e.g. Wednesday Singles Night" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} maxLength={120} required />
-                </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Date & time *</span>
-                  <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
-                </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Location</span>
-                  <Input type="text" placeholder="e.g. Court 2" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} maxLength={200} />
-                </label>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                    <span>Cost per member (RM)</span>
-                    <Input type="number" min="0" step="0.01" placeholder="15.00" value={eventCostAmount} onChange={(e) => setEventCostAmount(e.target.value)} />
-                  </label>
-                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                    <span>Cost note</span>
-                    <Input type="text" placeholder="Court + shuttle" value={eventCostNote} onChange={(e) => setEventCostNote(e.target.value)} maxLength={200} />
-                  </label>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="secondary" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} disabled={isCreatingEvent}>Cancel</Button>
-                  <Button type="submit" disabled={isCreatingEvent}>
-                    {isCreatingEvent ? 'Saving...' : editingEvent ? 'Save event' : 'Create event'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
-
-      {showAnnouncementModal && isAdmin ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }}>
-          <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
-            <CardContent className="space-y-4 pt-4 sm:pt-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-950">{editingMessage ? 'Edit message' : 'Notify members'}</h2>
-                  <p className="text-sm text-slate-600">{editingMessage ? 'Update the message and member notifications.' : 'Send news or updates to all active club members.'}</p>
-                </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} aria-label="Close">
-                  <X size={18} aria-hidden="true" />
-                </Button>
-              </div>
-              <form className="space-y-4" onSubmit={editingMessage ? handleUpdateMessage : handleSendAnnouncement}>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Title *</span>
-                  <Input type="text" placeholder="e.g. Court changed this Friday" value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} maxLength={120} required />
-                </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Message *</span>
-                  <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} maxLength={1000} required />
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="secondary" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} disabled={isSendingAnnouncement}>Cancel</Button>
-                  <Button type="submit" disabled={isSendingAnnouncement}>
-                    {isSendingAnnouncement ? 'Saving...' : editingMessage ? 'Save message' : 'Send'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
+      <Modal isOpen={showEventModal && isAdmin} onClose={() => { setShowEventModal(false); setEditingEvent(null) }} title={editingEvent ? 'Edit event' : 'Create new event'}>
+  <div className="space-y-4 pt-4 sm:pt-5">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <h2 className="text-xl font-bold text-slate-950">{editingEvent ? 'Edit event' : 'Create new event'}</h2>
+        <p className="text-sm text-slate-600">{editingEvent ? 'Update the session details members see.' : 'Add the next game day for members.'}</p>
+      </div>
+      <Button type="button" variant="ghost" size="icon" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} aria-label="Close">
+        <X size={18} aria-hidden="true" />
+      </Button>
+    </div>
+    <form className="space-y-4" onSubmit={handleCreateEvent}>
+      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+        <span>Event title *</span>
+        <Input type="text" placeholder="e.g. Wednesday Singles Night" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} maxLength={120} required />
+      </label>
+      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+        <span>Date & time *</span>
+        <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+      </label>
+      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+        <span>Location</span>
+        <Input type="text" placeholder="e.g. Court 2" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} maxLength={200} />
+      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+          <span>Cost per member (RM)</span>
+          <Input type="number" min="0" step="0.01" placeholder="15.00" value={eventCostAmount} onChange={(e) => setEventCostAmount(e.target.value)} />
+        </label>
+        <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+          <span>Cost note</span>
+          <Input type="text" placeholder="Court + shuttle" value={eventCostNote} onChange={(e) => setEventCostNote(e.target.value)} maxLength={200} />
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Button type="button" variant="secondary" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} disabled={isCreatingEvent}>Cancel</Button>
+        <Button type="submit" disabled={isCreatingEvent}>{isCreatingEvent ? 'Saving...' : editingEvent ? 'Save event' : 'Create event'}</Button>
+      </div>
+    </form>
+  </div>
+</Modal>
+<Modal isOpen={showAnnouncementModal && isAdmin} onClose={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} title={editingMessage ? 'Edit message' : 'Notify members'}>
+  <div className="space-y-4 pt-4 sm:pt-5">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <h2 className="text-xl font-bold text-slate-950">{editingMessage ? 'Edit message' : 'Notify members'}</h2>
+        <p className="text-sm text-slate-600">{editingMessage ? 'Update the message and member notifications.' : 'Send news or updates to all active club members.'}</p>
+      </div>
+      <Button type="button" variant="ghost" size="icon" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} aria-label="Close">
+        <X size={18} aria-hidden="true" />
+      </Button>
+    </div>
+    <form className="space-y-4" onSubmit={editingMessage ? handleUpdateMessage : handleSendAnnouncement}>
+      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+        <span>Title *</span>
+        <Input type="text" placeholder="e.g. Court changed this Friday" value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} maxLength={120} required />
+      </label>
+      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+        <span>Message *</span>
+        <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} maxLength={1000} required />
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        <Button type="button" variant="secondary" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} disabled={isSendingAnnouncement}>Cancel</Button>
+        <Button type="submit" disabled={isSendingAnnouncement}>{isSendingAnnouncement ? 'Sending...' : editingMessage ? 'Save' : 'Send'}</Button>
+      </div>
+    </form>
+  </div>
+</Modal>
 
       {showJoinRequestsModal && isAdmin ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowJoinRequestsModal(false)}>

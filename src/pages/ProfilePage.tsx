@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import { createClub, getMyClubs, updateProfile, uploadProfilePhoto } from '../lib/api'
 import type { Club, PlayerGear, PlayerSocialLinks } from '../types'
 import { Badge } from '../components/ui/badge'
-import { Button } from '../components/ui/button'
+import { Modal } from '../components/ui/Modal'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
@@ -591,64 +591,62 @@ export default function ProfilePage() {
       </section>
 
       {showCreateClubModal && (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowCreateClubModal(false)}>
-          <Card className="max-h-[92vh] w-full overflow-auto rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
-            <CardContent className="space-y-4 pt-4 sm:pt-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-950">Create new club</h2>
-                  <p className="text-sm text-slate-600">Start with the basics. You can adjust settings later.</p>
-                </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setShowCreateClubModal(false)} aria-label="Close">
-                  <X size={18} aria-hidden="true" />
-                </Button>
-              </div>
-              {error ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-              <form className="space-y-4" onSubmit={handleCreateClub}>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Club name *</span>
-                  <Input
-                    type="text"
-                    placeholder="e.g. Ace Smash Badminton Club"
-                    value={clubName}
-                    onChange={(e) => setClubName(e.target.value)}
-                    maxLength={120}
-                    required
-                  />
-                </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Description</span>
-                  <Input
-                    type="text"
-                    placeholder="What is your club about?"
-                    value={clubDescription}
-                    onChange={(e) => setClubDescription(e.target.value)}
-                    maxLength={1000}
-                  />
-                </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>City</span>
-                  <Input
-                    type="text"
-                    placeholder="e.g. Kuala Lumpur"
-                    value={clubCity}
-                    onChange={(e) => setClubCity(e.target.value)}
-                    maxLength={120}
-                  />
-                </label>
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <Button type="button" variant="secondary" onClick={() => setShowCreateClubModal(false)} disabled={isCreating}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isCreating}>
-                    {isCreating ? 'Creating...' : 'Create club'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+  <Modal isOpen={true} onClose={() => setShowCreateClubModal(false)} title="Create new club">
+    <div className="space-y-4 pt-4 sm:pt-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-slate-950">Create new club</h2>
+          <p className="text-sm text-slate-600">Start with the basics. You can adjust settings later.</p>
         </div>
-      )}
+        <Button type="button" variant="ghost" size="icon" onClick={() => setShowCreateClubModal(false)} aria-label="Close">
+          <X size={18} aria-hidden="true" />
+        </Button>
+      </div>
+      {error ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+      <form className="space-y-4" onSubmit={handleCreateClub}>
+        <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+          <span>Club name *</span>
+          <Input
+            type="text"
+            placeholder="e.g. Ace Smash Badminton Club"
+            value={clubName}
+            onChange={(e) => setClubName(e.target.value)}
+            maxLength={120}
+            required
+          />
+        </label>
+        <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+          <span>Description</span>
+          <Input
+            type="text"
+            placeholder="What is your club about?"
+            value={clubDescription}
+            onChange={(e) => setClubDescription(e.target.value)}
+            maxLength={1000}
+          />
+        </label>
+        <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+          <span>City</span>
+          <Input
+            type="text"
+            placeholder="e.g. Kuala Lumpur"
+            value={clubCity}
+            onChange={(e) => setClubCity(e.target.value)}
+            maxLength={120}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={() => setShowCreateClubModal(false)} disabled={isCreating}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isCreating}>
+            {isCreating ? 'Creating...' : 'Create club'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+)}
     </Page>
   )
 }

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import type { Club, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { Modal } from '../components/ui/Modal'
 import { Card, CardContent } from '../components/ui/card'
 import { Page, PageHeader } from '../components/ui/page'
 import { Select } from '../components/ui/select'
@@ -228,36 +229,34 @@ export default function ClubMembersPage() {
       </Card>
 
       {memberToRemove ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => !isRemoving && setMemberToRemove(null)}>
-          <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
-            <CardContent className="space-y-4 pt-4 sm:pt-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-700">
-                    <Shield size={18} aria-hidden="true" />
-                  </span>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-950">Remove member</h2>
-                    <p className="text-sm leading-6 text-slate-600">
-                      Remove <strong>{memberToRemove.name}</strong> from this club. This action cannot be undone.
-                    </p>
-                  </div>
+        <Modal isOpen={true} onClose={() => !isRemoving && setMemberToRemove(null)} title="Remove member">
+          <div className="space-y-4 pt-4 sm:pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-700">
+                  <Shield size={18} aria-hidden="true" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-950">Remove member</h2>
+                  <p className="text-sm leading-6 text-slate-600">
+                    Remove <strong>{memberToRemove.name}</strong> from this club. This action cannot be undone.
+                  </p>
                 </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setMemberToRemove(null)} aria-label="Close" disabled={isRemoving}>
-                  <X size={18} aria-hidden="true" />
-                </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="secondary" onClick={() => setMemberToRemove(null)} disabled={isRemoving}>
-                  Cancel
-                </Button>
-                <Button type="button" variant="danger" onClick={handleRemoveMember} disabled={isRemoving}>
-                  {isRemoving ? 'Removing...' : 'Remove'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setMemberToRemove(null)} aria-label="Close" disabled={isRemoving}>
+                <X size={18} aria-hidden="true" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant="secondary" onClick={() => setMemberToRemove(null)} disabled={isRemoving}>
+                Cancel
+              </Button>
+              <Button type="button" variant="danger" onClick={handleRemoveMember} disabled={isRemoving}>
+                {isRemoving ? 'Removing...' : 'Remove'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       ) : null}
     </Page>
   )

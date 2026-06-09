@@ -7,7 +7,7 @@ import NotificationsPanel from './NotificationsPanel'
 import logoImg from '../assets/logo.png'
 import { getMyClubs } from '../lib/api'
 import type { Club } from '../types'
-
+import { useTheme } from '../context/ThemeContext';
 export default function Navbar() {
   const { user, logout } = useAuth()
   const { unreadCount } = useNotifications()
@@ -21,23 +21,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const clubsDropdownRef = useRef<HTMLDivElement>(null)
 
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'light'
-  })
-
-  useEffect(() => {
-    const root = window.document.documentElement
-    if (theme === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'))
-  }
+  const { theme, toggleTheme } = useTheme();
 
   // Handle click outside dropdowns to close them
   useEffect(() => {
