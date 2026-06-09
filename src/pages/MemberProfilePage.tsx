@@ -41,6 +41,7 @@ export default function MemberProfilePage() {
   const [error, setError] = useState('')
   const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
   const [clubElos, setClubElos] = useState<Record<string, number>>({})
+  const [clubRanks, setClubRanks] = useState<Record<string, { rank: number; total: number }>>({})
   const [eloHistory, setEloHistory] = useState<MemberEloHistoryRow[]>([])
 
   const [personalStats, setPersonalStats] = useState({
@@ -139,12 +140,23 @@ export default function MemberProfilePage() {
               
               allMatches.push(...clubMatches)
 
-              // Build leaderboard map for Giant Slayer calculations
+              // Build leaderboard map and capture this user's rank
               const lbMap: Record<string, number> = {}
               if (leaderboardRows.length) {
                 leaderboardRows.forEach((row, rIdx) => {
                   lbMap[row.name.toLowerCase()] = rIdx + 1
                 })
+                // Find rank for the viewed user (match by display_name or name)
+                const viewedName = userProfile.display_name?.toLowerCase() || userProfile.name.toLowerCase()
+                const userRankPos = leaderboardRows.findIndex(
+                  row => row.name.toLowerCase() === viewedName
+                )
+                if (userRankPos !== -1) {
+                  setClubRanks(prev => ({
+                    ...prev,
+                    [club.id]: { rank: userRankPos + 1, total: leaderboardRows.length }
+                  }))
+                }
               }
               clubLeaderboards[club.id] = lbMap
             } catch (e) {
@@ -400,7 +412,7 @@ export default function MemberProfilePage() {
               </div>
             </div>
             <div className="space-y-1.5 min-w-0 flex-1">
-              <h1 className="text-3xl font-extrabold tracking-tight text-white truncate">{displayName}</h1>
+              <h1 className="text-4xl font-extrabold tracking-tight text-white truncate sm:text-5xl">{displayName}</h1>
               <p className="text-sm text-slate-400">@{profile.name}</p>
               {profile.city && (
                 <p className="text-sm text-slate-300 flex items-center justify-center sm:justify-start gap-1">
@@ -475,19 +487,23 @@ export default function MemberProfilePage() {
               <div className="mt-1.5 flex items-center justify-center gap-1">
                 {matches.slice(0, 5).map((m, i) => {
                   const userPart = m.participants?.find(p => p.user_id === userId)
-                  if (!userPart || !m.score_sets?.length) return <span key={i} className="h-2.5 w-2.5 rounded-full bg-slate-700" />
+                  if (!userPart || !m.score_sets?.length) return <span key={i} className="inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-extrabold text-white bg-slate-700">?</span>
                   const t1Sets = m.score_sets.filter(s => s.team1_score > s.team2_score).length
                   const t2Sets = m.score_sets.filter(s => s.team2_score > s.team1_score).length
                   const won = (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
-                  return <span key={i} className={cn('h-2.5 w-2.5 rounded-full', won ? 'bg-[#ccff00]' : 'bg-red-500')} />
+                  return <span key={i} className={cn('inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-extrabold text-white', won ? 'bg-[#84cc16]' : 'bg-red-500')}>{won ? 'W' : 'L'}</span>
                 })}
                 {matches.length === 0 && <span className="text-xs text-slate-600">—</span>}
               </div>
             </div>
             <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Streak</p>
-              <p className={cn('mt-1 text-lg font-extrabold', personalStats.streakType === 'win' ? 'text-amber-400' : 'text-slate-400')}>
-                {personalStats.streakType === 'win' ? `🔥 ${personalStats.streak}W` : personalStats.streakType === 'loss' ? `-${personalStats.streak}L` : '—'}
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rank</p>
+              <p className="mt-1 text-lg font-extrabold text-white">
+                {(() => {
+                  const primaryClub = clubs[0]
+                  const r = primaryClub ? clubRanks[primaryClub.id] : null
+                  return r ? `#${r.rank}/${r.total}` : 'Unranked'
+                })()}
               </p>
             </div>
           </div>
@@ -548,8 +564,14 @@ export default function MemberProfilePage() {
           )
         })()}
 
-        {/* Footer: clubs + H2H button */}
-        <div className="border-t border-white/10 px-5 py-4 sm:px-6 bg-slate-950/10 space-y-3">
+        <div className="border-t border-white/10 px-5 py-3 sm:px-6 bg-slate-950/10">
+          <div className="grid gap-y-1 gap-x-4 sm:grid-cols-4 text-xs mb-3">
+            <p className="text-slate-400">Latest match: <span className="font-bold text-white">{matches[0]?.title || '—'}</span></p>
+            <p className="text-slate-400">Streak: <span className={`font-bold ${personalStats.streakType === 'win' ? 'text-amber-400' : personalStats.streakType === 'loss' ? 'text-red-400' : 'text-white'}`}>{personalStats.streakType === 'win' ? `🔥 ${personalStats.streak}W` : personalStats.streakType === 'loss' ? `-${personalStats.streak}L` : '—'}</span></p>
+            <p className="text-slate-400">Clubs: <span className="font-bold text-white">{clubs.map(c => c.name).join(', ') || '—'}</span></p>
+            <p className="text-slate-400">Sport: <span className="font-bold text-white capitalize">{profile.preferred_sport || 'Badminton'}</span></p>
+          </div>
+
           {/* Clubs with Elo */}
           {clubs.length > 0 && (
             <div className="flex flex-wrap gap-1.5">

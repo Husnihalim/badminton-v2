@@ -787,7 +787,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div className="min-w-0 flex-1 space-y-2">
-                <h2 className="truncate text-3xl font-extrabold tracking-normal text-white">{displayName}</h2>
+                <h2 className="truncate text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{displayName}</h2>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
                   <span className="capitalize">{user.preferred_sport || 'badminton'}</span>
                   {primaryClub ? <span>{primaryClub.name}</span> : null}
@@ -841,11 +841,11 @@ export default function DashboardPage() {
                 <div className="mt-1.5 flex items-center justify-center gap-1">
                   {allUserMatches.slice(0, 5).map((m, i) => {
                     const userPart = m.participants?.find(p => p.user_id === user.id)
-                    if (!userPart || !m.score_sets?.length) return <span key={i} className="h-2.5 w-2.5 rounded-full bg-slate-700" />
+                    if (!userPart || !m.score_sets?.length) return <span key={i} className="inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-extrabold text-white bg-slate-700">?</span>
                     const t1Sets = m.score_sets.filter(s => s.team1_score > s.team2_score).length
                     const t2Sets = m.score_sets.filter(s => s.team2_score > s.team1_score).length
                     const won = (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
-                    return <span key={i} className={cn('h-2.5 w-2.5 rounded-full', won ? 'bg-[#ccff00]' : 'bg-red-500')} />
+                    return <span key={i} className={cn('inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-extrabold text-white', won ? 'bg-[#84cc16]' : 'bg-red-500')}>{won ? 'W' : 'L'}</span>
                   })}
                   {allUserMatches.length === 0 && <span className="text-xs text-slate-600">—</span>}
                 </div>
@@ -913,23 +913,11 @@ export default function DashboardPage() {
 
           {/* Footer row */}
           <div className="border-t border-white/10 px-4 py-3 sm:px-5 bg-slate-950/20">
-            <div className="grid gap-3 sm:grid-cols-4 text-xs">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Latest Headline</p>
-                <p className="font-semibold text-slate-200 mt-0.5 truncate">{latestHeadline}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Best Partner</p>
-                <p className="font-semibold text-slate-200 mt-0.5 truncate">{recommendedInsights?.bestPartner?.name || '—'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Top Rival</p>
-                <p className="font-semibold text-slate-200 mt-0.5 truncate">{recommendedInsights?.topRival?.name || '—'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Clubs</p>
-                <p className="font-semibold text-slate-200 mt-0.5 truncate">{clubs.map(c => c.name).join(', ') || '—'}</p>
-              </div>
+            <div className="grid gap-y-1 gap-x-4 sm:grid-cols-4 text-xs">
+              <p className="text-slate-400">Latest headline: <span className="font-bold text-white">{latestHeadline}</span></p>
+              <p className="text-slate-400">Best partner: <span className="font-bold text-white">{recommendedInsights?.bestPartner?.name || '—'}</span></p>
+              <p className="text-slate-400">Top rival: <span className="font-bold text-white">{recommendedInsights?.topRival?.name || '—'}</span></p>
+              <p className="text-slate-400">Clubs: <span className="font-bold text-white">{clubs.map(c => c.name).join(', ') || '—'}</span></p>
             </div>
           </div>
         </div>
