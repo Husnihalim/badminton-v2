@@ -356,16 +356,39 @@ export default function MemberProfilePage() {
         </Button>
       </div>
 
-      {/* Profile Header Card */}
-      <Card className="bg-slate-900 text-white border-slate-800 overflow-hidden relative">
-        <div className="absolute top-4 right-4 hidden sm:block">
-          {profile.is_private ? (
-            <Badge className="bg-slate-800 text-slate-400 border-slate-700">🔒 Private Profile</Badge>
-          ) : (
-            <Badge className="bg-emerald-950 text-emerald-400 border-emerald-800">🌐 Public Profile</Badge>
-          )}
-        </div>
-        <CardContent className="p-6 space-y-6">
+      {/* Player Identity Card — Arena Style */}
+      <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-900 relative shadow-2xl">
+        {/* Ambient glow */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#ccff00]/5 via-transparent to-blue-900/10" />
+
+        <div className="relative p-5 sm:p-6">
+          {/* Status chips row */}
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#ccff00]/30 bg-[#ccff00]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#ccff00]">
+              🎴 Player Card
+            </span>
+            {profile.is_private ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                🔒 Private
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-400">
+                🌐 Public Profile
+              </span>
+            )}
+            {profile.gear?.play_style && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                ✦ {profile.gear.play_style.replace(/_/g, ' ')}
+              </span>
+            )}
+            {isOwner && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                You
+              </span>
+            )}
+          </div>
+
+          {/* Avatar + Identity */}
           <div className="flex flex-col items-center text-center space-y-4 sm:flex-row sm:items-start sm:text-left sm:space-y-0 sm:space-x-6">
             <div className="avatar-gradient-outline shrink-0">
               <div className="avatar-gradient-outline-inner h-24 w-24 flex items-center justify-center">
@@ -376,98 +399,181 @@ export default function MemberProfilePage() {
                 )}
               </div>
             </div>
-            <div className="space-y-2 min-w-0 flex-1">
-              <h1 className="text-2xl font-extrabold tracking-tight truncate">{displayName}</h1>
+            <div className="space-y-1.5 min-w-0 flex-1">
+              <h1 className="text-3xl font-extrabold tracking-tight text-white truncate">{displayName}</h1>
               <p className="text-sm text-slate-400">@{profile.name}</p>
-              
               {profile.city && (
                 <p className="text-sm text-slate-300 flex items-center justify-center sm:justify-start gap-1">
                   <MapPin size={14} className="text-slate-400" />
                   {profile.city}
                 </p>
               )}
-
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
                 <Badge className="bg-emerald-900 hover:bg-emerald-900 border-none capitalize text-white">
                   {profile.preferred_sport || 'badminton'}
                 </Badge>
-                <Badge className="sm:hidden bg-slate-800 text-slate-400 border-slate-700">
-                  {profile.is_private ? '🔒 Private' : '🌐 Public'}
-                </Badge>
-                {isOwner && (
-                  <Badge className="bg-slate-800 border-slate-700 text-slate-200">
-                    You
+                {profile.gear?.dominant_hand && (
+                  <Badge className="bg-slate-800 border-slate-700 text-slate-300 capitalize">
+                    {profile.gear.dominant_hand}-handed
+                  </Badge>
+                )}
+                {profile.gear?.player_type && (
+                  <Badge className="bg-slate-800 border-slate-700 text-slate-300 capitalize">
+                    {profile.gear.player_type.replace(/_/g, ' ')}
                   </Badge>
                 )}
               </div>
             </div>
           </div>
 
+          {/* Bio */}
           {profile.bio && (
-            <div className="border-t border-slate-800 pt-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">About</h3>
-              <p className="text-sm text-slate-250 leading-relaxed break-words">{profile.bio}</p>
+            <p className="mt-4 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">{profile.bio}</p>
+          )}
+
+          {/* Social handles */}
+          {profile.social_links && Object.values(profile.social_links).some(Boolean) && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {Object.entries(profile.social_links).filter(([, v]) => Boolean(v)).map(([platform, handle]) => (
+                <span key={platform} className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-slate-300">
+                  {platform === 'instagram' ? '📸' : platform === 'tiktok' ? '🎵' : platform === 'youtube' ? '▶️' : platform === 'facebook' ? '👤' : '🔗'} {handle}
+                </span>
+              ))}
             </div>
           )}
 
-          {(profile.social_links && Object.values(profile.social_links).some(Boolean)) || (profile.gear && Object.values(profile.gear).some(Boolean)) ? (
-            <div className="grid gap-4 border-t border-slate-800 pt-4 sm:grid-cols-2">
-              {profile.social_links && Object.values(profile.social_links).some(Boolean) ? (
-                <div className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Social</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Object.values(profile.social_links).filter(Boolean).map((handle) => (
-                      <Badge key={handle} className="bg-slate-800 border-slate-700 text-slate-250">
-                        {handle}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {profile.gear && Object.values(profile.gear).some(Boolean) ? (
-                <div className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gear</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Object.values(profile.gear).filter(Boolean).map((item) => (
-                      <Badge key={item} className="bg-slate-800 border-slate-700 text-slate-250">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
+          {/* Club rankings */}
           {clubs.length > 0 && (
-            <div className="border-t border-slate-800 pt-4 space-y-1.5">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Clubs</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {clubs.map(c => (
-                  <Badge key={c.id} className="bg-slate-800 border-slate-700 text-slate-350 flex items-center gap-1.5">
-                    <span>{c.name}</span>
-                    <span className="text-emerald-400 font-extrabold text-[10px] bg-emerald-950/50 px-1.5 py-0.2 rounded">
-                      ⚡ {clubElos[c.id] ?? 1200}
-                    </span>
-                  </Badge>
-                ))}
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 self-center">Club Rankings:</span>
+              {clubs.map(c => (
+                <span key={c.id} className="inline-flex items-center gap-1 rounded-full border border-[#ccff00]/20 bg-[#ccff00]/5 px-2.5 py-0.5 text-xs font-semibold text-[#ccff00]">
+                  {c.name}: #{Object.keys(clubElos).indexOf(c.id) + 1 || '—'}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Stat tiles */}
+        {showFullProfile && personalStats.matchesPlayed > 0 && (
+          <div className="grid grid-cols-2 gap-2 border-t border-white/10 px-5 py-4 sm:grid-cols-4 sm:px-6 bg-slate-950/30">
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Record</p>
+              <p className="mt-1 text-lg font-extrabold text-white">
+                <span className="text-emerald-400">{personalStats.wins}W</span>
+                <span className="text-slate-600 mx-0.5">-</span>
+                <span className="text-red-400">{personalStats.losses}L</span>
+              </p>
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Win Rate</p>
+              <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{personalStats.winRate}%</p>
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Form</p>
+              <div className="mt-1.5 flex items-center justify-center gap-1">
+                {matches.slice(0, 5).map((m, i) => {
+                  const userPart = m.participants?.find(p => p.user_id === userId)
+                  if (!userPart || !m.score_sets?.length) return <span key={i} className="h-2.5 w-2.5 rounded-full bg-slate-700" />
+                  const t1Sets = m.score_sets.filter(s => s.team1_score > s.team2_score).length
+                  const t2Sets = m.score_sets.filter(s => s.team2_score > s.team1_score).length
+                  const won = (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
+                  return <span key={i} className={cn('h-2.5 w-2.5 rounded-full', won ? 'bg-[#ccff00]' : 'bg-red-500')} />
+                })}
+                {matches.length === 0 && <span className="text-xs text-slate-600">—</span>}
               </div>
             </div>
-          )}
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Streak</p>
+              <p className={cn('mt-1 text-lg font-extrabold', personalStats.streakType === 'win' ? 'text-amber-400' : 'text-slate-400')}>
+                {personalStats.streakType === 'win' ? `🔥 ${personalStats.streak}W` : personalStats.streakType === 'loss' ? `-${personalStats.streak}L` : '—'}
+              </p>
+            </div>
+          </div>
+        )}
 
-          {!isOwner && showFullProfile && personalStats.matchesPlayed > 0 && (
-            <div className="flex justify-end pt-2">
-              <Button
-                type="button"
-                onClick={() => navigate(`/dashboard?rival=${displayName}`)}
-                className="bg-emerald-700 hover:bg-emerald-800 font-bold border-none"
-              >
-                ⚔️ Compare Head-to-Head
-              </Button>
+        {/* Gear section — 3 tiles */}
+        {profile.gear && Object.values(profile.gear).some(Boolean) && (() => {
+          const g = profile.gear!
+          const hasRacket = g.racket || g.racket_weight || g.racket_balance || g.racket_stiffness
+          const hasStrings = g.strings || g.tension || g.grip_type || g.grip
+          const hasShoes = g.shoes
+          const hasPlay = g.play_style || g.dominant_hand || g.player_type
+          if (!hasRacket && !hasStrings && !hasShoes && !hasPlay) return null
+          return (
+            <div className="border-t border-white/10 px-5 py-4 sm:px-6 bg-slate-950/20">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Player Bag &amp; Specs</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {/* Racket tile */}
+                {hasRacket && (
+                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Racket</p>
+                    <p className="text-sm font-bold text-slate-100">{g.racket || 'Unspecified'}</p>
+                    <p className="text-xs text-slate-400">
+                      {[g.racket_weight && `Weight: ${g.racket_weight}`, g.racket_balance && `Balance: ${g.racket_balance.replace(/_/g, ' ')}`, g.racket_stiffness && `Flex: ${g.racket_stiffness}`].filter(Boolean).join(' • ') || 'No specs listed'}
+                    </p>
+                  </div>
+                )}
+                {/* Strings & Tension tile */}
+                {hasStrings && (
+                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Strings &amp; Tension</p>
+                    <p className="text-sm font-bold text-slate-100">{g.strings || 'Unspecified'}</p>
+                    <p className="text-xs">
+                      {g.tension && <span className="font-bold text-[#ccff00]">Tension: {g.tension}</span>}
+                      {g.tension && (g.grip_type || g.grip) && <span className="text-slate-500"> • </span>}
+                      {(g.grip_type || g.grip) && <span className="text-slate-400">Grip: {g.grip_type ? g.grip_type.replace(/_/g, ' ') : g.grip}</span>}
+                    </p>
+                  </div>
+                )}
+                {/* Shoes + Play Profile tile */}
+                {(hasShoes || hasPlay) && (
+                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                    {hasShoes && (
+                      <>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Court Shoes</p>
+                        <p className="text-sm font-bold text-slate-100">{g.shoes}</p>
+                      </>
+                    )}
+                    {hasPlay && (
+                      <p className="text-xs text-slate-400 pt-1">
+                        {[g.play_style && g.play_style.replace(/_/g, ' '), g.dominant_hand && `${g.dominant_hand}-handed`, g.player_type && g.player_type.replace(/_/g, ' ')].filter(Boolean).join(' • ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Footer: clubs + H2H button */}
+        <div className="border-t border-white/10 px-5 py-4 sm:px-6 bg-slate-950/10 space-y-3">
+          {/* Clubs with Elo */}
+          {clubs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {clubs.map(c => (
+                <span key={c.id} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-slate-300">
+                  {c.name}
+                  <span className="text-[#ccff00] font-extrabold text-[10px]">⚡ {clubElos[c.id] ?? 1200}</span>
+                </span>
+              ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+
+          {/* Compare H2H button */}
+          {!isOwner && showFullProfile && personalStats.matchesPlayed > 0 && (
+            <button
+              type="button"
+              onClick={() => navigate(`/dashboard?rival=${displayName}`)}
+              className="w-full rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 py-2.5 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-900/30"
+            >
+              ⚔️ Compare Head-to-Head
+            </button>
+          )}
+        </div>
+      </div>
 
       {showFullProfile ? (
         <div className="space-y-6">

@@ -26,11 +26,22 @@ export type PlayerSocialLinks = {
 }
 
 export type PlayerGear = {
+  // Racket
   racket?: string | null
+  racket_weight?: string | null        // e.g. "3U", "4U"
+  racket_balance?: string | null       // e.g. "head_heavy", "even_balance", "head_light"
+  racket_stiffness?: string | null     // e.g. "stiff", "medium", "flexible"
+  // Strings
   strings?: string | null
-  tension?: string | null
-  grip?: string | null
+  tension?: string | null              // e.g. "27 lbs"
+  grip?: string | null                 // legacy single grip field
+  grip_type?: string | null            // e.g. "overgrip", "replacement_grip", "towel_grip"
+  // Shoes
   shoes?: string | null
+  // Play profile
+  play_style?: string | null           // e.g. "net_player", "baseline", "all_rounder"
+  dominant_hand?: string | null        // e.g. "right", "left"
+  player_type?: string | null          // e.g. "singles", "doubles", "singles_and_doubles"
 }
 
 // Extended User with metadata

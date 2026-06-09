@@ -354,28 +354,118 @@ export default function ProfilePage() {
 
             <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-950">Gear and tools</h3>
-                <p className="text-xs leading-5 text-slate-500">Useful for player cards, club stories, and future sponsor/brand surfaces.</p>
+                <h3 className="text-sm font-bold text-slate-950">Gear &amp; Play Profile</h3>
+                <p className="text-xs leading-5 text-slate-500">Shown on your player card. Helps teammates and rivals know your setup.</p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+
+              {/* Racket */}
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Racket</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Model</span>
+                    <Input value={gear.racket || ''} onChange={(e) => setGear((g) => ({ ...g, racket: e.target.value }))} maxLength={120} placeholder="Yonex Astrox 88D Pro" />
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Weight</span>
+                    <Select value={gear.racket_weight || ''} onChange={(e) => setGear((g) => ({ ...g, racket_weight: e.target.value }))}>
+                      <option value="">Select weight</option>
+                      <option value="2U">2U (90–94g)</option>
+                      <option value="3U">3U (85–89g)</option>
+                      <option value="4U">4U (80–84g)</option>
+                      <option value="5U">5U (75–79g)</option>
+                    </Select>
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Balance</span>
+                    <Select value={gear.racket_balance || ''} onChange={(e) => setGear((g) => ({ ...g, racket_balance: e.target.value }))}>
+                      <option value="">Select balance</option>
+                      <option value="head_heavy">Head Heavy</option>
+                      <option value="even_balance">Even Balance</option>
+                      <option value="head_light">Head Light</option>
+                    </Select>
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Flex / Stiffness</span>
+                    <Select value={gear.racket_stiffness || ''} onChange={(e) => setGear((g) => ({ ...g, racket_stiffness: e.target.value }))}>
+                      <option value="">Select flex</option>
+                      <option value="stiff">Stiff</option>
+                      <option value="medium">Medium</option>
+                      <option value="flexible">Flexible</option>
+                    </Select>
+                  </label>
+                </div>
+              </div>
+
+              {/* Strings */}
+              <div className="space-y-2 border-t border-slate-200 pt-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Strings &amp; Tension</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>String</span>
+                    <Input value={gear.strings || ''} onChange={(e) => setGear((g) => ({ ...g, strings: e.target.value }))} maxLength={120} placeholder="BG66 Ultimax" />
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Tension</span>
+                    <Input value={gear.tension || ''} onChange={(e) => setGear((g) => ({ ...g, tension: e.target.value }))} maxLength={40} placeholder="27 lbs" />
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Grip Type</span>
+                    <Select value={gear.grip_type || ''} onChange={(e) => setGear((g) => ({ ...g, grip_type: e.target.value }))}>
+                      <option value="">Select grip</option>
+                      <option value="overgrip">Overgrip</option>
+                      <option value="replacement_grip">Replacement Grip</option>
+                      <option value="towel_grip">Towel Grip</option>
+                    </Select>
+                  </label>
+                </div>
+              </div>
+
+              {/* Shoes */}
+              <div className="space-y-2 border-t border-slate-200 pt-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Court Shoes</p>
                 <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Racket</span>
-                  <Input value={gear.racket || ''} onChange={(e) => setGear((current) => ({ ...current, racket: e.target.value }))} maxLength={120} placeholder="Yonex Astrox 88D Pro" />
+                  <span>Model</span>
+                  <Input value={gear.shoes || ''} onChange={(e) => setGear((g) => ({ ...g, shoes: e.target.value }))} maxLength={120} placeholder="Victor A970 Ace" />
                 </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Strings</span>
-                  <Input value={gear.strings || ''} onChange={(e) => setGear((current) => ({ ...current, strings: e.target.value }))} maxLength={120} placeholder="BG66 Ultimax" />
-                </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Tension</span>
-                  <Input value={gear.tension || ''} onChange={(e) => setGear((current) => ({ ...current, tension: e.target.value }))} maxLength={40} placeholder="27 lbs" />
-                </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                  <span>Shoes</span>
-                  <Input value={gear.shoes || ''} onChange={(e) => setGear((current) => ({ ...current, shoes: e.target.value }))} maxLength={120} placeholder="Court shoes" />
-                </label>
+              </div>
+
+              {/* Play Profile */}
+              <div className="space-y-2 border-t border-slate-200 pt-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Play Profile</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Play Style</span>
+                    <Select value={gear.play_style || ''} onChange={(e) => setGear((g) => ({ ...g, play_style: e.target.value }))}>
+                      <option value="">Select style</option>
+                      <option value="net_player">Net Player (Front Court)</option>
+                      <option value="baseline">Baseline (Rear Court)</option>
+                      <option value="all_rounder">All-Rounder</option>
+                      <option value="aggressive">Aggressive Smasher</option>
+                      <option value="defensive">Defensive / Counter</option>
+                    </Select>
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Dominant Hand</span>
+                    <Select value={gear.dominant_hand || ''} onChange={(e) => setGear((g) => ({ ...g, dominant_hand: e.target.value }))}>
+                      <option value="">Select hand</option>
+                      <option value="right">Right</option>
+                      <option value="left">Left</option>
+                    </Select>
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                    <span>Player Type</span>
+                    <Select value={gear.player_type || ''} onChange={(e) => setGear((g) => ({ ...g, player_type: e.target.value }))}>
+                      <option value="">Select type</option>
+                      <option value="singles">Singles Specialist</option>
+                      <option value="doubles">Doubles Specialist</option>
+                      <option value="singles_and_doubles">Singles &amp; Doubles</option>
+                    </Select>
+                  </label>
+                </div>
               </div>
             </div>
+
 
             <div className="flex items-center gap-2 py-2">
               <input
