@@ -1250,14 +1250,14 @@ export default function ClubHomePage() {
           <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
             {event.signup_open ? 'Open' : 'Closed'}
           </Badge>
-          {event.max_participants ? <Badge className="border-slate-200 bg-white text-slate-700">{rsvpCount}/{event.max_participants} going</Badge> : null}
+          {event.max_participants ? <Badge className="border-slate-200 bg-[#0b1322] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           <Button type="button" size="sm" variant="secondary" onClick={() => handleNativeEventShare(event)}>
             <Share2 size={15} aria-hidden="true" />
             Share
           </Button>
-          <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50" href={whatsappUrl} target="_blank" rel="noreferrer">
+          <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
             <MessageCircle size={15} aria-hidden="true" />
             WhatsApp
           </a>
@@ -1291,7 +1291,7 @@ export default function ClubHomePage() {
           <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p>
         ) : null}
         {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
-        <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+        <div className="space-y-2 rounded-lg border border-slate-200 bg-[#0b1322] p-3">
           <div className="flex flex-wrap gap-2">
             <Badge className={`border-${theme.borderLight} ${theme.bgLight} ${theme.textDark}`}>{acceptedRsvps.length} accepted</Badge>
             <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
@@ -1331,7 +1331,7 @@ export default function ClubHomePage() {
                   </h4>
                   
                   {/* Summary Stats Panel */}
-                  <div className="p-2.5 bg-white rounded-md border border-slate-200/80 text-[11px] font-medium text-slate-700 grid grid-cols-2 gap-2 shadow-sm">
+                  <div className="p-2.5 bg-[#0b1322] rounded-md border border-slate-200/80 text-[11px] font-medium text-slate-300 grid grid-cols-2 gap-2 shadow-sm">
                     <div>
                       📊 <span className="font-bold text-slate-900">Attended:</span> {attendedCount}
                     </div>
@@ -1354,7 +1354,7 @@ export default function ClubHomePage() {
                     placeholder="Search members..."
                     value={rsvpSearchQuery}
                     onChange={(e) => setRsvpSearchQuery(e.target.value)}
-                    className={`min-h-9 text-xs flex-1 bg-white border-slate-200 focus:border-${accent}-600 focus:ring-1 focus:ring-${accent}-600/20`}
+                    className={`min-h-9 text-xs flex-1 bg-[#0b1322] border-slate-200 focus:border-${accent}-600 focus:ring-1 focus:ring-${accent}-600/20`}
                   />
                   {rsvpSearchQuery && (
                     <Button
@@ -1404,7 +1404,7 @@ export default function ClubHomePage() {
                                       handleAdminRsvpUpdate(event.id, member.user_id, val, rsvp?.attended, rsvp?.paid)
                                     }
                                   }}
-                                  className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-slate-200 rounded-md w-20 font-bold bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-500`}
+                                  className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-slate-200 rounded-md w-20 font-bold bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-500`}
                                 >
                                   {rsvpStatus === 'no_response' && <option value="no_response">Pending</option>}
                                   <option value="going">Going</option>
@@ -1418,7 +1418,7 @@ export default function ClubHomePage() {
                                   className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                                     rsvp?.attended
                                       ? `${theme.bg} ${theme.border} text-white`
-                                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                      : 'bg-[#0b1322] text-slate-300 border-slate-200 hover:bg-slate-700'
                                   }`}
                                   onClick={() => handleAdminRsvpUpdate(
                                     event.id,
@@ -1439,7 +1439,7 @@ export default function ClubHomePage() {
                                   className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                                     rsvp?.paid
                                       ? 'bg-amber-500 border-amber-500 text-white'
-                                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                      : 'bg-[#0b1322] text-slate-300 border-slate-200 hover:bg-slate-700'
                                   }`}
                                   onClick={() => handleAdminRsvpUpdate(
                                     event.id,
@@ -1734,7 +1734,7 @@ export default function ClubHomePage() {
       ) : null}
 
       {/* Sleek Banner Cover Header */}
-      <div className="relative overflow-hidden rounded-2xl shadow-sm border border-slate-200 bg-white">
+      <div className="relative overflow-hidden rounded-2xl shadow-sm border border-slate-200 bg-[#0b1322]">
         {/* Banner Image / Gradient */}
         <div 
           className={`h-40 sm:h-52 w-full relative ${
@@ -1830,7 +1830,7 @@ export default function ClubHomePage() {
                 Base location: <strong className="break-words text-slate-950">{locationQuery}</strong>
               </p>
               <a 
-                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-50 shadow-sm" 
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-[#0b1322] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 shadow-sm" 
                 href={mapUrl} 
                 target="_blank" 
                 rel="noreferrer"
@@ -1868,7 +1868,7 @@ export default function ClubHomePage() {
       {club.announcement ? (
         <div className="rounded-2xl border border-amber-250 bg-amber-50/60 p-4 shadow-sm">
           <div className="flex gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-amber-700 shadow-sm border border-amber-200">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] text-amber-700 shadow-sm border border-amber-200">
               <Megaphone size={18} aria-hidden="true" />
             </span>
             <div className="flex-1">
@@ -1941,7 +1941,7 @@ export default function ClubHomePage() {
                   <Share2 size={16} aria-hidden="true" />
                   Share
                 </Button>
-                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
+                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
                   <MessageCircle size={16} aria-hidden="true" />
                   WhatsApp
                 </a>
@@ -1959,10 +1959,10 @@ export default function ClubHomePage() {
               className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-left transition-colors hover:bg-slate-100"
               onClick={openCreateMessageModal}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] text-emerald-400 shadow-sm border border-emerald-800">
                 <Megaphone size={18} aria-hidden="true" />
               </span>
-              <span className="min-h-10 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-500">
+              <span className="min-h-10 flex-1 rounded-full border border-slate-200 bg-[#0b1322] px-4 py-2.5 text-sm font-semibold text-slate-300">
                 Post an announcement
               </span>
             </button>
@@ -1983,7 +1983,7 @@ export default function ClubHomePage() {
                         className="flex min-w-0 items-start gap-3 cursor-pointer flex-1"
                         onClick={() => toggleExpand(item.id, isLatest)}
                       >
-                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white ${theme.text} shadow-sm`}>
+                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] ${theme.text} shadow-sm`}>
                           <Megaphone size={18} aria-hidden="true" />
                         </span>
                         <div className="min-w-0 flex-1">
@@ -2004,7 +2004,7 @@ export default function ClubHomePage() {
                             </div>
                             
                             {isExpanded && (
-                              <p className="mt-2 text-sm leading-6 text-slate-600 bg-white/75 rounded-lg p-2.5 border border-slate-100 whitespace-pre-wrap">
+                              <p className="mt-2 text-sm leading-6 text-slate-300 bg-[#0b1322]/75 rounded-lg p-2.5 border border-slate-100 whitespace-pre-wrap">
                                 {item.body}
                               </p>
                             )}
@@ -2044,7 +2044,7 @@ export default function ClubHomePage() {
                 type="button"
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'list'
-                    ? 'bg-white text-slate-900 shadow-sm'
+                    ? 'bg-[#0b1322] text-slate-300 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950'
                 }`}
                 onClick={() => setEventsViewMode('list')}
@@ -2055,7 +2055,7 @@ export default function ClubHomePage() {
                 type="button"
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'calendar'
-                    ? 'bg-white text-slate-900 shadow-sm'
+                    ? 'bg-[#0b1322] text-slate-300 shadow-sm'
                     : 'text-slate-600 hover:text-slate-950'
                 }`}
                 onClick={() => setEventsViewMode('calendar')}
@@ -2137,7 +2137,7 @@ export default function ClubHomePage() {
                       onClick={() => setSelectedDate(cell.date)}
                       className={`relative flex flex-col items-center justify-between p-1 sm:p-2 min-h-10 sm:min-h-12 border rounded-lg transition-all ${
                         cell.isCurrentMonth 
-                          ? 'text-slate-900 bg-white border-slate-200/60' 
+                          ? 'text-slate-300 bg-[#0b1322] border-slate-200/60' 
                           : 'text-slate-400 bg-slate-50/50 border-slate-100'
                       } ${
                         isSelected 
@@ -2342,7 +2342,7 @@ export default function ClubHomePage() {
                   onClick={() => setSortBy('elo')}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                     sortBy === 'elo'
-                      ? `bg-white ${theme.text} shadow-sm border border-slate-200/50`
+                      ? `bg-[#0b1322] ${theme.text} shadow-sm border border-slate-200/50`
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -2353,7 +2353,7 @@ export default function ClubHomePage() {
                   onClick={() => setSortBy('win-rate')}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                     sortBy === 'win-rate'
-                      ? `bg-white ${theme.text} shadow-sm border border-slate-200/50`
+                      ? `bg-[#0b1322] ${theme.text} shadow-sm border border-slate-200/50`
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -2373,7 +2373,7 @@ export default function ClubHomePage() {
                     onClick={() => setTimeframe(tab.id)}
                     className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                       timeframe === tab.id
-                        ? `bg-white ${theme.text} shadow-sm border border-slate-200/50`
+                        ? `bg-[#0b1322] ${theme.text} shadow-sm border border-slate-200/50`
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
@@ -2391,7 +2391,7 @@ export default function ClubHomePage() {
                         setTimeframe(e.target.value)
                       }
                     }}
-                    className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-white text-slate-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
+                    className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
                   >
                     <option value="">🎯 Filter by Session</option>
                     {events
@@ -2699,7 +2699,7 @@ export default function ClubHomePage() {
                   {members.slice(0, 5).map((member) => {
                     const isCurrentUser = user && user.id === member.user_id
                     return (
-                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white shadow-sm hover:border-slate-350 transition">
+                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-[#0b1322] shadow-sm hover:border-slate-350 transition">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="min-w-0 truncate font-semibold text-slate-950">
                             <Link to={`/member/${member.user_id}`} className={`hover:underline ${theme.text}`}>
@@ -3116,7 +3116,7 @@ export default function ClubHomePage() {
         <>
           <CelebrationConfetti />
           <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setShowCelebrationModal(false)}>
-            <Card className="relative w-full max-w-md overflow-hidden rounded-2xl border-none bg-white text-center shadow-2xl transition-all" onClick={(e) => e.stopPropagation()}>
+            <Card className="relative w-full max-w-md overflow-hidden rounded-2xl border-none bg-[#0b1322] text-center shadow-2xl transition-all" onClick={(e) => e.stopPropagation()}>
               
               {/* Premium top accent pattern */}
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />

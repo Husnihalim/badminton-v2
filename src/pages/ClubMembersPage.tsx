@@ -166,13 +166,13 @@ export default function ClubMembersPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
               <Users size={18} aria-hidden="true" />
             </span>
-            <h2 className="text-lg font-bold text-slate-950">Roster</h2>
+            <h2 className="text-lg font-bold text-slate-200">Roster</h2>
           </div>
 
           {sortedMembers.length ? (
             <div className="space-y-3">
               {sortedMembers.map((member) => (
-                <div key={member.id} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div key={member.id} className="grid gap-3 rounded-lg border border-slate-600 bg-[#0b1322] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="flex min-w-0 items-start gap-3">
                     {member.avatar_url ? (
                       <img 
@@ -181,22 +181,22 @@ export default function ClubMembersPage() {
                         className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-slate-200"
                       />
                     ) : (
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0b1322] text-slate-300 shadow-sm">
                         <UserRound size={18} aria-hidden="true" />
                       </span>
                     )}
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-bold text-slate-950">
+                        <h3 className="truncate font-bold text-slate-200">
                           <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
                             {member.name || 'Unknown member'}
                           </Link>
                         </h3>
                         <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
-                        {member.user_id === user?.id ? <span className="text-xs font-semibold text-slate-500">You</span> : null}
+                        {member.user_id === user?.id ? <span className="text-xs font-semibold text-slate-400">You</span> : null}
                       </div>
-                      <p className="break-words text-sm text-slate-600">{member.email}</p>
-                      <p className="text-xs text-slate-500">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
+                      <p className="break-words text-sm text-slate-300">{member.email}</p>
+                      <p className="text-xs text-slate-400">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
                     </div>
                   </div>
 

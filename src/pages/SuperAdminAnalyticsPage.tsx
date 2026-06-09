@@ -304,43 +304,43 @@ export default function SuperAdminAnalyticsPage() {
       {/* Overview Aggregates Card Row */}
       {stats && activeTab === 'overview' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
               <Users size={24} />
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Users</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_users}</span>
+              <span className="text-2xl font-black text-slate-300 leading-none block mt-1">{stats.total_users}</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
               <Database size={24} />
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Clubs</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_clubs}</span>
+              <span className="text-2xl font-black text-slate-300 leading-none block mt-1">{stats.total_clubs}</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
               <Activity size={24} />
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Matches Played</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_matches}</span>
+              <span className="text-2xl font-black text-slate-300 leading-none block mt-1">{stats.total_matches}</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="p-3 bg-rose-50 rounded-lg text-rose-600">
               <AlertTriangle size={24} />
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">System Crashes</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_crashes}</span>
+              <span className="text-2xl font-black text-slate-300 leading-none block mt-1">{stats.total_crashes}</span>
             </div>
           </div>
         </div>
@@ -354,7 +354,7 @@ export default function SuperAdminAnalyticsPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-3 font-semibold text-sm border-b-2 transition-all duration-150 capitalize flex items-center gap-2 cursor-pointer ${
               activeTab === tab
-                ? 'border-emerald-600 text-emerald-600 bg-white'
+                ? 'border-emerald-600 text-emerald-600 bg-[#0b1322]'
                 : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
             }`}
           >
@@ -379,7 +379,7 @@ export default function SuperAdminAnalyticsPage() {
       </div>
 
       {/* Tab Panel Content */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6">
+      <div className="bg-[#0b1322] rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6">
         
         {/* TAB 1: OVERVIEW & INTERACTIVE ANALYTICS */}
         {activeTab === 'overview' && stats && (
@@ -990,7 +990,7 @@ export default function SuperAdminAnalyticsPage() {
       {/* Confirmation Modal for Deleting Clubs */}
       {clubToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
+          <div className="bg-[#0b1322] rounded-xl max-w-sm w-full p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Club?</h3>
             <p className="text-slate-600 text-sm mb-6">
               Are you sure you want to delete <strong>"{clubToDelete.name}"</strong>? This will permanently delete all club members, match histories, score sets, events, and RSVP records. This action is irreversible.

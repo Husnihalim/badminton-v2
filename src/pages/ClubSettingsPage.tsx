@@ -254,7 +254,7 @@ export default function ClubSettingsPage() {
   if (isLoading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading...</CardContent>
+        <CardContent className="pt-5 text-center text-sm text-slate-300">Loading...</CardContent>
       </Card>
     )
   }
@@ -330,7 +330,7 @@ export default function ClubSettingsPage() {
                 <div className="space-y-2">
                   <span className="text-sm font-semibold text-slate-700 block">Club Logo</span>
                   <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 shrink-0 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                    <div className="h-16 w-16 shrink-0 rounded-full border border-slate-600 bg-[#0b1322] flex items-center justify-center overflow-hidden">
                       {logoUrl ? (
                         <img src={logoUrl} alt="Club logo preview" className="h-full w-full object-cover" />
                       ) : (
@@ -354,7 +354,7 @@ export default function ClubSettingsPage() {
                       >
                         {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
                       </Button>
-                      <p className="text-[11px] text-slate-500 mt-1">Recommended: Square format image, max 5MB.</p>
+                      <p className="text-[11px] text-slate-300 mt-1">Recommended: Square format image, max 5MB.</p>
                     </div>
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export default function ClubSettingsPage() {
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs font-bold ${
                             isSelected 
                               ? 'bg-slate-900 border-slate-900 text-white shadow'
-                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                              : 'bg-[#0b1322] border-slate-600 text-slate-300 hover:bg-slate-700'
                           }`}
                         >
                           <span className={`h-3.5 w-3.5 rounded-full border ${c.class.split(' ')[0]} ${c.class.split(' ')[1]}`} />
@@ -401,7 +401,7 @@ export default function ClubSettingsPage() {
                           className={`flex flex-col text-left rounded-lg overflow-hidden border transition-all ${
                             isSelected 
                               ? 'ring-2 ring-emerald-600 border-transparent shadow' 
-                              : 'border-slate-200 hover:border-slate-350'
+                              : 'border-slate-600 hover:border-slate-500'
                           }`}
                         >
                           <div className={`h-12 w-full ${bp.gradient}`} />
@@ -417,7 +417,7 @@ export default function ClubSettingsPage() {
                   <span className="text-sm font-semibold text-slate-700 block">Or Upload Custom Cover Banner</span>
                   <div className="space-y-3">
                     {bannerUrl ? (
-                      <div className="h-20 w-full rounded-lg border border-slate-200 overflow-hidden bg-slate-50">
+                      <div className="h-20 w-full rounded-lg border border-slate-600 overflow-hidden bg-[#0b1322]">
                         <img src={bannerUrl} alt="Custom banner preview" className="h-full w-full object-cover" />
                       </div>
                     ) : null}
@@ -440,7 +440,7 @@ export default function ClubSettingsPage() {
                         <ImageIcon size={14} />
                         {isUploadingBanner ? 'Uploading...' : 'Upload Cover Image'}
                       </Button>
-                      <p className="text-[11px] text-slate-500 mt-1">Recommended: Landscape photo, max 10MB.</p>
+                      <p className="text-[11px] text-slate-300 mt-1">Recommended: Landscape photo, max 10MB.</p>
                     </div>
                   </div>
                 </div>
@@ -450,7 +450,7 @@ export default function ClubSettingsPage() {
 
           <div className="space-y-5">
             {/* Announcement / Pinned Notice Card */}
-            <Card className="border-emerald-100 bg-emerald-50/10">
+            <Card className="border-emerald-600 bg-emerald-900/10">
               <CardContent className="space-y-4 pt-4 sm:pt-5">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
@@ -458,7 +458,7 @@ export default function ClubSettingsPage() {
                   </span>
                   <h2 className="text-lg font-bold text-slate-950">Pinned Noticeboard Announcement</h2>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-slate-300 leading-relaxed">
                   Pin an announcement bar to the absolute top of the club homepage. Perfect for high-priority news (e.g., fees due, court allocations, cancellations).
                 </p>
 
@@ -492,18 +492,18 @@ export default function ClubSettingsPage() {
             <Card>
               <CardContent className="space-y-4 pt-4 sm:pt-5">
                 <h2 className="text-lg font-bold text-slate-950">Join settings</h2>
-                <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
+                <label className="flex items-start gap-3 rounded-lg border border-slate-600 p-3">
                   <input className="mt-1 h-4 w-4 accent-emerald-700" type="checkbox" checked={openJoin} onChange={(e) => setOpenJoin(e.target.checked)} />
                   <span>
-                    <span className="block text-sm font-semibold text-slate-900">Allow new members to join</span>
-                    <span className="text-sm text-slate-600">Strangers can request to join, then admins approve.</span>
+                    <span className="block text-sm font-semibold text-slate-300">Allow new members to join</span>
+                    <span className="text-sm text-slate-400">Strangers can request to join, then admins approve.</span>
                   </span>
                 </label>
-                <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
+                <label className="flex items-start gap-3 rounded-lg border border-slate-600 p-3">
                   <input className="mt-1 h-4 w-4 accent-emerald-700" type="checkbox" checked={approvalRequired} onChange={(e) => setApprovalRequired(e.target.checked)} disabled={!openJoin} />
                   <span>
-                    <span className="block text-sm font-semibold text-slate-900">Require approval for strangers</span>
-                    <span className="text-sm text-slate-600">General invite links create requests. Specific invites can auto-approve one person.</span>
+                    <span className="block text-sm font-semibold text-slate-300">Require approval for strangers</span>
+                    <span className="text-sm text-slate-400">General invite links create requests. Specific invites can auto-approve one person.</span>
                   </span>
                 </label>
               </CardContent>
@@ -516,7 +516,7 @@ export default function ClubSettingsPage() {
                   <h2 className="text-lg font-bold text-slate-950">General invite link</h2>
                   <Badge>Admin approval</Badge>
                 </div>
-                <p className="text-sm leading-6 text-slate-600">
+                <p className="text-sm leading-6 text-slate-300">
                   Share this broadly. Anyone using it will send a join request for admin approval.
                 </p>
                 <Input value={inviteUrl} readOnly className="font-mono text-sm" />
@@ -539,7 +539,7 @@ export default function ClubSettingsPage() {
                   <h2 className="text-lg font-bold text-slate-950">Specific invite</h2>
                   <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">Auto-approve</Badge>
                 </div>
-                <p className="text-sm leading-6 text-slate-600">
+                <p className="text-sm leading-6 text-slate-300">
                   Generate this only for a specific person. It auto-approves one account, then cannot be reused.
                 </p>
                 {specificInviteUrl ? (
@@ -550,7 +550,7 @@ export default function ClubSettingsPage() {
                   Generate and copy specific invite
                 </Button>
                 {specificInvites.length ? (
-                  <div className="space-y-2 border-t border-slate-200 pt-3">
+                  <div className="space-y-2 border-t border-slate-600 pt-3">
                     <h3 className="text-sm font-bold text-slate-950">Recent specific invites</h3>
                     <div className="space-y-2">
                       {specificInvites.map((invite) => {
@@ -560,10 +560,10 @@ export default function ClubSettingsPage() {
                         const isActiveInvite = !isUsed && !isRevoked && !isExpired
 
                         return (
-                          <div key={invite.id} className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                          <div key={invite.id} className="grid gap-2 rounded-lg border border-slate-600 bg-[#0b1322] p-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
                             <div className="min-w-0">
                               <p className="truncate font-mono text-xs font-semibold text-slate-900">{buildInviteUrl(invite.token)}</p>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-xs text-slate-300">
                                 {isRevoked ? 'Revoked' : isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'} · Created {new Date(invite.created_at).toLocaleDateString()}
                               </p>
                             </div>
@@ -598,7 +598,7 @@ export default function ClubSettingsPage() {
       </form>
 
       {membership?.role === 'owner' ? (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-600 bg-red-900/10">
           <CardContent className="space-y-3 pt-4 sm:pt-5">
             <div className="flex items-center gap-3 text-red-700">
               <ShieldAlert size={18} aria-hidden="true" />

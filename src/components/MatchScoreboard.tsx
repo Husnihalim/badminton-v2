@@ -31,13 +31,14 @@ export function MatchScoreboard({
   const team1 = match.participants.filter((p) => p.team === 1)
   const team2 = match.participants.filter((p) => p.team === 2)
 
-  // Card background theme state
+    // Card background theme state (default to dark)
   const [cardTheme, setCardTheme] = useState<'adaptive' | 'light' | 'dark' | 'forest' | 'ocean' | 'clay'>(() => {
     const saved = localStorage.getItem('scoreboard-card-theme')
     if (saved === 'adaptive' || saved === 'light' || saved === 'dark' || saved === 'forest' || saved === 'ocean' || saved === 'clay') {
       return saved
     }
-    return 'adaptive'
+    // Default to dark theme if no saved preference
+    return 'dark'
   })
 
   const [isSystemDark, setIsSystemDark] = useState(() =>
@@ -184,7 +185,7 @@ export function MatchScoreboard({
   // Theme styling configurations
   const themeStyles = {
     light: {
-      card: 'bg-white border-slate-200 hover:border-slate-350 shadow-sm text-slate-800',
+      card: 'bg-[#0b1322] border-slate-800 hover:border-slate-700 shadow-lg text-slate-100',
       borderL1: 'border-l-4 border-l-orange-500',
       borderL2: 'border-l-4 border-l-emerald-600',
       topBar: 'bg-slate-50/80 border-b border-slate-200/60',
@@ -322,7 +323,7 @@ export function MatchScoreboard({
 
             {isThemeMenuOpen && (
               <div
-                className="absolute right-0 mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-xl z-50 text-left text-xs text-slate-800 dark:text-slate-100"
+                className="absolute right-0 mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-slate-800 bg-[#0b1322] dark:bg-slate-900 p-1 shadow-xl z-50 text-left text-xs text-slate-800 dark:text-slate-100"
                 style={{ top: '100%' }}
               >
                 <div className="px-2.5 py-1 text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider text-[8px] font-black">
@@ -537,7 +538,7 @@ export function MatchScoreboard({
                     <div className="h-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 uppercase shadow-sm">
                       {comment.display_name ? comment.display_name.slice(0, 2).toUpperCase() : 'M'}
                     </div>
-                    <div className="flex-1 min-w-0 bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-1">
+                    <div className="flex-1 min-w-0 bg-[#0b1322] dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-slate-900 dark:text-slate-150 truncate">
                           {comment.display_name}
@@ -581,7 +582,7 @@ export function MatchScoreboard({
                 onChange={(e) => setNewCommentText(e.target.value)}
                 placeholder="Write a comment..."
                 disabled={isSubmittingComment}
-                className="flex-1 min-w-0 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-slate-150 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 shadow-sm"
+                className="flex-1 min-w-0 bg-[#0b1322] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 shadow-sm"
               />
               <button
                 type="submit"

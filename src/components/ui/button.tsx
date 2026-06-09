@@ -8,7 +8,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: 'border border-blue-700 bg-blue-600 text-white shadow-sm hover:bg-blue-700 dark:border-blue-400 dark:bg-blue-400 dark:text-slate-950 dark:hover:bg-blue-300',
-        secondary: 'border border-slate-300 bg-white text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80 dark:hover:text-white',
+        secondary: 'border border-slate-300 bg-[#0b1322] text-slate-300 shadow-sm hover:bg-slate-700 hover:text-slate-300 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80 dark:hover:text-white',
         ghost: 'text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100',
         danger: 'border border-red-700 bg-red-600 text-white shadow-sm hover:bg-red-700',
       },

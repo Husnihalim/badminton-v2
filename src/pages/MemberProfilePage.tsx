@@ -439,9 +439,11 @@ export default function MemberProfilePage() {
           </div>
 
           {/* Bio */}
-          {profile.bio && (
-            <p className="mt-4 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">{profile.bio}</p>
-          )}
+              {profile.bio ? (
+                <p className="mt-4 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">{profile.bio}</p>
+              ) : (
+                <p className="mt-4 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">Add a short playing bio, social handles, and gear to make this card feel complete.</p>
+              )}
 
           {/* Social handles */}
           {profile.social_links && Object.values(profile.social_links).some(Boolean) && (
@@ -471,7 +473,7 @@ export default function MemberProfilePage() {
         {showFullProfile && personalStats.matchesPlayed > 0 && (
           <div className="grid grid-cols-2 gap-2 border-t border-white/10 px-5 py-4 sm:grid-cols-4 sm:px-6 bg-slate-950/30">
             <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Record</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Record</p>
               <p className="mt-1 text-lg font-extrabold text-white">
                 <span className="text-emerald-400">{personalStats.wins}W</span>
                 <span className="text-slate-600 mx-0.5">-</span>
@@ -479,11 +481,11 @@ export default function MemberProfilePage() {
               </p>
             </div>
             <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Win Rate</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Win Rate</p>
               <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{personalStats.winRate}%</p>
             </div>
             <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Form</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Form</p>
               <div className="mt-1.5 flex items-center justify-center gap-1">
                 {matches.slice(0, 5).map((m, i) => {
                   const userPart = m.participants?.find(p => p.user_id === userId)
@@ -497,7 +499,7 @@ export default function MemberProfilePage() {
               </div>
             </div>
             <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rank</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rank</p>
               <p className="mt-1 text-lg font-extrabold text-white">
                 {(() => {
                   const primaryClub = clubs[0]
@@ -566,10 +568,10 @@ export default function MemberProfilePage() {
 
         <div className="border-t border-white/10 px-5 py-3 sm:px-6 bg-slate-950/10">
           <div className="grid gap-y-1 gap-x-4 sm:grid-cols-4 text-xs mb-3">
-            <p className="text-slate-400">Latest match: <span className="font-bold text-white">{matches[0]?.title || '—'}</span></p>
-            <p className="text-slate-400">Streak: <span className={`font-bold ${personalStats.streakType === 'win' ? 'text-amber-400' : personalStats.streakType === 'loss' ? 'text-red-400' : 'text-white'}`}>{personalStats.streakType === 'win' ? `🔥 ${personalStats.streak}W` : personalStats.streakType === 'loss' ? `-${personalStats.streak}L` : '—'}</span></p>
-            <p className="text-slate-400">Clubs: <span className="font-bold text-white">{clubs.map(c => c.name).join(', ') || '—'}</span></p>
-            <p className="text-slate-400">Sport: <span className="font-bold text-white capitalize">{profile.preferred_sport || 'Badminton'}</span></p>
+            <p className="text-slate-300">Latest match: <span className="font-bold text-white">{matches[0]?.title || '—'}</span></p>
+            <p className="text-slate-300">Streak: <span className={`font-bold ${personalStats.streakType === 'win' ? 'text-amber-400' : personalStats.streakType === 'loss' ? 'text-red-400' : 'text-white'}`}>{personalStats.streakType === 'win' ? `🔥 ${personalStats.streak}W` : personalStats.streakType === 'loss' ? `-${personalStats.streak}L` : '—'}</span></p>
+            <p className="text-slate-300">Clubs: <span className="font-bold text-white">{clubs.map(c => c.name).join(', ') || '—'}</span></p>
+            <p className="text-slate-300">Sport: <span className="font-bold text-white capitalize">{profile.preferred_sport || 'Badminton'}</span></p>
           </div>
 
           {/* Clubs with Elo */}

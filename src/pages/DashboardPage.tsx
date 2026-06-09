@@ -807,7 +807,7 @@ export default function DashboardPage() {
                 {user.bio ? (
                   <p className="line-clamp-2 max-w-2xl text-sm leading-6 text-slate-300">{user.bio}</p>
                 ) : (
-                  <p className="max-w-2xl text-sm leading-6 text-slate-500">Add a short playing bio, social handles, and gear to make this card feel complete.</p>
+                  <p className="max-w-2xl text-sm leading-6 text-slate-300">Add a short playing bio, social handles, and gear to make this card feel complete.</p>
                 )}
 
                 {socialHandles.length ? (
@@ -825,7 +825,7 @@ export default function DashboardPage() {
             {/* Stat tiles */}
             <div className="grid gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Record</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Record</p>
                 <p className="mt-1 text-lg font-extrabold">
                   <span className="text-emerald-400">{personalStats.wins}W</span>
                   <span className="text-slate-600 mx-0.5">-</span>
@@ -833,11 +833,11 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Win Rate</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Win Rate</p>
                 <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{personalStats.winRate}%</p>
               </div>
               <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Form</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Form</p>
                 <div className="mt-1.5 flex items-center justify-center gap-1">
                   {allUserMatches.slice(0, 5).map((m, i) => {
                     const userPart = m.participants?.find(p => p.user_id === user.id)
@@ -851,7 +851,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rank</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rank</p>
                 <p className="mt-1 text-lg font-extrabold text-white">
                   {primaryRank ? `#${primaryRank.rank}/${primaryRank.total}` : 'Unranked'}
                 </p>
@@ -914,10 +914,10 @@ export default function DashboardPage() {
           {/* Footer row */}
           <div className="border-t border-white/10 px-4 py-3 sm:px-5 bg-slate-950/20">
             <div className="grid gap-y-1 gap-x-4 sm:grid-cols-4 text-xs">
-              <p className="text-slate-400">Latest headline: <span className="font-bold text-white">{latestHeadline}</span></p>
-              <p className="text-slate-400">Best partner: <span className="font-bold text-white">{recommendedInsights?.bestPartner?.name || '—'}</span></p>
-              <p className="text-slate-400">Top rival: <span className="font-bold text-white">{recommendedInsights?.topRival?.name || '—'}</span></p>
-              <p className="text-slate-400">Clubs: <span className="font-bold text-white">{clubs.map(c => c.name).join(', ') || '—'}</span></p>
+              <p className="text-slate-300">Latest headline: <span className="font-bold text-white">{latestHeadline}</span></p>
+              <p className="text-slate-300">Best partner: <span className="font-bold text-white">{recommendedInsights?.bestPartner?.name || '—'}</span></p>
+              <p className="text-slate-300">Top rival: <span className="font-bold text-white">{recommendedInsights?.topRival?.name || '—'}</span></p>
+              <p className="text-slate-300">Clubs: <span className="font-bold text-white">{clubs.map(c => c.name).join(', ') || '—'}</span></p>
             </div>
           </div>
         </div>
