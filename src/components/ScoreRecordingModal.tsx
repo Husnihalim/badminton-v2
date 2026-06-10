@@ -727,7 +727,7 @@ export default function ScoreRecordingModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
                   Cancel
                 </Button>

@@ -27,15 +27,16 @@ export default function DeleteClubModal({ isOpen, onClose, onConfirm, isDeleting
         This action cannot be undone. All club data, members and events will be permanently removed.
         {clubName && <span> ({clubName})</span>}
       </p>
-      <div className="flex justify-end space-x-3 mt-4">
-        <Button variant="secondary" onClick={onClose} disabled={isDeleting}>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-4">
+        <Button variant="secondary" onClick={onClose} disabled={isDeleting} fullWidth className="sm:w-auto">
           <X size={16} className="mr-2" /> Cancel
         </Button>
         <Button
           variant="danger"
           onClick={onConfirm}
           disabled={isDeleting}
-          className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white"
+          fullWidth
+          className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white sm:w-auto"
         >
           {isDeleting ? 'Deleting…' : 'Delete Forever'}
         </Button>
