@@ -42,6 +42,7 @@ export default function DashboardPage() {
   
   const [clubs, setClubs] = useState<DashboardClub[]>([])
   const [discoverableClubs, setDiscoverableClubs] = useState<Club[]>([])
+  const [clubElos, setClubElos] = useState<Record<string, number>>({})
   const [events, setEvents] = useState<DashboardEvent[]>([])
   const [matches, setMatches] = useState<DashboardMatch[]>([])
   const [totalMatchesCount, setTotalMatchesCount] = useState(0)
@@ -422,7 +423,8 @@ export default function DashboardPage() {
       })
 
       // Fetch user's rank, leaderboards and members in each club
-      const ranks: Record<string, { rank: number; total: number }> = {}
+      const ranks: Record<string, { rank: number; total: number }> = {};
+  const clubElosMap: Record<string, number> = {}
       const clubLeaderboards: Record<string, Record<string, number>> = {}
       const rivalsSet = new Set<string>()
       const rivalsList: { id?: string; name: string }[] = []
@@ -445,7 +447,19 @@ export default function DashboardPage() {
           clubLeaderboards[club.id] = lbMap
 
           const members = await getClubMembers(club.id)
-          members.forEach((m) => {
+      // Compute average Elo for the club
+      let totalElo = 0
+      let eloCount = 0
+      members.forEach((m) => {
+        if (typeof m.elo_rating === 'number') {
+          totalElo += m.elo_rating
+          eloCount++
+        }
+      })
+      if (eloCount > 0) {
+        clubElosMap[club.id] = Math.round(totalElo / eloCount)
+      }
+      members.forEach((m) => {
             const mName = m.name || 'Unknown'
             if (m.user_id !== user.id &&
                 mName.toLowerCase() !== user.name.toLowerCase() &&
@@ -459,7 +473,8 @@ export default function DashboardPage() {
           console.error(`Error fetching rank for club ${club.id}:`, e)
         }
       }
-      setClubRanks(ranks)
+      setClubElos(clubElosMap);
+  setClubRanks(ranks)
       
       rivalsList.sort((a, b) => a.name.localeCompare(b.name))
       setClubMembers(rivalsList)

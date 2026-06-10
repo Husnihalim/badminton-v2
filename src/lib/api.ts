@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import type { User } from '../types'
 import { getErrorMessage, isMissingRpcFunctionError } from './utils'
 import type { 
   Club, 
@@ -1816,6 +1817,20 @@ export async function superadminUpdateUserRole(userId: string, role: 'superadmin
     throw error
   }
 }
+
+export async function requestClubDeletion(clubId: string): Promise<void> {
+  // Create a pending deletion request for admin approval
+  const { error } = await supabase
+    .from('club_deletion_requests')
+    .insert({ club_id: clubId, status: 'pending' })
+    .single();
+
+  if (error) {
+    console.error('Error creating club deletion request:', error);
+    throw error;
+  }
+}
+
 
 export async function deleteClub(clubId: string): Promise<void> {
   const { error } = await supabase

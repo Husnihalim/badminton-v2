@@ -169,12 +169,12 @@ export default function ScoreRecordingModal({
 
     if (matchTitle.length > 120) nextErrors.matchTitle = 'Match title must be 120 characters or fewer.'
     if (!matchDate) nextErrors.matchDate = 'Match date is required.'
-    if (!isPlayerValid(player1A)) nextErrors.player1A = 'Player 1 is required.'
-    if (!isPlayerValid(player2A)) nextErrors.player2A = 'Player 2 is required.'
+    if (!isPlayerValid(player1A)) nextErrors.player1A = 'Player 1 is required (select a member or enter a guest nickname).'
+    if (!isPlayerValid(player2A)) nextErrors.player2A = 'Player 2 is required (select a member or enter a guest nickname).'
 
     if (matchType === 'doubles') {
-      if (!isPlayerValid(player1B)) nextErrors.player1B = 'Team 1 Player 2 is required.'
-      if (!isPlayerValid(player2B)) nextErrors.player2B = 'Team 2 Player 2 is required.'
+      if (!isPlayerValid(player1B)) nextErrors.player1B = 'Team 1 Player 2 is required (select a member or enter a guest nickname).'
+      if (!isPlayerValid(player2B)) nextErrors.player2B = 'Team 2 Player 2 is required (select a member or enter a guest nickname).'
     }
 
     sets.forEach((set, index) => {
@@ -453,7 +453,7 @@ export default function ScoreRecordingModal({
       </Select>
       <Input
         type="text"
-        placeholder="Or enter guest name"
+        placeholder="Or enter guest nickname (compulsory)"
         value={field.customName}
         onChange={(e) => setField({ memberId: '', customName: e.target.value })}
         maxLength={120}
