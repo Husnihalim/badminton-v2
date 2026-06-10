@@ -798,7 +798,7 @@ export default function DashboardPage() {
                     </span>
                   ) : null}
                   {user.gear?.dominant_hand && (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs capitalize">
+                    <span className="rounded-full border border-white/10 bg-surface/5 px-2 py-0.5 text-xs capitalize">
                       {user.gear.dominant_hand}-handed
                     </span>
                   )}
@@ -813,7 +813,7 @@ export default function DashboardPage() {
                 {socialHandles.length ? (
                   <div className="flex flex-wrap gap-1.5">
                     {socialHandles.slice(0, 4).map((handle) => (
-                      <span key={handle} className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-xs font-semibold text-slate-200">
+                      <span key={handle} className="rounded-full border border-white/10 bg-surface/[0.04] px-2.5 py-0.5 text-xs font-semibold text-slate-200">
                         {handle}
                       </span>
                     ))}
@@ -824,7 +824,7 @@ export default function DashboardPage() {
 
             {/* Stat tiles */}
             <div className="grid gap-2 sm:grid-cols-4">
-              <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Record</p>
                 <p className="mt-1 text-lg font-extrabold">
                   <span className="text-emerald-400">{personalStats.wins}W</span>
@@ -832,11 +832,11 @@ export default function DashboardPage() {
                   <span className="text-red-400">{personalStats.losses}L</span>
                 </p>
               </div>
-              <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Win Rate</p>
                 <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{personalStats.winRate}%</p>
               </div>
-              <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Form</p>
                 <div className="mt-1.5 flex items-center justify-center gap-1">
                   {allUserMatches.slice(0, 5).map((m, i) => {
@@ -850,7 +850,7 @@ export default function DashboardPage() {
                   {allUserMatches.length === 0 && <span className="text-xs text-slate-600">—</span>}
                 </div>
               </div>
-              <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rank</p>
                 <p className="mt-1 text-lg font-extrabold text-white">
                   {primaryRank ? `#${primaryRank.rank}/${primaryRank.total}` : 'Unranked'}
@@ -872,7 +872,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Player Bag &amp; Specs</p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {hasRacket && (
-                    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                    <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Racket</p>
                       <p className="text-sm font-bold text-slate-100">{g.racket || 'Unspecified'}</p>
                       <p className="text-xs text-slate-400">
@@ -881,7 +881,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                   {hasStrings && (
-                    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                    <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Strings &amp; Tension</p>
                       <p className="text-sm font-bold text-slate-100">{g.strings || 'Unspecified'}</p>
                       <p className="text-xs">
@@ -892,7 +892,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                   {(hasShoes || hasPlay) && (
-                    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                    <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
                       {hasShoes && (
                         <>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Court Shoes</p>
@@ -1118,7 +1118,7 @@ export default function DashboardPage() {
               type="button"
               className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
                 comparisonMode === 'partner'
-                  ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
+                  ? 'bg-surface text-emerald-700 shadow-sm border border-slate-200/40'
                   : 'text-slate-600 hover:text-slate-900 font-bold'
               }`}
               onClick={() => {
@@ -1132,7 +1132,7 @@ export default function DashboardPage() {
               type="button"
               className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
                 comparisonMode === 'rival'
-                  ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/40'
+                  ? 'bg-surface text-emerald-700 shadow-sm border border-slate-200/40'
                   : 'text-slate-600 hover:text-slate-900 font-bold'
               }`}
               onClick={() => {
@@ -1158,7 +1158,7 @@ export default function DashboardPage() {
                   className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
                     comparisonMode === 'partner' && selectedRival === recommendedInsights.bestPartner.name
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-500/10'
-                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-950'
+                      : 'bg-surface text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-950'
                   }`}
                   title={`Recommended Teammate: ${recommendedInsights.bestPartner.name}`}
                 >
@@ -1175,7 +1175,7 @@ export default function DashboardPage() {
                   className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
                     comparisonMode === 'rival' && selectedRival === recommendedInsights.topRival.name
                       ? 'bg-red-50 text-red-700 border-red-300 ring-2 ring-red-500/10'
-                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-955'
+                      : 'bg-surface text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-955'
                   }`}
                   title={`Recommended Opponent: ${recommendedInsights.topRival.name}`}
                 >
@@ -1192,7 +1192,7 @@ export default function DashboardPage() {
                   className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
                     comparisonMode === 'rival' && selectedRival === recommendedInsights.nemesis.name
                       ? 'bg-rose-50 text-rose-700 border-rose-300 ring-2 ring-rose-500/10'
-                      : 'bg-white text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-955'
+                      : 'bg-surface text-slate-700 border-slate-250 hover:bg-slate-50 hover:text-slate-955'
                   }`}
                   title={`Nemesis (Worst Opponent): ${recommendedInsights.nemesis.name} (${Math.round(recommendedInsights.nemesis.winRate)}% Win Rate)`}
                 >
@@ -1256,7 +1256,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-3 bg-white border border-slate-100 rounded-lg">
+                    <div className="p-3 bg-surface border border-slate-100 rounded-lg">
                       <span className="text-xs text-slate-500 block">Matches</span>
                       <span className="text-lg font-extrabold text-slate-950">{rivalryStats.matchesPlayed}</span>
                     </div>
@@ -1340,7 +1340,7 @@ export default function DashboardPage() {
                               setComparisonMode('partner')
                               setSelectedRival(p.name)
                             }}
-                            className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-lg hover:border-emerald-500 hover:shadow-sm cursor-pointer transition select-none"
+                            className="flex items-center justify-between p-2.5 bg-surface border border-slate-150 rounded-lg hover:border-emerald-500 hover:shadow-sm cursor-pointer transition select-none"
                           >
                             <div className="min-w-0 flex items-center gap-2">
                               <span className="text-xs font-bold text-slate-400 font-mono">#{idx + 1}</span>
@@ -1356,7 +1356,7 @@ export default function DashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-white">
+                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-surface">
                         Play doubles matches to see recommended partners.
                       </p>
                     )}
@@ -1378,7 +1378,7 @@ export default function DashboardPage() {
                                 setComparisonMode('rival')
                                 setSelectedRival(r.name)
                               }}
-                              className={`flex items-center justify-between p-2.5 bg-white border rounded-lg hover:shadow-sm cursor-pointer transition select-none ${
+                              className={`flex items-center justify-between p-2.5 bg-surface border rounded-lg hover:shadow-sm cursor-pointer transition select-none ${
                                 isNemesis ? 'border-rose-200 hover:border-rose-500' : 'border-slate-150 hover:border-emerald-500'
                               }`}
                             >
@@ -1406,7 +1406,7 @@ export default function DashboardPage() {
                         })}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-white">
+                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-surface">
                         Play matches to see rivalry analysis.
                       </p>
                     )}
@@ -1423,7 +1423,7 @@ export default function DashboardPage() {
                       {recommendedInsights.worstOpponentPairs.map((pair, idx) => (
                         <div 
                           key={pair.names}
-                          className="flex flex-col justify-between p-3 bg-white border border-rose-100 hover:border-rose-300 hover:shadow-sm rounded-lg transition"
+                          className="flex flex-col justify-between p-3 bg-surface border border-rose-100 hover:border-rose-300 hover:shadow-sm rounded-lg transition"
                         >
                           <div className="min-w-0 space-y-1">
                             <div className="flex items-center gap-1.5">
@@ -1444,7 +1444,7 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-white">
+                    <p className="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-lg bg-surface">
                       No doubles losses recorded against specific opponent pairs yet. Keep playing to track nemesis pairs!
                     </p>
                   )}
@@ -1618,7 +1618,7 @@ export default function DashboardPage() {
                       <Share2 size={15} aria-hidden="true" />
                       Share
                     </Button>
-                    <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50" href={whatsappUrl} target="_blank" rel="noreferrer">
+                    <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-surface px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50" href={whatsappUrl} target="_blank" rel="noreferrer">
                       <MessageCircle size={15} aria-hidden="true" />
                       WhatsApp
                     </a>
@@ -1653,7 +1653,7 @@ export default function DashboardPage() {
                     <div className="flex flex-wrap gap-2">
                       <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
                       <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-                      <Badge className="border-slate-200 bg-white text-slate-700">{rejectedRsvps.length} rejected</Badge>
+                      <Badge className="border-slate-200 bg-surface text-slate-700">{rejectedRsvps.length} rejected</Badge>
                     </div>
                     {acceptedRsvps.length ? (
                       <p className="text-sm leading-6 text-slate-700">
@@ -1750,7 +1750,7 @@ function AchievementBadge({
       className={cn(
         "flex min-h-28 flex-col items-center justify-center rounded-lg border p-3 text-center space-y-1 transition-colors duration-150 shadow-sm",
         unlocked ? glowClass : lockedClass,
-        unlocked && "hover:border-slate-300 hover:bg-white"
+        unlocked && "hover:border-slate-300 hover:bg-surface"
       )}
     >
       <span className={cn("text-2xl", !unlocked && "grayscale filter")}>{icon}</span>

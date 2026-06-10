@@ -449,7 +449,7 @@ export default function MemberProfilePage() {
           {profile.social_links && Object.values(profile.social_links).some(Boolean) && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {Object.entries(profile.social_links).filter(([, v]) => Boolean(v)).map(([platform, handle]) => (
-                <span key={platform} className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-slate-300">
+                <span key={platform} className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-surface/5 px-2.5 py-0.5 text-xs text-slate-300">
                   {platform === 'instagram' ? '📸' : platform === 'tiktok' ? '🎵' : platform === 'youtube' ? '▶️' : platform === 'facebook' ? '👤' : '🔗'} {handle}
                 </span>
               ))}
@@ -472,7 +472,7 @@ export default function MemberProfilePage() {
         {/* Stat tiles */}
         {showFullProfile && personalStats.matchesPlayed > 0 && (
           <div className="grid grid-cols-2 gap-2 border-t border-white/10 px-5 py-4 sm:grid-cols-4 sm:px-6 bg-slate-950/30">
-            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+            <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Record</p>
               <p className="mt-1 text-lg font-extrabold text-white">
                 <span className="text-emerald-400">{personalStats.wins}W</span>
@@ -480,11 +480,11 @@ export default function MemberProfilePage() {
                 <span className="text-red-400">{personalStats.losses}L</span>
               </p>
             </div>
-            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+            <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Win Rate</p>
               <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{personalStats.winRate}%</p>
             </div>
-            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+            <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Form</p>
               <div className="mt-1.5 flex items-center justify-center gap-1">
                 {matches.slice(0, 5).map((m, i) => {
@@ -498,7 +498,7 @@ export default function MemberProfilePage() {
                 {matches.length === 0 && <span className="text-xs text-slate-600">—</span>}
               </div>
             </div>
-            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-3 text-center">
+            <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rank</p>
               <p className="mt-1 text-lg font-extrabold text-white">
                 {(() => {
@@ -525,7 +525,7 @@ export default function MemberProfilePage() {
               <div className="grid gap-2 sm:grid-cols-3">
                 {/* Racket tile */}
                 {hasRacket && (
-                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                  <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Racket</p>
                     <p className="text-sm font-bold text-slate-100">{g.racket || 'Unspecified'}</p>
                     <p className="text-xs text-slate-400">
@@ -535,7 +535,7 @@ export default function MemberProfilePage() {
                 )}
                 {/* Strings & Tension tile */}
                 {hasStrings && (
-                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                  <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Strings &amp; Tension</p>
                     <p className="text-sm font-bold text-slate-100">{g.strings || 'Unspecified'}</p>
                     <p className="text-xs">
@@ -547,7 +547,7 @@ export default function MemberProfilePage() {
                 )}
                 {/* Shoes + Play Profile tile */}
                 {(hasShoes || hasPlay) && (
-                  <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-1">
+                  <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
                     {hasShoes && (
                       <>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Court Shoes</p>
@@ -578,7 +578,7 @@ export default function MemberProfilePage() {
           {clubs.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {clubs.map(c => (
-                <span key={c.id} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-slate-300">
+                <span key={c.id} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-surface/5 px-2.5 py-0.5 text-xs text-slate-300">
                   {c.name}
                   <span className="text-[#ccff00] font-extrabold text-[10px]">⚡ {clubElos[c.id] ?? 1200}</span>
                 </span>
@@ -602,7 +602,7 @@ export default function MemberProfilePage() {
       {showFullProfile ? (
         <div className="space-y-6">
           {/* Stats Summary Grid */}
-          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <section className="space-y-4 rounded-xl border border-slate-200 bg-surface p-4 shadow-sm sm:p-5">
             <div>
               <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
                 <Activity size={18} className="text-emerald-700 shrink-0" />
@@ -660,7 +660,7 @@ export default function MemberProfilePage() {
 
           {/* Elo History Card */}
           {eloHistory.length > 0 && (
-            <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="space-y-4 rounded-xl border border-slate-200 bg-surface p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
                   <Activity size={18} className="text-emerald-700 shrink-0" />
@@ -708,7 +708,7 @@ export default function MemberProfilePage() {
           )}
 
           {/* Achievements Medals Grid */}
-          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <section className="space-y-4 rounded-xl border border-slate-200 bg-surface p-4 shadow-sm sm:p-5">
             <div>
               <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
                 <Trophy size={18} className="text-amber-500 shrink-0" />

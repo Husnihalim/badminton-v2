@@ -2,18 +2,16 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette, UserCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite } from '../lib/api'
+import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, deleteClub } from '../lib/api'
 import type { Club, Membership } from '../types'
+import DeleteClubModal from '../components/DeleteClubModal'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
 import { Textarea } from '../components/ui/textarea'
-
-function getErrorMessage(err: unknown, fallback: string) {
-  return err instanceof Error ? err.message : fallback
-}
+import { getErrorMessage } from '../lib/utils'
 
 const ACCENT_COLORS = [
   { name: 'emerald', class: 'bg-emerald-600 border-emerald-400 text-emerald-600', label: 'Emerald' },
@@ -36,6 +34,10 @@ export default function ClubSettingsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [location, setLocation] = useState('')
+  const [city, setCity] = useState('')
   const [club, setClub] = useState<Club | null>(null)
   const [membership, setMembership] = useState<Membership | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -43,10 +45,6 @@ export default function ClubSettingsPage() {
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [location, setLocation] = useState('')
-  const [city, setCity] = useState('')
   const [openJoin, setOpenJoin] = useState(true)
   const [approvalRequired, setApprovalRequired] = useState(true)
   const [inviteToken, setInviteToken] = useState('')

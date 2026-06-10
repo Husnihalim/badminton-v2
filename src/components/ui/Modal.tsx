@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './button';
 
@@ -38,7 +38,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
       onClick={handleOverlayClick}
     >
       <div
-        className={`relative max-w-lg w-full mx-4 rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl transition-all ${className}`}
+        className={`relative max-w-lg w-full mx-4 rounded-xl bg-[var(--surface)] dark:bg-gray-800 p-6 shadow-xl transition-all ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}

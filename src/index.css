@@ -190,3 +190,7 @@ main {
     padding: 28px 0 96px;
   }
 }
+
+/* Surface background utilities */
+.bg-surface { background-color: var(--surface); }
+.bg-surface-muted { background-color: var(--surface-muted); }
