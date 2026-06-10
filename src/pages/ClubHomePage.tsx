@@ -2766,7 +2766,7 @@ export default function ClubHomePage() {
           <Input type="text" placeholder="Court + shuttle" value={eventCostNote} onChange={(e) => setEventCostNote(e.target.value)} maxLength={200} />
         </label>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button type="button" variant="secondary" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} disabled={isCreatingEvent}>Cancel</Button>
         <Button type="submit" disabled={isCreatingEvent}>{isCreatingEvent ? 'Saving...' : editingEvent ? 'Save event' : 'Create event'}</Button>
       </div>
@@ -2793,7 +2793,7 @@ export default function ClubHomePage() {
         <span>Message *</span>
         <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} maxLength={1000} required />
       </label>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button type="button" variant="secondary" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} disabled={isSendingAnnouncement}>Cancel</Button>
         <Button type="submit" disabled={isSendingAnnouncement}>{isSendingAnnouncement ? 'Sending...' : editingMessage ? 'Save' : 'Send'}</Button>
       </div>
@@ -2824,7 +2824,7 @@ export default function ClubHomePage() {
                         <h3 className="truncate font-bold text-slate-950">{request.name || 'Unknown member'}</h3>
                         <p className="break-words text-sm text-slate-600">{request.email}</p>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Button size="sm" type="button" onClick={() => handleApproveRequest(request.id)}>Approve</Button>
                         <Button size="sm" variant="secondary" type="button" onClick={() => handleRejectRequest(request.id)}>Reject</Button>
                       </div>

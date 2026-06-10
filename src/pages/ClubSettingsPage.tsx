@@ -570,7 +570,7 @@ export default function ClubSettingsPage() {
                   Share this broadly. Anyone using it will send a join request for admin approval.
                 </p>
                 <Input value={inviteUrl} readOnly className="font-mono text-sm" />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Button type="button" variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
                     <Copy size={17} aria-hidden="true" />
                     Copy link
@@ -617,7 +617,7 @@ export default function ClubSettingsPage() {
                                 {isRevoked ? 'Revoked' : isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'} · Created {new Date(invite.created_at).toLocaleDateString()}
                               </p>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <Button type="button" size="sm" variant="secondary" onClick={() => handleCopySpecificInviteLink(invite.token)} disabled={!isActiveInvite}>
                                 Copy
                               </Button>
@@ -636,7 +636,7 @@ export default function ClubSettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <div className="grid grid-cols-1 sm:flex sm:justify-end gap-2 sm:gap-3">
           <Button type="button" variant="secondary" onClick={() => navigate(`/club/${clubId}`)}>
             Cancel
           </Button>

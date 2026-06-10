@@ -636,7 +636,7 @@ export default function ProfilePage() {
             maxLength={120}
           />
         </label>
-        <div className="grid grid-cols-2 gap-2 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={() => setShowCreateClubModal(false)} disabled={isCreating}>
             Cancel
           </Button>
