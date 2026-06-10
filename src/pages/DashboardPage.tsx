@@ -704,6 +704,28 @@ export default function DashboardPage() {
     }
   }, [searchParams, clubMembers, setSearchParams])
 
+  const playerCardStats = useMemo(() => {
+    if (!user) return undefined
+    const form = allUserMatches.slice(0, 5).map((m) => {
+      const userPart = m.participants?.find((p) => p.user_id === user.id)
+      if (!userPart || !m.score_sets?.length) return { won: false, setScores: 'Unknown' }
+      const t1Sets = m.score_sets.filter((s) => s.team1_score > s.team2_score).length
+      const t2Sets = m.score_sets.filter((s) => s.team2_score > s.team1_score).length
+      const won = (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
+      const scoreText = m.score_sets.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')
+      return { won, setScores: scoreText }
+    })
+    return {
+      matchesPlayed: personalStats.matchesPlayed,
+      wins: personalStats.wins,
+      losses: personalStats.losses,
+      winRate: personalStats.winRate,
+      streak: personalStats.streak,
+      streakType: personalStats.streakType,
+      form,
+    }
+  }, [allUserMatches, personalStats, user])
+
   if (authLoading || (user && isLoading)) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
@@ -751,26 +773,7 @@ export default function DashboardPage() {
     user.social_links?.youtube,
   ].filter((handle): handle is string => Boolean(handle))
 
-  const playerCardStats = useMemo(() => {
-    const form = allUserMatches.slice(0, 5).map((m) => {
-      const userPart = m.participants?.find((p) => p.user_id === user.id)
-      if (!userPart || !m.score_sets?.length) return { won: false, setScores: 'Unknown' }
-      const t1Sets = m.score_sets.filter((s) => s.team1_score > s.team2_score).length
-      const t2Sets = m.score_sets.filter((s) => s.team2_score > s.team1_score).length
-      const won = (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
-      const scoreText = m.score_sets.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')
-      return { won, setScores: scoreText }
-    })
-    return {
-      matchesPlayed: personalStats.matchesPlayed,
-      wins: personalStats.wins,
-      losses: personalStats.losses,
-      winRate: personalStats.winRate,
-      streak: personalStats.streak,
-      streakType: personalStats.streakType,
-      form,
-    }
-  }, [allUserMatches, personalStats, user.id])
+
 
   return (
     <Page>
