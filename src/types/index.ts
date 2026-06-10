@@ -151,6 +151,7 @@ export interface MatchParticipant {
   guest_name: string | null
   // Joined fields
   name?: string
+  profile?: User | null
 }
 
 export interface ScoreSet {

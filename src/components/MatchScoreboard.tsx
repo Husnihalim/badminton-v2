@@ -5,6 +5,8 @@ import { Button } from './ui/button'
 import type { MatchWithDetails } from '../types'
 import { useAuth } from '../context/AuthContext'
 import { toggleMatchReaction, addMatchComment, deleteMatchComment } from '../lib/api'
+import { PlayerCard } from './PlayerCard'
+import { cn } from '../lib/utils'
 
 interface MatchScoreboardProps {
   match: MatchWithDetails & { clubName?: string }
@@ -23,6 +25,7 @@ export function MatchScoreboard({
   onEdit,
   onDelete,
 }: MatchScoreboardProps) {
+  const [showLineup, setShowLineup] = useState(false)
   const scoreSets = match.score_sets || []
   const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
   const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
@@ -354,6 +357,17 @@ export function MatchScoreboard({
             )}
           </div>
 
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowLineup(!showLineup)}
+            title="Lineup specs"
+            className={`h-7 w-7 rounded-lg ${s.actionBtn} ${showLineup ? 'bg-slate-800 text-white' : ''}`}
+          >
+            <span className="text-xs">👥</span>
+          </Button>
+
           {onShare && (
             <Button
               type="button"
@@ -407,13 +421,24 @@ export function MatchScoreboard({
                 const pName = p.name || p.guest_name || 'Guest'
                 return (
                   <span key={pIdx} className="flex items-center">
-                    {p.user_id ? (
-                      <Link to={`/member/${p.user_id}`} className="hover:underline">
-                        {pName}
-                      </Link>
-                    ) : (
-                      <span>{pName}</span>
-                    )}
+                    <span className="relative group inline-block">
+                      {p.user_id ? (
+                        <Link to={`/member/${p.user_id}`} className="hover:underline">
+                          {pName}
+                        </Link>
+                      ) : (
+                        <span>{pName}</span>
+                      )}
+                      {p.profile && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-[60] w-64 text-left pointer-events-none">
+                          <PlayerCard
+                            profile={p.profile}
+                            isSimplified={true}
+                            className="border-[#ccff00]/20 shadow-2xl shadow-black bg-slate-950 text-white"
+                          />
+                        </div>
+                      )}
+                    </span>
                     {pIdx < team1.length - 1 && <span className={`mx-1 ${s.teamSeparator} font-normal`}>&</span>}
                   </span>
                 )
@@ -435,13 +460,24 @@ export function MatchScoreboard({
                 const pName = p.name || p.guest_name || 'Guest'
                 return (
                   <span key={pIdx} className="flex items-center">
-                    {p.user_id ? (
-                      <Link to={`/member/${p.user_id}`} className="hover:underline">
-                        {pName}
-                      </Link>
-                    ) : (
-                      <span>{pName}</span>
-                    )}
+                    <span className="relative group inline-block">
+                      {p.user_id ? (
+                        <Link to={`/member/${p.user_id}`} className="hover:underline">
+                          {pName}
+                        </Link>
+                      ) : (
+                        <span>{pName}</span>
+                      )}
+                      {p.profile && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-[60] w-64 text-left pointer-events-none">
+                          <PlayerCard
+                            profile={p.profile}
+                            isSimplified={true}
+                            className="border-[#ccff00]/20 shadow-2xl shadow-black bg-slate-955 text-white"
+                          />
+                        </div>
+                      )}
+                    </span>
                     {pIdx < team2.length - 1 && <span className={`mx-1 ${s.teamSeparator} font-normal`}>&</span>}
                   </span>
                 )
@@ -484,6 +520,52 @@ export function MatchScoreboard({
           })}
         </div>
       </div>
+
+      {/* Lineup specs comparison panel */}
+      {showLineup && (
+        <div className="border-t border-slate-100 dark:border-slate-800/60 p-4 bg-slate-950/20 text-white">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch justify-between">
+            {/* Team 1 specs */}
+            <div className="flex-1 space-y-3">
+              <h5 className="text-xs font-black uppercase tracking-wider text-orange-500/80">Team 1 Lineup</h5>
+              <div className={cn(
+                "grid gap-3",
+                match.match_type === 'doubles' ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+              )}>
+                {team1.map((p, idx) => (
+                  <PlayerCard
+                    key={p.id || idx}
+                    profile={p.profile || { name: p.guest_name || 'Guest', display_name: p.guest_name || 'Guest Player' }}
+                    isSimplified={true}
+                    className="border-orange-500/20"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* VS divider */}
+            <div className="flex items-center justify-center font-black text-slate-700 select-none text-sm md:px-2">VS</div>
+
+            {/* Team 2 specs */}
+            <div className="flex-1 space-y-3">
+              <h5 className="text-xs font-black uppercase tracking-wider text-emerald-500/80">Team 2 Lineup</h5>
+              <div className={cn(
+                "grid gap-3",
+                match.match_type === 'doubles' ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+              )}>
+                {team2.map((p, idx) => (
+                  <PlayerCard
+                    key={p.id || idx}
+                    profile={p.profile || { name: p.guest_name || 'Guest', display_name: p.guest_name || 'Guest Player' }}
+                    isSimplified={true}
+                    className="border-emerald-500/20"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reactions and Comments toggle row */}
       <div className="border-t border-slate-100 dark:border-slate-800/60 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">

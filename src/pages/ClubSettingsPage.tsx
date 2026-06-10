@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette, UserCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, deleteClub } from '../lib/api'
+import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, deleteClub, getClubMembers, requestClubDeletion } from '../lib/api'
 import type { Club, Membership } from '../types'
 import DeleteClubModal from '../components/DeleteClubModal'
 import { Badge } from '../components/ui/badge'
@@ -44,8 +44,11 @@ export default function ClubSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [deletionRequested, setDeletionRequested] = useState(false)
 
   const [openJoin, setOpenJoin] = useState(true)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [approvalRequired, setApprovalRequired] = useState(true)
   const [inviteToken, setInviteToken] = useState('')
   const [specificInviteUrl, setSpecificInviteUrl] = useState('')
@@ -111,7 +114,7 @@ export default function ClubSettingsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [clubId, user])
+  }, [clubId, user?.id, user?.role])
 
   useEffect(() => {
     if (clubId) {
@@ -189,6 +192,55 @@ export default function ClubSettingsPage() {
       setError(getErrorMessage(err, 'Failed to save settings'))
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Delete club flow now requires admin approval if current user is owner.
+  // Owner initiates a deletion request; admin can approve.
+  const handleDeleteConfirm = async () => {
+    if (!clubId) return;
+    // Verify members before deletion request
+    try {
+      const members = await getClubMembers(clubId);
+      if (members.length > 0) {
+        setError(`Cannot delete club: it still has ${members.length} member. Please remove them first.`);
+        return; // abort
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to verify club members before deletion.');
+      return;
+    }
+
+    // Determine role for deletion
+    if (membership?.role === 'owner' && user?.role !== 'superadmin') {
+      // Owner creates a deletion request awaiting admin approval
+      try {
+        setIsDeleting(true);
+        await requestClubDeletion(clubId);
+        setDeletionRequested(true);
+        setSuccessMessage('Deletion request sent. Awaiting admin approval.');
+      } catch (err) {
+        console.error(err);
+        setError('Failed to request club deletion.');
+      } finally {
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+      }
+      return;
+    }
+
+    // Admin can directly delete
+    setIsDeleting(true);
+    try {
+      await deleteClub(clubId);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete club. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
     }
   }
 
@@ -606,9 +658,26 @@ export default function ClubSettingsPage() {
             <Button variant="danger" type="button" onClick={() => alert('Transfer ownership feature coming soon')}>
               Transfer ownership
             </Button>
+            {deletionRequested ? (
+              <Button variant="danger" type="button" disabled className="ml-2">
+                Deletion pending approval
+              </Button>
+            ) : (
+              <Button variant="danger" type="button" onClick={() => setIsDeleteModalOpen(true)} className="ml-2">
+                Delete club
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : null}
+      
+      <DeleteClubModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+        clubName={club.name}
+      />
     </Page>
   )
 }

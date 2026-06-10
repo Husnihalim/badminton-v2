@@ -11,6 +11,7 @@ import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Page, PageHeader } from '../components/ui/page'
 import ScorecardShareModal from '../components/ScorecardShareModal'
+import { PlayerCard } from '../components/PlayerCard'
 import RivalryShareModal from '../components/RivalryShareModal'
 import { cn } from '../lib/utils'
 import { MatchScoreboard } from '../components/MatchScoreboard'
@@ -735,6 +736,27 @@ export default function DashboardPage() {
     user.social_links?.youtube,
   ].filter((handle): handle is string => Boolean(handle))
 
+  const playerCardStats = useMemo(() => {
+    const form = allUserMatches.slice(0, 5).map((m) => {
+      const userPart = m.participants?.find((p) => p.user_id === user.id)
+      if (!userPart || !m.score_sets?.length) return { won: false, setScores: 'Unknown' }
+      const t1Sets = m.score_sets.filter((s) => s.team1_score > s.team2_score).length
+      const t2Sets = m.score_sets.filter((s) => s.team2_score > s.team1_score).length
+      const won = (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
+      const scoreText = m.score_sets.map((s) => `${s.team1_score}-${s.team2_score}`).join(', ')
+      return { won, setScores: scoreText }
+    })
+    return {
+      matchesPlayed: personalStats.matchesPlayed,
+      wins: personalStats.wins,
+      losses: personalStats.losses,
+      winRate: personalStats.winRate,
+      streak: personalStats.streak,
+      streakType: personalStats.streakType,
+      form,
+    }
+  }, [allUserMatches, personalStats, user.id])
+
   return (
     <Page>
       <PageHeader
@@ -750,177 +772,14 @@ export default function DashboardPage() {
       />
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950 text-white relative shadow-2xl">
-          {/* Ambient glow */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#ccff00]/5 via-transparent to-blue-900/10" />
-
-          <div className="relative space-y-5 p-4 sm:p-5">
-            {/* Status chips */}
-            <div className="flex flex-wrap gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#ccff00]/30 bg-[#ccff00]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#ccff00]">
-                🎴 Player Card
-              </span>
-              {user.is_private ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  🔒 Private
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/30 bg-sky-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">
-                  🌐 Public Profile
-                </span>
-              )}
-              {user.gear?.play_style && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                  ✦ {user.gear.play_style.replace(/_/g, ' ')}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900">
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-[#ccff00]">
-                    <UserRound size={42} aria-hidden="true" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 space-y-2">
-                <h2 className="truncate text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{displayName}</h2>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-                  <span className="capitalize">{user.preferred_sport || 'badminton'}</span>
-                  {primaryClub ? <span>{primaryClub.name}</span> : null}
-                  {user.city ? (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin size={14} aria-hidden="true" />
-                      {user.city}
-                    </span>
-                  ) : null}
-                  {user.gear?.dominant_hand && (
-                    <span className="rounded-full border border-white/10 bg-surface/5 px-2 py-0.5 text-xs capitalize">
-                      {user.gear.dominant_hand}-handed
-                    </span>
-                  )}
-                </div>
-
-                {user.bio ? (
-                  <p className="line-clamp-2 max-w-2xl text-sm leading-6 text-slate-300">{user.bio}</p>
-                ) : (
-                  <p className="max-w-2xl text-sm leading-6 text-slate-300">Add a short playing bio, social handles, and gear to make this card feel complete.</p>
-                )}
-
-                {socialHandles.length ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {socialHandles.slice(0, 4).map((handle) => (
-                      <span key={handle} className="rounded-full border border-white/10 bg-surface/[0.04] px-2.5 py-0.5 text-xs font-semibold text-slate-200">
-                        {handle}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Stat tiles */}
-            <div className="grid gap-2 sm:grid-cols-4">
-              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Record</p>
-                <p className="mt-1 text-lg font-extrabold">
-                  <span className="text-emerald-400">{personalStats.wins}W</span>
-                  <span className="text-slate-600 mx-0.5">-</span>
-                  <span className="text-red-400">{personalStats.losses}L</span>
-                </p>
-              </div>
-              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Win Rate</p>
-                <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{personalStats.winRate}%</p>
-              </div>
-              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Form</p>
-                <div className="mt-1.5 flex items-center justify-center gap-1">
-                  {allUserMatches.slice(0, 5).map((m, i) => {
-                    const userPart = m.participants?.find(p => p.user_id === user.id)
-                    if (!userPart || !m.score_sets?.length) return <span key={i} className="inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-extrabold text-white bg-slate-700">?</span>
-                    const t1Sets = m.score_sets.filter(s => s.team1_score > s.team2_score).length
-                    const t2Sets = m.score_sets.filter(s => s.team2_score > s.team1_score).length
-                    const won = (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
-                    return <span key={i} className={cn('inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-extrabold text-white', won ? 'bg-[#84cc16]' : 'bg-red-500')}>{won ? 'W' : 'L'}</span>
-                  })}
-                  {allUserMatches.length === 0 && <span className="text-xs text-slate-600">—</span>}
-                </div>
-              </div>
-              <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rank</p>
-                <p className="mt-1 text-lg font-extrabold text-white">
-                  {primaryRank ? `#${primaryRank.rank}/${primaryRank.total}` : 'Unranked'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Gear tiles */}
-          {user.gear && Object.values(user.gear).some(Boolean) && (() => {
-            const g = user.gear!
-            const hasRacket = g.racket || g.racket_weight || g.racket_balance || g.racket_stiffness
-            const hasStrings = g.strings || g.tension || g.grip_type || g.grip
-            const hasShoes = g.shoes
-            const hasPlay = g.play_style || g.dominant_hand || g.player_type
-            if (!hasRacket && !hasStrings && !hasShoes && !hasPlay) return null
-            return (
-              <div className="border-t border-white/10 px-4 py-4 sm:px-5 bg-slate-950/40">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Player Bag &amp; Specs</p>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {hasRacket && (
-                    <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Racket</p>
-                      <p className="text-sm font-bold text-slate-100">{g.racket || 'Unspecified'}</p>
-                      <p className="text-xs text-slate-400">
-                        {[g.racket_weight && `Weight: ${g.racket_weight}`, g.racket_balance && `Balance: ${g.racket_balance.replace(/_/g, ' ')}`, g.racket_stiffness && `Flex: ${g.racket_stiffness}`].filter(Boolean).join(' • ') || 'No specs listed'}
-                      </p>
-                    </div>
-                  )}
-                  {hasStrings && (
-                    <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Strings &amp; Tension</p>
-                      <p className="text-sm font-bold text-slate-100">{g.strings || 'Unspecified'}</p>
-                      <p className="text-xs">
-                        {g.tension && <span className="font-bold text-[#ccff00]">Tension: {g.tension}</span>}
-                        {g.tension && (g.grip_type || g.grip) && <span className="text-slate-500"> • </span>}
-                        {(g.grip_type || g.grip) && <span className="text-slate-400">Grip: {g.grip_type ? g.grip_type.replace(/_/g, ' ') : g.grip}</span>}
-                      </p>
-                    </div>
-                  )}
-                  {(hasShoes || hasPlay) && (
-                    <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                      {hasShoes && (
-                        <>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Court Shoes</p>
-                          <p className="text-sm font-bold text-slate-100">{g.shoes}</p>
-                        </>
-                      )}
-                      {hasPlay && (
-                        <p className="text-xs text-slate-400 pt-1">
-                          {[g.play_style && g.play_style.replace(/_/g, ' '), g.dominant_hand && `${g.dominant_hand}-handed`, g.player_type && g.player_type.replace(/_/g, ' ')].filter(Boolean).join(' • ')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* Footer row */}
-          <div className="border-t border-white/10 px-4 py-3 sm:px-5 bg-slate-950/20">
-            <div className="grid gap-y-1 gap-x-4 sm:grid-cols-4 text-xs">
-              <p className="text-slate-300">Latest headline: <span className="font-bold text-white">{latestHeadline}</span></p>
-              <p className="text-slate-300">Best partner: <span className="font-bold text-white">{recommendedInsights?.bestPartner?.name || '—'}</span></p>
-              <p className="text-slate-300">Top rival: <span className="font-bold text-white">{recommendedInsights?.topRival?.name || '—'}</span></p>
-              <p className="text-slate-300">Clubs: <span className="font-bold text-white">{clubs.map(c => c.name).join(', ') || '—'}</span></p>
-            </div>
-          </div>
-        </div>
+        <PlayerCard
+          profile={user}
+          stats={playerCardStats}
+          rank={primaryRank}
+          elo={primaryClub ? clubElos[primaryClub.id] : null}
+          isOwner={true}
+          className="bg-slate-955"
+        />
 
 
         <Card>

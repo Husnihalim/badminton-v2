@@ -60,7 +60,7 @@ type EventClubRow = ClubEvent & {
 
 type MatchParticipantQueryRow = MatchParticipant & {
   guest_name: string | null
-  profiles?: ProfileSummary | null
+  profiles?: User | null
 }
 
 type MatchReactionQueryRow = MatchReaction & {
@@ -788,7 +788,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
     .select(`
       *,
       recorded_by_profile:profiles!matches_recorded_by_profiles_fkey(name, display_name),
-      match_participants(*, profiles(name, display_name)),
+      match_participants(*, profiles(*)),
       score_sets(*),
       match_reactions(*, profiles(name, display_name)),
       match_comments(*, profiles(name, display_name, avatar_url))
@@ -806,6 +806,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
       const participants = (match.match_participants || []).map((p) => ({
         ...p,
         name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
+        profile: p.profiles || null,
       })) as MatchParticipant[]
       const reactions = (match.match_reactions || []).map((r) => ({
         ...r,
