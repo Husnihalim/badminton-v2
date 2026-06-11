@@ -234,9 +234,9 @@ export default function RivalryShareModal({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">{mode === 'partner' ? 'Share Partnership Card' : 'Share Rivalry Card'}</h2>
-              <p className="text-sm text-slate-400">Download or copy a premium {mode === 'partner' ? 'partnership' : 'rivalry'} summary card.</p>
+              <p className="text-sm text-[var(--arena-text-dim)]">Download or copy a premium {mode === 'partner' ? 'partnership' : 'rivalry'} summary card.</p>
             </div>
-            <button type="button" className="text-slate-400 hover:text-white" onClick={onClose} aria-label="Close">
+            <button type="button" className="text-[var(--arena-text-dim)] hover:text-white" onClick={onClose} aria-label="Close">
               <X size={20} />
             </button>
           </div>
@@ -245,13 +245,13 @@ export default function RivalryShareModal({
             <canvas ref={canvasRef} className="max-w-full max-h-[300px] sm:max-h-[380px] object-contain rounded shadow-lg border border-slate-800" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <Button type="button" onClick={handleDownload} fullWidth className="gap-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-none">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <Button type="button" onClick={handleDownload} fullWidth className="gap-2 bg-amber-500 hover:bg-amber-600 text-[var(--arena-text)] font-bold border-none">
               <Download size={16} />
               Download Image
             </Button>
             <Button type="button" variant="secondary" onClick={handleShare} fullWidth className="gap-2 border-slate-700 text-slate-200 bg-slate-800 hover:bg-slate-700">
-              {copied ? <Check size={16} className="text-emerald-500" /> : <Share2 size={16} />}
+              {copied ? <Check size={16} className="text-[var(--arena-accent)]" /> : <Share2 size={16} />}
               {copied ? 'Copied Details' : 'Share Card'}
             </Button>
           </div>

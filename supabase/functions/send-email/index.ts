@@ -14,10 +14,11 @@ Deno.serve(async (req) => {
     const headers = Object.fromEntries(req.headers);
 
     // 1. Verify webhook signature from Supabase Auth
-    if (hookSecret) {
-      const wh = new Webhook(hookSecret);
-      wh.verify(payload, headers);
+    if (!hookSecret) {
+      throw new Error("SUPA_SEND_EMAIL_HOOK_SECRET is not configured");
     }
+    const wh = new Webhook(hookSecret);
+    wh.verify(payload, headers);
 
     const { template } = JSON.parse(payload);
     const { email, token, redirect_to } = template.data;

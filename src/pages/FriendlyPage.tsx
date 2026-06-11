@@ -10,7 +10,7 @@ import { PairRegistrationForm } from '../components/friendly/PairRegistrationFor
 import { FriendlyStoryList } from '../components/friendly/FriendlyStoryCard'
 import { FriendlyShareButton } from '../components/friendly/FriendlyShareCard'
 import { generateFriendlyStories } from '../lib/friendlyStoryMoments'
-import { ScoreRecordingModal } from '../components/ScoreRecordingModal'
+import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import {
   getFriendly,
   getFriendlyPairs,
@@ -20,16 +20,15 @@ import {
   recordFriendlyMatch,
   completeFriendly,
 } from '../lib/friendlyApi'
-import { useAuth } from '../context/AuthContext'
-import { useClub } from '../context/ClubContext'
-import type { Friendly, FriendlyPair, FriendlyMatchup, FriendlyStoryMoment } from '../types/friendly'
-import type { User } from '../types'
+import { getMyClubs } from '../lib/api'
+import type { Friendly, FriendlyPair, FriendlyMatchup } from '../types/friendly'
+import type { FriendlyStoryMoment } from '../lib/friendlyStoryMoments'
+import type { User, Club } from '../types'
 
-export function FriendlyPage() {
+export default function FriendlyPage() {
   const { friendlyId } = useParams<{ friendlyId: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { currentClub } = useClub()
+  const [currentClub, setCurrentClub] = useState<Club | null>(null)
   
   const [friendly, setFriendly] = useState<Friendly | null>(null)
   const [pairs, setPairs] = useState<FriendlyPair[]>([])
@@ -44,11 +43,28 @@ export function FriendlyPage() {
   const [clubMembers] = useState<User[]>([])
 
   useEffect(() => {
-    if (!friendlyId) return
-    loadFriendlyData()
-  }, [friendlyId])
+    if (!friendly) return
+    async function loadUserClub() {
+      try {
+        const clubsData = await getMyClubs()
+        const userClub = clubsData.find(
+          c => c.id === friendly?.inviting_club_id || c.id === friendly?.invited_club_id
+        )
+        if (userClub) {
+          setCurrentClub(userClub)
+        } else if (clubsData.length > 0) {
+          setCurrentClub(clubsData[0])
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    loadUserClub()
+  }, [friendly])
 
-  const loadFriendlyData = async () => {
+
+
+  async function loadFriendlyData() {
     setIsLoading(true)
     
     const [{ friendly }, { pairs: friendlyPairs }, { matchups: friendlyMatchups }] = await Promise.all([
@@ -69,6 +85,13 @@ export function FriendlyPage() {
     
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    if (!friendlyId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadFriendlyData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendlyId])
 
   const handleRegisterPairs = async (newPairs: { pair_name: string; player_1_id: string; player_2_id?: string }[]) => {
     if (!friendly || !currentClub) return
@@ -141,7 +164,6 @@ export function FriendlyPage() {
   }
 
   const isInvitingClub = currentClub?.id === friendly.inviting_club_id
-  const isInvitedClub = currentClub?.id === friendly.invited_club_id
   const myClubPairs = pairs.filter((p) => p.club_id === currentClub?.id)
   const opponentPairs = pairs.filter((p) => p.club_id !== currentClub?.id)
 
@@ -250,8 +272,6 @@ export function FriendlyPage() {
             <MatchmakingGrid
               pairsA={isInvitingClub ? myClubPairs : opponentPairs}
               pairsB={isInvitingClub ? opponentPairs : myClubPairs}
-              clubAName={isInvitingClub ? (friendly.inviting_club?.name || '') : (friendly.invited_club?.name || friendly.invited_club_name)}
-              clubBName={isInvitingClub ? (friendly.invited_club?.name || friendly.invited_club_name) : (friendly.inviting_club?.name || '')}
               isLocked={matchups.length > 0}
               existingMatchups={matchups}
               onLock={handleLockMatchmaking}
@@ -272,7 +292,7 @@ export function FriendlyPage() {
           <div className="mt-6">
             <FriendlyStoryList 
               stories={stories}
-              onShareStory={(story) => {
+              onShareStory={() => {
                 // Handle share
               }}
             />

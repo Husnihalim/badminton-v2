@@ -130,7 +130,7 @@ export function FriendlyCreateModal({
                         <div className="flex-1">
                           <p className="font-bold text-white">{club.name}</p>
                           <p className="text-xs text-slate-400">
-                            {club.city} • {club.member_count || 0} members
+                            {club.city} • {club.membersCount || 0} members
                           </p>
                         </div>
                       </button>
@@ -294,7 +294,7 @@ export function FriendlyCreateModal({
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   onClick={handleCopyLink}
                   className="w-full border-white/10"
                 >

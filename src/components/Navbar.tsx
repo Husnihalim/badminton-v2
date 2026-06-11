@@ -7,7 +7,7 @@ import NotificationsPanel from './NotificationsPanel'
 import logoImg from '../assets/logo.png'
 import { getMyClubs } from '../lib/api'
 import type { Club } from '../types'
-
+import { useTheme } from '../context/ThemeContext';
 export default function Navbar() {
   const { user, logout } = useAuth()
   const { unreadCount } = useNotifications()
@@ -21,23 +21,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const clubsDropdownRef = useRef<HTMLDivElement>(null)
 
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'light'
-  })
-
-  useEffect(() => {
-    const root = window.document.documentElement
-    if (theme === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'))
-  }
+  const { theme, toggleTheme } = useTheme();
 
   // Handle click outside dropdowns to close them
   useEffect(() => {
@@ -144,55 +128,87 @@ export default function Navbar() {
                   </span>
                 </Link>
               ) : (
-                <div className="nav-user-container" ref={clubsDropdownRef}>
-                  <button
-                    type="button"
-                    className="nav-link"
-                    onClick={() => setIsClubsDropdownOpen(prev => !prev)}
-                    aria-expanded={isClubsDropdownOpen}
-                    aria-haspopup="true"
-                    style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Users size={16} aria-hidden="true" />
-                    <span>Clubs</span>
-                    <ChevronDown size={14} aria-hidden="true" style={{ 
-                      transform: isClubsDropdownOpen ? 'rotate(180deg)' : 'none',
-                      transition: 'transform 0.2s ease'
-                    }} />
-                  </button>
-                  {isClubsDropdownOpen && (
-                    <div className="nav-dropdown-menu" style={{ right: 'auto', left: 0 }}>
-                      {clubs.map((club) => (
+                <>
+                  {/* Desktop view: Dropdown */}
+                  <div className="nav-user-container desktop-only" ref={clubsDropdownRef}>
+                    <button
+                      type="button"
+                      className="nav-link"
+                      onClick={() => setIsClubsDropdownOpen(prev => !prev)}
+                      aria-expanded={isClubsDropdownOpen}
+                      aria-haspopup="true"
+                      style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Users size={16} aria-hidden="true" />
+                      <span>Clubs</span>
+                      <ChevronDown size={14} aria-hidden="true" style={{ 
+                        transform: isClubsDropdownOpen ? 'rotate(180deg)' : 'none',
+                        transition: 'transform 0.2s ease'
+                      }} />
+                    </button>
+                    {isClubsDropdownOpen && (
+                      <div className="nav-dropdown-menu" style={{ right: 'auto', left: 0 }}>
+                        {clubs.map((club) => (
+                          <Link
+                            key={club.id}
+                            className="nav-dropdown-item"
+                            to={`/club/${club.id}`}
+                            onClick={() => setIsClubsDropdownOpen(false)}
+                          >
+                            <Users size={15} aria-hidden="true" style={{ flexShrink: 0 }} />
+                            <span style={{ 
+                              overflow: 'hidden', 
+                              textOverflow: 'ellipsis', 
+                              whiteSpace: 'nowrap',
+                              maxWidth: '180px'
+                            }}>
+                              {club.name}
+                            </span>
+                          </Link>
+                        ))}
+                        <div className="nav-dropdown-divider" />
                         <Link
-                          key={club.id}
                           className="nav-dropdown-item"
-                          to={`/club/${club.id}`}
+                          to="/dashboard"
                           onClick={() => setIsClubsDropdownOpen(false)}
+                          style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
                         >
-                          <Users size={15} aria-hidden="true" style={{ flexShrink: 0 }} />
-                          <span style={{ 
-                            overflow: 'hidden', 
-                            textOverflow: 'ellipsis', 
-                            whiteSpace: 'nowrap',
-                            maxWidth: '180px'
-                          }}>
-                            {club.name}
-                          </span>
+                          <LayoutDashboard size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
+                          Find more clubs
                         </Link>
-                      ))}
-                      <div className="nav-dropdown-divider" />
-                      <Link
-                        className="nav-dropdown-item"
-                        to="/dashboard"
-                        onClick={() => setIsClubsDropdownOpen(false)}
-                        style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
-                      >
-                        <LayoutDashboard size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
-                        Find more clubs
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile view: Direct links in the scroll container */}
+                  {clubs.map((club) => (
+                    <Link
+                      key={`mobile-club-${club.id}`}
+                      className={`${navClass(`/club/${club.id}`)} mobile-only`}
+                      to={`/club/${club.id}`}
+                      aria-label={`Go to ${club.name}`}
+                    >
+                      <Users size={16} aria-hidden="true" />
+                      <span style={{ 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap',
+                        maxWidth: '120px'
+                      }}>
+                        {club.name}
+                      </span>
+                    </Link>
+                  ))}
+                  <Link
+                    className={`${navClass('/dashboard')} mobile-only`}
+                    to="/dashboard"
+                    aria-label="Find clubs"
+                    style={{ opacity: 0.8 }}
+                  >
+                    <LayoutDashboard size={16} aria-hidden="true" />
+                    Find Clubs
+                  </Link>
+                </>
               )}
             </>
           )}
@@ -201,7 +217,7 @@ export default function Navbar() {
           {/* Theme Toggle */}
           <button
             type="button"
-            className="nav-link"
+            className="nav-link theme-toggle-btn"
             onClick={toggleTheme}
             aria-label="Toggle theme"
             style={{ padding: '8px 10px', minWidth: '40px' }}

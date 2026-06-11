@@ -1,35 +1,77 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trophy, Clock, Users } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { listClubFriendlies } from '../lib/friendlyApi'
-import { useClub } from '../context/ClubContext'
+import { getMyClubs, getClub, getClubs } from '../lib/api'
 import type { Friendly } from '../types/friendly'
+import type { Club } from '../types'
+import { FriendlyCreateModal } from '../components/friendly'
 
-export function FriendliesListPage() {
+export default function FriendliesListPage() {
   const navigate = useNavigate()
-  const { currentClub } = useClub()
+  const [searchParams] = useSearchParams()
+  const urlClubId = searchParams.get('clubId')
+
+  const [currentClub, setCurrentClub] = useState<Club | null>(null)
+  const [myClubs, setMyClubs] = useState<(Club & { role: string })[]>([])
+  const [discoverClubs, setDiscoverClubs] = useState<Club[]>([])
   const [friendlies, setFriendlies] = useState<Friendly[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  useEffect(() => {
-    if (!currentClub) return
-    loadFriendlies()
-  }, [currentClub])
-
-  const loadFriendlies = async () => {
-    if (!currentClub) return
-    
+  async function loadFriendlies(clubId: string) {
     setIsLoading(true)
-    const { friendlies: data, error } = await listClubFriendlies(currentClub.id)
-    
+    const { friendlies: data, error } = await listClubFriendlies(clubId)
     if (!error && data) {
       setFriendlies(data)
     }
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    async function loadClubs() {
+      try {
+        const clubsData = await getMyClubs()
+        setMyClubs(clubsData)
+        
+        let activeClub: Club | null = null
+        if (urlClubId) {
+          const matched = clubsData.find(c => c.id === urlClubId)
+          if (matched) {
+            activeClub = matched
+          } else {
+            const club = await getClub(urlClubId)
+            if (club) activeClub = club
+          }
+        } else if (clubsData.length > 0) {
+          activeClub = clubsData[0]
+        }
+        
+        setCurrentClub(activeClub)
+        if (activeClub) {
+          await loadFriendlies(activeClub.id)
+        } else {
+          setIsLoading(false)
+        }
+      } catch (err) {
+        console.error(err)
+        setIsLoading(false)
+      }
+    }
+    loadClubs()
+  }, [urlClubId])
+
+  useEffect(() => {
+    if (!currentClub) return
+    getClubs()
+      .then((clubs) => {
+        setDiscoverClubs(clubs.filter((c) => c.id !== currentClub.id))
+      })
+      .catch(console.error)
+  }, [currentClub])
 
   const activeFriendlies = friendlies.filter((f) => ['pending', 'accepted', 'matchmaking', 'live'].includes(f.status))
   const completedFriendlies = friendlies.filter((f) => f.status === 'completed')
@@ -46,9 +88,30 @@ export function FriendliesListPage() {
     <div className="min-h-screen bg-[#040d0f] p-4">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="arena-heading text-2xl">Friendlies</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="arena-heading text-2xl">Friendlies</h1>
+          {myClubs.length > 1 && (
+            <select
+              value={currentClub?.id || ''}
+              onChange={(e) => {
+                const matched = myClubs.find(c => c.id === e.target.value)
+                if (matched) {
+                  setCurrentClub(matched)
+                  loadFriendlies(matched.id)
+                }
+              }}
+              className="rounded-md border border-white/10 bg-white/5 p-1 text-sm text-white focus:border-[var(--arena-lime)]"
+            >
+              {myClubs.map(c => (
+                <option key={c.id} value={c.id} className="bg-[#0a0f0e]">
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <Button
-          onClick={() => navigate('/friendly/create')}
+          onClick={() => setIsCreateModalOpen(true)}
           className="gap-2 bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
         >
           <Plus size={16} />
@@ -104,13 +167,25 @@ export function FriendliesListPage() {
               Challenge another club to a friendly match and build your rivalry history
             </p>
             <Button
-              onClick={() => navigate('/friendly/create')}
+              onClick={() => setIsCreateModalOpen(true)}
               className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
             >
               Challenge a Club
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {currentClub && (
+        <FriendlyCreateModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          clubId={currentClub.id}
+          nearbyClubs={discoverClubs}
+          onCreated={() => {
+            loadFriendlies(currentClub.id)
+          }}
+        />
       )}
     </div>
   )
@@ -138,9 +213,10 @@ function FriendlyCard({ friendly, currentClubId, onClick }: FriendlyCardProps) {
         return <Badge variant="heat">Matchmaking</Badge>
       case 'live':
         return <Badge variant="live">● Live</Badge>
-      case 'completed':
+      case 'completed': {
         const won = friendly.winning_club_id === currentClubId
         return <Badge variant={won ? 'live' : 'muted'}>{won ? '✓ Won' : '✗ Lost'}</Badge>
+      }
       default:
         return <Badge variant="muted">{friendly.status}</Badge>
     }

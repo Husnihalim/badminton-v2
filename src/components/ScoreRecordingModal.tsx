@@ -3,6 +3,7 @@ import { ClipboardPenLine, Plus, X, RotateCcw, Trophy } from 'lucide-react'
 import { createMatch, getClubMembers, updateMatch } from '../lib/api'
 import { getErrorMessage } from '../lib/utils'
 import type { MatchWithDetails, Membership } from '../types'
+import type { FriendlyPair } from '../types/friendly'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { Input } from './ui/input'
@@ -19,6 +20,17 @@ interface ScoreRecordingModalProps {
   eventTitle?: string
   eventDate?: string
   clubName?: string
+  friendlyContext?: {
+    matchupId: string
+    pairA?: FriendlyPair
+    pairB?: FriendlyPair
+  }
+  onSave?: (matchData: {
+    sport: string
+    match_type: 'doubles'
+    participants: { user_id: string; team: number }[]
+    score_sets: { set_number: number; team1_score: number; team2_score: number }[]
+  }) => Promise<void>
 }
 
 type PlayerField = {
@@ -62,6 +74,8 @@ export default function ScoreRecordingModal({
   eventTitle,
   eventDate,
   clubName,
+  friendlyContext,
+  onSave,
 }: ScoreRecordingModalProps) {
   const [matchTitle, setMatchTitle] = useState('')
   const [matchDate, setMatchDate] = useState<string>('')
@@ -119,7 +133,24 @@ export default function ScoreRecordingModal({
   useEffect(() => {
     if (!isOpen) return
 
-    if (editingMatch) {
+    if (friendlyContext) {
+      setMatchType('doubles')
+      setSport('badminton')
+      setMatchTitle('Friendly matchup')
+      setMatchDate(eventDate || new Date().toISOString().split('T')[0])
+
+      const p1a = friendlyContext.pairA?.player_1
+      const p1b = friendlyContext.pairA?.player_2
+      const p2a = friendlyContext.pairB?.player_1
+      const p2b = friendlyContext.pairB?.player_2
+
+      setPlayer1A({ memberId: p1a?.id || '', customName: p1a ? '' : friendlyContext.pairA?.pair_name || '' })
+      setPlayer1B({ memberId: p1b?.id || '', customName: '' })
+      setPlayer2A({ memberId: p2a?.id || '', customName: p2a ? '' : friendlyContext.pairB?.pair_name || '' })
+      setPlayer2B({ memberId: p2b?.id || '', customName: '' })
+      setSets([createScoreSetField()])
+      setErrors({})
+    } else if (editingMatch) {
       setMatchTitle(editingMatch.title || '')
       setMatchDate(editingMatch.match_date)
       setSport(editingMatch.sport)
@@ -154,7 +185,7 @@ export default function ScoreRecordingModal({
       setSets([createScoreSetField()])
       setErrors({})
     }
-  }, [editingMatch, isOpen, eventDate])
+  }, [editingMatch, isOpen, eventDate, friendlyContext])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!isOpen) return null
@@ -169,12 +200,12 @@ export default function ScoreRecordingModal({
 
     if (matchTitle.length > 120) nextErrors.matchTitle = 'Match title must be 120 characters or fewer.'
     if (!matchDate) nextErrors.matchDate = 'Match date is required.'
-    if (!isPlayerValid(player1A)) nextErrors.player1A = 'Player 1 is required.'
-    if (!isPlayerValid(player2A)) nextErrors.player2A = 'Player 2 is required.'
+    if (!isPlayerValid(player1A)) nextErrors.player1A = 'Player 1 is required (select a member or enter a guest nickname).'
+    if (!isPlayerValid(player2A)) nextErrors.player2A = 'Player 2 is required (select a member or enter a guest nickname).'
 
     if (matchType === 'doubles') {
-      if (!isPlayerValid(player1B)) nextErrors.player1B = 'Team 1 Player 2 is required.'
-      if (!isPlayerValid(player2B)) nextErrors.player2B = 'Team 2 Player 2 is required.'
+      if (!isPlayerValid(player1B)) nextErrors.player1B = 'Team 1 Player 2 is required (select a member or enter a guest nickname).'
+      if (!isPlayerValid(player2B)) nextErrors.player2B = 'Team 2 Player 2 is required (select a member or enter a guest nickname).'
     }
 
     sets.forEach((set, index) => {
@@ -215,7 +246,7 @@ export default function ScoreRecordingModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validate() || !clubId) return
+    if (!validate() || (!clubId && !onSave)) return
 
     setIsSubmitting(true)
 
@@ -226,7 +257,20 @@ export default function ScoreRecordingModal({
         team2_score: Number(set.team2),
       }))
 
-      if (isEditing && editingMatch) {
+      if (onSave) {
+        const participants: { user_id: string; team: number }[] = []
+        if (player1A.memberId) participants.push({ user_id: player1A.memberId, team: 1 })
+        if (player1B.memberId) participants.push({ user_id: player1B.memberId, team: 1 })
+        if (player2A.memberId) participants.push({ user_id: player2A.memberId, team: 2 })
+        if (player2B.memberId) participants.push({ user_id: player2B.memberId, team: 2 })
+
+        await onSave({
+          sport,
+          match_type: 'doubles',
+          participants,
+          score_sets: scoreSets,
+        })
+      } else if (isEditing && editingMatch) {
         await updateMatch({
           match_id: editingMatch.id,
           title: matchTitle || undefined,
@@ -254,7 +298,7 @@ export default function ScoreRecordingModal({
         }
 
         await createMatch({
-          club_id: clubId,
+          club_id: clubId!,
           title: matchTitle || undefined,
           sport,
           match_type: matchType as 'singles' | 'doubles',
@@ -439,7 +483,7 @@ export default function ScoreRecordingModal({
     errorKey: string,
     disabled = false,
   ) => (
-    <label className="block space-y-2 text-sm font-semibold text-slate-700">
+    <label className="block space-y-2 text-sm font-semibold text-[var(--arena-text-muted)]">
       <span>{label}</span>
       <Select
         value={field.memberId}
@@ -453,7 +497,7 @@ export default function ScoreRecordingModal({
       </Select>
       <Input
         type="text"
-        placeholder="Or enter guest name"
+        placeholder="Or enter guest nickname (compulsory)"
         value={field.customName}
         onChange={(e) => setField({ memberId: '', customName: e.target.value })}
         maxLength={120}
@@ -492,12 +536,12 @@ export default function ScoreRecordingModal({
           <CardContent className="space-y-4 pt-4 sm:pt-5">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
                   <ClipboardPenLine size={18} aria-hidden="true" />
                 </span>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950">{isEditing ? 'Edit match score' : 'Record match score'}</h2>
-                  <p className="text-sm text-slate-600">
+                  <h2 className="text-xl font-bold text-[var(--arena-text)]">{isEditing ? 'Edit match score' : 'Record match score'}</h2>
+                  <p className="text-sm text-[var(--arena-text-muted)]">
                     {isEditing ? 'Update the score and refresh the leaderboard for this match.' : 'Add singles or doubles results for this club.'}
                   </p>
                 </div>
@@ -510,14 +554,14 @@ export default function ScoreRecordingModal({
             {errors.submit ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errors.submit}</p> : null}
 
             {eventTitle && eventId ? (
-              <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-800">
+              <div className="rounded-lg bg-[var(--arena-accent-soft)] border border-[var(--arena-accent-soft)] px-3 py-2 text-xs font-semibold text-[var(--arena-accent)]">
                 🏆 Linking to session: <span className="font-bold underline">{eventTitle}</span>
               </div>
             ) : null}
 
             <form className="space-y-4" onSubmit={handleSubmit} noValidate>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
                   <span>Sport</span>
                   <Select value={sport} onChange={(e) => setSport(e.target.value)}>
                     <option value="badminton">Badminton</option>
@@ -528,7 +572,7 @@ export default function ScoreRecordingModal({
                     <option value="racquetball">Racquetball</option>
                   </Select>
                 </label>
-                <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
                   <span>Match date</span>
                   <Input
                     type="date"
@@ -540,13 +584,13 @@ export default function ScoreRecordingModal({
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1.5">Match type</p>
-                <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                <p className="text-sm font-semibold text-[var(--arena-text-muted)] mb-1.5">Match type</p>
+                <div className="grid grid-cols-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-1">
                   {(['singles', 'doubles'] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
-                      className={`min-h-10 rounded-md px-3 text-sm font-semibold capitalize transition ${matchType === type ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'}`}
+                      className={`min-h-10 rounded-md px-3 text-sm font-semibold capitalize transition ${matchType === type ? 'bg-[#0b1322] text-[var(--arena-accent)] shadow-sm' : 'text-[var(--arena-text-dim)]'}`}
                       onClick={() => {
                         setMatchType(type)
                         if (type === 'singles') {
@@ -561,8 +605,8 @@ export default function ScoreRecordingModal({
                 </div>
               </div>
 
-              <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
-                <span>Match title <span className="font-normal text-slate-500">(optional)</span></span>
+              <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
+                <span>Match title <span className="font-normal text-[var(--arena-text-dim)]">(optional)</span></span>
                 <Input
                   type="text"
                   placeholder="e.g. Monday Singles Game"
@@ -575,11 +619,11 @@ export default function ScoreRecordingModal({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Team 1 Card */}
-                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500" />
+                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[#0b1322] p-4 shadow-sm">
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[var(--arena-accent-soft)]0" />
                   <div className="mb-3 flex items-center justify-between pl-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Team 1</span>
-                    {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-slate-400">Doubles Pair</span>}
+                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--arena-accent)]">Team 1</span>
+                    {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-[var(--arena-text-dim)]">Doubles Pair</span>}
                   </div>
                   <div className="space-y-4 pl-2">
                     {renderPlayerField(
@@ -587,24 +631,24 @@ export default function ScoreRecordingModal({
                       player1A,
                       setPlayer1A,
                       'player1A',
-                      isEditing
+                      isEditing || Boolean(friendlyContext)
                     )}
                     {matchType === 'doubles' ? renderPlayerField(
                       'Player 2',
                       player1B,
                       setPlayer1B,
                       'player1B',
-                      isEditing
+                      isEditing || Boolean(friendlyContext)
                     ) : null}
                   </div>
                 </div>
 
                 {/* Team 2 Card */}
-                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[#0b1322] p-4 shadow-sm">
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500" />
                   <div className="mb-3 flex items-center justify-between pl-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">Team 2</span>
-                    {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-slate-400">Doubles Pair</span>}
+                    {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-[var(--arena-text-dim)]">Doubles Pair</span>}
                   </div>
                   <div className="space-y-4 pl-2">
                     {renderPlayerField(
@@ -612,14 +656,14 @@ export default function ScoreRecordingModal({
                       player2A,
                       setPlayer2A,
                       'player2A',
-                      isEditing
+                      isEditing || Boolean(friendlyContext)
                     )}
                     {matchType === 'doubles' ? renderPlayerField(
                       'Player 2',
                       player2B,
                       setPlayer2B,
                       'player2B',
-                      isEditing
+                      isEditing || Boolean(friendlyContext)
                     ) : null}
                   </div>
                 </div>
@@ -629,13 +673,13 @@ export default function ScoreRecordingModal({
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-700">Score sets</p>
+                  <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Score sets</p>
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="border border-emerald-600/30 text-emerald-700 dark:text-emerald-450 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      className="border border-emerald-600/30 text-[var(--arena-accent)] dark:text-emerald-450 hover:bg-[var(--arena-accent-soft)] dark:hover:bg-emerald-950/20"
                       onClick={openPointByPointScorekeeper}
                     >
                       📱 Point-by-Point Scorekeeper
@@ -647,10 +691,10 @@ export default function ScoreRecordingModal({
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-xl border border-[var(--arena-border)] bg-[#0b1322] shadow-sm">
                   <table className="w-full border-collapse text-left text-sm">
                     <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <tr className="border-b border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-xs font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">
                         <th className="px-4 py-3 font-semibold">Team / Players</th>
                         {sets.map((_, idx) => (
                           <th key={idx} className="w-24 px-4 py-3 text-center font-semibold">
@@ -660,7 +704,7 @@ export default function ScoreRecordingModal({
                                 <button
                                   type="button"
                                   onClick={() => removeSet(idx)}
-                                  className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600 transition-colors"
+                                  className="rounded p-0.5 text-[var(--arena-text-dim)] hover:bg-slate-200 hover:text-red-600 transition-colors"
                                   title="Remove set"
                                 >
                                   <X size={13} />
@@ -674,8 +718,8 @@ export default function ScoreRecordingModal({
                     <tbody className="divide-y divide-slate-100">
                       {/* Row 1: Team 1 */}
                       <tr>
-                        <td className="px-4 py-3 font-medium text-slate-900">
-                          <span className="text-xs font-bold uppercase tracking-wide text-emerald-700">Team 1</span>
+                        <td className="px-4 py-3 font-medium text-[var(--arena-text)]">
+                          <span className="text-xs font-bold uppercase tracking-wide text-[var(--arena-accent)]">Team 1</span>
                         </td>
                         {sets.map((set, idx) => (
                           <td key={idx} className="w-24 px-4 py-2 text-center">
@@ -692,7 +736,7 @@ export default function ScoreRecordingModal({
                       </tr>
                       {/* Row 2: Team 2 */}
                       <tr>
-                        <td className="px-4 py-3 font-medium text-slate-900">
+                        <td className="px-4 py-3 font-medium text-[var(--arena-text)]">
                           <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">Team 2</span>
                         </td>
                         {sets.map((set, idx) => (
@@ -727,7 +771,7 @@ export default function ScoreRecordingModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
                   Cancel
                 </Button>
@@ -752,17 +796,17 @@ export default function ScoreRecordingModal({
             onClose()
             onScoreRecorded?.()
           }}>
-            <Card className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl border-t-4 border-emerald-500 transform scale-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
+            <Card className="mx-4 w-full max-w-sm rounded-2xl bg-[#0b1322] p-6 text-center shadow-2xl border-t-4 border-emerald-500 transform scale-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
               <CardContent className="space-y-4 pt-4">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl animate-bounce">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--arena-accent-soft)] text-3xl animate-bounce">
                   👑
                 </div>
-                <h3 className="text-xl font-black text-slate-900">Match Recorded!</h3>
-                <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">Winners</p>
-                <h2 className="text-2xl font-extrabold text-slate-950 leading-tight">
+                <h3 className="text-xl font-black text-[var(--arena-text)]">Match Recorded!</h3>
+                <p className="text-xs font-bold text-[var(--arena-accent)] uppercase tracking-widest">Winners</p>
+                <h2 className="text-2xl font-extrabold text-[var(--arena-text)] leading-tight">
                   {celebrationWinners}
                 </h2>
-                <div className="text-xs font-bold text-slate-500">
+                <div className="text-xs font-bold text-[var(--arena-text-dim)]">
                   Score: {celebrationScore}
                 </div>
                 <div className="pt-2">
@@ -794,12 +838,12 @@ export default function ScoreRecordingModal({
           <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 px-4 py-3">
             <div>
               <h3 className="text-lg font-black text-white flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded bg-emerald-500/20 text-emerald-400 text-xs">
+                <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--arena-accent-soft)]0/20 text-[var(--arena-accent)] text-xs">
                   Ref
                 </span>
                 Point-by-Point Scorekeeper
               </h3>
-              <p className="text-xs text-slate-400 font-semibold">
+              <p className="text-xs text-[var(--arena-text-dim)] font-semibold">
                 {clubName ? `${clubName} • ` : ''}
                 {matchType === 'doubles' ? 'Doubles' : 'Singles'} • Set {currentSetIdx + 1}
               </p>
@@ -811,7 +855,7 @@ export default function ScoreRecordingModal({
                   setShowScorekeeper(false)
                 }
               }}
-              className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              className="rounded-lg p-2 text-[var(--arena-text-dim)] hover:bg-slate-800 hover:text-white transition-colors"
             >
               <X size={20} />
             </button>
@@ -829,10 +873,10 @@ export default function ScoreRecordingModal({
                   key={idx}
                   className={`flex flex-col items-center rounded-lg px-4 py-1.5 transition-all ${
                     isActive
-                      ? 'bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 font-bold scale-105 shadow shadow-emerald-500/5'
+                      ? 'bg-[var(--arena-accent-soft)]0/15 border border-emerald-500/35 text-[var(--arena-accent)] font-bold scale-105 shadow shadow-emerald-500/5'
                       : isFuture
-                        ? 'border border-transparent text-slate-600 font-medium'
-                        : 'bg-slate-900 border border-slate-800 text-slate-400'
+                        ? 'border border-transparent text-[var(--arena-text-muted)] font-medium'
+                        : 'bg-slate-900 border border-slate-800 text-[var(--arena-text-dim)]'
                   }`}
                 >
                   <span className="text-[10px] uppercase tracking-wider">Set {idx + 1}</span>
@@ -859,7 +903,7 @@ export default function ScoreRecordingModal({
               <div className="text-8xl md:text-9xl font-black font-mono text-orange-500 tracking-tighter select-none animate-in zoom-in duration-150">
                 {refereeSets[currentSetIdx]?.team1 ?? 0}
               </div>
-              <span className="mt-4 text-xs font-medium text-slate-500 opacity-60 group-hover:opacity-100 transition-opacity">
+              <span className="mt-4 text-xs font-medium text-[var(--arena-text-dim)] opacity-60 group-hover:opacity-100 transition-opacity">
                 {isMatchFinished ? 'Match finished' : 'Tap to score point'}
               </span>
             </button>
@@ -871,13 +915,13 @@ export default function ScoreRecordingModal({
               onClick={() => handleScorePoint(2)}
               className="flex-1 flex flex-col items-center justify-center p-6 text-center transition-all bg-emerald-950/5 hover:bg-emerald-950/10 active:bg-emerald-950/25 group focus:outline-none cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
             >
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--arena-accent)] mb-2 group-hover:scale-105 transition-transform">
                 {team2Name}
               </span>
-              <div className="text-8xl md:text-9xl font-black font-mono text-emerald-400 tracking-tighter select-none animate-in zoom-in duration-150">
+              <div className="text-8xl md:text-9xl font-black font-mono text-[var(--arena-accent)] tracking-tighter select-none animate-in zoom-in duration-150">
                 {refereeSets[currentSetIdx]?.team2 ?? 0}
               </div>
-              <span className="mt-4 text-xs font-medium text-slate-500 opacity-60 group-hover:opacity-100 transition-opacity">
+              <span className="mt-4 text-xs font-medium text-[var(--arena-text-dim)] opacity-60 group-hover:opacity-100 transition-opacity">
                 {isMatchFinished ? 'Match finished' : 'Tap to score point'}
               </span>
             </button>
@@ -886,13 +930,13 @@ export default function ScoreRecordingModal({
           {/* Winner announcement / Match controls */}
           {isMatchFinished && (
             <div className="bg-emerald-950/25 border-y border-emerald-800/40 p-4 text-center animate-in slide-in-from-bottom duration-300">
-              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-xl mb-2">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--arena-accent-soft)]0/10 text-xl mb-2">
                 👑
               </div>
-              <h4 className="text-md font-extrabold text-emerald-400">
+              <h4 className="text-md font-extrabold text-[var(--arena-accent)]">
                 Match Complete!
               </h4>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-[var(--arena-text-dim)] mt-1">
                 {matchWinner === 1 ? team1Name : team2Name} wins the match.
               </p>
             </div>
@@ -902,22 +946,22 @@ export default function ScoreRecordingModal({
           <div className="border-t border-slate-800 bg-slate-900/60 p-4 flex flex-col md:flex-row gap-4">
             {/* Timeline */}
             <div className="flex-1 flex flex-col min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)] mb-1.5 flex items-center gap-1.5">
                 <Trophy size={11} /> Point Timeline
               </span>
               <div className="h-28 overflow-y-auto bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 text-xs font-mono space-y-1.5">
                 {refereeLogs.length === 0 ? (
-                  <span className="text-slate-600 italic block py-0.5">No points scored yet. Tap above to begin refereeing.</span>
+                  <span className="text-[var(--arena-text-muted)] italic block py-0.5">No points scored yet. Tap above to begin refereeing.</span>
                 ) : (
                   refereeLogs.map((log, logIdx) => (
                     <div
                       key={logIdx}
                       className={`py-0.5 border-b border-slate-900 last:border-b-0 ${
                         log.includes('🏆')
-                          ? 'text-emerald-400 font-bold'
+                          ? 'text-[var(--arena-accent)] font-bold'
                           : log.includes('🎉')
                             ? 'text-yellow-400 font-extrabold'
-                            : 'text-slate-300'
+                            : 'text-[var(--arena-text-dim)]'
                       }`}
                     >
                       {log}

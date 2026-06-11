@@ -238,8 +238,8 @@ export default function SuperAdminAnalyticsPage() {
         <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-full mb-4 animate-bounce">
           <Shield size={48} />
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Access Denied</h1>
-        <p className="max-w-md text-slate-600 mb-6">
+        <h1 className="text-3xl font-extrabold text-[var(--arena-text)] tracking-tight mb-2">Access Denied</h1>
+        <p className="max-w-md text-[var(--arena-text-muted)] mb-6">
           This panel is restricted to platform superadmins managed by mohdhusni@gmail.com.
         </p>
         <button
@@ -255,19 +255,19 @@ export default function SuperAdminAnalyticsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-        <RefreshCw className="animate-spin text-emerald-600" size={36} />
-        <p className="text-slate-600 text-sm">Loading superadmin dashboard analytics...</p>
+        <RefreshCw className="animate-spin text-[var(--arena-accent)]" size={36} />
+        <p className="text-[var(--arena-text-muted)] text-sm">Loading superadmin dashboard analytics...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-6 font-sans">
+    <div className="min-h-screen bg-[var(--arena-surface-muted)] py-6 font-sans">
       {/* Toast Alert */}
       {toast && (
         <div
           className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-white font-bold transition-all duration-300 transform translate-y-0 ${
-            toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+            toast.type === 'success' ? 'bg-[var(--arena-accent)]' : 'bg-red-600'
           }`}
         >
           {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
@@ -283,8 +283,8 @@ export default function SuperAdminAnalyticsPage() {
               <Shield size={10} /> Platform Oversight
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-1">Superadmin Console</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
+          <h1 className="text-3xl font-extrabold text-[var(--arena-text)] tracking-tight mt-1">Superadmin Console</h1>
+          <p className="text-[var(--arena-text-dim)] text-sm mt-0.5">
             Real-time analytics, user security logs, crash logs, and club metrics database.
           </p>
         </div>
@@ -304,58 +304,58 @@ export default function SuperAdminAnalyticsPage() {
       {/* Overview Aggregates Card Row */}
       {stats && activeTab === 'overview' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-[var(--arena-accent-soft)] rounded-lg text-[var(--arena-accent)]">
               <Users size={24} />
             </div>
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Users</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_users}</span>
+              <span className="text-xs font-semibold text-[var(--arena-text-dim)] uppercase tracking-wider block">Total Users</span>
+              <span className="text-2xl font-black text-[var(--arena-text-dim)] leading-none block mt-1">{stats.total_users}</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
               <Database size={24} />
             </div>
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Clubs</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_clubs}</span>
+              <span className="text-xs font-semibold text-[var(--arena-text-dim)] uppercase tracking-wider block">Total Clubs</span>
+              <span className="text-2xl font-black text-[var(--arena-text-dim)] leading-none block mt-1">{stats.total_clubs}</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
             <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
               <Activity size={24} />
             </div>
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Matches Played</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_matches}</span>
+              <span className="text-xs font-semibold text-[var(--arena-text-dim)] uppercase tracking-wider block">Matches Played</span>
+              <span className="text-2xl font-black text-[var(--arena-text-dim)] leading-none block mt-1">{stats.total_matches}</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
             <div className="p-3 bg-rose-50 rounded-lg text-rose-600">
               <AlertTriangle size={24} />
             </div>
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">System Crashes</span>
-              <span className="text-2xl font-black text-slate-900 leading-none block mt-1">{stats.total_crashes}</span>
+              <span className="text-xs font-semibold text-[var(--arena-text-dim)] uppercase tracking-wider block">System Crashes</span>
+              <span className="text-2xl font-black text-[var(--arena-text-dim)] leading-none block mt-1">{stats.total_crashes}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Tab Navigation */}
-      <div className="border-b border-slate-200 mb-6 flex gap-1 overflow-x-auto whitespace-nowrap">
+      <div className="border-b border-[var(--arena-border)] mb-6 flex gap-1 overflow-x-auto whitespace-nowrap">
         {(['overview', 'users', 'clubs', 'feedback', 'security'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-3 font-semibold text-sm border-b-2 transition-all duration-150 capitalize flex items-center gap-2 cursor-pointer ${
               activeTab === tab
-                ? 'border-emerald-600 text-emerald-600 bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                ? 'border-emerald-600 text-[var(--arena-accent)] bg-[#0b1322]'
+                : 'border-transparent text-[var(--arena-text-dim)] hover:text-slate-800 hover:border-[var(--arena-border)]'
             }`}
           >
             {tab === 'overview' && <TrendingUp size={16} />}
@@ -379,15 +379,15 @@ export default function SuperAdminAnalyticsPage() {
       </div>
 
       {/* Tab Panel Content */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6">
+      <div className="bg-[#0b1322] rounded-2xl border border-[var(--arena-border)] shadow-sm p-4 md:p-6">
         
         {/* TAB 1: OVERVIEW & INTERACTIVE ANALYTICS */}
         {activeTab === 'overview' && stats && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* User Registration Trend */}
-            <div className="lg:col-span-2 border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <div className="lg:col-span-2 border border-slate-100 rounded-xl p-4 bg-[var(--arena-surface-muted)]/50">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Users size={16} className="text-emerald-600" /> User Growth Trend (Last 30 Days)
+                <Users size={16} className="text-[var(--arena-accent)]" /> User Growth Trend (Last 30 Days)
               </h3>
               {regChartData && regChartData.coords.length > 0 ? (
                 <div className="relative">
@@ -432,17 +432,17 @@ export default function SuperAdminAnalyticsPage() {
                   {hoveredRegIndex !== null && regChartData.coords[hoveredRegIndex] && (
                     <div className="absolute top-2 right-2 bg-slate-900 text-white rounded-lg p-2 text-xs shadow-md border border-slate-700">
                       <div className="font-bold">{new Date(regChartData.coords[hoveredRegIndex].date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</div>
-                      <div>New Registrations: <span className="font-black text-emerald-400">{regChartData.coords[hoveredRegIndex].value}</span></div>
+                      <div>New Registrations: <span className="font-black text-[var(--arena-accent)]">{regChartData.coords[hoveredRegIndex].value}</span></div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="h-40 flex items-center justify-center text-slate-400 text-sm">No registration trend data found.</div>
+                <div className="h-40 flex items-center justify-center text-[var(--arena-text-dim)] text-sm">No registration trend data found.</div>
               )}
             </div>
 
             {/* Sports Breakdown */}
-            <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <div className="border border-slate-100 rounded-xl p-4 bg-[var(--arena-surface-muted)]/50">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Activity size={16} className="text-indigo-600" /> Matches Sport Breakdown
               </h3>
@@ -450,7 +450,7 @@ export default function SuperAdminAnalyticsPage() {
                 <div className="flex flex-col gap-4">
                   {sportsData.map(({ sport, count, percentage }) => (
                     <div key={sport}>
-                      <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                      <div className="flex justify-between items-center text-xs font-bold text-[var(--arena-text-muted)] mb-1">
                         <span className="capitalize">{sport}</span>
                         <span>{count} matches ({percentage}%)</span>
                       </div>
@@ -464,12 +464,12 @@ export default function SuperAdminAnalyticsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="h-40 flex items-center justify-center text-slate-400 text-sm">No matches recorded yet.</div>
+                <div className="h-40 flex items-center justify-center text-[var(--arena-text-dim)] text-sm">No matches recorded yet.</div>
               )}
             </div>
 
             {/* Match Activity Trend */}
-            <div className="lg:col-span-2 border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <div className="lg:col-span-2 border border-slate-100 rounded-xl p-4 bg-[var(--arena-surface-muted)]/50">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Activity size={16} className="text-indigo-600" /> Match Creation Trend (Last 30 Days)
               </h3>
@@ -521,32 +521,32 @@ export default function SuperAdminAnalyticsPage() {
                   )}
                 </div>
               ) : (
-                <div className="h-40 flex items-center justify-center text-slate-400 text-sm">No match trend data found.</div>
+                <div className="h-40 flex items-center justify-center text-[var(--arena-text-dim)] text-sm">No match trend data found.</div>
               )}
             </div>
 
             {/* Platform Health Card */}
-            <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between">
+            <div className="border border-slate-100 rounded-xl p-4 bg-[var(--arena-surface-muted)]/50 flex flex-col justify-between">
               <div>
                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <Shield size={16} className="text-red-500" /> Platform Security & Health
                 </h3>
-                <p className="text-xs text-slate-500 mb-4">Current monitoring status metrics from database audits.</p>
+                <p className="text-xs text-[var(--arena-text-dim)] mb-4">Current monitoring status metrics from database audits.</p>
                 
                 <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center text-xs border-b border-slate-200/50 pb-2">
-                    <span className="text-slate-600">Active RSVPs</span>
-                    <span className="font-bold text-slate-950">{stats.total_rsvps}</span>
+                  <div className="flex justify-between items-center text-xs border-b border-[var(--arena-border)]/50 pb-2">
+                    <span className="text-[var(--arena-text-muted)]">Active RSVPs</span>
+                    <span className="font-bold text-[var(--arena-text)]">{stats.total_rsvps}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs border-b border-slate-200/50 pb-2">
-                    <span className="text-slate-600">Suggestions / Bugs</span>
-                    <span className={`font-bold ${stats.total_feedback > 0 ? 'text-amber-600' : 'text-slate-950'}`}>
+                  <div className="flex justify-between items-center text-xs border-b border-[var(--arena-border)]/50 pb-2">
+                    <span className="text-[var(--arena-text-muted)]">Suggestions / Bugs</span>
+                    <span className={`font-bold ${stats.total_feedback > 0 ? 'text-amber-600' : 'text-[var(--arena-text)]'}`}>
                       {stats.total_feedback} submissions
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-xs border-b border-slate-200/50 pb-2">
-                    <span className="text-slate-600">Captured Crashes</span>
-                    <span className={`font-bold ${stats.total_crashes > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  <div className="flex justify-between items-center text-xs border-b border-[var(--arena-border)]/50 pb-2">
+                    <span className="text-[var(--arena-text-muted)]">Captured Crashes</span>
+                    <span className={`font-bold ${stats.total_crashes > 0 ? 'text-red-600' : 'text-[var(--arena-accent)]'}`}>
                       {stats.total_crashes} reports
                     </span>
                   </div>
@@ -567,9 +567,9 @@ export default function SuperAdminAnalyticsPage() {
         {activeTab === 'users' && (
           <div>
             {/* Filter Panel */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/50">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 bg-[var(--arena-surface-muted)] p-4 rounded-xl border border-[var(--arena-border)]/50">
               <div className="relative w-full md:max-w-md">
-                <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
+                <Search className="absolute left-3 top-3.5 text-[var(--arena-text-dim)]" size={18} />
                 <input
                   type="text"
                   placeholder="Search users by name, email, or display name..."
@@ -580,12 +580,12 @@ export default function SuperAdminAnalyticsPage() {
               </div>
 
               <div className="flex items-center gap-3 w-full md:w-auto">
-                <label htmlFor="user-role-filter" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Role</label>
+                <label htmlFor="user-role-filter" className="text-xs font-bold text-[var(--arena-text-dim)] uppercase tracking-wider">Role</label>
                 <select
                   id="user-role-filter"
                   value={userRoleFilter}
                   onChange={(e) => setUserRoleFilter(e.target.value)}
-                  className="form-input mt-0 h-11 bg-white border border-slate-200"
+                  className="form-input mt-0 h-11 bg-white border border-[var(--arena-border)]"
                   style={{ minWidth: '140px' }}
                 >
                   <option value="all">All Roles</option>
@@ -599,7 +599,7 @@ export default function SuperAdminAnalyticsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider bg-slate-50/50">
+                  <tr className="border-b border-[var(--arena-border)] text-[var(--arena-text-dim)] text-xs font-bold uppercase tracking-wider bg-[var(--arena-surface-muted)]/50">
                     <th className="py-3 px-4">User</th>
                     <th className="py-3 px-4">Email</th>
                     <th className="py-3 px-4">Role Badge</th>
@@ -613,46 +613,46 @@ export default function SuperAdminAnalyticsPage() {
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((u) => (
-                      <tr key={u.id} className="hover:bg-slate-50/40">
-                        <td className="py-3 px-4 font-bold text-slate-900">
+                      <tr key={u.id} className="hover:bg-[var(--arena-surface-muted)]/40">
+                        <td className="py-3 px-4 font-bold text-[var(--arena-text)]">
                           <div className="flex items-center gap-2">
                             {u.avatar_url ? (
                               <img src={u.avatar_url} alt={u.name} className="w-8 h-8 rounded-full object-cover" />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs uppercase">
+                              <div className="w-8 h-8 rounded-full bg-slate-200 text-[var(--arena-text-muted)] flex items-center justify-center font-bold text-xs uppercase">
                                 {u.name.substring(0, 2)}
                               </div>
                             )}
                             <div>
                               <span>{u.display_name || u.name}</span>
                               {u.display_name && u.display_name !== u.name && (
-                                <span className="block text-xxs font-normal text-slate-400">({u.name})</span>
+                                <span className="block text-xxs font-normal text-[var(--arena-text-dim)]">({u.name})</span>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-600 select-all">{u.email}</td>
+                        <td className="py-3 px-4 text-[var(--arena-text-muted)] select-all">{u.email}</td>
                         <td className="py-3 px-4">
                           <span
                             className={`px-2 py-0.5 rounded-full text-xxs font-bold uppercase border ${
                               u.role === 'superadmin'
                                 ? 'bg-red-50 text-red-600 border-red-200'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                                : 'bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)] border-[var(--arena-border)]'
                             }`}
                           >
                             {u.role === 'superadmin' ? 'Super Admin' : 'Member'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-500 text-xs">
+                        <td className="py-3 px-4 text-[var(--arena-text-dim)] text-xs">
                           {new Date(u.created_at).toLocaleDateString(undefined, {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric'
                           })}
                         </td>
-                        <td className="py-3 px-4 text-center text-slate-900 font-semibold">{u.clubs_count}</td>
-                        <td className="py-3 px-4 text-center text-slate-900 font-semibold">{u.matches_count}</td>
-                        <td className="py-3 px-4 text-center text-slate-900 font-semibold">{u.win_rate}%</td>
+                        <td className="py-3 px-4 text-center text-[var(--arena-text)] font-semibold">{u.clubs_count}</td>
+                        <td className="py-3 px-4 text-center text-[var(--arena-text)] font-semibold">{u.matches_count}</td>
+                        <td className="py-3 px-4 text-center text-[var(--arena-text)] font-semibold">{u.win_rate}%</td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end items-center gap-2">
                             <select
@@ -661,7 +661,7 @@ export default function SuperAdminAnalyticsPage() {
                                 handleRoleChange(u.id, e.target.value as 'superadmin' | 'member', u.email)
                               }
                               disabled={u.email.toLowerCase() === 'mohdhusni@gmail.com'}
-                              className="text-xs border border-slate-300 rounded px-2 py-1 bg-white cursor-pointer disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              className="text-xs border border-[var(--arena-border)] rounded px-2 py-1 bg-white cursor-pointer disabled:bg-[var(--arena-surface-muted)] disabled:cursor-not-allowed"
                             >
                               <option value="member">Set Member</option>
                               <option value="superadmin">Set Superadmin</option>
@@ -672,7 +672,7 @@ export default function SuperAdminAnalyticsPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                      <td colSpan={8} className="py-8 text-center text-[var(--arena-text-dim)]">
                         No users match the search criteria.
                       </td>
                     </tr>
@@ -687,9 +687,9 @@ export default function SuperAdminAnalyticsPage() {
         {activeTab === 'clubs' && (
           <div>
             {/* Filter Panel */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/50">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 bg-[var(--arena-surface-muted)] p-4 rounded-xl border border-[var(--arena-border)]/50">
               <div className="relative w-full md:max-w-md">
-                <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
+                <Search className="absolute left-3 top-3.5 text-[var(--arena-text-dim)]" size={18} />
                 <input
                   type="text"
                   placeholder="Search clubs by name or location..."
@@ -700,12 +700,12 @@ export default function SuperAdminAnalyticsPage() {
               </div>
 
               <div className="flex items-center gap-3 w-full md:w-auto">
-                <label htmlFor="club-sport-filter" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sport</label>
+                <label htmlFor="club-sport-filter" className="text-xs font-bold text-[var(--arena-text-dim)] uppercase tracking-wider">Sport</label>
                 <select
                   id="club-sport-filter"
                   value={clubSportFilter}
                   onChange={(e) => setClubSportFilter(e.target.value)}
-                  className="form-input mt-0 h-11 bg-white border border-slate-200"
+                  className="form-input mt-0 h-11 bg-white border border-[var(--arena-border)]"
                   style={{ minWidth: '140px' }}
                 >
                   <option value="all">All Sports</option>
@@ -722,7 +722,7 @@ export default function SuperAdminAnalyticsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider bg-slate-50/50">
+                  <tr className="border-b border-[var(--arena-border)] text-[var(--arena-text-dim)] text-xs font-bold uppercase tracking-wider bg-[var(--arena-surface-muted)]/50">
                     <th className="py-3 px-4">Club Name</th>
                     <th className="py-3 px-4">Sport Focus</th>
                     <th className="py-3 px-4">Location</th>
@@ -736,30 +736,30 @@ export default function SuperAdminAnalyticsPage() {
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredClubs.length > 0 ? (
                     filteredClubs.map((c) => (
-                      <tr key={c.id} className="hover:bg-slate-50/40">
-                        <td className="py-3 px-4 font-bold text-slate-900 select-all">
+                      <tr key={c.id} className="hover:bg-[var(--arena-surface-muted)]/40">
+                        <td className="py-3 px-4 font-bold text-[var(--arena-text)] select-all">
                           <div>{c.name}</div>
-                          <span className="block text-xxs font-normal text-slate-400 mt-0.5">ID: {c.id}</span>
+                          <span className="block text-xxs font-normal text-[var(--arena-text-dim)] mt-0.5">ID: {c.id}</span>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex flex-wrap gap-1">
                             {c.sport_focus && c.sport_focus.map((s) => (
-                              <span key={s} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-xxs font-semibold capitalize border border-slate-200/50">
+                              <span key={s} className="px-1.5 py-0.5 bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)] rounded text-xxs font-semibold capitalize border border-[var(--arena-border)]/50">
                                 {s}
                               </span>
                             ))}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-600 text-xs">
+                        <td className="py-3 px-4 text-[var(--arena-text-muted)] text-xs">
                           {c.location || 'No address'}, {c.city || ''}
                         </td>
-                        <td className="py-3 px-4 text-xs text-slate-700">
+                        <td className="py-3 px-4 text-xs text-[var(--arena-text-muted)]">
                           <span className="font-bold block">{c.owner_name || 'Owner'}</span>
-                          <span className="text-slate-400 block">{c.owner_email || ''}</span>
+                          <span className="text-[var(--arena-text-dim)] block">{c.owner_email || ''}</span>
                         </td>
-                        <td className="py-3 px-4 text-center text-slate-900 font-semibold">{c.members_count}</td>
-                        <td className="py-3 px-4 text-center text-slate-900 font-semibold">{c.matches_count}</td>
-                        <td className="py-3 px-4 text-center text-slate-900 font-semibold">{c.events_count}</td>
+                        <td className="py-3 px-4 text-center text-[var(--arena-text)] font-semibold">{c.members_count}</td>
+                        <td className="py-3 px-4 text-center text-[var(--arena-text)] font-semibold">{c.matches_count}</td>
+                        <td className="py-3 px-4 text-center text-[var(--arena-text)] font-semibold">{c.events_count}</td>
                         <td className="py-3 px-4 text-right">
                           <button
                             onClick={() => setClubToDelete(c)}
@@ -773,7 +773,7 @@ export default function SuperAdminAnalyticsPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                      <td colSpan={8} className="py-8 text-center text-[var(--arena-text-dim)]">
                         No clubs found matching criteria.
                       </td>
                     </tr>
@@ -788,16 +788,16 @@ export default function SuperAdminAnalyticsPage() {
         {activeTab === 'feedback' && (
           <div>
             {/* Filter Panel */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/50">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">User suggestions and bug submissions</h3>
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 bg-[var(--arena-surface-muted)] p-4 rounded-xl border border-[var(--arena-border)]/50">
+              <h3 className="text-xs font-bold text-[var(--arena-text-dim)] uppercase tracking-wider">User suggestions and bug submissions</h3>
 
               <div className="flex items-center gap-3 w-full md:w-auto">
-                <label htmlFor="feedback-type-filter" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
+                <label htmlFor="feedback-type-filter" className="text-xs font-bold text-[var(--arena-text-dim)] uppercase tracking-wider">Type</label>
                 <select
                   id="feedback-type-filter"
                   value={feedbackTypeFilter}
                   onChange={(e) => setFeedbackTypeFilter(e.target.value)}
-                  className="form-input mt-0 h-11 bg-white border border-slate-200"
+                  className="form-input mt-0 h-11 bg-white border border-[var(--arena-border)]"
                   style={{ minWidth: '140px' }}
                 >
                   <option value="all">All Feedback</option>
@@ -812,7 +812,7 @@ export default function SuperAdminAnalyticsPage() {
             <div className="flex flex-col gap-4">
               {filteredFeedback.length > 0 ? (
                 filteredFeedback.map((f) => (
-                  <div key={f.id} className="border border-slate-200 rounded-xl p-4 hover:shadow-sm transition-shadow">
+                  <div key={f.id} className="border border-[var(--arena-border)] rounded-xl p-4 hover:shadow-sm transition-shadow">
                     <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                       <div className="flex items-center gap-2">
                         <span
@@ -820,8 +820,8 @@ export default function SuperAdminAnalyticsPage() {
                             f.type === 'bug'
                               ? 'bg-red-50 text-red-600 border-red-200'
                               : f.type === 'suggestion'
-                              ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                              : 'bg-slate-100 text-slate-600 border-slate-200'
+                              ? 'bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border-[var(--arena-accent-soft)]'
+                              : 'bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)] border-[var(--arena-border)]'
                           }`}
                         >
                           {f.type}
@@ -843,28 +843,28 @@ export default function SuperAdminAnalyticsPage() {
                         )}
                       </div>
 
-                      <span className="text-slate-400 text-xs">
+                      <span className="text-[var(--arena-text-dim)] text-xs">
                         {new Date(f.created_at).toLocaleString()}
                       </span>
                     </div>
 
-                    <p className="text-slate-800 text-sm mb-3 font-medium bg-slate-50 p-3 rounded-lg border border-slate-100 select-text">
+                    <p className="text-slate-800 text-sm mb-3 font-medium bg-[var(--arena-surface-muted)] p-3 rounded-lg border border-slate-100 select-text">
                       {f.message}
                     </p>
 
-                    <div className="text-xxs text-slate-500 flex items-center gap-1.5">
+                    <div className="text-xxs text-[var(--arena-text-dim)] flex items-center gap-1.5">
                       <span>Submitted by:</span>
-                      <span className="font-bold text-slate-700">
+                      <span className="font-bold text-[var(--arena-text-muted)]">
                         {f.profiles?.name || 'Anonymous User'}
                       </span>
                       {f.profiles?.email && (
-                        <span className="text-slate-400">({f.profiles.email})</span>
+                        <span className="text-[var(--arena-text-dim)]">({f.profiles.email})</span>
                       )}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 text-slate-400 text-sm">
+                <div className="text-center py-12 text-[var(--arena-text-dim)] text-sm">
                   No feedback matching the filter has been submitted yet.
                 </div>
               )}
@@ -877,7 +877,7 @@ export default function SuperAdminAnalyticsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             
             {/* JavaScript Crash Reports */}
-            <div className="border border-slate-200 rounded-xl p-4">
+            <div className="border border-[var(--arena-border)] rounded-xl p-4">
               <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-4 flex items-center gap-2">
                 <AlertCircle size={20} className="text-red-500" /> Captured JS Crashes
               </h2>
@@ -887,18 +887,18 @@ export default function SuperAdminAnalyticsPage() {
                   crashes.map((c) => (
                     <div
                       key={c.id}
-                      className="border border-slate-200 rounded-xl p-3 bg-red-50/20 hover:border-red-300 transition-colors"
+                      className="border border-[var(--arena-border)] rounded-xl p-3 bg-red-50/20 hover:border-red-300 transition-colors"
                     >
                       <div className="flex justify-between items-start gap-2 mb-2">
                         <div>
                           <span className="text-xs font-bold text-red-700 block uppercase">{c.error_name}</span>
-                          <span className="text-xs text-slate-700 font-semibold block mt-0.5">{c.error_message}</span>
+                          <span className="text-xs text-[var(--arena-text-muted)] font-semibold block mt-0.5">{c.error_message}</span>
                         </div>
-                        <span className="text-xxs text-slate-400 whitespace-nowrap">{new Date(c.created_at).toLocaleTimeString()}</span>
+                        <span className="text-xxs text-[var(--arena-text-dim)] whitespace-nowrap">{new Date(c.created_at).toLocaleTimeString()}</span>
                       </div>
                       
-                      <div className="flex gap-2 text-xxs text-slate-500 mb-2">
-                        <span>URL: <span className="text-slate-700 font-mono select-all">{c.url || '/'}</span></span>
+                      <div className="flex gap-2 text-xxs text-[var(--arena-text-dim)] mb-2">
+                        <span>URL: <span className="text-[var(--arena-text-muted)] font-mono select-all">{c.url || '/'}</span></span>
                       </div>
 
                       <button
@@ -913,7 +913,7 @@ export default function SuperAdminAnalyticsPage() {
                           <pre className="text-xxs bg-slate-900 text-slate-200 p-3 rounded-lg overflow-x-auto font-mono max-h-60 select-text leading-relaxed">
                             {c.stack_trace || 'No stack trace details logged.'}
                           </pre>
-                          <div className="mt-2 text-xxs text-slate-500">
+                          <div className="mt-2 text-xxs text-[var(--arena-text-dim)]">
                             <strong>User-Agent:</strong> <span className="font-mono select-text">{c.user_agent}</span>
                           </div>
                         </div>
@@ -921,7 +921,7 @@ export default function SuperAdminAnalyticsPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-12 text-slate-400 text-sm">
+                  <div className="text-center py-12 text-[var(--arena-text-dim)] text-sm">
                     No component crashes logged. The platform is running smoothly!
                   </div>
                 )}
@@ -929,7 +929,7 @@ export default function SuperAdminAnalyticsPage() {
             </div>
 
             {/* Audit Logs */}
-            <div className="border border-slate-200 rounded-xl p-4">
+            <div className="border border-[var(--arena-border)] rounded-xl p-4">
               <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-4 flex items-center gap-2">
                 <Activity size={20} className="text-indigo-600" /> Platform Security & Audit Logs
               </h2>
@@ -944,7 +944,7 @@ export default function SuperAdminAnalyticsPage() {
                           ? 'bg-red-50/10 border-red-200 hover:border-red-300'
                           : l.severity === 'warning'
                           ? 'bg-amber-50/10 border-amber-200 hover:border-amber-300'
-                          : 'bg-slate-50/40 border-slate-200 hover:border-slate-300'
+                          : 'bg-[var(--arena-surface-muted)]/40 border-[var(--arena-border)] hover:border-[var(--arena-border)]'
                       }`}
                     >
                       <div className="flex justify-between items-center gap-2">
@@ -953,21 +953,21 @@ export default function SuperAdminAnalyticsPage() {
                             l.event_type.includes('failed')
                               ? 'bg-red-100 text-red-700'
                               : l.event_type.includes('success')
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-slate-100 text-slate-700'
+                              ? 'bg-emerald-100 text-[var(--arena-accent)]'
+                              : 'bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]'
                           }`}
                         >
                           {l.event_type}
                         </span>
-                        <span className="text-xxs text-slate-400">{new Date(l.created_at).toLocaleString()}</span>
+                        <span className="text-xxs text-[var(--arena-text-dim)]">{new Date(l.created_at).toLocaleString()}</span>
                       </div>
 
                       <p className="text-slate-800 text-xs font-medium select-text">{l.message}</p>
 
-                      <div className="flex justify-between items-center text-xxs text-slate-500">
-                        <span>Actor: <span className="font-semibold text-slate-700">{l.profiles?.name || 'System / Guest'}</span></span>
+                      <div className="flex justify-between items-center text-xxs text-[var(--arena-text-dim)]">
+                        <span>Actor: <span className="font-semibold text-[var(--arena-text-muted)]">{l.profiles?.name || 'System / Guest'}</span></span>
                         {l.metadata && Object.keys(l.metadata).length > 0 && (
-                          <span className="font-mono text-slate-400">
+                          <span className="font-mono text-[var(--arena-text-dim)]">
                             Meta: {JSON.stringify(l.metadata)}
                           </span>
                         )}
@@ -975,7 +975,7 @@ export default function SuperAdminAnalyticsPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-12 text-slate-400 text-sm">
+                  <div className="text-center py-12 text-[var(--arena-text-dim)] text-sm">
                     No platform logs recorded yet.
                   </div>
                 )}
@@ -990,15 +990,15 @@ export default function SuperAdminAnalyticsPage() {
       {/* Confirmation Modal for Deleting Clubs */}
       {clubToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Club?</h3>
-            <p className="text-slate-600 text-sm mb-6">
+          <div className="bg-[#0b1322] rounded-xl max-w-sm w-full p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-[var(--arena-text)] mb-2">Delete Club?</h3>
+            <p className="text-[var(--arena-text-muted)] text-sm mb-6">
               Are you sure you want to delete <strong>"{clubToDelete.name}"</strong>? This will permanently delete all club members, match histories, score sets, events, and RSVP records. This action is irreversible.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setClubToDelete(null)}
-                className="px-4 py-2 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-bold cursor-pointer"
+                className="px-4 py-2 text-[var(--arena-text-muted)] border border-[var(--arena-border)] rounded-lg hover:bg-[var(--arena-surface-muted)] text-sm font-bold cursor-pointer"
               >
                 Cancel
               </button>

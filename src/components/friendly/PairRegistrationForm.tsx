@@ -66,7 +66,7 @@ export function PairRegistrationForm({
       m.id !== newPair.player_1_id
   )
 
-  const canSubmit = pairs.length === requiredPairs
+
 
   return (
     <div className="space-y-4">
@@ -212,7 +212,7 @@ export function PairRegistrationForm({
       {!isAdding && pairs.length < requiredPairs && (
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           onClick={() => setIsAdding(true)}
           className="w-full gap-2 border-dashed border-white/20"
         >

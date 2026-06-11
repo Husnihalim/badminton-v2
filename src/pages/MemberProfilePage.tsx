@@ -64,6 +64,7 @@ export default function MemberProfilePage() {
 
   const isOwner = currentUser?.id === userId
   const showFullProfile = !profile?.is_private || isOwner
+  const displayName = profile?.display_name || profile?.name || 'Unknown Player'
 
   const loadProfileData = useCallback(async () => {
     if (!userId) return
@@ -138,12 +139,24 @@ export default function MemberProfilePage() {
               
               allMatches.push(...clubMatches)
 
-              // Build leaderboard map for Giant Slayer calculations
+              // Build leaderboard map and capture this user's rank
               const lbMap: Record<string, number> = {}
               if (leaderboardRows.length) {
                 leaderboardRows.forEach((row, rIdx) => {
                   lbMap[row.name.toLowerCase()] = rIdx + 1
                 })
+                 // Find rank for the viewed user (match by display_name or name)
+                 const normalize = (value?: string | null) => (value || '').trim().toLowerCase()
+                 const viewedName = normalize(userProfile.display_name) || normalize(userProfile.name)
+                 const userRankPos = leaderboardRows.findIndex(
+                   row => normalize(row.name) === viewedName || normalize(row.name) === normalize(userProfile.name)
+                 )
+                if (userRankPos !== -1) {
+                  setClubRanks(prev => ({
+                    ...prev,
+                    [club.id]: { rank: userRankPos + 1, total: leaderboardRows.length }
+                  }))
+                }
               }
               clubLeaderboards[club.id] = lbMap
 
@@ -160,7 +173,7 @@ export default function MemberProfilePage() {
                 if (m.user_id) {
                   profilesMap[mName.toLowerCase()] = {
                     userId: m.user_id,
-                    avatarUrl: m.avatar_url,
+                    avatarUrl: m.avatar_url ?? null,
                   }
                 }
               })
@@ -340,7 +353,7 @@ export default function MemberProfilePage() {
     } finally {
       setLoading(false)
     }
-  }, [userId, currentUser])
+  }, [userId, currentUser, setMemberProfilesMap])
 
   const recommendedInsights = useMemo(() => {
     if (!profile || allUserMatches.length === 0) return null
@@ -469,7 +482,7 @@ export default function MemberProfilePage() {
   if (loading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading profile...</CardContent>
+        <CardContent className="pt-5 text-center text-sm text-[var(--arena-text-muted)]">Loading profile...</CardContent>
       </Card>
     )
   }
@@ -485,12 +498,12 @@ export default function MemberProfilePage() {
     )
   }
 
-  const displayName = profile.display_name || profile.name
+
 
   return (
     <Page>
       <div className="mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 text-slate-600 hover:text-slate-900 pl-0">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 text-[var(--arena-text-muted)] hover:text-slate-900 pl-0">
           <ChevronLeft size={16} />
           Back
         </Button>
@@ -553,45 +566,45 @@ export default function MemberProfilePage() {
       {showFullProfile ? (
         <div className="space-y-6">
           {/* Stats Summary Grid */}
-          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
             <div>
-              <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
-                <Activity size={18} className="text-emerald-700 shrink-0" />
+              <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
+                <Activity size={18} className="text-[var(--arena-accent)] shrink-0" />
                 Performance Metrics
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">Calculated across all registered club matches.</p>
+              <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Calculated across all registered club matches.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-slate-500">Played</span>
-                <p className="text-xl font-extrabold text-slate-950">{personalStats.matchesPlayed}</p>
-                <span className="text-[10px] text-slate-400">Total Matches</span>
+              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
+                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Played</span>
+                <p className="text-xl font-extrabold text-[var(--arena-text)]">{personalStats.matchesPlayed}</p>
+                <span className="text-[10px] text-[var(--arena-text-dim)]">Total Matches</span>
               </div>
 
-              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-slate-500">Win / Loss</span>
-                <p className="text-xl font-extrabold text-slate-950">
-                  <span className="text-emerald-700">{personalStats.wins}W</span>
-                  <span className="text-slate-400 mx-1">-</span>
+              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
+                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Win / Loss</span>
+                <p className="text-xl font-extrabold text-[var(--arena-text)]">
+                  <span className="text-[var(--arena-accent)]">{personalStats.wins}W</span>
+                  <span className="text-[var(--arena-text-dim)] mx-1">-</span>
                   <span className="text-red-600">{personalStats.losses}L</span>
                 </p>
-                <span className="text-[10px] text-slate-400">Record</span>
+                <span className="text-[10px] text-[var(--arena-text-dim)]">Record</span>
               </div>
 
-              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-slate-500">Win Rate</span>
+              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
+                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Win Rate</span>
                 <div className="flex items-center justify-center gap-1">
-                  <Percent size={14} className="text-emerald-700 shrink-0" />
-                  <span className="text-xl font-extrabold text-slate-950">{personalStats.winRate}%</span>
+                  <Percent size={14} className="text-[var(--arena-accent)] shrink-0" />
+                  <span className="text-xl font-extrabold text-[var(--arena-text)]">{personalStats.winRate}%</span>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden max-w-[80px] mx-auto">
-                  <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
+                  <div className="bg-[var(--arena-accent)] h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-slate-500">Streak</span>
+              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
+                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Streak</span>
                 <div className="flex items-center justify-center gap-1">
                   {personalStats.streakType === 'win' ? (
                     <>
@@ -599,25 +612,25 @@ export default function MemberProfilePage() {
                       <span className="text-xl font-extrabold text-amber-600">{personalStats.streak} Win</span>
                     </>
                   ) : personalStats.streakType === 'loss' ? (
-                    <span className="text-xl font-extrabold text-slate-600">-{personalStats.streak} Loss</span>
+                    <span className="text-xl font-extrabold text-[var(--arena-text-muted)]">-{personalStats.streak} Loss</span>
                   ) : (
-                    <span className="text-xl font-extrabold text-slate-500">0</span>
+                    <span className="text-xl font-extrabold text-[var(--arena-text-dim)]">0</span>
                   )}
                 </div>
-                <span className="text-[10px] text-slate-400">Active Run</span>
+                <span className="text-[10px] text-[var(--arena-text-dim)]">Active Run</span>
               </div>
             </div>
           </section>
 
           {/* Elo History Card */}
           {eloHistory.length > 0 && (
-            <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
               <div>
-                <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
-                  <Activity size={18} className="text-emerald-700 shrink-0" />
+                <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
+                  <Activity size={18} className="text-[var(--arena-accent)] shrink-0" />
                   Elo Rating Progression
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">Recent rating changes from club matches.</p>
+                <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Recent rating changes from club matches.</p>
               </div>
 
               <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
@@ -634,18 +647,18 @@ export default function MemberProfilePage() {
                         <span className="font-bold text-slate-900 truncate block">
                           {matchTitle}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-semibold block">
+                        <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold block">
                           {clubName} · {dateStr}
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 shrink-0">
-                        <span className="font-mono text-slate-500">
+                        <span className="font-mono text-[var(--arena-text-dim)]">
                           {item.rating_before} → <span className="font-extrabold text-slate-900">{item.rating_after}</span>
                         </span>
                         <span className={cn(
                           "inline-flex items-center justify-center font-extrabold px-1.5 py-0.5 rounded text-[10px] w-12 text-center",
                           isGain 
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
+                            ? "bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-emerald-100" 
                             : "bg-red-50 text-red-700 border border-red-100"
                         )}>
                           {isGain ? `+${ratingDiff}` : ratingDiff}
@@ -659,13 +672,13 @@ export default function MemberProfilePage() {
           )}
 
           {/* Achievements Medals Grid */}
-          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
             <div>
-              <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
                 <Trophy size={18} className="text-amber-500 shrink-0" />
                 Unlocked Achievements
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">Badges earned by this player from club gameplay.</p>
+              <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Badges earned by this player from club gameplay.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -675,7 +688,7 @@ export default function MemberProfilePage() {
                 description="3+ Win Streak"
                 icon="🔥"
                 glowClass="shadow-orange-500/10 border-orange-200 bg-orange-50/50 text-orange-600"
-                lockedClass="border-slate-100 bg-slate-50 text-slate-400 opacity-40"
+                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
               />
               <AchievementBadge
                 unlocked={achievements.giantSlayer}
@@ -683,15 +696,15 @@ export default function MemberProfilePage() {
                 description="Beat a higher rank"
                 icon="🛡️"
                 glowClass="shadow-blue-500/10 border-blue-200 bg-blue-50/50 text-blue-600"
-                lockedClass="border-slate-100 bg-slate-50 text-slate-400 opacity-40"
+                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
               />
               <AchievementBadge
                 unlocked={achievements.cleanSweep}
                 title="Clean Sweep"
                 description="Win set by 10+ pts"
                 icon="🎯"
-                glowClass="shadow-emerald-500/10 border-emerald-200 bg-emerald-50/50 text-emerald-600"
-                lockedClass="border-slate-100 bg-slate-50 text-slate-400 opacity-40"
+                glowClass="shadow-emerald-500/10 border-emerald-200 bg-[var(--arena-accent-soft)]/50 text-[var(--arena-accent)]"
+                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
               />
               <AchievementBadge
                 unlocked={achievements.ironMan}
@@ -699,7 +712,7 @@ export default function MemberProfilePage() {
                 description="Play 3+ matches in 1 day"
                 icon="🚀"
                 glowClass="shadow-purple-500/10 border-purple-200 bg-purple-50/50 text-purple-600"
-                lockedClass="border-slate-100 bg-slate-50 text-slate-400 opacity-40"
+                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
               />
               <AchievementBadge
                 unlocked={achievements.dynamicDuo}
@@ -707,14 +720,14 @@ export default function MemberProfilePage() {
                 description="3+ doubles streak"
                 icon="🤝"
                 glowClass="shadow-amber-500/10 border-amber-200 bg-amber-50/50 text-amber-600"
-                lockedClass="border-slate-100 bg-slate-50 text-slate-400 opacity-40"
+                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
               />
             </div>
           </section>
 
           {/* Recent Match Log */}
           <section className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-950">Recent Matches</h2>
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Recent Matches</h2>
             {matches.length ? (
               <div className="grid gap-3">
                 {matches.map((match) => (
@@ -727,7 +740,7 @@ export default function MemberProfilePage() {
                 ))}
               </div>
             ) : (
-              <p className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+              <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-dim)]">
                 No matches recorded yet.
               </p>
             )}
@@ -735,10 +748,10 @@ export default function MemberProfilePage() {
         </div>
       ) : (
         /* Private Profile Notice */
-        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center bg-slate-50 mt-6 space-y-3">
-          <Shield size={36} className="text-slate-400 mx-auto" />
+        <div className="rounded-xl border border-dashed border-[var(--arena-border)] p-8 text-center bg-[var(--arena-surface-muted)] mt-6 space-y-3">
+          <Shield size={36} className="text-[var(--arena-text-dim)] mx-auto" />
           <h2 className="text-base font-bold text-slate-800">Stats are private</h2>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto">
+          <p className="text-sm text-[var(--arena-text-dim)] max-w-sm mx-auto">
             This member has set their profile to private. Their stats, milestones, and match logs are hidden.
           </p>
         </div>
@@ -779,7 +792,7 @@ function AchievementBadge({
     >
       <span className={cn("text-2xl", !unlocked && "grayscale filter")}>{icon}</span>
       <span className="text-xs font-bold">{title}</span>
-      <span className="text-[9px] leading-tight text-slate-500">{description}</span>
+      <span className="text-[9px] leading-tight text-[var(--arena-text-dim)]">{description}</span>
     </div>
   )
 }

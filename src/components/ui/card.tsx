@@ -3,11 +3,11 @@ import type { HTMLAttributes } from 'react'
 import { cn } from '../../lib/utils'
 
 const cardVariants = cva(
-  'rounded-lg border shadow-sm transition-colors duration-150',
+  'rounded-xl border shadow-lg transition-colors duration-150',
   {
     variants: {
       variant: {
-        default: 'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900/70 dark:shadow-black/20',
+        default: 'border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text)]',
         arena: 'arena-panel',
         live: 'arena-panel arena-court-lines',
         admin: 'arena-admin-panel',

@@ -84,7 +84,7 @@ export default function RegisterPage() {
         targetRedirect,
         {
           preferred_sport: preferredSport,
-          city: city.trim() || null,
+          city: city.trim() || undefined,
           gear,
         }
       )

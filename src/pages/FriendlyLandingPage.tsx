@@ -4,26 +4,22 @@ import { Trophy, Users, MapPin, ArrowRight } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
-import { getFriendlyByInviteCode, acceptFriendly } from '../lib/friendlyApi'
+import { getFriendlyByInviteCode } from '../lib/friendlyApi'
 import { useAuth } from '../context/AuthContext'
 import type { Friendly } from '../types/friendly'
 
-export function FriendlyLandingPage() {
+export default function FriendlyLandingPage() {
   const { inviteCode } = useParams<{ inviteCode: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [friendly, setFriendly] = useState<Friendly | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isAccepting, setIsAccepting] = useState(false)
 
-  useEffect(() => {
-    if (!inviteCode) return
 
-    loadFriendly()
-  }, [inviteCode])
 
-  const loadFriendly = async () => {
+
+  async function loadFriendly() {
     setIsLoading(true)
     const { friendly, error } = await getFriendlyByInviteCode(inviteCode!)
     
@@ -37,6 +33,13 @@ export function FriendlyLandingPage() {
     
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    if (!inviteCode) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadFriendly()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteCode])
 
   const handleAccept = async () => {
     if (!user) {
@@ -141,10 +144,9 @@ export function FriendlyLandingPage() {
         {/* CTA */}
         <Button
           onClick={handleAccept}
-          disabled={isAccepting}
           className="mb-4 w-full gap-2 bg-[var(--arena-lime)] py-6 text-lg font-bold text-black hover:bg-[var(--arena-lime)]/90"
         >
-          {isAccepting ? 'Processing...' : 'Accept Challenge'}
+          Accept Challenge
           <ArrowRight size={20} />
         </Button>
 
@@ -166,7 +168,7 @@ export function FriendlyLandingPage() {
         {!user && (
           <Button
             onClick={handleLogin}
-            variant="outline"
+            variant="secondary"
             className="mb-4 w-full border-white/10"
           >
             Already on KelabSukan? Log in

@@ -5,8 +5,18 @@
 
 set -e
 
-SUPABASE_URL="https://yjetickebgngfttlvvur.supabase.co"
-ANON_KEY="sb_publishable_YD_mvKPRiD3x_4n56zYrGQ_MO1b5bcK"
+# Load .env file if it exists
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
+SUPABASE_URL="${VITE_SUPABASE_URL}"
+ANON_KEY="${VITE_SUPABASE_ANON_KEY}"
+
+if [ -z "$SUPABASE_URL" ] || [ -z "$ANON_KEY" ]; then
+  echo "❌ Error: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY not set in .env file or environment"
+  exit 1
+fi
 
 echo "=================================="
 echo "KelabSukan API Testing"

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Database } from '../types/database'
+
 
 // Types
 export type FriendlyStatus = 'pending' | 'accepted' | 'matchmaking' | 'live' | 'completed' | 'declined' | 'cancelled'
@@ -426,7 +426,7 @@ export function subscribeToFriendly(friendlyId: string, callback: (payload: { ne
         table: 'friendlies',
         filter: `id=eq.${friendlyId}`,
       },
-      callback
+      (payload) => callback(payload as any)
     )
     .subscribe()
 }
@@ -443,7 +443,7 @@ export function subscribeToMatchups(friendlyId: string, callback: (payload: { ne
         table: 'friendly_matchups',
         filter: `friendly_id=eq.${friendlyId}`,
       },
-      callback
+      (payload) => callback(payload as any)
     )
     .subscribe()
 }

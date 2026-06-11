@@ -1,4 +1,4 @@
-import type { Friendly, FriendlyMatchup, FriendlyPair } from '../types/friendly'
+import type { Friendly, FriendlyMatchup } from '../types/friendly'
 
 export type FriendlyStoryType =
   | 'friendly_invited'
@@ -160,7 +160,7 @@ export function generateUpsetAlertStory(
 ): FriendlyStoryMoment | null {
   // Determine if this is an upset based on score progression
   const isInvitingClubWinning = invitingClubScore > invitedClubScore
-  const wasExpectedToWin = matchup.order_index < 2 // Earlier matchups expected to be competitive
+
   
   // Simple upset detection: if the losing club was ahead in the series
   const isUpset = (isInvitingClubWinning && invitedClubScore > invitingClubScore) ||
@@ -201,7 +201,7 @@ export function generateClutchMomentStory(
   matchesRemaining: number
 ): FriendlyStoryMoment | null {
   // Only generate if it's the final match or very close
-  const totalMatches = friendly.pair_count
+
   const matchesPlayed = invitingClubScore + invitedClubScore
   
   if (matchesRemaining !== 1 || Math.abs(invitingClubScore - invitedClubScore) !== 0) {
@@ -276,7 +276,7 @@ export function generateFriendlyCompletedStory(
     : friendly.inviting_club?.name
   
   // Determine margin for story type
-  const matchups = [] // Would need to fetch these
+
   const winningScore = friendly.winning_club_id === friendly.inviting_club_id ? 1 : 0 // Placeholder
   const losingScore = friendly.pair_count - winningScore
   
@@ -397,7 +397,7 @@ export function buildFriendlyShareText(
   const isComplete = friendly.status === 'completed'
   const isLive = friendly.status === 'live'
   
-  let text = ''
+  let text: string
   
   if (isComplete) {
     const winner = friendly.winning_club_id === friendly.inviting_club_id

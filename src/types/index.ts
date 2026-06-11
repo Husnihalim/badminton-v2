@@ -26,21 +26,22 @@ export type PlayerSocialLinks = {
 }
 
 export type PlayerGear = {
-  // Basic fields
+  // Racket
   racket?: string | null
+  racket_weight?: string | null        // e.g. "3U", "4U"
+  racket_balance?: string | null       // e.g. "head_heavy", "even_balance", "head_light"
+  racket_stiffness?: string | null     // e.g. "stiff", "medium", "flexible"
+  // Strings
   strings?: string | null
-  tension?: string | null
-  grip?: string | null
+  tension?: string | null              // e.g. "27 lbs"
+  grip?: string | null                 // legacy single grip field
+  grip_type?: string | null            // e.g. "overgrip", "replacement_grip", "towel_grip"
+  // Shoes
   shoes?: string | null
-  // New Badminton specific specs
-  racket_weight?: '3U' | '4U' | '5U' | 'F' | string | null
-  racket_balance?: 'head_heavy' | 'even_balance' | 'head_light' | null
-  racket_stiffness?: 'stiff' | 'medium' | 'flexible' | null
-  grip_type?: 'towel' | 'overgrip' | 'replacement' | null
-  // Playstyle and preferences
-  play_style?: 'net_play' | 'aggressive' | 'dropshot_control' | 'defensive' | 'all_round' | null
-  dominant_hand?: 'right' | 'left' | null
-  player_type?: 'singles' | 'doubles' | 'both' | null
+  // Play profile
+  play_style?: string | null           // e.g. "net_player", "baseline", "all_rounder"
+  dominant_hand?: string | null        // e.g. "right", "left"
+  player_type?: string | null          // e.g. "singles", "doubles", "singles_and_doubles"
 }
 
 // Extended User with metadata
@@ -150,6 +151,7 @@ export interface MatchParticipant {
   guest_name: string | null
   // Joined fields
   name?: string
+  profile?: User | null
 }
 
 export interface ScoreSet {
@@ -258,3 +260,35 @@ export interface ClubMessage {
   // Joined fields
   authorName?: string
 }
+
+export interface PlayerDashboardData {
+  clubs: (Club & {
+    role: string
+    elo_rating: number
+    rank: { rank: number; total: number } | null
+    members_count: number
+    avg_elo: number
+  })[]
+  upcoming_events: (ClubEvent & {
+    club_name: string
+    rsvp_status: string | null
+    attendees_count: number
+  })[]
+  recent_matches: MatchWithDetails[]
+  stats: {
+    matchesPlayed: number
+    wins: number
+    losses: number
+    winRate: number
+    streak: number
+    streakType: 'win' | 'loss' | null
+  }
+  achievements: {
+    onFire: boolean
+    cleanSweep: boolean
+    ironMan: boolean
+    dynamicDuo: boolean
+    giantSlayer: boolean
+  }
+}
+

@@ -9,21 +9,18 @@ import type { Friendly } from '../../types/friendly'
 
 interface FriendlySectionProps {
   clubId: string
-  isMember: boolean
   isAdmin: boolean
 }
 
-export function FriendlySection({ clubId, isMember, isAdmin }: FriendlySectionProps) {
+export function FriendlySection({ clubId, isAdmin }: FriendlySectionProps) {
   const navigate = useNavigate()
   const [friendlies, setFriendlies] = useState<Friendly[]>([])
   const [stats, setStats] = useState({ total: 0, wins: 0, losses: 0, winRate: 0 })
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    loadFriendlies()
-  }, [clubId])
 
-  const loadFriendlies = async () => {
+
+  async function loadFriendlies() {
     setIsLoading(true)
     const [{ friendlies: data }, { total, wins, losses, winRate }] = await Promise.all([
       listClubFriendlies(clubId),
@@ -42,6 +39,12 @@ export function FriendlySection({ clubId, isMember, isAdmin }: FriendlySectionPr
     setStats({ total, wins, losses, winRate })
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadFriendlies()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubId])
 
   if (isLoading) {
     return (

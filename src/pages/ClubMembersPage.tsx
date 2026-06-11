@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import type { Club, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { Modal } from '../components/ui/Modal'
 import { Card, CardContent } from '../components/ui/card'
 import { Page, PageHeader } from '../components/ui/page'
 import { Select } from '../components/ui/select'
@@ -18,7 +19,7 @@ function getErrorMessage(err: unknown, fallback: string) {
 function roleBadgeClass(role: Membership['role']) {
   if (role === 'owner') return 'border-amber-200 bg-amber-50 text-amber-800'
   if (role === 'admin') return 'border-blue-200 bg-blue-50 text-blue-800'
-  return 'border-slate-200 bg-slate-50 text-slate-700'
+  return 'border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]'
 }
 
 export default function ClubMembersPage() {
@@ -135,7 +136,7 @@ export default function ClubMembersPage() {
   if (isLoading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading...</CardContent>
+        <CardContent className="pt-5 text-center text-sm text-[var(--arena-text-muted)]">Loading...</CardContent>
       </Card>
     )
   }
@@ -144,7 +145,7 @@ export default function ClubMembersPage() {
 
   return (
     <Page>
-      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
+      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-[var(--arena-text)] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
 
       <PageHeader
         eyebrow="Members"
@@ -163,40 +164,40 @@ export default function ClubMembersPage() {
       <Card>
         <CardContent className="space-y-3 pt-4 sm:pt-5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
               <Users size={18} aria-hidden="true" />
             </span>
-            <h2 className="text-lg font-bold text-slate-950">Roster</h2>
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Roster</h2>
           </div>
 
           {sortedMembers.length ? (
             <div className="space-y-3">
               {sortedMembers.map((member) => (
-                <div key={member.id} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div key={member.id} className="grid gap-3 rounded-lg border border-slate-600 bg-[#0b1322] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="flex min-w-0 items-start gap-3">
                     {member.avatar_url ? (
                       <img 
                         src={member.avatar_url} 
                         alt={member.name || 'Member'} 
-                        className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-slate-200"
+                        className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-[var(--arena-border)]"
                       />
                     ) : (
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0b1322] text-[var(--arena-text-dim)] shadow-sm">
                         <UserRound size={18} aria-hidden="true" />
                       </span>
                     )}
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-bold text-slate-950">
-                          <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
+                        <h3 className="truncate font-bold text-[var(--arena-text)]">
+                          <Link to={`/member/${member.user_id}`} className="hover:underline text-[var(--arena-accent)]">
                             {member.name || 'Unknown member'}
                           </Link>
                         </h3>
                         <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
-                        {member.user_id === user?.id ? <span className="text-xs font-semibold text-slate-500">You</span> : null}
+                        {member.user_id === user?.id ? <span className="text-xs font-semibold text-[var(--arena-text-dim)]">You</span> : null}
                       </div>
-                      <p className="break-words text-sm text-slate-600">{member.email}</p>
-                      <p className="text-xs text-slate-500">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
+                        <p className="break-words text-sm text-[var(--arena-text-muted)]">{member.email}</p>
+                        <p className="text-xs text-[var(--arena-text-muted)]">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
                     </div>
                   </div>
 
@@ -222,42 +223,40 @@ export default function ClubMembersPage() {
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No members yet.</p>
+            <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">No members yet.</p>
           )}
         </CardContent>
       </Card>
 
       {memberToRemove ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => !isRemoving && setMemberToRemove(null)}>
-          <Card className="w-full rounded-b-none sm:max-w-md sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
-            <CardContent className="space-y-4 pt-4 sm:pt-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-700">
-                    <Shield size={18} aria-hidden="true" />
-                  </span>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-950">Remove member</h2>
-                    <p className="text-sm leading-6 text-slate-600">
-                      Remove <strong>{memberToRemove.name}</strong> from this club. This action cannot be undone.
-                    </p>
-                  </div>
+        <Modal isOpen={true} onClose={() => !isRemoving && setMemberToRemove(null)} title="Remove member">
+          <div className="space-y-4 pt-4 sm:pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-700">
+                  <Shield size={18} aria-hidden="true" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-[var(--arena-text)]">Remove member</h2>
+                  <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
+                    Remove <strong>{memberToRemove.name}</strong> from this club. This action cannot be undone.
+                  </p>
                 </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setMemberToRemove(null)} aria-label="Close" disabled={isRemoving}>
-                  <X size={18} aria-hidden="true" />
-                </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="secondary" onClick={() => setMemberToRemove(null)} disabled={isRemoving}>
-                  Cancel
-                </Button>
-                <Button type="button" variant="danger" onClick={handleRemoveMember} disabled={isRemoving}>
-                  {isRemoving ? 'Removing...' : 'Remove'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setMemberToRemove(null)} aria-label="Close" disabled={isRemoving}>
+                <X size={18} aria-hidden="true" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button type="button" variant="secondary" onClick={() => setMemberToRemove(null)} disabled={isRemoving}>
+                Cancel
+              </Button>
+              <Button type="button" variant="danger" onClick={handleRemoveMember} disabled={isRemoving}>
+                {isRemoving ? 'Removing...' : 'Remove'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       ) : null}
     </Page>
   )

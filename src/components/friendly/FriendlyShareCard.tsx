@@ -3,7 +3,8 @@ import { Trophy, Share2, Download } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
-import type { Friendly, FriendlyMatchup, FriendlyStoryMoment } from '../../types/friendly'
+import type { Friendly, FriendlyMatchup } from '../../types/friendly'
+import type { FriendlyStoryMoment } from '../../lib/friendlyStoryMoments'
 
 interface FriendlyShareCardProps {
   friendly: Friendly
@@ -105,7 +106,7 @@ export function FriendlyShareCard({
     // Match results (compact)
     if (variant !== 'compact') {
       let y = 650
-      matchups.slice(0, 5).forEach((matchup, i) => {
+      matchups.slice(0, 5).forEach((matchup) => {
         if (matchup.status === 'completed') {
           const scoreA = matchup.match?.score_sets?.filter((s) => s.team1_score > s.team2_score).length || 0
           const scoreB = matchup.match?.score_sets?.filter((s) => s.team2_score > s.team1_score).length || 0
@@ -129,7 +130,7 @@ export function FriendlyShareCard({
     ctx.fillStyle = '#64748b'
     ctx.font = '24px sans-serif'
     ctx.fillText(`${window.location.origin}/friendly/${friendly.id}`, width / 2, height - 40)
-  }, [friendly, matchups, story, variant])
+  }, [friendly, matchups, story, variant, invitedClubWins, invitingClubWins, isComplete, isLive])
 
   const handleDownload = () => {
     generateCanvas()
@@ -170,7 +171,7 @@ export function FriendlyShareCard({
   }
 
   const buildShareText = () => {
-    let text = ''
+    let text: string
 
     if (isComplete) {
       const winner =
@@ -268,7 +269,7 @@ export function FriendlyShareCard({
           <Share2 size={16} />
           Share
         </Button>
-        <Button onClick={handleDownload} variant="outline" className="gap-2 border-white/10">
+        <Button onClick={handleDownload} variant="secondary" className="gap-2 border-white/10">
           <Download size={16} />
           Download
         </Button>
@@ -298,7 +299,7 @@ export function FriendlyShareButton({ friendly, matchups, story }: FriendlyShare
     const isComplete = friendly.status === 'completed'
     const isLive = friendly.status === 'live'
 
-    let text = ''
+    let text: string
 
     if (isComplete) {
       const winner =
@@ -335,7 +336,7 @@ export function FriendlyShareButton({ friendly, matchups, story }: FriendlyShare
   return (
     <Button
       onClick={handleShareNative}
-      variant="outline"
+      variant="secondary"
       className="gap-2 border-white/10"
     >
       <Share2 size={16} />

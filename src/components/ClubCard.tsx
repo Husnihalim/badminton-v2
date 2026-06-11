@@ -15,9 +15,9 @@ export default function ClubCard({ club }: ClubCardProps) {
         <CardContent className="space-y-3 pt-4 sm:pt-5">
           <div className="space-y-1">
             <h3 className="text-base font-bold text-slate-950">{club.name}</h3>
-            <p className="line-clamp-2 text-sm leading-6 text-slate-600">{club.description}</p>
+            <p className="line-clamp-2 text-sm leading-6 text-[var(--arena-text-muted)]">{club.description}</p>
           </div>
-          <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+          <div className="flex flex-wrap gap-3 text-sm text-[var(--arena-text-muted)]">
             <span className="inline-flex items-center gap-1">
               <MapPin size={15} aria-hidden="true" />
               {club.city}

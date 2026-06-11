@@ -4,200 +4,85 @@
 @theme {
   --font-sans: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
+  --font-headline: Inter, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
 
-  /* Dynamically mapped slate colors supporting both light and dark modes */
-  --color-slate-50: var(--theme-slate-50);
-  --color-slate-100: var(--theme-slate-100);
-  --color-slate-200: var(--theme-slate-200);
-  --color-slate-300: var(--theme-slate-300);
-  --color-slate-400: var(--theme-slate-400);
-  --color-slate-500: var(--theme-slate-500);
-  --color-slate-600: var(--theme-slate-600);
-  --color-slate-700: var(--theme-slate-700);
-  --color-slate-800: var(--theme-slate-800);
-  --color-slate-900: var(--theme-slate-900);
-  --color-slate-950: var(--theme-slate-950);
-
-  /* Dynamically mapped emerald colors (actions/highlights) */
-  --color-emerald-50: var(--theme-emerald-50);
-  --color-emerald-100: var(--theme-emerald-100);
-  --color-emerald-200: var(--theme-emerald-200);
-  --color-emerald-300: var(--theme-emerald-300);
-  --color-emerald-400: var(--theme-emerald-400);
-  --color-emerald-500: var(--theme-emerald-500);
-  --color-emerald-600: var(--theme-emerald-600);
-  --color-emerald-700: var(--theme-emerald-700);
-  --color-emerald-800: var(--theme-emerald-800);
-  --color-emerald-900: var(--theme-emerald-900);
+  --color-surface: var(--arena-surface);
+  --color-surface-muted: var(--arena-surface-muted);
+  --color-surface-elevated: var(--arena-surface-elevated);
+  --color-text: var(--arena-text);
+  --color-text-muted: var(--arena-text-muted);
+  --color-text-dim: var(--arena-text-dim);
+  --color-border: var(--arena-border);
+  --color-accent: var(--arena-accent);
+  --color-accent-soft: var(--arena-accent-soft);
+  --color-accent-text: var(--arena-accent-text);
 }
 
 :root {
-  color-scheme: light;
   font-family: var(--font-sans);
   line-height: 1.5;
   font-size: 16px;
-  
-  /* Core Variables - Light Mode */
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-muted: #f4f6f8;
-  --text: #0f172a;
-  --text-muted: #475569;
-  --nav-bg: rgba(255, 255, 255, 0.92);
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-text: #ffffff;
-  --accent: #0f766e;
-  --accent-soft: #ecfdf5;
-  --border: #d9dee7;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
+
   --arena-bg: #f8fafc;
-  --arena-panel: rgba(255, 255, 255, 0.95);
-  --arena-panel-elevated: rgba(248, 250, 252, 0.96);
-  --arena-admin: rgba(241, 245, 249, 0.94);
-  --arena-line: rgba(77, 124, 15, 0.22);
-  --arena-line-blue: rgba(2, 132, 199, 0.18);
-  --arena-lime: #4d7c0f;
-  --arena-blue: #0284c7;
-  --arena-heat: #d97706;
-  --arena-danger: #dc2626;
+  --arena-surface: #ffffff;
+  --arena-surface-muted: #f1f5f9;
+  --arena-surface-elevated: #ffffff;
   --arena-text: #0f172a;
-  --arena-muted: #64748b;
-  --arena-glow: 0 1px 3px rgba(77, 124, 15, 0.1), 0 12px 36px rgba(15, 23, 42, 0.08);
-
-  /* Theme Slate Mapping - Light Mode */
-  --theme-slate-50: #f8fafc;
-  --theme-slate-100: #f1f5f9;
-  --theme-slate-200: #e2e8f0;
-  --theme-slate-300: #cbd5e1;
-  --theme-slate-400: #52637a;
-  --theme-slate-500: #3f4d61;
-  --theme-slate-600: #2a3547;
-  --theme-slate-700: #1c2431;
-  --theme-slate-800: #0f1521;
-  --theme-slate-900: #080c14;
-  --theme-slate-950: #020408;
-
-  /* Theme Emerald Mapping - Light Mode (Traditional sporty green) */
-  --theme-emerald-50: #f0fdf4;
-  --theme-emerald-100: #dcfce7;
-  --theme-emerald-200: #bbf7d0;
-  --theme-emerald-300: #86efac;
-  --theme-emerald-400: #4ade80;
-  --theme-emerald-500: #22c55e;
-  --theme-emerald-600: #16a34a;
-  --theme-emerald-700: #0f766e;
-  --theme-emerald-800: #166534;
-  --theme-emerald-900: #14532d;
+  --arena-text-muted: #475569;
+  --arena-text-dim: #64748b;
+  --arena-border: rgba(15, 23, 42, 0.12);
+  --arena-accent: #0f766e;
+  --arena-accent-soft: rgba(15, 118, 110, 0.1);
+  --arena-accent-text: #ffffff;
+  --arena-nav-bg: rgba(255, 255, 255, 0.92);
+  --arena-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 18px 48px rgba(15, 23, 42, 0.08);
+  --arena-glow: 0 0 20px rgba(15, 118, 110, 0.08);
+  --arena-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(241, 245, 249, 0.95));
+  color-scheme: light;
 }
 
-.dark {
+:root.dark,
+:root[data-theme='dark'] {
   color-scheme: dark;
-  
-  /* Core Variables - Dark Mode (Midnight Black & Electric Lime) */
-  --bg: #0b1020;
-  --surface: #111827;
-  --surface-muted: #1b2435;
-  --text: #f8fafc;
-  --text-muted: #94a3b8;
-  --nav-bg: rgba(17, 24, 39, 0.92);
-  --primary: #60a5fa;
-  --primary-hover: #93c5fd;
-  --primary-text: #08111f;
-  --accent: #34d399;
-  --accent-soft: rgba(52, 211, 153, 0.1);
-  --border: rgba(148, 163, 184, 0.22);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 48px rgba(0, 0, 0, 0.28);
-  --arena-bg: #020706;
-  --arena-panel: rgba(4, 13, 15, 0.94);
-  --arena-panel-elevated: rgba(8, 22, 26, 0.96);
-  --arena-admin: rgba(12, 22, 27, 0.94);
-  --arena-line: rgba(163, 230, 53, 0.26);
-  --arena-line-blue: rgba(56, 189, 248, 0.32);
-  --arena-lime: #a3e635;
-  --arena-blue: #38bdf8;
-  --arena-heat: #f59e0b;
-  --arena-danger: #ef4444;
+
+  --arena-bg: #0b0f19;
+  --arena-surface: #111827;
+  --arena-surface-muted: #1b2435;
+  --arena-surface-elevated: #1e293b;
   --arena-text: #f8fafc;
-  --arena-muted: #9aa8b5;
-  --arena-glow: 0 0 0 1px rgba(163, 230, 53, 0.18), 0 18px 52px rgba(0, 0, 0, 0.46);
-
-  /* Theme Slate Mapping - Dark Mode (Contrast-Preserving) */
-  --theme-slate-50: #0b0f19;
-  --theme-slate-100: #121824;
-  --theme-slate-200: #1c2436;
-  --theme-slate-300: #2a354c;
-  --theme-slate-400: #94a3b8;
-  --theme-slate-500: #cbd5e1;
-  --theme-slate-600: #cbd5e1;
-  --theme-slate-700: #e2e8f0;
-  --theme-slate-800: #f1f5f9;
-  --theme-slate-900: #f8fafc;
-  --theme-slate-950: #ffffff;
-
-  /* Theme Emerald Mapping - Dark Mode (Electric Lime) */
-  --theme-emerald-50: rgba(163, 230, 53, 0.05);
-  --theme-emerald-100: rgba(163, 230, 53, 0.1);
-  --theme-emerald-200: rgba(163, 230, 53, 0.2);
-  --theme-emerald-300: rgba(163, 230, 53, 0.35);
-  --theme-emerald-400: #bef264;
-  --theme-emerald-500: #a3e635;
-  --theme-emerald-600: #84cc16;
-  --theme-emerald-700: #a3e635;
-  --theme-emerald-800: #84cc16;
-  --theme-emerald-900: #65a30d;
+  --arena-text-muted: #b6c3d6;
+  --arena-text-dim: #8ea0b8;
+  --arena-border: rgba(148, 163, 184, 0.18);
+  --arena-accent: #ccff00;
+  --arena-accent-soft: rgba(204, 255, 0, 0.1);
+  --arena-accent-text: #0b0f19;
+  --arena-nav-bg: rgba(17, 24, 39, 0.92);
+  --arena-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 48px rgba(0, 0, 0, 0.28);
+  --arena-glow: 0 0 20px rgba(204, 255, 0, 0.08);
+  --arena-gradient: linear-gradient(180deg, rgba(15, 23, 42, 0.5), rgba(11, 16, 32, 0.95));
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   scroll-behavior: smooth;
-  background-color: var(--bg);
+  background-color: var(--arena-bg);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(246, 247, 249, 0.92)),
-    var(--bg);
-  color: var(--text);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background: var(--arena-bg);
+  color: var(--arena-text);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
-.dark body {
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.62), rgba(11, 16, 32, 0.95)),
-    var(--bg);
-}
-
-a {
-  color: inherit;
-}
-
-img,
-svg {
-  max-width: 100%;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
+a { color: inherit; }
+img, svg { max-width: 100%; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
 
 main {
   flex: 1;
@@ -206,13 +91,9 @@ main {
   padding: 20px 0 88px;
 }
 
-.empty-state {
-  color: var(--text-muted);
-  text-align: center;
+@media (min-width: 768px) {
+  main { padding: 28px 0 96px; }
 }
 
-@media (min-width: 768px) {
-  main {
-    padding: 28px 0 96px;
-  }
-}
+.bg-surface { background-color: var(--arena-surface); }
+.bg-surface-muted { background-color: var(--arena-surface-muted); }

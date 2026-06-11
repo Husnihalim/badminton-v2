@@ -8,8 +8,6 @@ import type { FriendlyPair, FriendlyMatchup } from '../../types/friendly'
 interface MatchmakingGridProps {
   pairsA: FriendlyPair[]
   pairsB: FriendlyPair[]
-  clubAName: string
-  clubBName: string
   isLocked: boolean
   existingMatchups?: FriendlyMatchup[]
   onLock: (matchups: { pair_a_id: string; pair_b_id: string }[]) => void
@@ -19,8 +17,6 @@ interface MatchmakingGridProps {
 export function MatchmakingGrid({
   pairsA,
   pairsB,
-  clubAName,
-  clubBName,
   isLocked,
   existingMatchups = [],
   onLock,

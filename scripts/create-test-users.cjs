@@ -13,23 +13,33 @@ const { createClient } = require('@supabase/supabase-js')
 // Load .env file
 const envPath = path.join(__dirname, '..', '.env')
 if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8')
-  envContent.split('\n').forEach(line => {
-    const [key, value] = line.split('=')
-    if (key && value) {
-      process.env[key.trim()] = value.trim()
-    }
-  })
+  fs.readFileSync(envPath, 'utf8')
+    .split('\n')
+    .forEach((line) => {
+      if (!line || line.trim().startsWith('#')) return
+      const index = line.indexOf('=')
+      if (index === -1) return
+      process.env[line.slice(0, index).trim()] = line.slice(index + 1).trim()
+    })
 }
 
-const SUPABASE_URL = 'https://yjetickebgngfttlvvur.supabase.co'
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
 
-if (!SUPABASE_SERVICE_KEY) {
-  console.error('❌ Error: SUPABASE_SERVICE_KEY not found in .env file')
-  console.error('Please create a .env file with: SUPABASE_SERVICE_KEY=your_service_role_key')
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('❌ Error: VITE_SUPABASE_URL or SUPABASE_SERVICE_KEY not found in .env file')
   process.exit(1)
 }
+
+const isProduction = SUPABASE_URL.includes('yjetickebgngfttlvvur.supabase.co')
+const TEST_PASSWORD = process.env.TEST_USER_PASSWORD
+
+if (isProduction && !TEST_PASSWORD) {
+  console.error('❌ Error: Running against production but TEST_USER_PASSWORD is not set in .env')
+  process.exit(1)
+}
+
+const password = TEST_PASSWORD || 'Test123!'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: {
@@ -39,10 +49,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 })
 
 const testUsers = [
-  { email: 'superadmin@test.com', password: 'Test123!', name: 'Super Admin', role: 'superadmin' },
-  { email: 'owner@test.com', password: 'Test123!', name: 'Club Owner', role: 'owner' },
-  { email: 'admin@test.com', password: 'Test123!', name: 'Club Admin', role: 'admin' },
-  { email: 'member@test.com', password: 'Test123!', name: 'Regular Member', role: 'member' },
+  { email: 'superadmin@test.com', password, name: 'Super Admin', role: 'superadmin' },
+  { email: 'owner@test.com', password, name: 'Club Owner', role: 'owner' },
+  { email: 'admin@test.com', password, name: 'Club Admin', role: 'admin' },
+  { email: 'member@test.com', password, name: 'Regular Member', role: 'member' },
 ]
 
 async function createUser(user) {

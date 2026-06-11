@@ -16,6 +16,14 @@ export function FriendlyScoreboard({ friendly, onRecordMatch }: FriendlyScoreboa
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    async function loadMatchups() {
+      const { matchups, error } = await getFriendlyMatchups(friendly.id)
+      if (!error && matchups) {
+        setMatchups(matchups)
+      }
+      setIsLoading(false)
+    }
+
     loadMatchups()
 
     // Subscribe to realtime updates
@@ -40,14 +48,6 @@ export function FriendlyScoreboard({ friendly, onRecordMatch }: FriendlyScoreboa
       matchupsSub.unsubscribe()
     }
   }, [friendly.id])
-
-  const loadMatchups = async () => {
-    const { matchups, error } = await getFriendlyMatchups(friendly.id)
-    if (!error && matchups) {
-      setMatchups(matchups)
-    }
-    setIsLoading(false)
-  }
 
   // Calculate scores
   const invitingClubWins = matchups.filter(

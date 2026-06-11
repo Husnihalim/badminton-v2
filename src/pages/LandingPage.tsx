@@ -74,10 +74,10 @@ export default function LandingPage() {
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-950">Featured clubs</h2>
+        <h2 className="text-lg font-bold text-[var(--arena-text)]">Featured clubs</h2>
         {isLoading ? (
           <Card>
-            <CardContent className="pt-5 text-sm text-slate-600">Loading clubs...</CardContent>
+            <CardContent className="pt-5 text-sm text-[var(--arena-text-muted)]">Loading clubs...</CardContent>
           </Card>
         ) : clubs.length > 0 ? (
           <div className="grid gap-3">
@@ -88,7 +88,7 @@ export default function LandingPage() {
         ) : (
           <Card>
             <CardContent className="space-y-3 pt-5 text-center">
-              <p className="text-sm text-slate-600">No clubs yet. Be the first to create one.</p>
+              <p className="text-sm text-[var(--arena-text-muted)]">No clubs yet. Be the first to create one.</p>
               <Link to="/register" className="brand-button">Get started</Link>
             </CardContent>
           </Card>
@@ -96,7 +96,7 @@ export default function LandingPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-950">What the app covers</h2>
+        <h2 className="text-lg font-bold text-[var(--arena-text)]">What the app covers</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <FeatureCard icon={<Users size={18} />} title="Club management" text="Track members, approvals, social links, and club activity." />
           <FeatureCard icon={<Trophy size={18} />} title="Score capture" text="Record singles and doubles results with clean score history." />
@@ -112,9 +112,9 @@ function TrustCard({ icon, title, text }: { icon: ReactNode; title: string; text
   return (
     <Card>
       <CardContent className="space-y-2 pt-4 sm:pt-5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">{icon}</span>
-        <h3 className="font-bold text-slate-950">{title}</h3>
-        <p className="text-sm leading-6 text-slate-600">{text}</p>
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">{icon}</span>
+        <h3 className="font-bold text-[var(--arena-text)]">{title}</h3>
+        <p className="text-sm leading-6 text-[var(--arena-text-muted)]">{text}</p>
       </CardContent>
     </Card>
   )
@@ -124,10 +124,10 @@ function FeatureCard({ icon, title, text }: { icon: ReactNode; title: string; te
   return (
     <Card>
       <CardContent className="flex gap-3 pt-4 sm:pt-5">
-        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-emerald-700">{icon}</span>
+        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[var(--arena-accent)]">{icon}</span>
         <div className="space-y-1">
-          <h3 className="font-bold text-slate-950">{title}</h3>
-          <p className="text-sm leading-6 text-slate-600">{text}</p>
+          <h3 className="font-bold text-[var(--arena-text)]">{title}</h3>
+          <p className="text-sm leading-6 text-[var(--arena-text-muted)]">{text}</p>
         </div>
       </CardContent>
     </Card>

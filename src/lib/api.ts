@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import type { User } from '../types'
 import { getErrorMessage, isMissingRpcFunctionError } from './utils'
 import type { 
   Club, 
@@ -17,7 +18,8 @@ import type {
   MatchWithDetails,
   EloHistory,
   PlayerGear,
-  PlayerSocialLinks
+  PlayerSocialLinks,
+  PlayerDashboardData
 } from '../types'
 
 type ProfileSummary = {
@@ -60,7 +62,7 @@ type EventClubRow = ClubEvent & {
 
 type MatchParticipantQueryRow = MatchParticipant & {
   guest_name: string | null
-  profiles?: ProfileSummary | null
+  profiles?: User | null
 }
 
 type MatchReactionQueryRow = MatchReaction & {
@@ -788,7 +790,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
     .select(`
       *,
       recorded_by_profile:profiles!matches_recorded_by_profiles_fkey(name, display_name),
-      match_participants(*, profiles(name, display_name)),
+      match_participants(*, profiles(*)),
       score_sets(*),
       match_reactions(*, profiles(name, display_name)),
       match_comments(*, profiles(name, display_name, avatar_url))
@@ -806,6 +808,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
       const participants = (match.match_participants || []).map((p) => ({
         ...p,
         name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
+        profile: p.profiles || null,
       })) as MatchParticipant[]
       const reactions = (match.match_reactions || []).map((r) => ({
         ...r,
@@ -835,6 +838,66 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
   )
 
   return matches
+}
+
+export async function getClubMatchesPaginated(
+  clubId: string,
+  page = 0,
+  pageSize = 10
+): Promise<MatchWithDetails[]> {
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      recorded_by_profile:profiles!matches_recorded_by_profiles_fkey(name, display_name),
+      match_participants(*, profiles(*)),
+      score_sets(*),
+      match_reactions(*, profiles(name, display_name)),
+      match_comments(*, profiles(name, display_name, avatar_url))
+    `)
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    console.error('Error fetching paginated matches:', error)
+    return []
+  }
+
+  return ((data || []) as unknown as MatchQueryRow[]).map((match) => {
+    const participants = (match.match_participants || []).map((p) => ({
+      ...p,
+      name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
+      profile: p.profiles || null,
+    })) as MatchParticipant[]
+    const reactions = (match.match_reactions || []).map((r) => ({
+      ...r,
+      name: r.profiles?.name || 'Member',
+      display_name: r.profiles?.display_name || r.profiles?.name || 'Member',
+    }))
+    const comments = (match.match_comments || []).map((c) => ({
+      ...c,
+      name: c.profiles?.name || 'Member',
+      display_name: c.profiles?.display_name || c.profiles?.name || 'Member',
+      avatar_url: c.profiles?.avatar_url || null,
+    }))
+    return {
+      ...(match as Match),
+      participants,
+      score_sets: (match.score_sets || []) as ScoreSet[],
+      reactions,
+      comments,
+      recorded_by_profile: match.recorded_by_profile
+        ? {
+            name: match.recorded_by_profile.name,
+            display_name: match.recorded_by_profile.display_name,
+          }
+        : null,
+    }
+  })
 }
 
 export async function getClubLeaderboard(clubId: string, limit = 10): Promise<ClubLeaderboardRow[]> {
@@ -1816,6 +1879,20 @@ export async function superadminUpdateUserRole(userId: string, role: 'superadmin
   }
 }
 
+export async function requestClubDeletion(clubId: string): Promise<void> {
+  // Create a pending deletion request for admin approval
+  const { error } = await supabase
+    .from('club_deletion_requests')
+    .insert({ club_id: clubId, status: 'pending' })
+    .single();
+
+  if (error) {
+    console.error('Error creating club deletion request:', error);
+    throw error;
+  }
+}
+
+
 export async function deleteClub(clubId: string): Promise<void> {
   const { error } = await supabase
     .from('clubs')
@@ -2056,4 +2133,17 @@ export async function getMemberEloHistory(clubId: string, userId: string): Promi
     match_title: row.matches?.title || 'Match',
     match_date: row.matches?.match_date || row.matches?.created_at || row.created_at
   }))
+}
+
+export async function getPlayerDashboard(userId: string): Promise<PlayerDashboardData> {
+  const { data, error } = await supabase.rpc('get_player_dashboard', {
+    p_user_id: userId,
+  })
+
+  if (error) {
+    console.error('Error fetching player dashboard:', error)
+    throw error
+  }
+
+  return data as PlayerDashboardData
 }
