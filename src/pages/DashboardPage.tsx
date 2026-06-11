@@ -432,10 +432,11 @@ export default function DashboardPage() {
       for (const club of myClubs) {
         try {
           const lb = await getClubLeaderboard(club.id, 100)
-          const index = lb.findIndex(
-            (row) => row.name.toLowerCase() === user.name.toLowerCase() ||
-                    (user.display_name && row.name.toLowerCase() === user.display_name.toLowerCase())
-          )
+          const normalize = (value?: string | null) => (value || '').trim().toLowerCase()
+          const index = lb.findIndex((row) => {
+            const rowName = normalize(row.name)
+            return rowName === normalize(user.name) || rowName === normalize(user.display_name)
+          })
           if (index !== -1) {
             ranks[club.id] = { rank: index + 1, total: lb.length }
           }
@@ -804,7 +805,7 @@ export default function DashboardPage() {
           <CardContent className="space-y-4 p-4 sm:p-5">
             <div>
               <h2 className="text-lg font-bold text-[var(--arena-text)]">Quick actions</h2>
-              <p className="text-sm leading-6 text-[var(--arena-text-muted)]">Move from your personal page into the next useful task.</p>
+          <p className="text-sm leading-6 text-[var(--arena-text-muted)]">Move from your personal page into the next useful task.</p>
             </div>
             <div className="grid gap-2">
               <Button type="button" onClick={() => navigate(primaryClub ? `/club/${primaryClub.id}` : '/profile?create_club=true')} fullWidth>
@@ -838,7 +839,7 @@ export default function DashboardPage() {
       <section className="app-section space-y-4">
         <div className="app-section-header">
           <h2 className="app-section-title">
-            <Activity size={18} className="text-emerald-700" />
+            <Activity size={18} className="text-[var(--arena-accent)]" />
             Your Performance
           </h2>
           <p className="app-section-subtitle">Calculated from all matches played across your clubs.</p>
@@ -854,8 +855,8 @@ export default function DashboardPage() {
           <div className="metric-tile space-y-1 text-center">
             <span className="metric-label">Win / Loss</span>
             <p className="metric-value">
-              <span className="text-emerald-700">{personalStats.wins}W</span>
-              <span className="text-slate-400 mx-1">-</span>
+              <span className="text-[var(--arena-accent)]">{personalStats.wins}W</span>
+              <span className="text-[var(--arena-text-dim)] mx-1">-</span>
               <span className="text-red-600">{personalStats.losses}L</span>
             </p>
             <span className="metric-note">Record</span>
@@ -864,11 +865,11 @@ export default function DashboardPage() {
           <div className="metric-tile space-y-1 text-center">
             <span className="metric-label">Win Rate</span>
             <div className="flex items-center justify-center gap-1">
-              <Percent size={14} className="text-emerald-700 shrink-0" />
+              <Percent size={14} className="text-[var(--arena-accent)] shrink-0" />
               <span className="metric-value">{personalStats.winRate}%</span>
             </div>
             <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden max-w-[80px] mx-auto">
-              <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
+              <div className="bg-[var(--arena-accent)] h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
             </div>
           </div>
 
@@ -895,13 +896,13 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="app-section-header">
             <h2 className="app-section-title">
-              <Newspaper size={18} className="text-emerald-700" aria-hidden="true" />
+              <Newspaper size={18} className="text-[var(--arena-accent)]" aria-hidden="true" />
               My Sports Story
             </h2>
             <p className="app-section-subtitle">Latest proof-backed moments from your recorded matches.</p>
           </div>
           {storyMoments.length ? (
-            <Badge className="w-fit border-emerald-200 bg-emerald-50 text-emerald-800">
+            <Badge className="w-fit border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
               {storyMoments.length} moments
             </Badge>
           ) : null}
@@ -937,7 +938,7 @@ export default function DashboardPage() {
             description="3+ Win Streak"
             icon="🔥"
             glowClass="shadow-orange-500/10 border-orange-200 bg-orange-50/50 text-orange-600"
-            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-slate-400 opacity-40"
+            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
           />
           <AchievementBadge
             unlocked={achievements.giantSlayer}
@@ -945,15 +946,15 @@ export default function DashboardPage() {
             description="Beat a higher rank"
             icon="🛡️"
             glowClass="shadow-blue-500/10 border-blue-200 bg-blue-50/50 text-blue-600"
-            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-slate-400 opacity-40"
+            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
           />
           <AchievementBadge
             unlocked={achievements.cleanSweep}
             title="Clean Sweep"
             description="Win set by 10+ pts"
             icon="🎯"
-            glowClass="shadow-emerald-500/10 border-emerald-200 bg-emerald-50/50 text-emerald-600"
-            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-slate-400 opacity-40"
+            glowClass="shadow-emerald-500/10 border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)]/50 text-[var(--arena-accent)]"
+            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
           />
           <AchievementBadge
             unlocked={achievements.ironMan}
@@ -961,7 +962,7 @@ export default function DashboardPage() {
             description="Play 3+ matches in 1 day"
             icon="🚀"
             glowClass="shadow-purple-500/10 border-purple-200 bg-purple-50/50 text-purple-600"
-            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-slate-400 opacity-40"
+            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
           />
           <AchievementBadge
             unlocked={achievements.dynamicDuo}
@@ -969,7 +970,7 @@ export default function DashboardPage() {
             description="3+ doubles streak"
             icon="🤝"
             glowClass="shadow-amber-500/10 border-amber-200 bg-amber-50/50 text-amber-600"
-            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-slate-400 opacity-40"
+            lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
           />
         </div>
       </section>
@@ -978,7 +979,7 @@ export default function DashboardPage() {
       <section className="app-section space-y-4">
         <div className="app-section-header">
           <h2 className="app-section-title">
-            <Users size={18} className="text-emerald-700 shrink-0" />
+            <Users size={18} className="text-[var(--arena-accent)] shrink-0" />
             {comparisonMode === 'partner' ? 'Doubles Partnership Checker' : 'Head-to-Head Rivalry Checker'}
           </h2>
           <p className="app-section-subtitle">
@@ -995,7 +996,7 @@ export default function DashboardPage() {
               type="button"
               className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
                 comparisonMode === 'partner'
-                  ? 'bg-surface text-emerald-700 shadow-sm border border-[var(--arena-border)]/40'
+                  ? 'bg-surface text-[var(--arena-accent)] shadow-sm border border-[var(--arena-border)]/40'
                   : 'text-[var(--arena-text-muted)] hover:text-slate-900 font-bold'
               }`}
               onClick={() => {
@@ -1009,7 +1010,7 @@ export default function DashboardPage() {
               type="button"
               className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
                 comparisonMode === 'rival'
-                  ? 'bg-surface text-emerald-700 shadow-sm border border-[var(--arena-border)]/40'
+                  ? 'bg-surface text-[var(--arena-accent)] shadow-sm border border-[var(--arena-border)]/40'
                   : 'text-[var(--arena-text-muted)] hover:text-slate-900 font-bold'
               }`}
               onClick={() => {
@@ -1034,7 +1035,7 @@ export default function DashboardPage() {
                   }}
                   className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition shadow-sm select-none cursor-pointer ${
                     comparisonMode === 'partner' && selectedRival === recommendedInsights.bestPartner.name
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-500/10'
+                      ? 'bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border-emerald-300 ring-2 ring-emerald-500/10'
                       : 'bg-surface text-[var(--arena-text-muted)] border-slate-250 hover:bg-[var(--arena-surface-muted)] hover:text-[var(--arena-text)]'
                   }`}
                   title={`Recommended Teammate: ${recommendedInsights.bestPartner.name}`}
@@ -1137,11 +1138,11 @@ export default function DashboardPage() {
                       <span className="text-xs text-[var(--arena-text-dim)] block">Matches</span>
                       <span className="text-lg font-extrabold text-[var(--arena-text)]">{rivalryStats.matchesPlayed}</span>
                     </div>
-                    <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                      <span className="text-xs text-emerald-600 block">
+                    <div className="p-3 bg-[var(--arena-accent-soft)]/50 border border-emerald-100 rounded-lg">
+                      <span className="text-xs text-[var(--arena-accent)] block">
                         {comparisonMode === 'partner' ? 'Wins Together' : 'Your Wins'}
                       </span>
-                      <span className="text-lg font-extrabold text-emerald-700">{rivalryStats.wins}</span>
+                      <span className="text-lg font-extrabold text-[var(--arena-accent)]">{rivalryStats.wins}</span>
                     </div>
                     <div className="p-3 bg-red-50/50 border border-red-100 rounded-lg">
                       <span className="text-xs text-red-600 block">
@@ -1157,9 +1158,9 @@ export default function DashboardPage() {
                         {comparisonMode === 'partner' ? 'Win Rate:' : 'Head-to-Head Streak:'}
                       </span>
                       {comparisonMode === 'partner' ? (
-                        <span className="text-emerald-700 font-bold">{rivalryStats.winRate}%</span>
+                        <span className="text-[var(--arena-accent)] font-bold">{rivalryStats.winRate}%</span>
                       ) : rivalryStats.streakType === 'win' ? (
-                        <span className="text-emerald-700 font-bold">🔥 {rivalryStats.streak} Win</span>
+                        <span className="text-[var(--arena-accent)] font-bold">🔥 {rivalryStats.streak} Win</span>
                       ) : rivalryStats.streakType === 'loss' ? (
                         <span className="text-red-600 font-bold">-{rivalryStats.streak} Loss</span>
                       ) : (
@@ -1175,7 +1176,7 @@ export default function DashboardPage() {
                           key={idx}
                           className={cn(
                             "inline-flex h-5 w-5 items-center justify-center rounded text-[10px] font-extrabold text-white",
-                            outcome === 'W' ? "bg-emerald-600" : "bg-red-500"
+                            outcome === 'W' ? "bg-[var(--arena-accent)]" : "bg-red-500"
                           )}
                         >
                           {outcome}
@@ -1220,12 +1221,12 @@ export default function DashboardPage() {
                             className="flex items-center justify-between p-2.5 bg-surface border border-slate-150 rounded-lg hover:border-emerald-500 hover:shadow-sm cursor-pointer transition select-none"
                           >
                             <div className="min-w-0 flex items-center gap-2">
-                              <span className="text-xs font-bold text-slate-400 font-mono">#{idx + 1}</span>
+                              <span className="text-xs font-bold text-[var(--arena-text-dim)] font-mono">#{idx + 1}</span>
                               <span className="text-sm font-semibold text-slate-900 truncate">{p.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-[var(--arena-text-dim)] font-medium">{p.matches} matches</span>
-                              <span className="inline-flex items-center text-xs font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-100">
+                              <span className="inline-flex items-center text-xs font-bold px-2 py-0.5 bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] rounded border border-emerald-100">
                                 {Math.round(p.winRate)}% Win
                               </span>
                             </div>
@@ -1233,7 +1234,7 @@ export default function DashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-[var(--arena-border)] rounded-lg bg-surface">
+                      <p className="text-xs text-[var(--arena-text-dim)] italic p-3 border border-dashed border-[var(--arena-border)] rounded-lg bg-surface">
                         Play doubles matches to see recommended partners.
                       </p>
                     )}
@@ -1260,7 +1261,7 @@ export default function DashboardPage() {
                               }`}
                             >
                               <div className="min-w-0 flex items-center gap-2">
-                                <span className="text-xs font-bold text-slate-400 font-mono">#{idx + 1}</span>
+                                <span className="text-xs font-bold text-[var(--arena-text-dim)] font-mono">#{idx + 1}</span>
                                 <span className="text-sm font-semibold text-slate-900 truncate">{r.name}</span>
                                 {isNemesis && (
                                   <span className="inline-flex items-center text-[10px] font-extrabold px-1.5 py-0.2 bg-rose-50 text-rose-600 rounded border border-rose-100">
@@ -1283,7 +1284,7 @@ export default function DashboardPage() {
                         })}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic p-3 border border-dashed border-[var(--arena-border)] rounded-lg bg-surface">
+                      <p className="text-xs text-[var(--arena-text-dim)] italic p-3 border border-dashed border-[var(--arena-border)] rounded-lg bg-surface">
                         Play matches to see rivalry analysis.
                       </p>
                     )}
@@ -1321,7 +1322,7 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic p-3 border border-dashed border-[var(--arena-border)] rounded-lg bg-surface">
+                    <p className="text-xs text-[var(--arena-text-dim)] italic p-3 border border-dashed border-[var(--arena-border)] rounded-lg bg-surface">
                       No doubles losses recorded against specific opponent pairs yet. Keep playing to track nemesis pairs!
                     </p>
                   )}
@@ -1345,7 +1346,7 @@ export default function DashboardPage() {
                 <Card className="h-full transition hover:border-emerald-300 hover:shadow-md">
                   <CardContent className="space-y-3 pt-4 sm:pt-5">
                     <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
                         <ClubIcon size={18} aria-hidden="true" />
                       </span>
                       <div className="min-w-0">
@@ -1395,7 +1396,7 @@ export default function DashboardPage() {
             <p className="text-sm text-[var(--arena-text-muted)]">Search public clubs and request access from your dashboard.</p>
           </div>
           <label className="relative block sm:w-80">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--arena-text-dim)]" size={16} aria-hidden="true" />
             <Input
               value={clubSearchQuery}
               onChange={(event) => setClubSearchQuery(event.target.value)}
@@ -1478,7 +1479,7 @@ export default function DashboardPage() {
               <Card key={event.id}>
                 <CardContent className="space-y-4 pt-4 sm:pt-5">
                   <div className="flex items-start gap-3">
-                  <CalendarDays className="mt-1 shrink-0 text-emerald-700" size={18} aria-hidden="true" />
+                  <CalendarDays className="mt-1 shrink-0 text-[var(--arena-accent)]" size={18} aria-hidden="true" />
                   <div className="min-w-0 space-y-1">
                     <h3 className="font-bold text-[var(--arena-text)]">{event.title}</h3>
                     <p className="text-sm text-[var(--arena-text-dim)]">{event.clubName}</p>
@@ -1528,7 +1529,7 @@ export default function DashboardPage() {
                   {myRsvp ? <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p> : null}
                   <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3">
                     <div className="flex flex-wrap gap-2">
-                      <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
+                      <Badge className="border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">{acceptedRsvps.length} accepted</Badge>
                       <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
                       <Badge className="border-[var(--arena-border)] bg-surface text-[var(--arena-text-muted)]">{rejectedRsvps.length} rejected</Badge>
                     </div>
@@ -1597,7 +1598,7 @@ function StatCard({ icon, label, value }: { icon: ReactNode; label: string; valu
       <CardContent className="space-y-2 p-3 sm:p-4">
         <div className="flex items-center justify-between gap-2 text-[var(--arena-text-dim)]">
           <span className="text-xs font-semibold sm:text-sm">{label}</span>
-          <span className="rounded-md bg-emerald-50 p-1.5 text-emerald-700">{icon}</span>
+          <span className="rounded-md bg-[var(--arena-accent-soft)] p-1.5 text-[var(--arena-accent)]">{icon}</span>
         </div>
         <p className="text-2xl font-semibold leading-none text-[var(--arena-text)] sm:text-3xl">{value}</p>
       </CardContent>

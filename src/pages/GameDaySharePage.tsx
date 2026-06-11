@@ -149,7 +149,7 @@ export default function GameDaySharePage() {
   if (isLoading || authLoading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading game day...</CardContent>
+        <CardContent className="pt-5 text-center text-sm text-[var(--arena-text-muted)]">Loading game day...</CardContent>
       </Card>
     )
   }
@@ -161,27 +161,27 @@ export default function GameDaySharePage() {
 
   return (
     <Page>
-      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
+      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-[var(--arena-text)] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
 
       <Card>
         <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Shared game day</p>
-          <h1 className="text-3xl font-bold leading-tight text-slate-200">{event.title}</h1>
-          <p className="text-sm leading-6 text-slate-300">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">Shared game day</p>
+          <h1 className="text-3xl font-bold leading-tight text-[var(--arena-text)]">{event.title}</h1>
+          <p className="text-sm leading-6 text-[var(--arena-text-dim)]">
             {event.club?.name || 'Club game day'} · {new Date(event.event_date).toLocaleString()}
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
           {pageError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{pageError}</p> : null}
 
-          <div className="grid gap-3 rounded-lg border border-slate-600 bg-[#0b1322] p-3 text-sm text-slate-300">
-            <p className="inline-flex items-center gap-2 font-semibold text-slate-200">
+          <div className="grid gap-3 rounded-lg border border-slate-600 bg-[#0b1322] p-3 text-sm text-[var(--arena-text-dim)]">
+            <p className="inline-flex items-center gap-2 font-semibold text-[var(--arena-text)]">
               <CalendarDays size={17} aria-hidden="true" />
               {new Date(event.event_date).toLocaleString()}
             </p>
             {event.location ? <p>{event.location}</p> : null}
             {formatEventCost(event) ? (
-              <p className="inline-flex items-center gap-2 font-semibold text-slate-300">
+              <p className="inline-flex items-center gap-2 font-semibold text-[var(--arena-text-dim)]">
                 <DollarSign size={16} aria-hidden="true" />
                 {formatEventCost(event)}
               </p>
@@ -190,7 +190,7 @@ export default function GameDaySharePage() {
               <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
                 {event.signup_open ? 'Open' : 'Closed'}
               </Badge>
-              {event.max_participants ? <Badge className="border-slate-200 bg-[#0b1322] text-slate-300">{acceptedRsvps.length}/{event.max_participants} accepted</Badge> : null}
+              {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[#0b1322] text-[var(--arena-text-dim)]">{acceptedRsvps.length}/{event.max_participants} accepted</Badge> : null}
             </div>
           </div>
 
@@ -199,7 +199,7 @@ export default function GameDaySharePage() {
               <Share2 size={17} aria-hidden="true" />
               Share
             </Button>
-            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-[#0b1322] px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
+            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-4 py-2.5 text-sm font-semibold text-[var(--arena-text-dim)] transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
               <MessageCircle size={17} aria-hidden="true" />
               WhatsApp
             </a>
@@ -210,7 +210,7 @@ export default function GameDaySharePage() {
           </div>
 
           {!user ? (
-            <div className="grid gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 sm:grid-cols-2">
+            <div className="grid gap-2 rounded-lg border border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] p-3 sm:grid-cols-2">
               <Link to={`/register${redirectQuery}`}>
                 <Button fullWidth>
                   <UserPlus size={17} aria-hidden="true" />
@@ -227,7 +227,7 @@ export default function GameDaySharePage() {
           ) : event.signup_open ? (
             <div className="space-y-3">
               {!myMembership ? (
-                <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+                <p className="rounded-lg border border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] p-3 text-sm font-semibold text-[var(--arena-accent)]">
                   Choose a response and we will add you to {event.club?.name || 'the club'} first.
                 </p>
               ) : null}
@@ -250,25 +250,25 @@ export default function GameDaySharePage() {
                   </Button>
                 ))}
               </div>
-              {myRsvp ? <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p> : null}
+              {myRsvp ? <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p> : null}
             </div>
           ) : (
             <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">Signup is closed for this game day.</p>
           )}
 
           {user ? (
-            <div className="space-y-2 rounded-lg border border-slate-200 bg-[#0b1322] p-3">
+            <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] p-3">
               <div className="flex flex-wrap gap-2">
-                <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">{acceptedRsvps.length} accepted</Badge>
+                <Badge className="border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">{acceptedRsvps.length} accepted</Badge>
                 <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-                <Badge className="border-slate-600 bg-[#0b1322] text-slate-300">{rejectedRsvps.length} rejected</Badge>
+                <Badge className="border-slate-600 bg-[#0b1322] text-[var(--arena-text-dim)]">{rejectedRsvps.length} rejected</Badge>
               </div>
               {acceptedRsvps.length ? (
-                <p className="text-sm leading-6 text-slate-300">
+                <p className="text-sm leading-6 text-[var(--arena-text-dim)]">
                   Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
                 </p>
               ) : (
-                <p className="text-sm text-slate-400">No accepted members yet.</p>
+                <p className="text-sm text-[var(--arena-text-dim)]">No accepted members yet.</p>
               )}
             </div>
           ) : null}

@@ -97,9 +97,9 @@ function getRsvpLabel(status: EventRsvp['status']) {
 
 function renderRankBadge(rank: number) {
   if (rank === 1) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700 shadow-sm border border-amber-200" title="Gold Medal">🥇</span>
-  if (rank === 2) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600 shadow-sm border border-slate-200" title="Silver Medal">🥈</span>
+  if (rank === 2) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-[var(--arena-text-muted)] shadow-sm border border-[var(--arena-border)]" title="Silver Medal">🥈</span>
   if (rank === 3) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-sm font-bold text-amber-800 shadow-sm border border-amber-100" title="Bronze Medal">🥉</span>
-  return <span className="font-mono text-sm font-bold text-slate-500 w-6 text-center">#{rank}</span>
+  return <span className="font-mono text-sm font-bold text-[var(--arena-text-dim)] w-6 text-center">#{rank}</span>
 }
 
 function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardRow[] {
@@ -416,7 +416,7 @@ function calculateSessionHighlights(eventMatches: MatchWithDetails[]) {
 }
 
 const BANNER_PRESETS = [
-  { id: 'court_green', name: 'Court Green', gradient: 'bg-gradient-to-r from-emerald-600 to-emerald-800' },
+  { id: 'court_green', name: 'Court Green', gradient: 'bg-gradient-to-r from-[var(--arena-accent)] to-emerald-800' },
   { id: 'court_blue', name: 'Court Blue', gradient: 'bg-gradient-to-r from-sky-600 to-indigo-800' },
   { id: 'dark_elite', name: 'Dark Elite', gradient: 'bg-gradient-to-r from-slate-800 to-slate-950' },
   { id: 'neon_arena', name: 'Neon Arena', gradient: 'bg-gradient-to-r from-fuchsia-700 to-violet-900' },
@@ -435,16 +435,16 @@ const THEME_MAP: Record<string, {
   ringFocus: string
 }> = {
   emerald: {
-    bg: 'bg-emerald-600',
-    bgHover: 'hover:bg-emerald-700',
-    bgLight: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    textDark: 'text-emerald-800',
-    textLight: 'text-emerald-405', // using emerald-400 placeholder
-    border: 'border-emerald-500',
-    borderLight: 'border-emerald-200',
-    ring: 'ring-emerald-600 focus-visible:ring-emerald-500',
-    ringFocus: 'focus:ring-emerald-600 focus:border-emerald-600',
+    bg: 'bg-[var(--arena-accent)]',
+    bgHover: 'hover:brightness-110',
+    bgLight: 'bg-[var(--arena-accent-soft)]',
+    text: 'text-[var(--arena-accent)]',
+    textDark: 'text-[var(--arena-accent)]',
+    textLight: 'text-[var(--arena-accent)]',
+    border: 'border-[var(--arena-accent)]',
+    borderLight: 'border-[var(--arena-accent-soft)]',
+    ring: 'ring-[var(--arena-accent)] focus-visible:ring-[var(--arena-accent)]',
+    ringFocus: 'focus:ring-[var(--arena-accent)] focus:border-[var(--arena-accent)]',
   },
   indigo: {
     bg: 'bg-indigo-600',
@@ -1220,12 +1220,12 @@ export default function ClubHomePage() {
       })
 
     return (
-      <div key={event.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div key={event.id} className="space-y-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <div className="space-y-1">
-            <h3 className="font-bold text-slate-950">{event.title}</h3>
-            <p className="text-sm text-slate-600">{new Date(event.event_date).toLocaleString()}</p>
-            {event.location ? <p className="text-sm text-slate-600">{event.location}</p> : null}
+            <h3 className="font-bold text-[var(--arena-text)]">{event.title}</h3>
+            <p className="text-sm text-[var(--arena-text-muted)]">{new Date(event.event_date).toLocaleString()}</p>
+            {event.location ? <p className="text-sm text-[var(--arena-text-muted)]">{event.location}</p> : null}
             {formatEventCost(event) ? (
               <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
                 <DollarSign size={15} aria-hidden="true" />
@@ -1251,14 +1251,14 @@ export default function ClubHomePage() {
           <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
             {event.signup_open ? 'Open' : 'Closed'}
           </Badge>
-          {event.max_participants ? <Badge className="border-slate-200 bg-[#0b1322] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
+          {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[#0b1322] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           <Button type="button" size="sm" variant="secondary" onClick={() => handleNativeEventShare(event)}>
             <Share2 size={15} aria-hidden="true" />
             Share
           </Button>
-          <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
+          <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
             <MessageCircle size={15} aria-hidden="true" />
             WhatsApp
           </a>
@@ -1289,21 +1289,21 @@ export default function ClubHomePage() {
           </div>
         ) : null}
         {myRsvp ? (
-          <p className="text-sm font-semibold text-slate-700">Your response: {getRsvpLabel(myRsvp.status)}</p>
+          <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p>
         ) : null}
         {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
-        <div className="space-y-2 rounded-lg border border-slate-200 bg-[#0b1322] p-3">
+        <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] p-3">
           <div className="flex flex-wrap gap-2">
             <Badge className={`border-${theme.borderLight} ${theme.bgLight} ${theme.textDark}`}>{acceptedRsvps.length} accepted</Badge>
             <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-            <Badge className="border-slate-200 bg-slate-50 text-slate-700">{rejectedRsvps.length} rejected</Badge>
+            <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]">{rejectedRsvps.length} rejected</Badge>
           </div>
           {acceptedRsvps.length ? (
-            <p className="text-sm leading-6 text-slate-700">
+            <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
               Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
             </p>
           ) : (
-            <p className="text-sm text-slate-500">No accepted members yet.</p>
+            <p className="text-sm text-[var(--arena-text-dim)]">No accepted members yet.</p>
           )}
         </div>
 
@@ -1325,14 +1325,14 @@ export default function ClubHomePage() {
             </Button>
 
             {showManageRsvpEventId === event.id && (
-              <div className="mt-2.5 p-3.5 bg-slate-100 rounded-lg border border-slate-200 space-y-3">
+              <div className="mt-2.5 p-3.5 bg-slate-100 rounded-lg border border-[var(--arena-border)] space-y-3">
                 <div className="flex flex-col gap-1.5">
-                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <h4 className="text-[10px] font-bold text-[var(--arena-text-dim)] uppercase tracking-wider">
                     Admin Control: Attendance & Payment
                   </h4>
                   
                   {/* Summary Stats Panel */}
-                  <div className="p-2.5 bg-[#0b1322] rounded-md border border-slate-200/80 text-[11px] font-medium text-slate-300 grid grid-cols-2 gap-2 shadow-sm">
+                  <div className="p-2.5 bg-[#0b1322] rounded-md border border-[var(--arena-border)]/80 text-[11px] font-medium text-slate-300 grid grid-cols-2 gap-2 shadow-sm">
                     <div>
                       📊 <span className="font-bold text-slate-900">Attended:</span> {attendedCount}
                     </div>
@@ -1355,7 +1355,7 @@ export default function ClubHomePage() {
                     placeholder="Search members..."
                     value={rsvpSearchQuery}
                     onChange={(e) => setRsvpSearchQuery(e.target.value)}
-                    className={`min-h-9 text-xs flex-1 bg-[#0b1322] border-slate-200 focus:border-${accent}-600 focus:ring-1 focus:ring-${accent}-600/20`}
+                    className={`min-h-9 text-xs flex-1 bg-[#0b1322] border-[var(--arena-border)] focus:border-${accent}-600 focus:ring-1 focus:ring-${accent}-600/20`}
                   />
                   {rsvpSearchQuery && (
                     <Button
@@ -1387,13 +1387,13 @@ export default function ClubHomePage() {
                             </div>
                             <div className="flex flex-col min-w-0">
                               <span className="font-bold text-slate-800 truncate">{member.name || 'Anonymous'}</span>
-                              <span className="text-[9px] text-slate-500 capitalize">{member.role}</span>
+                              <span className="text-[9px] text-[var(--arena-text-dim)] capitalize">{member.role}</span>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-1.5 shrink-0">
                             {isLoadingThis ? (
-                              <span className="text-[9px] text-slate-500 px-2 py-1 font-medium animate-pulse">Syncing...</span>
+                              <span className="text-[9px] text-[var(--arena-text-dim)] px-2 py-1 font-medium animate-pulse">Syncing...</span>
                             ) : (
                               <>
                                 {/* RSVP Select */}
@@ -1405,7 +1405,7 @@ export default function ClubHomePage() {
                                       handleAdminRsvpUpdate(event.id, member.user_id, val, rsvp?.attended, rsvp?.paid)
                                     }
                                   }}
-                                  className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-slate-200 rounded-md w-20 font-bold bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-500`}
+                                  className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-[var(--arena-border)] rounded-md w-20 font-bold bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-500`}
                                 >
                                   {rsvpStatus === 'no_response' && <option value="no_response">Pending</option>}
                                   <option value="going">Going</option>
@@ -1419,7 +1419,7 @@ export default function ClubHomePage() {
                                   className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                                     rsvp?.attended
                                       ? `${theme.bg} ${theme.border} text-white`
-                                      : 'bg-[#0b1322] text-slate-300 border-slate-200 hover:bg-slate-700'
+                                      : 'bg-[#0b1322] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
                                   }`}
                                   onClick={() => handleAdminRsvpUpdate(
                                     event.id,
@@ -1430,7 +1430,7 @@ export default function ClubHomePage() {
                                   )}
                                   title="Attended"
                                 >
-                                  <Check size={11} strokeWidth={3} className={rsvp?.attended ? '' : 'text-slate-400'} />
+                                  <Check size={11} strokeWidth={3} className={rsvp?.attended ? '' : 'text-[var(--arena-text-dim)]'} />
                                   <span className="hidden sm:inline">Attended</span>
                                 </button>
 
@@ -1440,7 +1440,7 @@ export default function ClubHomePage() {
                                   className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                                     rsvp?.paid
                                       ? 'bg-amber-500 border-amber-500 text-white'
-                                      : 'bg-[#0b1322] text-slate-300 border-slate-200 hover:bg-slate-700'
+                                      : 'bg-[#0b1322] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
                                   }`}
                                   onClick={() => handleAdminRsvpUpdate(
                                     event.id,
@@ -1451,7 +1451,7 @@ export default function ClubHomePage() {
                                   )}
                                   title="Paid"
                                 >
-                                  <DollarSign size={10} className={rsvp?.paid ? '' : 'text-slate-400'} />
+                                  <DollarSign size={10} className={rsvp?.paid ? '' : 'text-[var(--arena-text-dim)]'} />
                                   <span className="hidden sm:inline">Paid</span>
                                 </button>
                               </>
@@ -1461,7 +1461,7 @@ export default function ClubHomePage() {
                       )
                     })
                   ) : (
-                    <div className="text-center py-4 text-xs text-slate-500 italic">
+                    <div className="text-center py-4 text-xs text-[var(--arena-text-dim)] italic">
                       No members match search.
                     </div>
                   )}
@@ -1471,7 +1471,7 @@ export default function ClubHomePage() {
           </div>
         )}
         {/* Session Highlights & Recording Buttons */}
-        <div className="grid gap-2 pt-2 border-t border-slate-200 sm:grid-cols-2">
+        <div className="grid gap-2 pt-2 border-t border-[var(--arena-border)] sm:grid-cols-2">
           {matches.some(m => m.event_id === event.id) ? (
             <Button
               type="button"
@@ -1483,7 +1483,7 @@ export default function ClubHomePage() {
               View Highlights
             </Button>
           ) : (
-            <div className="text-xs text-slate-400 flex items-center justify-center py-2 italic">
+            <div className="text-xs text-[var(--arena-text-dim)] flex items-center justify-center py-2 italic">
               No matches recorded yet.
             </div>
           )}
@@ -1495,7 +1495,7 @@ export default function ClubHomePage() {
               className="flex items-center justify-center gap-1.5"
               onClick={() => handleCreateScoreForEvent(event)}
             >
-              <ClipboardPenLine size={14} className="text-slate-600" />
+              <ClipboardPenLine size={14} className="text-[var(--arena-text-muted)]" />
               Record Score
             </Button>
           ) : null}
@@ -1603,7 +1603,7 @@ export default function ClubHomePage() {
   if (isLoading || authLoading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading...</CardContent>
+        <CardContent className="pt-5 text-center text-sm text-[var(--arena-text-muted)]">Loading...</CardContent>
       </Card>
     )
   }
@@ -1735,7 +1735,7 @@ export default function ClubHomePage() {
       ) : null}
 
       {/* Sleek Banner Cover Header */}
-      <div className="relative overflow-hidden rounded-2xl shadow-sm border border-slate-200 bg-[#0b1322]">
+      <div className="relative overflow-hidden rounded-2xl shadow-sm border border-[var(--arena-border)] bg-[#0b1322]">
         {/* Banner Image / Gradient */}
         <div 
           className={`h-40 sm:h-52 w-full relative ${
@@ -1780,8 +1780,8 @@ export default function ClubHomePage() {
                   ) : null}
                   {isAdmin ? <Badge className="border-blue-200 bg-blue-50 text-blue-800 font-bold text-[10px]">Admin</Badge> : null}
                 </div>
-                <h1 className="text-xl sm:text-2xl font-black leading-tight text-slate-950 mt-1 truncate">{club.name}</h1>
-                <p className="mt-1 text-xs sm:text-sm text-slate-600 line-clamp-2 max-w-xl">
+                <h1 className="text-xl sm:text-2xl font-black leading-tight text-[var(--arena-text)] mt-1 truncate">{club.name}</h1>
+                <p className="mt-1 text-xs sm:text-sm text-[var(--arena-text-muted)] line-clamp-2 max-w-xl">
                   {club.description || 'Club workspace for events, members, scores, and activity.'}
                 </p>
               </div>
@@ -1796,7 +1796,7 @@ export default function ClubHomePage() {
                 </Button>
               ) : null}
               {isAdmin ? (
-                <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)} className="hover:bg-slate-50">
+                <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)} className="hover:bg-[var(--arena-surface-muted)]">
                   <Settings size={17} aria-hidden="true" />
                   Settings
                 </Button>
@@ -1810,28 +1810,28 @@ export default function ClubHomePage() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-650">
             {club.location ? (
               <span className="inline-flex items-center gap-1.5">
-                <MapPin size={16} className="text-slate-400" aria-hidden="true" />
+                <MapPin size={16} className="text-[var(--arena-text-dim)]" aria-hidden="true" />
                 {club.location}
               </span>
             ) : null}
             {club.city ? (
-              <span className="inline-flex items-center gap-1 text-slate-500">
+              <span className="inline-flex items-center gap-1 text-[var(--arena-text-dim)]">
                 ({club.city})
               </span>
             ) : null}
             <span className="inline-flex items-center gap-1.5">
-              <Users size={16} className="text-slate-400" aria-hidden="true" />
+              <Users size={16} className="text-[var(--arena-text-dim)]" aria-hidden="true" />
               <strong>{memberCount}</strong> members
             </span>
           </div>
 
           {locationQuery ? (
-            <div className="mt-4 grid gap-2 rounded-lg border border-slate-150 bg-slate-50/50 p-3 text-sm text-slate-600 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div className="mt-4 grid gap-2 rounded-lg border border-slate-150 bg-[var(--arena-surface-muted)]/50 p-3 text-sm text-[var(--arena-text-muted)] sm:grid-cols-[1fr_auto] sm:items-center">
               <p className="min-w-0">
-                Base location: <strong className="break-words text-slate-950">{locationQuery}</strong>
+                Base location: <strong className="break-words text-[var(--arena-text)]">{locationQuery}</strong>
               </p>
               <a 
-                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-[#0b1322] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 shadow-sm" 
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 shadow-sm" 
                 href={mapUrl} 
                 target="_blank" 
                 rel="noreferrer"
@@ -1844,16 +1844,16 @@ export default function ClubHomePage() {
 
           {isAdmin && (
             club.invite_code ? (
-              <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-650 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div className="mt-3 grid gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3 text-sm text-slate-650 sm:grid-cols-[1fr_auto] sm:items-center">
                 <p className="min-w-0">
-                  General invite request link: <strong className="break-all font-mono text-slate-950">{inviteUrl}</strong>
+                  General invite request link: <strong className="break-all font-mono text-[var(--arena-text)]">{inviteUrl}</strong>
                 </p>
                 <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink}>
                   Copy Link
                 </Button>
               </div>
             ) : (
-              <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-650">
+              <div className="mt-3 space-y-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3 text-sm text-slate-650">
                 <p className="text-slate-900">No invite link is available yet.</p>
                 <p>Generate a general link so new people can request admin approval.</p>
                 <Button type="button" size="sm" variant="secondary" onClick={handleGenerateInviteLink} disabled={isSecondaryLoading}>
@@ -1934,7 +1934,7 @@ export default function ClubHomePage() {
         <CardContent className="space-y-4 pt-4 sm:pt-5">
           <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="min-w-0">
-              <h2 className="text-lg font-bold text-slate-950">Club board</h2>
+              <h2 className="text-lg font-bold text-[var(--arena-text)]">Club board</h2>
             </div>
             {isAdmin ? (
               <div className="grid gap-2 sm:grid-cols-3">
@@ -1942,7 +1942,7 @@ export default function ClubHomePage() {
                   <Share2 size={16} aria-hidden="true" />
                   Share
                 </Button>
-                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
+                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
                   <MessageCircle size={16} aria-hidden="true" />
                   WhatsApp
                 </a>
@@ -1957,13 +1957,13 @@ export default function ClubHomePage() {
           {isAdmin ? (
             <button
               type="button"
-              className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-left transition-colors hover:bg-slate-100"
+              className="flex w-full items-center gap-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3 text-left transition-colors hover:bg-slate-100"
               onClick={openCreateMessageModal}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] text-emerald-400 shadow-sm border border-emerald-800">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] text-[var(--arena-accent)] shadow-sm border border-emerald-800">
                 <Megaphone size={18} aria-hidden="true" />
               </span>
-              <span className="min-h-10 flex-1 rounded-full border border-slate-200 bg-[#0b1322] px-4 py-2.5 text-sm font-semibold text-slate-300">
+              <span className="min-h-10 flex-1 rounded-full border border-[var(--arena-border)] bg-[#0b1322] px-4 py-2.5 text-sm font-semibold text-slate-300">
                 Post an announcement
               </span>
             </button>
@@ -1978,7 +1978,7 @@ export default function ClubHomePage() {
                   : !!expandedMessages[item.id]
 
                 return (
-                  <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 hover:bg-slate-50 transition-colors">
+                  <div key={item.id} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3 hover:bg-[var(--arena-surface-muted)] transition-colors">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div 
                         className="flex min-w-0 items-start gap-3 cursor-pointer flex-1"
@@ -1989,17 +1989,17 @@ export default function ClubHomePage() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-slate-950">{item.actor}</p>
+                            <p className="font-semibold text-[var(--arena-text)]">{item.actor}</p>
                             <Badge className="border-blue-200 bg-blue-50 text-blue-800 text-[10px]">Announcement</Badge>
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-[10px] text-[var(--arena-text-dim)]">
                               {isExpanded ? 'Click to collapse' : 'Click to expand'}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
+                          <p className="mt-1 text-xs text-[var(--arena-text-dim)]">{new Date(item.createdAt).toLocaleString()}</p>
                           <div className="mt-2 space-y-1">
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-slate-950">{item.title}</p>
-                              <span className="text-slate-400">
+                              <p className="font-bold text-[var(--arena-text)]">{item.title}</p>
+                              <span className="text-[var(--arena-text-dim)]">
                                 <ChevronRight className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} size={16} />
                               </span>
                             </div>
@@ -2029,7 +2029,7 @@ export default function ClubHomePage() {
               })}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+            <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">
               {isSecondaryLoading ? 'Loading announcements...' : 'No announcements yet.'}
             </p>
           )}
@@ -2039,14 +2039,14 @@ export default function ClubHomePage() {
       <Card>
         <CardContent className="space-y-4 pt-4 sm:pt-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-950">Upcoming game days</h2>
-            <div className="flex border border-slate-200 rounded-lg p-0.5 bg-slate-100/80">
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Upcoming game days</h2>
+            <div className="flex border border-[var(--arena-border)] rounded-lg p-0.5 bg-slate-100/80">
               <button
                 type="button"
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'list'
                     ? 'bg-[#0b1322] text-slate-300 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-950'
+                    : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]'
                 }`}
                 onClick={() => setEventsViewMode('list')}
               >
@@ -2057,7 +2057,7 @@ export default function ClubHomePage() {
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'calendar'
                     ? 'bg-[#0b1322] text-slate-300 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-950'
+                    : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]'
                 }`}
                 onClick={() => setEventsViewMode('calendar')}
               >
@@ -2077,7 +2077,7 @@ export default function ClubHomePage() {
                   .map((event) => renderEventCard(event))}
               </div>
             ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No upcoming game days yet.</p>
+              <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">No upcoming game days yet.</p>
             )
           ) : (
             <div className="space-y-4">
@@ -2111,7 +2111,7 @@ export default function ClubHomePage() {
               </div>
 
               {/* Day of Week Headers */}
-              <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-500 border-b border-slate-100 pb-2">
+              <div className="grid grid-cols-7 text-center text-xs font-bold text-[var(--arena-text-dim)] border-b border-slate-100 pb-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
                   <div key={idx}>{day}</div>
                 ))}
@@ -2138,12 +2138,12 @@ export default function ClubHomePage() {
                       onClick={() => setSelectedDate(cell.date)}
                       className={`relative flex flex-col items-center justify-between p-1 sm:p-2 min-h-10 sm:min-h-12 border rounded-lg transition-all ${
                         cell.isCurrentMonth 
-                          ? 'text-slate-300 bg-[#0b1322] border-slate-200/60' 
-                          : 'text-slate-400 bg-slate-50/50 border-slate-100'
+                          ? 'text-slate-300 bg-[#0b1322] border-[var(--arena-border)]/60' 
+                          : 'text-[var(--arena-text-dim)] bg-[var(--arena-surface-muted)]/50 border-slate-100'
                       } ${
                         isSelected 
                           ? `ring-2 ${theme.ring} ${theme.bgLight}/20 ${theme.border}` 
-                          : 'hover:bg-slate-50'
+                          : 'hover:bg-[var(--arena-surface-muted)]'
                       }`}
                     >
                       <span className={`text-xs font-bold ${
@@ -2179,8 +2179,8 @@ export default function ClubHomePage() {
                     {getEventsForDate(selectedDate).map((event) => renderEventCard(event))}
                   </div>
                 ) : (
-                  <div className="text-center py-6 px-4 border border-dashed border-slate-200 rounded-lg">
-                    <p className="text-xs text-slate-500 mb-2">No game days scheduled for this date.</p>
+                  <div className="text-center py-6 px-4 border border-dashed border-[var(--arena-border)] rounded-lg">
+                    <p className="text-xs text-[var(--arena-text-dim)] mb-2">No game days scheduled for this date.</p>
                     {isAdmin && (
                       <Button 
                         type="button" 
@@ -2212,13 +2212,13 @@ export default function ClubHomePage() {
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
             <div className="flex flex-col gap-2 border-b border-slate-100 pb-3">
-              <Badge className="w-fit border-emerald-250 bg-emerald-50 text-emerald-800 font-extrabold uppercase tracking-wider text-[10px]">
+              <Badge className="w-fit border-emerald-250 bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] font-extrabold uppercase tracking-wider text-[10px]">
                 ⭐ Latest Session Summary
               </Badge>
-              <h2 className="text-xl font-bold text-slate-950">
+              <h2 className="text-xl font-bold text-[var(--arena-text)]">
                 {latestSessionWithMatches.title}
               </h2>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-[var(--arena-text-dim)] font-medium">
                 📅 {new Date(latestSessionWithMatches.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 {latestSessionWithMatches.location ? ` · 📍 ${latestSessionWithMatches.location}` : ''}
               </p>
@@ -2232,10 +2232,10 @@ export default function ClubHomePage() {
                 { label: 'Clutch Matches', val: latestSessionWithMatches.highlights.stats.clutchMatches, emoji: '🔥', tooltip: 'Matches decided by 3 points or fewer in any set' },
                 { label: 'Highest Set Score', val: latestSessionWithMatches.highlights.stats.highestScoreStr, emoji: '⚡' }
               ].map((stat) => (
-                <div key={stat.label} className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center shadow-sm" title={stat.tooltip}>
+                <div key={stat.label} className="bg-[var(--arena-surface-muted)] border border-[var(--arena-border)]/80 rounded-xl p-3 text-center shadow-sm" title={stat.tooltip}>
                   <span className="text-xl mb-0.5 block">{stat.emoji}</span>
                   <span className="block text-base font-bold text-slate-900">{stat.val}</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{stat.label}</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--arena-text-dim)]">{stat.label}</span>
                 </div>
               ))}
             </div>
@@ -2251,8 +2251,8 @@ export default function ClubHomePage() {
                   <p className="mt-1 text-xs font-semibold text-amber-750">
                     🔥 {Math.round(latestSessionWithMatches.highlights.mvp.winRate)}% Win Rate ({latestSessionWithMatches.highlights.mvp.wins}W-{latestSessionWithMatches.highlights.mvp.losses}L)
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Point Diff: <span className="font-semibold text-emerald-600">+{latestSessionWithMatches.highlights.mvp.pointDiff}</span>
+                  <p className="text-[10px] text-[var(--arena-text-dim)] mt-0.5">
+                    Point Diff: <span className="font-semibold text-[var(--arena-accent)]">+{latestSessionWithMatches.highlights.mvp.pointDiff}</span>
                   </p>
                 </div>
               )}
@@ -2266,22 +2266,22 @@ export default function ClubHomePage() {
                   <p className="mt-1 text-xs font-semibold text-orange-700">
                     📈 {latestSessionWithMatches.highlights.streakStar.longestStreak} Win Streak
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Total Wins: <span className="font-semibold text-slate-700">{latestSessionWithMatches.highlights.streakStar.wins}</span>
+                  <p className="text-[10px] text-[var(--arena-text-dim)] mt-0.5">
+                    Total Wins: <span className="font-semibold text-[var(--arena-text-muted)]">{latestSessionWithMatches.highlights.streakStar.wins}</span>
                   </p>
                 </div>
               )}
 
               {/* Resilience */}
               {latestSessionWithMatches.highlights.resilience && (
-                <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/20 p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)]/20 p-4 shadow-sm">
                   <div className="absolute top-2 right-2 text-xl">🛠️</div>
-                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest block">Resilience Award</span>
+                  <span className="text-[10px] font-bold text-[var(--arena-accent)] uppercase tracking-widest block">Resilience Award</span>
                   <h4 className="mt-1 text-sm font-extrabold text-slate-900 truncate">{latestSessionWithMatches.highlights.resilience.name}</h4>
-                  <p className="mt-1 text-xs font-semibold text-emerald-700">
+                  <p className="mt-1 text-xs font-semibold text-[var(--arena-accent)]">
                     💪 Played {latestSessionWithMatches.highlights.resilience.games} Matches
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
+                  <p className="text-[10px] text-[var(--arena-text-dim)] mt-0.5">
                     Record: {latestSessionWithMatches.highlights.resilience.wins}W - {latestSessionWithMatches.highlights.resilience.losses}L
                   </p>
                 </div>
@@ -2298,7 +2298,7 @@ export default function ClubHomePage() {
                   <p className="mt-1 text-xs font-semibold text-indigo-750">
                     🏆 {Math.round(latestSessionWithMatches.highlights.powerDuo.winRate)}% Win Rate
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
+                  <p className="text-[10px] text-[var(--arena-text-dim)] mt-0.5">
                     Record: {latestSessionWithMatches.highlights.powerDuo.wins}W / {latestSessionWithMatches.highlights.powerDuo.matches}M
                   </p>
                 </div>
@@ -2315,7 +2315,7 @@ export default function ClubHomePage() {
                   <p className="mt-1 text-xs font-semibold text-red-700">
                     💥 Faced Off {latestSessionWithMatches.highlights.rivalry.count} Times
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
+                  <p className="text-[10px] text-[var(--arena-text-dim)] mt-0.5">
                     Most matches played on opposing teams.
                   </p>
                 </div>
@@ -2330,21 +2330,21 @@ export default function ClubHomePage() {
         <CardContent className="space-y-4 pt-4 sm:pt-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-950">Club leaderboard</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h2 className="text-lg font-bold text-[var(--arena-text)]">Club leaderboard</h2>
+              <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">
                 {sortBy === 'elo' ? 'Rankings based on competitive Elo ratings.' : 'Rankings based on win rate for the selected timeframe.'}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {/* Sort Toggle */}
-              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
+              <div className="inline-flex rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-1 shadow-sm">
                 <button
                   type="button"
                   onClick={() => setSortBy('elo')}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                     sortBy === 'elo'
-                      ? `bg-[#0b1322] ${theme.text} shadow-sm border border-slate-200/50`
-                      : "text-slate-600 hover:text-slate-900"
+                      ? `bg-[#0b1322] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                      : "text-[var(--arena-text-muted)] hover:text-slate-900"
                   }`}
                 >
                   ⚡ Elo Rating
@@ -2354,15 +2354,15 @@ export default function ClubHomePage() {
                   onClick={() => setSortBy('win-rate')}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                     sortBy === 'win-rate'
-                      ? `bg-[#0b1322] ${theme.text} shadow-sm border border-slate-200/50`
-                      : "text-slate-600 hover:text-slate-900"
+                      ? `bg-[#0b1322] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                      : "text-[var(--arena-text-muted)] hover:text-slate-900"
                   }`}
                 >
                   📈 Win Rate
                 </button>
               </div>
 
-              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
+              <div className="inline-flex rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-1 shadow-sm">
                 {[
                   { id: 'all-time', label: '🏆 All-Time' },
                   { id: 'week', label: '📅 This Week' },
@@ -2374,8 +2374,8 @@ export default function ClubHomePage() {
                     onClick={() => setTimeframe(tab.id)}
                     className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                       timeframe === tab.id
-                        ? `bg-[#0b1322] ${theme.text} shadow-sm border border-slate-200/50`
-                        : "text-slate-600 hover:text-slate-900"
+                        ? `bg-[#0b1322] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                        : "text-[var(--arena-text-muted)] hover:text-slate-900"
                     }`}
                   >
                     {tab.label}
@@ -2392,7 +2392,7 @@ export default function ClubHomePage() {
                         setTimeframe(e.target.value)
                       }
                     }}
-                    className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
+                    className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-[var(--arena-border)] rounded-lg bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
                   >
                     <option value="">🎯 Filter by Session</option>
                     {events
@@ -2410,7 +2410,7 @@ export default function ClubHomePage() {
           </div>
           {sectionErrors.leaderboard ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{sectionErrors.leaderboard}</p> : null}
           {weeklyHighlights && (weeklyHighlights.mvp || weeklyHighlights.streakStar || weeklyHighlights.resilience) && (
-            <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/60 dark:border-slate-800 rounded-xl p-3 grid gap-3 sm:grid-cols-3">
+            <div className="bg-[var(--arena-surface-muted)]/50 dark:bg-slate-900/30 border border-[var(--arena-border)]/60 dark:border-slate-800 rounded-xl p-3 grid gap-3 sm:grid-cols-3">
               {weeklyHighlights.mvp && (() => {
                 const mvp = weeklyHighlights.mvp
                 const m = members.find(mem => mem.name?.toLowerCase() === mvp.name.toLowerCase())
@@ -2431,7 +2431,7 @@ export default function ClubHomePage() {
                     </div>
                     <div className="mt-2 flex items-center justify-between text-xs font-bold text-amber-750 dark:text-amber-400">
                       <span>🔥 {Math.round(mvp.winRate)}% Win</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">({mvp.wins}W-{mvp.losses}L)</span>
+                      <span className="text-[10px] text-[var(--arena-text-dim)] dark:text-[var(--arena-text-dim)] font-semibold">({mvp.wins}W-{mvp.losses}L)</span>
                     </div>
                   </div>
                 )
@@ -2457,7 +2457,7 @@ export default function ClubHomePage() {
                     </div>
                     <div className="mt-2 flex items-center justify-between text-xs font-bold text-orange-750 dark:text-orange-400">
                       <span>📈 {streakStar.longestStreak} Streak</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{streakStar.wins} Wins</span>
+                      <span className="text-[10px] text-[var(--arena-text-dim)] dark:text-[var(--arena-text-dim)] font-semibold">{streakStar.wins} Wins</span>
                     </div>
                   </div>
                 )
@@ -2483,7 +2483,7 @@ export default function ClubHomePage() {
                     </div>
                     <div className={`mt-2 flex items-center justify-between text-xs font-bold text-${accent}-750 dark:${theme.textLight}`}>
                       <span>{resilience.games} Matches</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">({resilience.wins}W-{resilience.losses}L)</span>
+                      <span className="text-[10px] text-[var(--arena-text-dim)] dark:text-[var(--arena-text-dim)] font-semibold">({resilience.wins}W-{resilience.losses}L)</span>
                     </div>
                   </div>
                 )
@@ -2502,55 +2502,61 @@ export default function ClubHomePage() {
                 )
 
                 return (
-                  <div key={player.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div key={player.name} className="rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3 sm:p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {renderRankBadge(index + 1)}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="shrink-0">{renderRankBadge(index + 1)}</div>
                           {(() => {
                             const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
                             return match?.user_id ? (
-                              <Link to={`/member/${match.user_id}`} className={`truncate font-semibold hover:underline ${theme.text}`}>
+                              <Link to={`/member/${match.user_id}`} className={`truncate text-base sm:text-lg font-extrabold hover:underline ${theme.text}`}>
                                 {player.name}
                               </Link>
                             ) : (
-                              <span className="truncate font-semibold text-slate-950">{player.name}</span>
+                              <span className="truncate text-base sm:text-lg font-extrabold text-[var(--arena-text)]">{player.name}</span>
                             )
                           })()}
-                          {user && !isMe && (
-                            <Link
-                              to={`/dashboard?rival=${player.name}`}
-                              className={`inline-flex items-center gap-0.5 text-[10px] font-extrabold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0 ml-1 bg-${accent}-50 px-1.5 py-0.5 rounded border border-${accent}-100 shadow-sm`}
-                              title={`Compare Head-to-Head with ${player.name}`}
-                            >
-                              ⚔️ H2H
-                            </Link>
-                          )}
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2.5">
                           {(() => {
                             const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
                             const elo = match?.elo_rating || 1200
                             return (
-                              <Badge className={`border-${accent}-200 dark:border-${accent}-900 bg-${accent}-50 dark:bg-${accent}-950/30 text-${accent}-800 dark:text-${accent}-400 gap-0.5 font-extrabold shadow-sm shrink-0`}>
+                              <Badge className={`border-${accent}-200 dark:border-${accent}-900 bg-${accent}-50 dark:bg-${accent}-950/30 text-${accent}-800 dark:text-${accent}-400 gap-0.5 text-[10px] sm:text-xs font-extrabold shadow-sm shrink-0 px-1.5 py-0.5 sm:px-2 sm:py-0.5`}>
                                 ⚡ {elo} Elo
                               </Badge>
                             )
                           })()}
                           {hasWinStreak ? (
-                            <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 font-extrabold shadow-sm shrink-0">
+                            <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 text-[10px] sm:text-xs font-extrabold shadow-sm shrink-0 px-1.5 py-0.5 sm:px-2 sm:py-0.5">
                               <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
                               {streak.count} Hot Run
                             </Badge>
                           ) : null}
+                          {user && !isMe && (
+                            <Link
+                              to={`/dashboard?rival=${player.name}`}
+                              className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-extrabold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0 bg-${accent}-50 px-1.5 py-0.5 rounded border border-${accent}-100 shadow-sm`}
+                              title={`Compare Head-to-Head with ${player.name}`}
+                            >
+                              ⚔️ H2H
+                            </Link>
+                          )}
                         </div>
-                        <div className="mt-1 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-semibold flex-wrap">
+
+                        <div className="mt-2 flex items-center gap-3 text-xs text-[var(--arena-text-muted)] dark:text-[var(--arena-text-muted)] font-semibold flex-wrap">
                           <span>{player.games} GP</span>
                           <span>{player.wins}W</span>
                           <span>{player.losses}L</span>
                           <span>{player.winPercentage}%</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold text-slate-950">{player.pointsFor} / {player.pointsAgainst} pts</div>
+
+                      <div className="shrink-0 text-right min-w-[5.75rem] sm:min-w-[6.25rem]">
+                        <div className="text-[17px] sm:text-xl font-black leading-none text-[var(--arena-text)] whitespace-nowrap">{player.pointsFor} / {player.pointsAgainst}</div>
+                        <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] text-[var(--arena-text-muted)] mt-1">pts</div>
                       </div>
                     </div>
                   </div>
@@ -2569,7 +2575,7 @@ export default function ClubHomePage() {
               )}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+            <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">
               {isSecondaryLoading ? 'Loading leaderboard...' : 'No matches recorded for this timeframe.'}
             </p>
           )}
@@ -2582,7 +2588,7 @@ export default function ClubHomePage() {
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-slate-950">Recent scores</h2>
+              <h2 className="text-lg font-bold text-[var(--arena-text)]">Recent scores</h2>
               {isMember && (
                 <Button
                   type="button"
@@ -2591,7 +2597,7 @@ export default function ClubHomePage() {
                   className="flex items-center justify-center gap-1.5"
                   onClick={handleCreateScore}
                 >
-                  <ClipboardPenLine size={14} className="text-slate-600" />
+                  <ClipboardPenLine size={14} className="text-[var(--arena-text-muted)]" />
                   Record Score
                 </Button>
               )}
@@ -2601,7 +2607,7 @@ export default function ClubHomePage() {
               <div className="space-y-3">
                 {showAllMatches && (
                   <div className="relative block">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
+                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--arena-text-dim)]" size={16} aria-hidden="true" />
                     <Input
                       type="text"
                       value={matchSearchQuery}
@@ -2612,7 +2618,7 @@ export default function ClubHomePage() {
                   </div>
                 )}
                 {showAllMatches && filteredMatches.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+                  <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">
                     No matches found matching "{matchSearchQuery}".
                   </p>
                 ) : (
@@ -2645,7 +2651,7 @@ export default function ClubHomePage() {
                 )}
               </div>
             ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+              <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">
                 {isSecondaryLoading ? 'Loading scores...' : 'No results recorded yet.'}
               </p>
             )}
@@ -2657,26 +2663,26 @@ export default function ClubHomePage() {
           {topDoublesPairs.length ? (
             <Card>
               <CardContent className="space-y-4 pt-4 sm:pt-5">
-                <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
                   <Trophy size={18} className="text-amber-500 font-bold" />
                   Top Doubles Pairs
                 </h2>
-                <p className="text-xs text-slate-500">Unbeatable combinations (played at least 2 matches together).</p>
+                <p className="text-xs text-[var(--arena-text-dim)]">Unbeatable combinations (played at least 2 matches together).</p>
                 <div className="space-y-2">
                   {topDoublesPairs.map((pair, index) => (
-                    <div key={pair.names} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
+                    <div key={pair.names} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-extrabold text-slate-500">#{index + 1}</span>
-                          <span className="truncate font-semibold text-slate-950 text-sm">{pair.names}</span>
+                          <span className="font-mono text-xs font-extrabold text-[var(--arena-text-dim)]">#{index + 1}</span>
+                          <span className="truncate font-semibold text-[var(--arena-text)] text-sm">{pair.names}</span>
                         </div>
-                        <div className="mt-1 flex gap-2 text-xs text-slate-500">
+                        <div className="mt-1 flex gap-2 text-xs text-[var(--arena-text-dim)]">
                           <span>{pair.matches} Matches</span>
                           <span>{pair.wins} Wins</span>
                           <span>{pair.winRate}% Win Rate</span>
                         </div>
                       </div>
-                      <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 font-bold shrink-0">
+                      <Badge className="border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] font-bold shrink-0">
                         {pair.wins} - {pair.losses}
                       </Badge>
                     </div>
@@ -2689,7 +2695,7 @@ export default function ClubHomePage() {
           <Card>
             <CardContent className="space-y-4 pt-4 sm:pt-5">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-slate-950">Members</h2>
+                <h2 className="text-lg font-bold text-[var(--arena-text)]">Members</h2>
                 <Link to={`/club/${clubId}/members`} className={`inline-flex items-center gap-1 text-sm font-semibold ${theme.text}`}>
                   View all <ArrowRight size={15} aria-hidden="true" />
                 </Link>
@@ -2700,14 +2706,14 @@ export default function ClubHomePage() {
                   {members.slice(0, 5).map((member) => {
                     const isCurrentUser = user && user.id === member.user_id
                     return (
-                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-[#0b1322] shadow-sm hover:border-slate-350 transition">
+                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--arena-border)] p-3 bg-[#0b1322] shadow-sm hover:border-slate-350 transition">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="min-w-0 truncate font-semibold text-slate-950">
+                          <span className="min-w-0 truncate font-semibold text-[var(--arena-text)]">
                             <Link to={`/member/${member.user_id}`} className={`hover:underline ${theme.text}`}>
                               {member.name || 'Unknown member'}
                             </Link>
                           </span>
-                          <Badge className="text-[9px] bg-slate-50 border-slate-200 text-slate-700 capitalize font-medium">{member.role}</Badge>
+                          <Badge className="text-[9px] bg-[var(--arena-surface-muted)] border-[var(--arena-border)] text-[var(--arena-text-muted)] capitalize font-medium">{member.role}</Badge>
                         </div>
                         {user && !isCurrentUser && (
                           <Link
@@ -2723,7 +2729,7 @@ export default function ClubHomePage() {
                   })}
                 </div>
               ) : (
-                <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-650">
+                <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-slate-650">
                   {isSecondaryLoading ? 'Loading members...' : 'No members yet.'}
                 </p>
               )}
@@ -2736,32 +2742,32 @@ export default function ClubHomePage() {
   <div className="space-y-4 pt-4 sm:pt-5">
     <div className="flex items-start justify-between gap-3">
       <div>
-        <h2 className="text-xl font-bold text-slate-950">{editingEvent ? 'Edit event' : 'Create new event'}</h2>
-        <p className="text-sm text-slate-600">{editingEvent ? 'Update the session details members see.' : 'Add the next game day for members.'}</p>
+        <h2 className="text-xl font-bold text-[var(--arena-text)]">{editingEvent ? 'Edit event' : 'Create new event'}</h2>
+        <p className="text-sm text-[var(--arena-text-muted)]">{editingEvent ? 'Update the session details members see.' : 'Add the next game day for members.'}</p>
       </div>
       <Button type="button" variant="ghost" size="icon" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} aria-label="Close">
         <X size={18} aria-hidden="true" />
       </Button>
     </div>
     <form className="space-y-4" onSubmit={handleCreateEvent}>
-      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+      <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
         <span>Event title *</span>
         <Input type="text" placeholder="e.g. Wednesday Singles Night" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} maxLength={120} required />
       </label>
-      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+      <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
         <span>Date & time *</span>
         <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
       </label>
-      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+      <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
         <span>Location</span>
         <Input type="text" placeholder="e.g. Court 2" value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} maxLength={200} />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+        <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
           <span>Cost per member (RM)</span>
           <Input type="number" min="0" step="0.01" placeholder="15.00" value={eventCostAmount} onChange={(e) => setEventCostAmount(e.target.value)} />
         </label>
-        <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+        <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
           <span>Cost note</span>
           <Input type="text" placeholder="Court + shuttle" value={eventCostNote} onChange={(e) => setEventCostNote(e.target.value)} maxLength={200} />
         </label>
@@ -2777,19 +2783,19 @@ export default function ClubHomePage() {
   <div className="space-y-4 pt-4 sm:pt-5">
     <div className="flex items-start justify-between gap-3">
       <div>
-        <h2 className="text-xl font-bold text-slate-950">{editingMessage ? 'Edit message' : 'Notify members'}</h2>
-        <p className="text-sm text-slate-600">{editingMessage ? 'Update the message and member notifications.' : 'Send news or updates to all active club members.'}</p>
+        <h2 className="text-xl font-bold text-[var(--arena-text)]">{editingMessage ? 'Edit message' : 'Notify members'}</h2>
+        <p className="text-sm text-[var(--arena-text-muted)]">{editingMessage ? 'Update the message and member notifications.' : 'Send news or updates to all active club members.'}</p>
       </div>
       <Button type="button" variant="ghost" size="icon" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} aria-label="Close">
         <X size={18} aria-hidden="true" />
       </Button>
     </div>
     <form className="space-y-4" onSubmit={editingMessage ? handleUpdateMessage : handleSendAnnouncement}>
-      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+      <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
         <span>Title *</span>
         <Input type="text" placeholder="e.g. Court changed this Friday" value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} maxLength={120} required />
       </label>
-      <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+      <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
         <span>Message *</span>
         <Textarea placeholder="Write the update members should see." value={announcementMessage} onChange={(e) => setAnnouncementMessage(e.target.value)} maxLength={1000} required />
       </label>
@@ -2807,22 +2813,22 @@ export default function ClubHomePage() {
             <CardContent className="space-y-4 pt-4 sm:pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950">Join requests</h2>
-                  <p className="text-sm text-slate-600">Approve or reject pending member requests. Email verification is required before approval.</p>
+                  <h2 className="text-xl font-bold text-[var(--arena-text)]">Join requests</h2>
+                  <p className="text-sm text-[var(--arena-text-muted)]">Approve or reject pending member requests. Email verification is required before approval.</p>
                 </div>
                 <Button type="button" variant="ghost" size="icon" onClick={() => setShowJoinRequestsModal(false)} aria-label="Close">
                   <X size={18} aria-hidden="true" />
                 </Button>
               </div>
               {isLoadingRequests ? (
-                <p className="text-sm text-slate-600">Loading...</p>
+                <p className="text-sm text-[var(--arena-text-muted)]">Loading...</p>
               ) : joinRequests.length ? (
                 <div className="space-y-3">
                   {joinRequests.map((request) => (
-                    <div key={request.id} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div key={request.id} className="grid gap-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
                       <div className="min-w-0">
-                        <h3 className="truncate font-bold text-slate-950">{request.name || 'Unknown member'}</h3>
-                        <p className="break-words text-sm text-slate-600">{request.email}</p>
+                        <h3 className="truncate font-bold text-[var(--arena-text)]">{request.name || 'Unknown member'}</h3>
+                        <p className="break-words text-sm text-[var(--arena-text-muted)]">{request.email}</p>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Button size="sm" type="button" onClick={() => handleApproveRequest(request.id)}>Approve</Button>
@@ -2832,7 +2838,7 @@ export default function ClubHomePage() {
                   ))}
                 </div>
               ) : (
-                <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No pending join requests.</p>
+                <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">No pending join requests.</p>
               )}
             </CardContent>
           </Card>
@@ -2868,7 +2874,7 @@ export default function ClubHomePage() {
               {/* Header */}
               <div className="relative px-6 py-6 md:py-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex-none">
                 <div className="absolute top-4 right-4">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => setShowHighlightsEvent(null)} className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-full">
+                  <Button type="button" variant="ghost" size="icon" onClick={() => setShowHighlightsEvent(null)} className="text-[var(--arena-text-dim)] hover:text-white hover:bg-slate-800 rounded-full">
                     <X size={20} />
                   </Button>
                 </div>
@@ -2879,7 +2885,7 @@ export default function ClubHomePage() {
                   <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400 bg-clip-text text-transparent">
                     {showHighlightsEvent.title}
                   </h2>
-                  <p className="text-sm text-slate-400 font-medium">
+                  <p className="text-sm text-[var(--arena-text-dim)] font-medium">
                     📅 {eventDateStr} {showHighlightsEvent.location ? `· 📍 ${showHighlightsEvent.location}` : ''}
                   </p>
                 </div>
@@ -2895,7 +2901,7 @@ export default function ClubHomePage() {
                     <div key={label} className="bg-slate-950/40 rounded-lg p-3 border border-slate-800/60 text-center">
                       <span className="text-2xl mb-1 block">{emoji}</span>
                       <span className="block text-lg font-bold text-white">{val}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{label}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--arena-text-dim)]">{label}</span>
                     </div>
                   ))}
                 </div>
@@ -2906,7 +2912,7 @@ export default function ClubHomePage() {
                 
                 {/* Accordion/Cards of highlights */}
                 <div>
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">🏆 Tonight's Highlights</h3>
+                  <h3 className="text-sm font-bold text-[var(--arena-text-dim)] uppercase tracking-widest mb-4">🏆 Tonight's Highlights</h3>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     
                     {/* MVP (King of the Court) */}
@@ -2918,10 +2924,10 @@ export default function ClubHomePage() {
                         <p className="mt-2 text-xs font-semibold text-amber-400/90">
                           🔥 {Math.round(highlights.mvp.winRate)}% Win Rate ({highlights.mvp.wins}W-{highlights.mvp.losses}L)
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-1">
-                          Point Diff: <span className="font-semibold text-emerald-400">+{highlights.mvp.pointDiff}</span>
+                        <p className="text-[11px] text-[var(--arena-text-dim)] mt-1">
+                          Point Diff: <span className="font-semibold text-[var(--arena-accent)]">+{highlights.mvp.pointDiff}</span>
                         </p>
-                        <p className="mt-3 text-[10px] italic text-slate-500">The most dominant player of the night.</p>
+                        <p className="mt-3 text-[10px] italic text-[var(--arena-text-dim)]">The most dominant player of the night.</p>
                       </div>
                     )}
 
@@ -2934,26 +2940,26 @@ export default function ClubHomePage() {
                         <p className="mt-2 text-xs font-semibold text-orange-400/90">
                           📈 {highlights.streakStar.longestStreak} Win Streak
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-1">
+                        <p className="text-[11px] text-[var(--arena-text-dim)] mt-1">
                           Total Wins: <span className="font-semibold text-white">{highlights.streakStar.wins}</span>
                         </p>
-                        <p className="mt-3 text-[10px] italic text-slate-500">Unstoppable momentum on the court!</p>
+                        <p className="mt-3 text-[10px] italic text-[var(--arena-text-dim)]">Unstoppable momentum on the court!</p>
                       </div>
                     )}
 
                     {/* Resilience Award */}
                     {highlights.resilience && (
-                      <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 to-transparent p-5 shadow-lg shadow-emerald-950/20">
+                      <div className="relative overflow-hidden rounded-xl border border-[var(--arena-accent)]/30 bg-gradient-to-b from-[var(--arena-accent)]/10 to-transparent p-5 shadow-lg shadow-[var(--arena-bg)]/20">
                         <div className="absolute top-2 right-2 text-2xl">🛠️</div>
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Resilience Award</span>
+                        <span className="text-[10px] font-bold text-[var(--arena-accent)] uppercase tracking-widest">Resilience Award</span>
                         <h4 className="mt-1.5 text-lg font-extrabold text-white truncate">{highlights.resilience.name}</h4>
-                        <p className="mt-2 text-xs font-semibold text-emerald-400/90">
+                        <p className="mt-2 text-xs font-semibold text-[var(--arena-accent)]/90">
                           💪 Played {highlights.resilience.games} Matches
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-1">
+                        <p className="text-[11px] text-[var(--arena-text-dim)] mt-1">
                           Wins: {highlights.resilience.wins} · Losses: {highlights.resilience.losses}
                         </p>
-                        <p className="mt-3 text-[10px] italic text-slate-500">Showed great stamina and competitive spirit!</p>
+                        <p className="mt-3 text-[10px] italic text-[var(--arena-text-dim)]">Showed great stamina and competitive spirit!</p>
                       </div>
                     )}
 
@@ -2966,10 +2972,10 @@ export default function ClubHomePage() {
                         <p className="mt-2 text-xs font-semibold text-indigo-400/90">
                           🏆 {Math.round(highlights.powerDuo.winRate)}% Win Rate
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-1">
+                        <p className="text-[11px] text-[var(--arena-text-dim)] mt-1">
                           Record: {highlights.powerDuo.wins} Wins / {highlights.powerDuo.matches} Matches
                         </p>
-                        <p className="mt-3 text-[10px] italic text-slate-500">The night's most synergistic team pairing.</p>
+                        <p className="mt-3 text-[10px] italic text-[var(--arena-text-dim)]">The night's most synergistic team pairing.</p>
                       </div>
                     )}
 
@@ -2982,10 +2988,10 @@ export default function ClubHomePage() {
                         <p className="mt-2 text-xs font-semibold text-red-400/90">
                           💥 Faced Off {highlights.rivalry.count} Times
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-1">
+                        <p className="text-[11px] text-[var(--arena-text-dim)] mt-1">
                           A close, competitive battle!
                         </p>
-                        <p className="mt-3 text-[10px] italic text-slate-500">Most matches played on opposing teams.</p>
+                        <p className="mt-3 text-[10px] italic text-[var(--arena-text-dim)]">Most matches played on opposing teams.</p>
                       </div>
                     )}
 
@@ -2994,11 +3000,11 @@ export default function ClubHomePage() {
 
                 {/* Night's Standings */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">📈 Standings for this Session</h3>
+                  <h3 className="text-sm font-bold text-[var(--arena-text-dim)] uppercase tracking-widest">📈 Standings for this Session</h3>
                   <div className="border border-slate-800 rounded-lg overflow-x-auto bg-slate-900/60 font-sans">
                     <table className="w-full text-left border-collapse text-xs md:text-sm">
                       <thead>
-                        <tr className="border-b border-slate-800 bg-slate-950/80 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                        <tr className="border-b border-slate-800 bg-slate-950/80 text-[var(--arena-text-dim)] font-bold uppercase tracking-wider text-[10px]">
                           <th className="py-3 px-4">Rank</th>
                           <th className="py-3 px-4">Player</th>
                           <th className="py-3 px-4 text-center">GP</th>
@@ -3011,13 +3017,13 @@ export default function ClubHomePage() {
                       <tbody className="divide-y divide-slate-800/50">
                         {highlights.playersList.map((player, idx) => (
                           <tr key={player.name} className="hover:bg-slate-800/40 text-slate-200">
-                            <td className="py-3 px-4 font-bold text-slate-400">{idx + 1}</td>
+                            <td className="py-3 px-4 font-bold text-[var(--arena-text-dim)]">{idx + 1}</td>
                             <td className="py-3 px-4 font-semibold text-white">{player.name}</td>
                             <td className="py-3 px-4 text-center font-mono">{player.games}</td>
                             <td className="py-3 px-4 text-center font-mono text-slate-300">{player.wins} - {player.losses}</td>
                             <td className="py-3 px-4 text-center font-mono">{Math.round(player.winRate)}%</td>
-                            <td className="py-3 px-4 text-right font-mono text-slate-400">{player.pointsFor} / {player.pointsAgainst}</td>
-                            <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400">{player.pointDiff > 0 ? `+${player.pointDiff}` : player.pointDiff}</td>
+                            <td className="py-3 px-4 text-right font-mono text-[var(--arena-text-dim)]">{player.pointsFor} / {player.pointsAgainst}</td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-[var(--arena-accent)]">{player.pointDiff > 0 ? `+${player.pointDiff}` : player.pointDiff}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -3027,7 +3033,7 @@ export default function ClubHomePage() {
 
                 {/* Session Match Logs */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">📝 Match Records</h3>
+                  <h3 className="text-sm font-bold text-[var(--arena-text-dim)] uppercase tracking-widest">📝 Match Records</h3>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {eventMatches.map((match) => {
                       const t1 = match.participants.filter(p => p.team === 1).map(p => p.name || p.guest_name || 'Guest').join(' & ')
@@ -3042,32 +3048,32 @@ export default function ClubHomePage() {
                         <div key={match.id} className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-4 space-y-2">
                           <div className="flex justify-between items-start">
                             <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{match.sport} · {match.match_type}</span>
-                            <span className="text-[10px] text-slate-500">{new Date(match.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[10px] text-[var(--arena-text-dim)]">{new Date(match.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                           
                           <div className="space-y-1.5">
                             {/* Team 1 */}
                             <div className="flex justify-between items-center text-xs">
-                              <span className={`font-semibold truncate max-w-[180px] ${matchWinner === 1 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
+                              <span className={`font-semibold truncate max-w-[180px] ${matchWinner === 1 ? 'text-amber-400 font-bold' : 'text-[var(--arena-text-dim)]'}`}>
                                 {matchWinner === 1 ? '👑 ' : ''}{t1}
                               </span>
-                              <span className={`font-mono text-sm ${matchWinner === 1 ? 'font-bold text-amber-400' : 'text-slate-400'}`}>{t1Sets}</span>
+                              <span className={`font-mono text-sm ${matchWinner === 1 ? 'font-bold text-amber-400' : 'text-[var(--arena-text-dim)]'}`}>{t1Sets}</span>
                             </div>
                             
                             {/* Team 2 */}
                             <div className="flex justify-between items-center text-xs">
-                              <span className={`font-semibold truncate max-w-[180px] ${matchWinner === 2 ? 'text-emerald-400 font-bold' : 'text-slate-400'}`}>
+                              <span className={`font-semibold truncate max-w-[180px] ${matchWinner === 2 ? 'text-[var(--arena-accent)] font-bold' : 'text-[var(--arena-text-dim)]'}`}>
                                 {matchWinner === 2 ? '👑 ' : ''}{t2}
                               </span>
-                              <span className={`font-mono text-sm ${matchWinner === 2 ? 'font-bold text-emerald-400' : 'text-slate-400'}`}>{t2Sets}</span>
+                              <span className={`font-mono text-sm ${matchWinner === 2 ? 'font-bold text-[var(--arena-accent)]' : 'text-[var(--arena-text-dim)]'}`}>{t2Sets}</span>
                             </div>
                           </div>
 
                           <div className="border-t border-slate-800/60 pt-2 flex items-center justify-between">
-                            <span className="text-[10px] font-mono text-slate-400">
+                            <span className="text-[10px] font-mono text-[var(--arena-text-dim)]">
                               Sets: {scoreSets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')}
                             </span>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => setShareMatch(match)} title="Share Scorecard" className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-800">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => setShareMatch(match)} title="Share Scorecard" className="h-6 w-6 text-[var(--arena-text-dim)] hover:text-white hover:bg-slate-800">
                               <Share2 size={12} />
                             </Button>
                           </div>
@@ -3080,7 +3086,7 @@ export default function ClubHomePage() {
               </CardContent>
 
               {/* Footer */}
-              <div className="bg-slate-900 px-6 py-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500 flex-none">
+              <div className="bg-slate-900 px-6 py-4 border-t border-slate-800 flex justify-between items-center text-xs text-[var(--arena-text-dim)] flex-none">
                 <span>POWERED BY KELABSUKAN.COM</span>
                 <Button type="button" size="sm" variant="secondary" onClick={() => setShowHighlightsEvent(null)}>
                   Close Summary
@@ -3111,37 +3117,37 @@ export default function ClubHomePage() {
               
               <CardContent className="space-y-6 px-6 pt-10 pb-8 sm:px-8">
                 {/* Large celebratory icon */}
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shadow-inner animate-bounce">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] shadow-inner animate-bounce">
                   <span className="text-4xl">🎉</span>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Congratulations!</p>
-                  <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[var(--arena-accent)]">Congratulations!</p>
+                  <h2 className="text-2xl font-extrabold tracking-tight text-[var(--arena-text)]">
                     Welcome to the Club!
                   </h2>
-                  <p className="text-sm leading-6 text-slate-600">
+                  <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
                     You are now an active member of <strong className="text-slate-900">{club.name}</strong>.
                   </p>
                 </div>
 
                 {/* Club Detail Card */}
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-left space-y-3">
+                <div className="rounded-xl border border-slate-100 bg-[var(--arena-surface-muted)] p-4 text-left space-y-3">
                   <div className="flex items-center gap-3">
                     {club.logo_url ? (
-                      <img src={club.logo_url} alt={`${club.name} logo`} className="h-10 w-10 rounded-full object-cover border border-slate-200" />
+                      <img src={club.logo_url} alt={`${club.name} logo`} className="h-10 w-10 rounded-full object-cover border border-[var(--arena-border)]" />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-bold">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--arena-accent)] text-white font-bold">
                         {club.name[0]}
                       </div>
                     )}
                     <div>
                       <h4 className="font-bold text-slate-900 leading-tight">{club.name}</h4>
-                      <p className="text-xs text-slate-500">{club.city || 'Local Club'}</p>
+                      <p className="text-xs text-[var(--arena-text-dim)]">{club.city || 'Local Club'}</p>
                     </div>
                   </div>
                   {club.description && (
-                    <p className="text-xs text-slate-600 italic line-clamp-2 leading-relaxed border-t border-slate-200/60 pt-2.5">
+                    <p className="text-xs text-[var(--arena-text-muted)] italic line-clamp-2 leading-relaxed border-t border-[var(--arena-border)]/60 pt-2.5">
                       "{club.description}"
                     </p>
                   )}
@@ -3149,14 +3155,14 @@ export default function ClubHomePage() {
 
                 {/* Quick guidance tips */}
                 <div className="space-y-2 text-left text-xs">
-                  <p className="font-bold text-slate-700 uppercase tracking-wide">Next steps:</p>
-                  <ul className="space-y-2.5 text-slate-600 pl-1">
+                  <p className="font-bold text-[var(--arena-text-muted)] uppercase tracking-wide">Next steps:</p>
+                  <ul className="space-y-2.5 text-[var(--arena-text-muted)] pl-1">
                     <li className="flex items-start gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">1</span>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-[var(--arena-accent)]">1</span>
                       <span>Check the **Upcoming Sessions** below and submit your RSVP.</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">2</span>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-[var(--arena-accent)]">2</span>
                       <span>View recent match history and record set scores to update the ELO leaderboard.</span>
                     </li>
                   </ul>
@@ -3180,4 +3186,3 @@ export default function ClubHomePage() {
     </Page>
   )
 }
-

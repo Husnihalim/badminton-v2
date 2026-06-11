@@ -96,11 +96,12 @@ describe('ClubSettingsPage delete club flow', () => {
   it('prevents deletion when members exist', async () => {
     // mock members present
     // @ts-ignore
-    api.getClubMembers.mockResolvedValue([{ id: 'mem-1', role: 'member' }]);
+    api.getClubMembers.mockResolvedValue([{ id: 'mem-1', role: 'member' }, { id: 'mem-2', role: 'member' }]);
     render(
       <MemoryRouter initialEntries={['/club/club-1/settings']}> 
         <Routes>
           <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
+          <Route path="/dashboard" element={<div>Dashboard</div>} />
         </Routes>
       </MemoryRouter>
     );
@@ -111,8 +112,27 @@ describe('ClubSettingsPage delete club flow', () => {
     await waitFor(() => fireEvent.click(screen.getByRole('button', { name: /delete forever/i })));
 
     await waitFor(() =>
-      expect(screen.getByText(/Cannot delete club: it still has 1 member/)).toBeInTheDocument()
+      expect(screen.getByText(/Cannot delete club: it still has 1 other member/)).toBeInTheDocument()
     );
     expect(api.deleteClub).not.toHaveBeenCalled();
+  });
+
+  it('allows owner or superadmin deletion when they are the only member', async () => {
+    render(
+      <MemoryRouter initialEntries={['/club/club-1/settings']}> 
+        <Routes>
+          <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
+          <Route path="/dashboard" element={<div>Dashboard</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByDisplayValue('Test Club')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /delete club/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /delete forever/i }));
+
+    await waitFor(() => expect(api.deleteClub).toHaveBeenCalledWith('club-1'));
+    await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
   });
 });

@@ -66,7 +66,7 @@ export default function InviteJoinPage() {
   if (isLoading || status === 'joining') {
     return (
       <Card className="mx-auto mt-8 max-w-md">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">
+        <CardContent className="pt-5 text-center text-sm text-[var(--arena-text-muted)]">
           {isLoading ? 'Checking your session...' : 'Joining club...'}
         </CardContent>
       </Card>
@@ -78,9 +78,9 @@ export default function InviteJoinPage() {
       <section className="mx-auto mt-4 max-w-md sm:mt-10">
         <Card>
           <CardHeader>
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Club invite</p>
-            <h1 className="text-2xl font-bold leading-tight text-slate-950">Join with invite link</h1>
-            <p className="text-sm leading-6 text-slate-600">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">Club invite</p>
+            <h1 className="text-2xl font-bold leading-tight text-[var(--arena-text)]">Join with invite link</h1>
+            <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
               Log in or create an account first. This invite will continue after authentication.
             </p>
           </CardHeader>
@@ -107,13 +107,13 @@ export default function InviteJoinPage() {
     <section className="mx-auto mt-4 max-w-md sm:mt-10">
       <Card>
         <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Club invite</p>
-          <h1 className="text-2xl font-bold leading-tight text-slate-950">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">Club invite</p>
+          <h1 className="text-2xl font-bold leading-tight text-[var(--arena-text)]">
             {status === 'joined' ? 'Joined club' : status === 'pending' ? 'Request sent' : 'Invite link issue'}
           </h1>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className={`rounded-lg border p-3 text-sm ${status === 'joined' || status === 'pending' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-700'}`}>
+          <p className={`rounded-lg border p-3 text-sm ${status === 'joined' || status === 'pending' ? 'border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]' : 'border-red-200 bg-red-50 text-red-700'}`}>
             {status === 'joined' || status === 'pending' ? <CheckCircle2 className="mr-1 inline" size={16} aria-hidden="true" /> : null}
             {message}
           </p>

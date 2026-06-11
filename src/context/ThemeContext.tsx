@@ -9,18 +9,22 @@ interface ThemeContextProps {
 
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
+const getInitialTheme = (): Theme => {
+  const storedTheme = localStorage.getItem('kelabsukan-theme');
+  if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'light';
+};
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(
-    (localStorage.getItem('kelabsukan-theme') as Theme) || 'light'
-  );
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    root.classList.toggle('dark', theme === 'dark');
+    root.dataset.theme = theme;
     localStorage.setItem('kelabsukan-theme', theme);
   }, [theme]);
 

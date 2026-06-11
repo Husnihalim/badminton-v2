@@ -19,7 +19,7 @@ function getErrorMessage(err: unknown, fallback: string) {
 function roleBadgeClass(role: Membership['role']) {
   if (role === 'owner') return 'border-amber-200 bg-amber-50 text-amber-800'
   if (role === 'admin') return 'border-blue-200 bg-blue-50 text-blue-800'
-  return 'border-slate-200 bg-slate-50 text-slate-700'
+  return 'border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]'
 }
 
 export default function ClubMembersPage() {
@@ -136,7 +136,7 @@ export default function ClubMembersPage() {
   if (isLoading) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">Loading...</CardContent>
+        <CardContent className="pt-5 text-center text-sm text-[var(--arena-text-muted)]">Loading...</CardContent>
       </Card>
     )
   }
@@ -145,7 +145,7 @@ export default function ClubMembersPage() {
 
   return (
     <Page>
-      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
+      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-[var(--arena-text)] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
 
       <PageHeader
         eyebrow="Members"
@@ -164,10 +164,10 @@ export default function ClubMembersPage() {
       <Card>
         <CardContent className="space-y-3 pt-4 sm:pt-5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
               <Users size={18} aria-hidden="true" />
             </span>
-            <h2 className="text-lg font-bold text-slate-200">Roster</h2>
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Roster</h2>
           </div>
 
           {sortedMembers.length ? (
@@ -179,25 +179,25 @@ export default function ClubMembersPage() {
                       <img 
                         src={member.avatar_url} 
                         alt={member.name || 'Member'} 
-                        className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-slate-200"
+                        className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-[var(--arena-border)]"
                       />
                     ) : (
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0b1322] text-slate-300 shadow-sm">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0b1322] text-[var(--arena-text-dim)] shadow-sm">
                         <UserRound size={18} aria-hidden="true" />
                       </span>
                     )}
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-bold text-slate-200">
-                          <Link to={`/member/${member.user_id}`} className="hover:underline text-emerald-700">
+                        <h3 className="truncate font-bold text-[var(--arena-text)]">
+                          <Link to={`/member/${member.user_id}`} className="hover:underline text-[var(--arena-accent)]">
                             {member.name || 'Unknown member'}
                           </Link>
                         </h3>
                         <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
-                        {member.user_id === user?.id ? <span className="text-xs font-semibold text-slate-400">You</span> : null}
+                        {member.user_id === user?.id ? <span className="text-xs font-semibold text-[var(--arena-text-dim)]">You</span> : null}
                       </div>
-                      <p className="break-words text-sm text-slate-300">{member.email}</p>
-                      <p className="text-xs text-slate-400">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
+                        <p className="break-words text-sm text-[var(--arena-text-muted)]">{member.email}</p>
+                        <p className="text-xs text-[var(--arena-text-muted)]">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
                     </div>
                   </div>
 
@@ -223,7 +223,7 @@ export default function ClubMembersPage() {
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">No members yet.</p>
+            <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">No members yet.</p>
           )}
         </CardContent>
       </Card>
@@ -237,8 +237,8 @@ export default function ClubMembersPage() {
                   <Shield size={18} aria-hidden="true" />
                 </span>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950">Remove member</h2>
-                  <p className="text-sm leading-6 text-slate-600">
+                  <h2 className="text-xl font-bold text-[var(--arena-text)]">Remove member</h2>
+                  <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
                     Remove <strong>{memberToRemove.name}</strong> from this club. This action cannot be undone.
                   </p>
                 </div>

@@ -211,6 +211,11 @@ export function PlayerCard({
                   {g.player_type.replace(/_/g, ' ')}
                 </Badge>
               )}
+              {rank && (
+                <Badge className="bg-[var(--arena-accent-soft)] border border-[var(--arena-accent)]/25 text-[var(--arena-accent)] capitalize">
+                  #{rank.rank} Rank
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -334,20 +339,20 @@ export function PlayerCard({
       })()}
 
       <div className="border-t border-white/10 px-5 py-3 sm:px-6 bg-slate-950/10">
-        <div className="grid gap-y-1 gap-x-4 sm:grid-cols-3 text-xs mb-3">
-          <p className="text-slate-350">
-            Streak: <span className={cn(
-              "font-bold",
-              stats?.streakType === 'win' ? 'text-amber-400' : stats?.streakType === 'loss' ? 'text-red-400' : 'text-white'
-            )}>
-              {stats?.streakType === 'win' ? `🔥 ${stats.streak}W` : stats?.streakType === 'loss' ? `-${stats.streak}L` : '—'}
-            </span>
-          </p>
-          <p className="text-slate-355">Sport: <span className="font-bold text-white capitalize">{profile.preferred_sport || 'Badminton'}</span></p>
-          {elo != null && (
-            <p className="text-slate-355">Rating: <span className="font-extrabold text-[#ccff00]">⚡ {elo}</span></p>
-          )}
-        </div>
+          <div className="grid gap-y-1 gap-x-4 sm:grid-cols-3 text-xs mb-3">
+            <p className="text-slate-350">
+              Streak: <span className={cn(
+                "font-bold",
+                stats?.streakType === 'win' ? 'text-amber-400' : stats?.streakType === 'loss' ? 'text-red-400' : 'text-white'
+              )}>
+                {stats?.streakType === 'win' ? `🔥 ${stats.streak}W` : stats?.streakType === 'loss' ? `-${stats.streak}L` : '—'}
+              </span>
+            </p>
+            <p className="text-slate-355">Sport: <span className="font-bold text-white capitalize">{profile.preferred_sport || 'Badminton'}</span></p>
+            {elo != null && (
+              <p className="text-slate-355">Rating: <span className="font-extrabold text-[#ccff00]">⚡ {elo}</span></p>
+            )}
+          </div>
 
         {/* Compare H2H button */}
         {!isOwner && showFullStats && stats && stats.matchesPlayed > 0 && showH2HButton && (
