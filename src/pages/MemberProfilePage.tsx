@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Activity, Flame, MapPin, Percent, Shield, Trophy, UserRound, ChevronLeft } from 'lucide-react'
+import { Activity, Flame, Percent, Shield, Trophy, ChevronLeft } from 'lucide-react'
 import { getProfile, getClubMatches, getClubLeaderboard } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { Club, MatchWithDetails, User } from '../types'
-import { Badge } from '../components/ui/badge'
+
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Page } from '../components/ui/page'
@@ -359,7 +359,7 @@ export default function MemberProfilePage() {
     )
   }
 
-  const displayName = profile.display_name || profile.name
+
 
   return (
     <Page>

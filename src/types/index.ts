@@ -260,3 +260,35 @@ export interface ClubMessage {
   // Joined fields
   authorName?: string
 }
+
+export interface PlayerDashboardData {
+  clubs: (Club & {
+    role: string
+    elo_rating: number
+    rank: { rank: number; total: number } | null
+    members_count: number
+    avg_elo: number
+  })[]
+  upcoming_events: (ClubEvent & {
+    club_name: string
+    rsvp_status: string | null
+    attendees_count: number
+  })[]
+  recent_matches: MatchWithDetails[]
+  stats: {
+    matchesPlayed: number
+    wins: number
+    losses: number
+    winRate: number
+    streak: number
+    streakType: 'win' | 'loss' | null
+  }
+  achievements: {
+    onFire: boolean
+    cleanSweep: boolean
+    ironMan: boolean
+    dynamicDuo: boolean
+    giantSlayer: boolean
+  }
+}
+

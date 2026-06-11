@@ -1,9 +1,9 @@
 import React from 'react'
 import { MapPin, UserRound } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Badge } from './ui/badge'
 import { cn } from '../lib/utils'
-import type { User, ScoreSet } from '../types'
+import type { User } from '../types'
 
 export interface PlayerCardProps {
   profile: Partial<User>

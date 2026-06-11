@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette, UserCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, deleteClub, getClubMembers, requestClubDeletion } from '../lib/api'
+import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, deleteClub, getClubMembers } from '../lib/api'
 import type { Club, Membership } from '../types'
 import DeleteClubModal from '../components/DeleteClubModal'
 import { Badge } from '../components/ui/badge'
@@ -44,7 +44,7 @@ export default function ClubSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
-  const [deletionRequested, setDeletionRequested] = useState(false)
+
 
   const [openJoin, setOpenJoin] = useState(true)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -114,7 +114,7 @@ export default function ClubSettingsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [clubId, user?.id, user?.role])
+  }, [clubId, user])
 
   useEffect(() => {
     if (clubId) {
@@ -645,15 +645,9 @@ export default function ClubSettingsPage() {
             <Button variant="danger" type="button" onClick={() => alert('Transfer ownership feature coming soon')}>
               Transfer ownership
             </Button>
-            {deletionRequested ? (
-              <Button variant="danger" type="button" disabled className="ml-2">
-                Deletion pending approval
-              </Button>
-            ) : (
-              <Button variant="danger" type="button" onClick={() => setIsDeleteModalOpen(true)} className="ml-2">
-                Delete club
-              </Button>
-            )}
+            <Button variant="danger" type="button" onClick={() => setIsDeleteModalOpen(true)} className="ml-2">
+              Delete club
+            </Button>
           </CardContent>
         </Card>
       ) : null}

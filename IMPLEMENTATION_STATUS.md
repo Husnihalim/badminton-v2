@@ -8,7 +8,7 @@ Production site: https://kelabsukan.com
 
 Latest verified production deploy: `6a227d85f0ab979916a8cfec`
 
-Database status: Supabase remote migration history is synced through `20260605011000_harden_member_role_updates`.
+Database status: Supabase remote migration history is synced through `20260608000000_week0_security_and_indexes`.
 
 ---
 
@@ -121,14 +121,15 @@ Database status: Supabase remote migration history is synced through `2026060501
 
 ---
 
-## 📊 Phase 1 Verification
+## 📊 Phase 1 & Week 0 Verification
 
-Quality gates passed on 2026-06-05:
+Quality gates verified on 2026-06-11:
 
-- `npm run lint`
-- `npm run test`
-- `npm run build`
-- Supabase `migration list --linked` confirmed local and remote migrations match through `20260605011000`.
+- `npm run lint` - Passed with 0 errors/warnings
+- `npm run test` - Passed with all consolidated unit tests passing
+- `npm run build` - Verified SPA bundle compiles correctly
+- GitHub Actions CI workflow configured to run lint + test + build on every push/PR.
+- Supabase migrations match through `20260608000000_week0_security_and_indexes` (gates telemetry RLS with trigger-based rate limits and adds 4 missing database indexes).
 - Live HTTP check confirmed `https://kelabsukan.com` returns `200`.
 - Live HTTP check confirmed `https://kelabsukan.com/dashboard` returns the deployed SPA shell.
 

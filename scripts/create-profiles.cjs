@@ -10,20 +10,21 @@ const { createClient } = require('@supabase/supabase-js')
 // Load .env file
 const envPath = path.join(__dirname, '..', '.env')
 if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8')
-  envContent.split('\n').forEach(line => {
-    const [key, value] = line.split('=')
-    if (key && value) {
-      process.env[key.trim()] = value.trim()
-    }
-  })
+  fs.readFileSync(envPath, 'utf8')
+    .split('\n')
+    .forEach((line) => {
+      if (!line || line.trim().startsWith('#')) return
+      const index = line.indexOf('=')
+      if (index === -1) return
+      process.env[line.slice(0, index).trim()] = line.slice(index + 1).trim()
+    })
 }
 
-const SUPABASE_URL = 'https://yjetickebgngfttlvvur.supabase.co'
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
 
-if (!SUPABASE_SERVICE_KEY) {
-  console.error('❌ SUPABASE_SERVICE_KEY not found in .env')
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('❌ Error: VITE_SUPABASE_URL or SUPABASE_SERVICE_KEY not found in .env file')
   process.exit(1)
 }
 

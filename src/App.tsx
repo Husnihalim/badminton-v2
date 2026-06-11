@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
@@ -24,40 +25,51 @@ const MemberProfilePage = lazy(() => import('./pages/MemberProfilePage'))
 const SuperAdminAnalyticsPage = lazy(() => import('./pages/SuperAdminAnalyticsPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes cache
+    },
+  },
+})
+
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-        <NotificationsProvider>
-          <BrowserRouter>
-            <Layout>
-              <Suspense fallback={<div className="p-4 text-sm text-slate-600">Loading...</div>}>
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/member/:userId" element={<MemberProfilePage />} />
-                  <Route path="/invite/:inviteToken" element={<InviteJoinPage />} />
-                  <Route path="/join/:inviteCode" element={<InviteJoinPage />} />
-                  <Route path="/game/:eventId" element={<GameDaySharePage />} />
-                  <Route path="/club/:clubId" element={<ClubHomePage />} />
-                  <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
-                  <Route path="/club/:clubId/members" element={<ClubMembersPage />} />
-                  <Route path="/superadmin/analytics" element={<SuperAdminAnalyticsPage />} />
-                  <Route path="/not-found" element={<NotFoundPage />} />
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-              </Suspense>
-            </Layout>
-          </BrowserRouter>
-        </NotificationsProvider>
-      </AuthProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+          <NotificationsProvider>
+            <BrowserRouter>
+              <Layout>
+                <Suspense fallback={<div className="p-4 text-sm text-slate-600">Loading...</div>}>
+                  <Routes>
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/member/:userId" element={<MemberProfilePage />} />
+                    <Route path="/invite/:inviteToken" element={<InviteJoinPage />} />
+                    <Route path="/join/:inviteCode" element={<InviteJoinPage />} />
+                    <Route path="/game/:eventId" element={<GameDaySharePage />} />
+                    <Route path="/club/:clubId" element={<ClubHomePage />} />
+                    <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
+                    <Route path="/club/:clubId/members" element={<ClubMembersPage />} />
+                    <Route path="/superadmin/analytics" element={<SuperAdminAnalyticsPage />} />
+                    <Route path="/not-found" element={<NotFoundPage />} />
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </Suspense>
+              </Layout>
+            </BrowserRouter>
+          </NotificationsProvider>
+        </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   )
 }
