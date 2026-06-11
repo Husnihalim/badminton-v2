@@ -69,7 +69,7 @@ export function PlayerCard({
             </div>
             <div className="min-w-0 flex-1 space-y-0.5">
               <h4 className="text-base font-extrabold truncate leading-tight">{displayName}</h4>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--arena-text-muted)]">
                 {profile.id ? `@${profile.name}` : 'Guest Player'}
               </p>
             </div>
@@ -87,12 +87,12 @@ export function PlayerCard({
               {profile.preferred_sport || 'badminton'}
             </Badge>
             {g.play_style && (
-              <Badge className="bg-slate-900 border-slate-800 text-slate-400 capitalize text-[9px] py-0 px-1.5 h-4">
+              <Badge className="bg-slate-900 border-slate-800 text-[var(--arena-text-muted)] capitalize text-[9px] py-0 px-1.5 h-4">
                 {g.play_style.replace(/_/g, ' ')}
               </Badge>
             )}
             {g.dominant_hand && (
-              <Badge className="bg-slate-900 border-slate-800 text-slate-400 capitalize text-[9px] py-0 px-1.5 h-4">
+              <Badge className="bg-slate-900 border-slate-800 text-[var(--arena-text-muted)] capitalize text-[9px] py-0 px-1.5 h-4">
                 {g.dominant_hand}-handed
               </Badge>
             )}
@@ -100,36 +100,36 @@ export function PlayerCard({
 
           {/* Simple specs list */}
           {hasAnyGear ? (
-            <div className="border-t border-white/5 pt-2 space-y-1 text-[11px] text-slate-350">
+            <div className="border-t border-white/5 pt-2 space-y-1 text-[11px] text-[var(--arena-text-muted)]">
               {g.racket && (
                 <p className="truncate">
-                  <span className="text-slate-500 font-semibold">Racket:</span> {g.racket}
+                  <span className="text-[var(--arena-text-muted)] font-semibold">Racket:</span> {g.racket}
                   {g.racket_weight && ` (${g.racket_weight})`}
                 </p>
               )}
               {g.strings && (
                 <p className="truncate">
-                  <span className="text-slate-500 font-semibold">String:</span> {g.strings}
+                  <span className="text-[var(--arena-text-muted)] font-semibold">String:</span> {g.strings}
                   {g.tension && ` @ ${g.tension}`}
                 </p>
               )}
               {g.shoes && (
                 <p className="truncate">
-                  <span className="text-slate-500 font-semibold">Shoes:</span> {g.shoes}
+                  <span className="text-[var(--arena-text-muted)] font-semibold">Shoes:</span> {g.shoes}
                 </p>
               )}
             </div>
           ) : (
-            <p className="border-t border-white/5 pt-2 text-[10px] text-slate-500 italic">No gear specs added yet.</p>
+            <p className="border-t border-white/5 pt-2 text-[10px] text-[var(--arena-text-muted)] italic">No gear specs added yet.</p>
           )}
 
           {/* Simplified stats summary */}
           {showFullStats && stats && stats.matchesPlayed > 0 && (
             <div className="border-t border-white/5 pt-2 flex items-center justify-between gap-2 text-xs">
-              <span className="font-semibold text-slate-400">
+              <span className="font-semibold text-[var(--arena-text-muted)]">
                 Win Rate: <span className="text-[#ccff00] font-extrabold">{stats.winRate}%</span>
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">
+              <span className="text-[10px] text-[var(--arena-text-muted)] font-mono">
                 {stats.wins}W - {stats.losses}L
               </span>
             </div>
@@ -157,7 +157,7 @@ export function PlayerCard({
             🎴 Player Card
           </span>
           {isPrivate ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">
               🔒 Private
             </span>
           ) : (
@@ -190,10 +190,10 @@ export function PlayerCard({
           </div>
           <div className="space-y-1.5 min-w-0 flex-1">
             <h1 className="text-4xl font-extrabold tracking-tight text-white truncate sm:text-5xl">{displayName}</h1>
-            <p className="text-sm text-slate-400">@{profile.name}</p>
+            <p className="text-sm text-[var(--arena-text-muted)]">@{profile.name}</p>
             {profile.city && (
               <p className="text-sm text-slate-300 flex items-center justify-center sm:justify-start gap-1">
-                <MapPin size={14} className="text-slate-400" />
+                <MapPin size={14} className="text-[var(--arena-text-muted)]" />
                 {profile.city}
               </p>
             )}
@@ -250,19 +250,19 @@ export function PlayerCard({
       {showFullStats && stats && stats.matchesPlayed > 0 && (
         <div className="grid grid-cols-2 gap-2 border-t border-white/10 px-5 py-4 sm:grid-cols-4 sm:px-6 bg-slate-950/30">
           <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Record</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Record</p>
             <p className="mt-1 text-lg font-extrabold text-white">
               <span className="text-emerald-400">{stats.wins}W</span>
-              <span className="text-slate-600 mx-0.5">-</span>
+              <span className="text-[var(--arena-text-muted)] mx-0.5">-</span>
               <span className="text-red-400">{stats.losses}L</span>
             </p>
           </div>
           <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Win Rate</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Win Rate</p>
             <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{stats.winRate}%</p>
           </div>
           <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Form</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Form</p>
             <div className="mt-1.5 flex items-center justify-center gap-1">
               {stats.form.slice(0, 5).map((m, i) => (
                 <span
@@ -276,11 +276,11 @@ export function PlayerCard({
                   {m.won ? 'W' : 'L'}
                 </span>
               ))}
-              {stats.form.length === 0 && <span className="text-xs text-slate-600">—</span>}
+              {stats.form.length === 0 && <span className="text-xs text-[var(--arena-text-muted)]">—</span>}
             </div>
           </div>
           <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rank</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Rank</p>
             <p className="mt-1 text-lg font-extrabold text-white">
               {rank ? `#${rank.rank}/${rank.total}` : 'Unranked'}
             </p>
@@ -293,14 +293,14 @@ export function PlayerCard({
         if (!hasRacket && !hasStrings && !hasShoes && !hasPlay) return null
         return (
           <div className="border-t border-white/10 px-5 py-4 sm:px-6 bg-slate-950/20">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Player Bag &amp; Specs</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)] mb-3">Player Bag &amp; Specs</p>
             <div className="grid gap-2 sm:grid-cols-3">
               {/* Racket tile */}
               {hasRacket && (
                 <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Racket</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Racket</p>
                   <p className="text-sm font-bold text-slate-100">{g.racket || 'Unspecified'}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[var(--arena-text-muted)]">
                     {[g.racket_weight && `Weight: ${g.racket_weight}`, g.racket_balance && `Balance: ${g.racket_balance.replace(/_/g, ' ')}`, g.racket_stiffness && `Flex: ${g.racket_stiffness}`].filter(Boolean).join(' • ') || 'No specs listed'}
                   </p>
                 </div>
@@ -308,12 +308,12 @@ export function PlayerCard({
               {/* Strings & Tension tile */}
               {hasStrings && (
                 <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Strings &amp; Tension</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Strings &amp; Tension</p>
                   <p className="text-sm font-bold text-slate-100">{g.strings || 'Unspecified'}</p>
                   <p className="text-xs">
                     {g.tension && <span className="font-bold text-[#ccff00]">Tension: {g.tension}</span>}
-                    {g.tension && (g.grip_type || g.grip) && <span className="text-slate-500"> • </span>}
-                    {(g.grip_type || g.grip) && <span className="text-slate-400">Grip: {g.grip_type ? g.grip_type.replace(/_/g, ' ') : g.grip}</span>}
+                    {g.tension && (g.grip_type || g.grip) && <span className="text-[var(--arena-text-muted)]"> • </span>}
+                    {(g.grip_type || g.grip) && <span className="text-[var(--arena-text-muted)]">Grip: {g.grip_type ? g.grip_type.replace(/_/g, ' ') : g.grip}</span>}
                   </p>
                 </div>
               )}
@@ -322,12 +322,12 @@ export function PlayerCard({
                 <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
                   {hasShoes && (
                     <>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Court Shoes</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Court Shoes</p>
                       <p className="text-sm font-bold text-slate-100">{g.shoes}</p>
                     </>
                   )}
                   {hasPlay && (
-                    <p className="text-xs text-slate-400 pt-1">
+                    <p className="text-xs text-[var(--arena-text-muted)] pt-1">
                       {[g.play_style && g.play_style.replace(/_/g, ' '), g.dominant_hand && `${g.dominant_hand}-handed`, g.player_type && g.player_type.replace(/_/g, ' ')].filter(Boolean).join(' • ')}
                     </p>
                   )}

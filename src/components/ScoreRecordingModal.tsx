@@ -674,7 +674,7 @@ export default function ScoreRecordingModal({
                     <tbody className="divide-y divide-slate-100">
                       {/* Row 1: Team 1 */}
                       <tr>
-                        <td className="px-4 py-3 font-medium text-slate-900">
+                        <td className="px-4 py-3 font-medium text-[var(--arena-text)]">
                           <span className="text-xs font-bold uppercase tracking-wide text-[var(--arena-accent)]">Team 1</span>
                         </td>
                         {sets.map((set, idx) => (
@@ -692,7 +692,7 @@ export default function ScoreRecordingModal({
                       </tr>
                       {/* Row 2: Team 2 */}
                       <tr>
-                        <td className="px-4 py-3 font-medium text-slate-900">
+                        <td className="px-4 py-3 font-medium text-[var(--arena-text)]">
                           <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">Team 2</span>
                         </td>
                         {sets.map((set, idx) => (
@@ -757,7 +757,7 @@ export default function ScoreRecordingModal({
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--arena-accent-soft)] text-3xl animate-bounce">
                   👑
                 </div>
-                <h3 className="text-xl font-black text-slate-900">Match Recorded!</h3>
+                <h3 className="text-xl font-black text-[var(--arena-text)]">Match Recorded!</h3>
                 <p className="text-xs font-bold text-[var(--arena-accent)] uppercase tracking-widest">Winners</p>
                 <h2 className="text-2xl font-extrabold text-[var(--arena-text)] leading-tight">
                   {celebrationWinners}

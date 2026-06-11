@@ -857,7 +857,7 @@ export default function DashboardPage() {
             <p className="metric-value">
               <span className="text-[var(--arena-accent)]">{personalStats.wins}W</span>
               <span className="text-[var(--arena-text-dim)] mx-1">-</span>
-              <span className="text-red-600">{personalStats.losses}L</span>
+              <span className="text-red-400">{personalStats.losses}L</span>
             </p>
             <span className="metric-note">Record</span>
           </div>
@@ -879,7 +879,7 @@ export default function DashboardPage() {
               {personalStats.streakType === 'win' ? (
                 <>
                   <Flame size={16} className="text-amber-500 animate-pulse" />
-                  <span className="metric-value text-amber-600">{personalStats.streak} Win</span>
+                  <span className="metric-value text-amber-400">{personalStats.streak} Win</span>
                 </>
               ) : personalStats.streakType === 'loss' ? (
                 <span className="metric-value text-[var(--arena-text-muted)]">-{personalStats.streak} Loss</span>
@@ -1134,7 +1134,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-3 bg-surface border border-slate-100 rounded-lg">
+                    <div className="p-3 bg-[var(--arena-surface)] border border-[var(--arena-border)] rounded-lg">
                       <span className="text-xs text-[var(--arena-text-dim)] block">Matches</span>
                       <span className="text-lg font-extrabold text-[var(--arena-text)]">{rivalryStats.matchesPlayed}</span>
                     </div>
@@ -1145,10 +1145,10 @@ export default function DashboardPage() {
                       <span className="text-lg font-extrabold text-[var(--arena-accent)]">{rivalryStats.wins}</span>
                     </div>
                     <div className="p-3 bg-red-50/50 border border-red-100 rounded-lg">
-                      <span className="text-xs text-red-600 block">
+                      <span className="text-xs text-red-400 block">
                         {comparisonMode === 'partner' ? 'Losses Together' : 'Their Wins'}
                       </span>
-                      <span className="text-lg font-extrabold text-red-700">{rivalryStats.losses}</span>
+                      <span className="text-lg font-extrabold text-red-400">{rivalryStats.losses}</span>
                     </div>
                   </div>
 
@@ -1162,7 +1162,7 @@ export default function DashboardPage() {
                       ) : rivalryStats.streakType === 'win' ? (
                         <span className="text-[var(--arena-accent)] font-bold">🔥 {rivalryStats.streak} Win</span>
                       ) : rivalryStats.streakType === 'loss' ? (
-                        <span className="text-red-600 font-bold">-{rivalryStats.streak} Loss</span>
+                        <span className="text-red-400 font-bold">-{rivalryStats.streak} Loss</span>
                       ) : (
                         <span className="text-[var(--arena-text-dim)]">0</span>
                       )}
@@ -1186,7 +1186,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-dim)]">
+                <div className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">
                   {comparisonMode === 'partner'
                     ? `You haven't played any doubles matches together with ${selectedRival} yet.`
                     : `You haven't played any matches against ${selectedRival} yet.`}

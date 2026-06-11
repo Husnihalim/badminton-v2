@@ -2509,28 +2509,28 @@ export default function ClubHomePage() {
                           <div className="shrink-0">{renderRankBadge(index + 1)}</div>
                           {(() => {
                             const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
+                            const elo = match?.elo_rating || 1200
                             return match?.user_id ? (
-                              <Link to={`/member/${match.user_id}`} className={`truncate text-base sm:text-lg font-extrabold hover:underline ${theme.text}`}>
-                                {player.name}
+                              <Link to={`/member/${match.user_id}`} className={`flex items-center gap-2 min-w-0 truncate text-base sm:text-lg font-extrabold hover:underline ${theme.text}`}>
+                                <span className="truncate">{player.name}</span>
+                                <span className={`shrink-0 text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]`}>
+                                  ⚡ {elo} Elo
+                                </span>
                               </Link>
                             ) : (
-                              <span className="truncate text-base sm:text-lg font-extrabold text-[var(--arena-text)]">{player.name}</span>
+                              <span className="flex items-center gap-2 min-w-0 truncate text-base sm:text-lg font-extrabold text-[var(--arena-text)]">
+                                <span className="truncate">{player.name}</span>
+                                <span className={`shrink-0 text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]`}>
+                                  ⚡ {elo} Elo
+                                </span>
+                              </span>
                             )
                           })()}
                         </div>
 
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2.5">
-                          {(() => {
-                            const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
-                            const elo = match?.elo_rating || 1200
-                            return (
-                              <Badge className={`border-${accent}-200 dark:border-${accent}-900 bg-${accent}-50 dark:bg-${accent}-950/30 text-${accent}-800 dark:text-${accent}-400 gap-0.5 text-[10px] sm:text-xs font-extrabold shadow-sm shrink-0 px-1.5 py-0.5 sm:px-2 sm:py-0.5`}>
-                                ⚡ {elo} Elo
-                              </Badge>
-                            )
-                          })()}
+                        <div className="mt-2 flex flex-nowrap items-center gap-1.5 overflow-x-hidden">
                           {hasWinStreak ? (
-                            <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 text-[10px] sm:text-xs font-extrabold shadow-sm shrink-0 px-1.5 py-0.5 sm:px-2 sm:py-0.5">
+                            <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 text-[9px] sm:text-xs font-extrabold shadow-sm shrink-0 px-1.5 py-0.5 sm:px-2 sm:py-0.5 whitespace-nowrap">
                               <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
                               {streak.count} Hot Run
                             </Badge>
@@ -2538,7 +2538,7 @@ export default function ClubHomePage() {
                           {user && !isMe && (
                             <Link
                               to={`/dashboard?rival=${player.name}`}
-                              className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-extrabold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0 bg-${accent}-50 px-1.5 py-0.5 rounded border border-${accent}-100 shadow-sm`}
+                              className={`inline-flex items-center gap-0.5 text-[8px] sm:text-[10px] font-extrabold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0 bg-${accent}-50 px-1.5 py-0.5 rounded border border-${accent}-100 shadow-sm whitespace-nowrap`}
                               title={`Compare Head-to-Head with ${player.name}`}
                             >
                               ⚔️ H2H
@@ -3127,7 +3127,7 @@ export default function ClubHomePage() {
                     Welcome to the Club!
                   </h2>
                   <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
-                    You are now an active member of <strong className="text-slate-900">{club.name}</strong>.
+                    You are now an active member of <strong className="text-[var(--arena-text)]">{club.name}</strong>.
                   </p>
                 </div>
 
@@ -3142,7 +3142,7 @@ export default function ClubHomePage() {
                       </div>
                     )}
                     <div>
-                      <h4 className="font-bold text-slate-900 leading-tight">{club.name}</h4>
+                      <h4 className="font-bold text-[var(--arena-text)] leading-tight">{club.name}</h4>
                       <p className="text-xs text-[var(--arena-text-dim)]">{club.city || 'Local Club'}</p>
                     </div>
                   </div>
