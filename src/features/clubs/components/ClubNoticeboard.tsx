@@ -166,7 +166,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
       {club.announcement ? (
         <div className="rounded-2xl border border-amber-250 bg-amber-50/60 p-4 shadow-sm">
           <div className="flex gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] text-amber-700 shadow-sm border border-amber-200">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-amber-700 shadow-sm border border-amber-200">
               <Megaphone size={18} aria-hidden="true" />
             </span>
             <div className="flex-1">
@@ -198,7 +198,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                   <Share2 size={16} aria-hidden="true" />
                   Share
                 </Button>
-                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
+                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
                   <MessageCircle size={16} aria-hidden="true" />
                   WhatsApp
                 </a>
@@ -216,10 +216,10 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
               className="flex w-full items-center gap-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3 text-left transition-colors hover:bg-slate-100"
               onClick={openCreateMessageModal}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] text-[var(--arena-accent)] shadow-sm border border-emerald-800">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm border border-emerald-800">
                 <Megaphone size={18} aria-hidden="true" />
               </span>
-              <span className="min-h-10 flex-1 rounded-full border border-[var(--arena-border)] bg-[#0b1322] px-4 py-2.5 text-sm font-semibold text-slate-300">
+              <span className="min-h-10 flex-1 rounded-full border border-[var(--arena-border)] bg-[var(--arena-surface)] px-4 py-2.5 text-sm font-semibold text-slate-300">
                 Post an announcement
               </span>
             </button>
@@ -240,7 +240,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                         className="flex min-w-0 items-start gap-3 cursor-pointer flex-1"
                         onClick={() => toggleExpand(item.id, isLatest)}
                       >
-                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0b1322] ${theme.text} shadow-sm`}>
+                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] ${theme.text} shadow-sm`}>
                           <Megaphone size={18} aria-hidden="true" />
                         </span>
                         <div className="min-w-0 flex-1">
@@ -261,7 +261,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                             </div>
                             
                             {isExpanded && (
-                              <p className="mt-2 text-sm leading-6 text-slate-300 bg-[#0b1322]/75 rounded-lg p-2.5 border border-slate-100 whitespace-pre-wrap">
+                              <p className="mt-2 text-sm leading-6 text-slate-300 bg-[var(--arena-surface)]/75 rounded-lg p-2.5 border border-slate-100 whitespace-pre-wrap">
                                 {item.body}
                               </p>
                             )}

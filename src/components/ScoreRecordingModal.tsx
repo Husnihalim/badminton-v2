@@ -590,7 +590,7 @@ export default function ScoreRecordingModal({
                     <button
                       key={type}
                       type="button"
-                      className={`min-h-10 rounded-md px-3 text-sm font-semibold capitalize transition ${matchType === type ? 'bg-[#0b1322] text-[var(--arena-accent)] shadow-sm' : 'text-[var(--arena-text-dim)]'}`}
+                      className={`min-h-10 rounded-md px-3 text-sm font-semibold capitalize transition ${matchType === type ? 'bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm' : 'text-[var(--arena-text-dim)]'}`}
                       onClick={() => {
                         setMatchType(type)
                         if (type === 'singles') {
@@ -619,7 +619,7 @@ export default function ScoreRecordingModal({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Team 1 Card */}
-                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[#0b1322] p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] p-4 shadow-sm">
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[var(--arena-accent-soft)]0" />
                   <div className="mb-3 flex items-center justify-between pl-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-[var(--arena-accent)]">Team 1</span>
@@ -644,7 +644,7 @@ export default function ScoreRecordingModal({
                 </div>
 
                 {/* Team 2 Card */}
-                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[#0b1322] p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] p-4 shadow-sm">
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500" />
                   <div className="mb-3 flex items-center justify-between pl-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">Team 2</span>
@@ -691,7 +691,7 @@ export default function ScoreRecordingModal({
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-[var(--arena-border)] bg-[#0b1322] shadow-sm">
+                <div className="overflow-x-auto rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] shadow-sm">
                   <table className="w-full border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-xs font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">
@@ -796,7 +796,7 @@ export default function ScoreRecordingModal({
             onClose()
             onScoreRecorded?.()
           }}>
-            <Card className="mx-4 w-full max-w-sm rounded-2xl bg-[#0b1322] p-6 text-center shadow-2xl border-t-4 border-emerald-500 transform scale-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
+            <Card className="mx-4 w-full max-w-sm rounded-2xl bg-[var(--arena-surface)] p-6 text-center shadow-2xl border-t-4 border-emerald-500 transform scale-100 transition-all duration-300" onClick={(e) => e.stopPropagation()}>
               <CardContent className="space-y-4 pt-4">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--arena-accent-soft)] text-3xl animate-bounce">
                   👑

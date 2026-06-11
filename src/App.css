@@ -403,12 +403,13 @@
 
 .arena-panel {
   border: 1px solid var(--arena-line);
-  border-radius: 8px;
+  border-radius: 12px;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--arena-lime) 6%, transparent), transparent 34%),
     var(--arena-panel);
   color: var(--arena-text);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
 }
 
 .arena-panel-blue {
@@ -549,4 +550,62 @@
   font-size: clamp(1.75rem, 6vw, 2.6rem);
   line-height: 1.08;
   letter-spacing: 0;
+}
+
+/* Landing page hero classes */
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.landing-hero-copy {
+  max-width: 600px;
+}
+
+.landing-hero-title {
+  color: var(--arena-text);
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.landing-hero-text {
+  color: var(--arena-text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-top: 12px;
+}
+
+.racket-hero-collage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.racket-hero-image {
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.racket-hero-image-main {
+  width: 200px;
+  height: 240px;
+}
+
+.racket-hero-image-side {
+  width: 120px;
+  height: 160px;
+}
+
+.racket-hero-image-small {
+  width: 80px;
+  height: 100px;
 }

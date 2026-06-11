@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FriendlyScoreboard — BWF Style Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0f16;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
+    padding: 32px;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== PHONE SHELL ===== */
+  .phone {
+    width: 390px;
+    background: #040d0f;
+    border-radius: 44px;
+    padding: 20px 14px;
+    box-shadow:
+      0 0 0 8px #0d1117,
+      0 0 0 10px rgba(255,255,255,0.04),
+      0 40px 80px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .status-bar {
+    display: flex; justify-content: space-between; padding: 2px 4px 10px;
+    color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600;
+  }
+
+  .header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .header .back { color: rgba(255,255,255,0.4); font-size: 18px; width: 28px; }
+  .header .title { flex: 1; font-size: 14px; font-weight: 600; color: white; }
+  .header .share {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: rgba(255,255,255,0.5);
+  }
+
+  .phone-label {
+    text-align: center; color: rgba(255,255,255,0.15); font-size: 9px;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .home-indicator {
+    width: 130px; height: 5px; background: rgba(255,255,255,0.12);
+    border-radius: 3px; margin: 10px auto 2px;
+  }
+
+  /* ===== BWF-STYLE MATCH HEADER ===== */
+  .bwf-header {
+    display: flex; align-items: stretch; gap: 0;
+    margin-bottom: 16px;
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .bwf-team {
+    flex: 1; padding: 14px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    position: relative;
+  }
+  .bwf-team.winner { background: rgba(204,255,0,0.04); }
+
+  .bwf-team .avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(204,255,0,0.15), rgba(204,255,0,0.05));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; border: 2px solid rgba(255,255,255,0.08);
+    position: relative;
+  }
+  .bwf-team.winner .avatar { border-color: rgba(204,255,0,0.3); }
+
+  .bwf-team .badge {
+    position: absolute; bottom: -2px; right: -2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #040d0f; border: 1.5px solid rgba(204,255,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+  }
+
+  .bwf-team .pair-name {
+    font-size: 13px; font-weight: 700; color: white;
+    text-align: center; line-height: 1.2; letter-spacing: -0.2px;
+  }
+  .bwf-team .club-name {
+    font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+
+  .bwf-team .flag {
+    width: 20px; height: 14px; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; margin-top: 2px;
+  }
+  .flag.malaysia { background: linear-gradient(135deg, #cc0000, #cc0000 33%, white 33%, white 66%, #cc0000 66%); }
+
+  .bwf-vs {
+    width: 40px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .bwf-vs::before {
+    content: ''; position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 1px; background: rgba(255,255,255,0.04);
+  }
+  .bwf-vs .vs-text {
+    font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.15);
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== BWF SCOREBOARD ===== */
+  .bwf-scoreboard {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(204,255,0,0.15);
+    border-radius: 12px; padding: 0; margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .bwf-scoreboard .top-row {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .bwf-scoreboard .top-row .side {
+    flex: 1; padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .bwf-scoreboard .top-row .side:last-child { justify-content: flex-end; }
+  .bwf-scoreboard .top-row .side .avatar-sm {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(204,255,0,0.1); display: flex; align-items: center;
+    justify-content: center; font-size: 12px;
+  }
+  .bwf-scoreboard .top-row .side .info .name { font-size: 11px; font-weight: 600; color: white; }
+  .bwf-scoreboard .top-row .side .info .club { font-size: 9px; color: rgba(255,255,255,0.3); }
+
+  .bwf-scoreboard .scores-row {
+    display: flex; align-items: stretch;
+  }
+  .bwf-scoreboard .scores-row .team-scores {
+    flex: 1; padding: 12px 16px;
+    display: flex; gap: 8px; justify-content: center;
+  }
+  .bwf-scoreboard .scores-row .team-scores .game {
+    text-align: center;
+  }
+  .bwf-scoreboard .scores-row .team-scores .game .g-label {
+    font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.15);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;
+  }
+  .bwf-scoreboard .scores-row .team-scores .game .g-score {
+    font-size: 18px; font-weight: 800;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    color: white; line-height: 1;
+  }
+  .bwf-scoreboard .scores-row .team-scores .game .g-score.win { color: #ccff00; }
+  .bwf-scoreboard .scores-row .team-scores .game .g-score.lose { color: rgba(255,255,255,0.2); }
+
+  .bwf-scoreboard .bwf-vs-column {
+    width: 36px; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.08); font-size: 11px; font-weight: 700;
+  }
+
+  .bwf-scoreboard .info-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 14px; background: rgba(255,255,255,0.02);
+    border-top: 1px solid rgba(255,255,255,0.03);
+    font-size: 9px; color: rgba(255,255,255,0.2);
+  }
+
+  /* ===== PLAYER CARD COMPONENT ===== */
+  .player-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    margin-bottom: 6px;
+  }
+  .player-card .p-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(204,255,0,0.12), rgba(204,255,0,0.04));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+    border: 1.5px solid rgba(255,255,255,0.06);
+  }
+  .player-card .p-info { flex: 1; min-width: 0; }
+  .player-card .p-name { font-size: 13px; font-weight: 600; color: white; letter-spacing: -0.1px; }
+  .player-card .p-meta { font-size: 10px; color: rgba(255,255,255,0.3); }
+  .player-card .p-stat { text-align: right; }
+  .player-card .p-stat .stat-num { font-size: 14px; font-weight: 700; font-family: 'SF Mono', monospace; }
+  .player-card .p-stat .stat-num.lime { color: #ccff00; }
+  .player-card .p-stat .stat-label { font-size: 8px; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ===== MATCHUP LIST ===== */
+  .section-label {
+    font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.2);
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
+  }
+
+  .matchup-row {
+    display: flex; align-items: stretch; gap: 0;
+    margin-bottom: 10px;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.02);
+  }
+  .matchup-row.live {
+    border-color: rgba(204,255,0,0.3);
+    background: rgba(204,255,0,0.03);
+    box-shadow: 0 0 24px rgba(204,255,0,0.03);
+  }
+  .matchup-row.completed { opacity: 0.75; }
+
+  .matchup-row .mu-side {
+    flex: 1; padding: 8px 10px;
+    display: flex; align-items: center; gap: 8px;
+    min-width: 0;
+  }
+  .matchup-row .mu-side:last-child { justify-content: flex-end; }
+
+  .matchup-row .mu-side .mu-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .matchup-row .mu-side .mu-avatar.lime-bg { background: rgba(204,255,0,0.1); }
+
+  .matchup-row .mu-side .mu-name { font-size: 12px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .matchup-row .mu-side .mu-name.dim { color: rgba(255,255,255,0.35); }
+
+  .matchup-row .mu-center {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0 6px; flex-shrink: 0;
+    min-width: 44px;
+  }
+  .matchup-row .mu-center .mu-score {
+    font-size: 15px; font-weight: 800;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    color: white; line-height: 1.2;
+  }
+  .matchup-row .mu-center .mu-score.lime { color: #ccff00; }
+  .matchup-row .mu-center .mu-score.dim { color: rgba(255,255,255,0.15); }
+  .matchup-row .mu-center .mu-result {
+    font-size: 8px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .matchup-row .mu-center .mu-result.lime { color: #ccff00; }
+  .matchup-row .mu-center .mu-result.dim { color: rgba(255,255,255,0.15); }
+
+  .matchup-row .mu-live-tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 8px; font-weight: 700; color: #ccff00;
+    background: rgba(204,255,0,0.1); border: 1px solid rgba(204,255,0,0.2);
+    padding: 2px 8px; border-radius: 10px;
+    margin: 0 4px;
+  }
+
+  /* ===== STORIES ===== */
+  .story-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px; padding: 12px; margin-bottom: 6px;
+  }
+  .story-card .s-label {
+    font-size: 9px; font-weight: 700; color: rgba(204,255,0,0.6);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;
+  }
+  .story-card .s-title { font-size: 14px; font-weight: 600; color: white; margin-bottom: 2px; }
+  .story-card .s-body { font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.4; }
+  .story-card .s-share { margin-top: 6px; font-size: 10px; color: #38bdf8; font-weight: 600; }
+
+  /* ===== SCROLL ===== */
+  .scroll-area { max-height: 680px; overflow-y: auto; padding-right: 2px; }
+  .scroll-area::-webkit-scrollbar { width: 2px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+
+  /* ===== BWF PLAYER IDENTITY CARD (full) ===== */
+  .player-identity-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+  .player-identity-card .pic-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(204,255,0,0.15), rgba(204,255,0,0.04));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .player-identity-card .pic-rank {
+    position: absolute; bottom: -4px; right: -4px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #040d0f; border: 1.5px solid #ccff00;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 800; color: #ccff00;
+  }
+  .player-identity-card .pic-info { flex: 1; min-width: 0; }
+  .player-identity-card .pic-name {
+    font-size: 15px; font-weight: 700; color: white;
+    letter-spacing: -0.2px;
+  }
+  .player-identity-card .pic-club {
+    font-size: 10px; color: rgba(255,255,255,0.3);
+  }
+  .player-identity-card .pic-stats {
+    display: flex; gap: 12px; margin-top: 4px;
+  }
+  .player-identity-card .pic-stats .ps {
+    text-align: center;
+  }
+  .player-identity-card .pic-stats .ps .ps-num {
+    font-size: 13px; font-weight: 700;
+    font-family: 'SF Mono', monospace;
+    color: white;
+  }
+  .player-identity-card .pic-stats .ps .ps-num.lime { color: #ccff00; }
+  .player-identity-card .pic-stats .ps .ps-label {
+    font-size: 7px; color: rgba(255,255,255,0.2);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ===== SERIES HISTORY BAR ===== */
+  .series-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px; margin-bottom: 14px;
+  }
+  .series-bar .sb-label { font-size: 9px; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 0.8px; }
+  .series-bar .sb-bars { flex: 1; display: flex; height: 6px; border-radius: 3px; overflow: hidden; }
+  .series-bar .sb-bars .sb-a { background: #ccff00; }
+  .series-bar .sb-bars .sb-b { background: rgba(255,255,255,0.1); }
+  .series-bar .sb-record { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); }
+  .series-bar .sb-record strong { color: #ccff00; }
+
+  /* ===== H2H ===== */
+  .h2h-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.03);
+    padding: 2px 8px; border-radius: 8px;
+  }
+  .h2h-badge strong { color: rgba(255,255,255,0.5); }
+</style>
+</head>
+<body>
+
+<!-- ================================================================ -->
+<!-- PHONE 1: LIVE SCOREBOARD — BWF BROADCAST STYLE                  -->
+<!-- ================================================================ -->
+<div class="phone">
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span style="font-weight:700;">9:41</span>
+    <span style="opacity:0.5;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+    </span>
+  </div>
+
+  <div class="phone-label">Friendly Scoreboard</div>
+
+  <!-- Header -->
+  <div class="header">
+    <span class="back">&#8592;</span>
+    <span class="title">Friday Night Friendly</span>
+    <span class="share">&#8943;</span>
+  </div>
+
+  <!-- BWF-Style Scoreboard Header -->
+  <div class="bwf-header">
+    <!-- Team A -->
+    <div class="bwf-team winner">
+      <div class="avatar">
+        &#127934;
+        <span class="badge" style="background:#040d0f; border-color:#ccff00; color:#ccff00;">1</span>
+      </div>
+      <div class="pair-name">Amir / Husni</div>
+      <div class="club-name">LEP BC</div>
+      <div class="flag" style="background:linear-gradient(135deg,#cc0000,#cc0000 33%,white 33%,white 66%,#cc0000 66%);"></div>
+    </div>
+
+    <div class="bwf-vs">
+      <span class="vs-text">VS</span>
+      <span class="h2h-badge">H2H <strong>2-1</strong></span>
+    </div>
+
+    <!-- Team B -->
+    <div class="bwf-team">
+      <div class="avatar" style="background:linear-gradient(135deg,rgba(56,189,248,0.12),rgba(56,189,248,0.04)); border-color:rgba(255,255,255,0.06);">
+        &#127934;
+      </div>
+      <div class="pair-name">Faiz / Danial</div>
+      <div class="club-name">Smashers PJ</div>
+      <div class="flag" style="background:linear-gradient(135deg,#cc0000,#cc0000 33%,white 33%,white 66%,#cc0000 66%);"></div>
+    </div>
+  </div>
+
+  <!-- Series Record Bar -->
+  <div class="series-bar">
+    <span class="sb-label">Series</span>
+    <div class="sb-bars">
+      <div class="sb-a" style="width:60%;"></div>
+      <div class="sb-b" style="width:40%;"></div>
+    </div>
+    <span class="sb-record"><strong>LEP BC 3</strong> - 2 Smashers PJ</span>
+  </div>
+
+  <!-- Featured Player Cards (Amir / Husni) -->
+  <div class="section-label">Players</div>
+
+  <div class="player-identity-card">
+    <div class="pic-avatar">
+      &#127934;
+      <span class="pic-rank">1</span>
+    </div>
+    <div class="pic-info">
+      <div class="pic-name">Amir</div>
+      <div class="pic-club">LEP BC &middot; Kuala Lumpur</div>
+      <div class="pic-stats">
+        <div class="ps"><div class="ps-num lime">28-12</div><div class="ps-label">W-L</div></div>
+        <div class="ps"><div class="ps-num">70%</div><div class="ps-label">Win Rate</div></div>
+        <div class="ps"><div class="ps-num lime">&#8593;5</div><div class="ps-label">Form</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="player-identity-card">
+    <div class="pic-avatar" style="background:linear-gradient(135deg,rgba(204,255,0,0.1),rgba(204,255,0,0.02));">
+      &#127934;
+      <span class="pic-rank" style="border-color:rgba(204,255,0,0.4); color:rgba(204,255,0,0.6);">4</span>
+    </div>
+    <div class="pic-info">
+      <div class="pic-name">Husni</div>
+      <div class="pic-club">LEP BC &middot; Kuala Lumpur</div>
+      <div class="pic-stats">
+        <div class="ps"><div class="ps-num lime">15-8</div><div class="ps-label">W-L</div></div>
+        <div class="ps"><div class="ps-num">65%</div><div class="ps-label">Win Rate</div></div>
+        <div class="ps"><div class="ps-num lime">&#8593;3</div><div class="ps-label">Form</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Matchups List -->
+  <div class="section-label" style="margin-top:4px;">Matchups &middot; LEP BC leads 3-2</div>
+
+  <div class="scroll-area">
+
+    <!-- Match 1: Completed, LEP BC wins -->
+    <div class="matchup-row completed">
+      <div class="mu-side">
+        <div class="mu-avatar lime-bg">&#127934;</div>
+        <span class="mu-name">Amir / Husni</span>
+      </div>
+      <div class="mu-center">
+        <div class="mu-score lime">21-18</div>
+        <div class="mu-result lime">Win</div>
+      </div>
+      <div class="mu-side" style="justify-content:flex-end;">
+        <span class="mu-name dim">Faiz / Danial</span>
+        <div class="mu-avatar">&#127934;</div>
+      </div>
+    </div>
+
+    <!-- Match 2: Completed, Smashers wins -->
+    <div class="matchup-row completed">
+      <div class="mu-side">
+        <div class="mu-avatar">&#127934;</div>
+        <span class="mu-name dim">Ali / Ahmad</span>
+      </div>
+      <div class="mu-center">
+        <div class="mu-score dim">19-21</div>
+        <div class="mu-result dim">Loss</div>
+      </div>
+      <div class="mu-side" style="justify-content:flex-end;">
+        <span class="mu-name">Raj / Kumar</span>
+        <div class="mu-avatar lime-bg">&#127934;</div>
+      </div>
+    </div>
+
+    <!-- Match 3: Completed, LEP BC wins -->
+    <div class="matchup-row completed">
+      <div class="mu-side">
+        <div class="mu-avatar lime-bg">&#127934;</div>
+        <span class="mu-name">Newbies</span>
+      </div>
+      <div class="mu-center">
+        <div class="mu-score lime">21-15</div>
+        <div class="mu-result lime">Win</div>
+      </div>
+      <div class="mu-side" style="justify-content:flex-end;">
+        <span class="mu-name dim">Veterans</span>
+        <div class="mu-avatar">&#127934;</div>
+      </div>
+    </div>
+
+    <!-- Match 4: Completed, Smashers wins (with game details) -->
+    <div class="matchup-row completed">
+      <div class="mu-side">
+        <div class="mu-avatar">&#127934;</div>
+        <span class="mu-name dim">A Team</span>
+      </div>
+      <div class="mu-center">
+        <div class="mu-score dim">18-21</div>
+        <div class="mu-result dim">Loss</div>
+      </div>
+      <div class="mu-side" style="justify-content:flex-end;">
+        <span class="mu-name">B Team</span>
+        <div class="mu-avatar lime-bg">&#127934;</div>
+      </div>
+    </div>
+
+    <!-- Match 5: CLUTCH — Completed, LEP BC wins, game-by-game -->
+    <div class="matchup-row completed" style="border-color:rgba(204,255,0,0.2); background:rgba(204,255,0,0.02);">
+      <div class="mu-side">
+        <div class="mu-avatar lime-bg">&#127934;</div>
+        <span class="mu-name">Rookies</span>
+      </div>
+      <div class="mu-center">
+        <div class="mu-score lime">22-20</div>
+        <div class="mu-result lime">Win</div>
+      </div>
+      <div class="mu-side" style="justify-content:flex-end;">
+        <span class="mu-name dim">Pros</span>
+        <div class="mu-avatar">&#127934;</div>
+      </div>
+    </div>
+
+    <!-- Detailed game scores for the clutch match -->
+    <div style="padding:8px 14px; margin-top:-6px; margin-bottom:14px; display:flex; gap:16px; background:rgba(255,255,255,0.01); border:1px dashed rgba(255,255,255,0.04); border-radius:0 0 10px 10px; font-family:'SF Mono',monospace; font-size:11px;">
+      <div><span style="color:rgba(255,255,255,0.2); font-size:9px;">G1</span> <span style="color:#ccff00; font-weight:700;">21</span>-<span style="color:rgba(255,255,255,0.2);">18</span></div>
+      <div><span style="color:rgba(255,255,255,0.2); font-size:9px;">G2</span> <span style="color:rgba(255,255,255,0.2);">19</span>-<span style="color:#ccff00; font-weight:700;">21</span></div>
+      <div><span style="color:rgba(255,255,255,0.2); font-size:9px;">G3</span> <span style="color:#ccff00; font-weight:700;">22</span>-<span style="color:rgba(255,255,255,0.2);">20</span></div>
+      <div style="margin-left:auto; font-size:9px; color:#ccff00; font-weight:600;">&#9733; Decider</div>
+    </div>
+
+    <!-- Stories Section -->
+    <div style="margin-top:6px;">
+      <div class="section-label">Stories of the Night</div>
+
+      <div class="story-card" style="border-left:2px solid #ccff00;">
+        <div class="s-label">&#127942; Match of the Night</div>
+        <div class="s-title">Rookies edge Pros 22-20 in deciding game</div>
+        <div class="s-body">Down 18-20, Rookies saved 2 match points and won 4 straight to seal the friendly 3-2 for LEP BC.</div>
+        <div class="s-share">&#8599; Share moment</div>
+      </div>
+
+      <div class="story-card" style="border-left:2px solid #38bdf8;">
+        <div class="s-label">&#128170; Dynamic Duo</div>
+        <div class="s-title">Amir / Husni extend streak to 5</div>
+        <div class="s-body">The LEP BC pair are now 5-0 in friendlies this season, winning their match 21-18 to set the tone.</div>
+        <div class="s-share">&#8599; Share moment</div>
+      </div>
+
+      <div class="story-card" style="border-left:2px solid rgba(255,255,255,0.2);">
+        <div class="s-label">&#128200; Rivalry Born</div>
+        <div class="s-title">LEP BC leads the all-time series 1-0</div>
+        <div class="s-body">Two clubs met for the first time tonight. A new chapter in KL's friendly scene begins.</div>
+        <div class="s-share">&#8599; Share moment</div>
+      </div>
+    </div>
+
+    <!-- Public share CTA -->
+    <div style="margin-top:14px; padding:12px; background:rgba(56,189,248,0.04); border:1px solid rgba(56,189,248,0.12); border-radius:10px; text-align:center;">
+      <div style="font-size:12px; font-weight:600; color:#38bdf8;">&#128279; Public Proof Page</div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-top:2px;">kelabsukan.com/public/friendly/ABC123</div>
+      <div style="font-size:9px; color:rgba(255,255,255,0.15); margin-top:4px;">Anyone can view scores &middot; No login required &middot; OG preview works on WhatsApp</div>
+    </div>
+
+  </div><!-- /scroll-area -->
+
+  <div class="home-indicator"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PHONE 2: MATCHMAKING GRID — Captains Setting Matchups            -->
+<!-- ================================================================ -->
+<div class="phone">
+  <div class="status-bar">
+    <span style="font-weight:700;">9:41</span>
+    <span style="opacity:0.5;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+    </span>
+  </div>
+
+  <div class="phone-label">Matchmaking</div>
+
+  <div class="header">
+    <span class="back">&#8592;</span>
+    <span class="title">Set Matchups</span>
+    <span class="share">&#9998;</span>
+  </div>
+
+  <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(204,255,0,0.08);border:1px solid rgba(204,255,0,0.2);color:#ccff00;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:6px;">
+    &#9679; MATCHMAKING
+  </div>
+
+  <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:10px;">
+    <strong style="color:#ccff00;">4 of 5</strong> set &middot; Tap a row to assign opponent
+  </div>
+
+  <!-- Already matched rows -->
+  <div class="matchup-row" style="border-color:rgba(204,255,0,0.2);">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">Amir / Husni</span>
+      <span class="h2h-badge" style="margin-left:4px;"><strong>LEP</strong></span>
+    </div>
+    <div class="mu-center">
+      <span style="font-size:8px; color:rgba(204,255,0,0.4);">vs</span>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="h2h-badge" style="margin-right:4px;"><strong>SMA</strong></span>
+      <span class="mu-name">Faiz / Danial</span>
+      <div class="mu-avatar" style="background:rgba(56,189,248,0.08);">&#127934;</div>
+    </div>
+  </div>
+
+  <div class="matchup-row" style="border-color:rgba(204,255,0,0.2);">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">Ali / Ahmad</span>
+      <span class="h2h-badge" style="margin-left:4px;"><strong>LEP</strong></span>
+    </div>
+    <div class="mu-center">
+      <span style="font-size:8px; color:rgba(204,255,0,0.4);">vs</span>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="h2h-badge" style="margin-right:4px;"><strong>SMA</strong></span>
+      <span class="mu-name">Raj / Kumar</span>
+      <div class="mu-avatar" style="background:rgba(56,189,248,0.08);">&#127934;</div>
+    </div>
+  </div>
+
+  <div class="matchup-row" style="border-color:rgba(204,255,0,0.2);">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">Newbies</span>
+      <span class="h2h-badge" style="margin-left:4px;"><strong>LEP</strong></span>
+    </div>
+    <div class="mu-center">
+      <span style="font-size:8px; color:rgba(204,255,0,0.4);">vs</span>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="h2h-badge" style="margin-right:4px;"><strong>SMA</strong></span>
+      <span class="mu-name">Veterans</span>
+      <div class="mu-avatar" style="background:rgba(56,189,248,0.08);">&#127934;</div>
+    </div>
+  </div>
+
+  <div class="matchup-row" style="border-color:rgba(204,255,0,0.2);">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">A Team</span>
+      <span class="h2h-badge" style="margin-left:4px;"><strong>LEP</strong></span>
+    </div>
+    <div class="mu-center">
+      <span style="font-size:8px; color:rgba(204,255,0,0.4);">vs</span>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="h2h-badge" style="margin-right:4px;"><strong>SMA</strong></span>
+      <span class="mu-name">B Team</span>
+      <div class="mu-avatar" style="background:rgba(56,189,248,0.08);">&#127934;</div>
+    </div>
+  </div>
+
+  <!-- Unmatched row (selected, highlighted) -->
+  <div class="matchup-row" style="border-color:#ccff00; border-width:1.5px; background:rgba(204,255,0,0.04);">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">Rookies</span>
+      <span class="h2h-badge" style="margin-left:4px;"><strong>LEP</strong></span>
+    </div>
+    <div class="mu-center">
+      <span style="font-size:8px; color:rgba(255,255,255,0.1);">vs</span>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span style="font-size:10px; color:rgba(255,255,255,0.15);">Tap to assign</span>
+      <div class="mu-avatar" style="background:rgba(255,255,255,0.03);">?</div>
+    </div>
+  </div>
+
+  <!-- Selection panel -->
+  <div style="margin-top:12px; padding:14px; background:rgba(255,255,255,0.02); border:1px solid rgba(204,255,0,0.15); border-radius:12px;">
+    <div style="font-size:11px; font-weight:600; color:rgba(255,255,255,0.6); margin-bottom:8px;">Select opponent for Rookies</div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:calc(50% - 3px); padding:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; text-align:center;">
+        <div style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.4);">Pros</div>
+        <div style="font-size:9px; color:rgba(255,255,255,0.15);">Smashers PJ</div>
+      </div>
+      <div style="flex:1; min-width:calc(50% - 3px); padding:10px; background:rgba(204,255,0,0.04); border:1px solid #ccff00; border-radius:8px; text-align:center;">
+        <div style="font-size:12px; font-weight:600; color:white;">Pros</div>
+        <div style="font-size:9px; color:#ccff00;">Swap with Newbies</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock button -->
+  <div style="margin-top:14px; padding:14px; background:rgba(204,255,0,0.06); border:1px solid rgba(204,255,0,0.2); border-radius:10px; text-align:center;">
+    <div style="font-size:14px; font-weight:700; color:rgba(204,255,0,0.5);">&#128274; Lock Matchmaking</div>
+    <div style="font-size:9px; color:rgba(204,255,0,0.25); margin-top:2px;">Match 1 more pair to enable</div>
+  </div>
+
+  <!-- Pair registration status -->
+  <div style="margin-top:14px; display:flex; gap:8px;">
+    <div style="flex:1; padding:10px; background:rgba(204,255,0,0.03); border:1px solid rgba(204,255,0,0.1); border-radius:8px; text-align:center;">
+      <div style="font-size:10px; color:#ccff00; font-weight:600;">LEP BC</div>
+      <div style="font-size:9px; color:rgba(255,255,255,0.2);">5 pairs ready</div>
+    </div>
+    <div style="flex:1; padding:10px; background:rgba(56,189,248,0.03); border:1px solid rgba(56,189,248,0.1); border-radius:8px; text-align:center;">
+      <div style="font-size:10px; color:#38bdf8; font-weight:600;">Smashers PJ</div>
+      <div style="font-size:9px; color:rgba(255,255,255,0.2);">5 pairs ready</div>
+    </div>
+  </div>
+
+  <div class="home-indicator"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PHONE 3: PUBLIC SHARE PAGE — What a non-logged-in user sees      -->
+<!-- ================================================================ -->
+<div class="phone" style="background: #040d0f;">
+  <div class="status-bar">
+    <span style="font-weight:700;">9:41</span>
+    <span style="opacity:0.5;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+    </span>
+  </div>
+
+  <div class="phone-label">Public Proof Page</div>
+
+  <!-- KelabSukan branding -->
+  <div style="text-align:center; margin-bottom:14px;">
+    <div style="font-size:18px; font-weight:800; color:#ccff00; letter-spacing:-0.5px;">KelabSukan</div>
+    <div style="font-size:9px; color:rgba(255,255,255,0.2); text-transform:uppercase; letter-spacing:2px;">Live Sports Network</div>
+  </div>
+
+  <!-- BWF Scoreboard (compact) -->
+  <div class="bwf-scoreboard" style="margin-bottom:14px;">
+    <div class="top-row">
+      <div class="side">
+        <div class="avatar-sm" style="background:rgba(204,255,0,0.1);">&#127934;</div>
+        <div class="info">
+          <div class="name">LEP BC</div>
+          <div class="club">Kuala Lumpur</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px;">
+        <span style="font-size:18px; font-weight:800; color:#ccff00; font-family:'SF Mono',monospace;">3</span>
+      </div>
+      <div class="bwf-vs-column" style="width:24px;">-</div>
+      <div style="display:flex; align-items:center; padding:0 8px;">
+        <span style="font-size:18px; font-weight:800; color:white; font-family:'SF Mono',monospace;">2</span>
+      </div>
+      <div class="side" style="justify-content:flex-end;">
+        <div class="info" style="text-align:right;">
+          <div class="name">Smashers PJ</div>
+          <div class="club">Petaling Jaya</div>
+        </div>
+        <div class="avatar-sm" style="background:rgba(56,189,248,0.08);">&#127934;</div>
+      </div>
+    </div>
+    <div class="info-row">
+      <span>Friday Night Friendly &middot; 5 pairs</span>
+      <span>Completed &middot; 5 matches</span>
+    </div>
+  </div>
+
+  <!-- Head to head -->
+  <div class="series-bar">
+    <span class="sb-label">Series</span>
+    <div class="sb-bars">
+      <div class="sb-a" style="width:60%;"></div>
+      <div class="sb-b" style="width:40%;"></div>
+    </div>
+    <span class="sb-record"><strong>LEP BC 1</strong> - 0 Smashers PJ</span>
+  </div>
+
+  <!-- Matchup cards with game scores -->
+  <div class="section-label">Match Results</div>
+
+  <div class="matchup-row completed">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">Amir / Husni</span>
+    </div>
+    <div class="mu-center">
+      <div class="mu-score lime">21-18</div>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="mu-name dim">Faiz / Danial</span>
+      <div class="mu-avatar">&#127934;</div>
+    </div>
+  </div>
+
+  <div class="matchup-row completed">
+    <div class="mu-side">
+      <div class="mu-avatar">&#127934;</div>
+      <span class="mu-name dim">Ali / Ahmad</span>
+    </div>
+    <div class="mu-center">
+      <div class="mu-score dim">19-21</div>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="mu-name">Raj / Kumar</span>
+      <div class="mu-avatar lime-bg">&#127934;</div>
+    </div>
+  </div>
+
+  <div class="matchup-row completed">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">Newbies</span>
+    </div>
+    <div class="mu-center">
+      <div class="mu-score lime">21-15</div>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="mu-name dim">Veterans</span>
+      <div class="mu-avatar">&#127934;</div>
+    </div>
+  </div>
+
+  <div class="matchup-row completed">
+    <div class="mu-side">
+      <div class="mu-avatar">&#127934;</div>
+      <span class="mu-name dim">A Team</span>
+    </div>
+    <div class="mu-center">
+      <div class="mu-score dim">18-21</div>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="mu-name">B Team</span>
+      <div class="mu-avatar lime-bg">&#127934;</div>
+    </div>
+  </div>
+
+  <div class="matchup-row completed" style="border-color:rgba(204,255,0,0.15);">
+    <div class="mu-side">
+      <div class="mu-avatar lime-bg">&#127934;</div>
+      <span class="mu-name">Rookies</span>
+    </div>
+    <div class="mu-center">
+      <div class="mu-score lime">22-20</div>
+    </div>
+    <div class="mu-side" style="justify-content:flex-end;">
+      <span class="mu-name dim">Pros</span>
+      <div class="mu-avatar">&#127934;</div>
+    </div>
+  </div>
+
+  <!-- Game details for decider -->
+  <div style="display:flex; gap:12px; padding:8px 14px; margin-bottom:14px; font-family:'SF Mono',monospace; font-size:10px; background:rgba(255,255,255,0.01); border-radius:8px;">
+    <div><span style="color:rgba(255,255,255,0.15);">G1</span> <span style="color:#ccff00; font-weight:600;">21</span>-18</div>
+    <div><span style="color:rgba(255,255,255,0.15);">G2</span> 19-<span style="color:#ccff00; font-weight:600;">21</span></div>
+    <div><span style="color:rgba(255,255,255,0.15);">G3</span> <span style="color:#ccff00; font-weight:600;">22</span>-20</div>
+    <div style="margin-left:auto; color:#ccff00; font-weight:600;">&#9733; Decider</div>
+  </div>
+
+  <!-- Player cards (public view) -->
+  <div class="section-label">Featured Players</div>
+
+  <div class="player-identity-card" style="background:rgba(204,255,0,0.02); border-color:rgba(204,255,0,0.08);">
+    <div class="pic-avatar" style="border-color:rgba(204,255,0,0.15);">
+      &#127934;
+      <span class="pic-rank" style="border-color:#ccff00; color:#ccff00; font-size:7px;">#1</span>
+    </div>
+    <div class="pic-info">
+      <div class="pic-name">Amir</div>
+      <div class="pic-club">LEP BC &middot; Kuala Lumpur</div>
+      <div class="pic-stats">
+        <div class="ps"><div class="ps-num lime">28-12</div><div class="ps-label">W-L</div></div>
+        <div class="ps"><div class="ps-num">70%</div><div class="ps-label">Win Rate</div></div>
+        <div class="ps"><div class="ps-num lime" style="font-size:12px;">&#8593; 2</div><div class="ps-label">Rank</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="player-identity-card">
+    <div class="pic-avatar" style="background:linear-gradient(135deg,rgba(56,189,248,0.1),rgba(56,189,248,0.03)); border-color:rgba(255,255,255,0.06);">
+      &#127934;
+      <span class="pic-rank" style="border-color:rgba(255,255,255,0.15); color:rgba(255,255,255,0.3);">#12</span>
+    </div>
+    <div class="pic-info">
+      <div class="pic-name">Faiz</div>
+      <div class="pic-club">Smashers PJ &middot; Petaling Jaya</div>
+      <div class="pic-stats">
+        <div class="ps"><div class="ps-num">14-18</div><div class="ps-label">W-L</div></div>
+        <div class="ps"><div class="ps-num">44%</div><div class="ps-label">Win Rate</div></div>
+        <div class="ps"><div class="ps-num" style="font-size:12px;">&#8595; 1</div><div class="ps-label">Rank</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="margin-top:16px; padding:14px; background:#ccff00; border-radius:12px; text-align:center;">
+    <div style="font-size:15px; font-weight:800; color:#040d0f;">Join KelabSukan</div>
+    <div style="font-size:10px; color:rgba(4,13,15,0.5); margin-top:2px;">Track your games, build your player card, challenge other clubs</div>
+  </div>
+
+  <!-- OG meta preview -->
+  <div style="margin-top:10px; padding:8px 12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); border-radius:8px;">
+    <div style="font-size:8px; color:rgba(255,255,255,0.15); text-transform:uppercase; letter-spacing:1px; margin-bottom:2px;">WhatsApp Link Preview</div>
+    <div style="font-size:10px; font-weight:600; color:white;">LEP BC 3-2 Smashers PJ</div>
+    <div style="font-size:9px; color:rgba(255,255,255,0.3);">Friday Night Friendly &middot; Rookies win decider 22-20</div>
+    <div style="font-size:8px; color:rgba(255,255,255,0.15);">kelabsukan.com &middot; Live Sports Network</div>
+  </div>
+
+  <div class="home-indicator"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- FOOTER DESCRIPTION                                                -->
+<!-- ================================================================ -->
+<div style="width:100%; max-width:1200px; margin-top:16px; text-align:center;">
+  <div style="display:inline-flex; gap:24px; padding:16px 32px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); border-radius:16px;">
+    <div style="text-align:left;">
+      <div style="font-size:11px; font-weight:600; color:#ccff00; margin-bottom:4px;">Phone 1: Live Scoreboard</div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.3); line-height:1.5;">
+        BWF-style match header with player avatars &amp; flags<br>
+        Full identity cards with W-L, win rate, form, rank<br>
+        Game-by-game scores (G1, G2, G3 format)<br>
+        Series history bar (LEP BC leads 3-2)<br>
+        Stories section with shareable moments
+      </div>
+    </div>
+    <div style="text-align:left;">
+      <div style="font-size:11px; font-weight:600; color:#ccff00; margin-bottom:4px;">Phone 2: Matchmaking</div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.3); line-height:1.5;">
+        Drag-free opponent assignment grid<br>
+        Club badges (LEP / SMA) on each pair<br>
+        Selection panel with swap logic<br>
+        Lock button with progress requirement<br>
+        Pair registration status for both clubs
+      </div>
+    </div>
+    <div style="text-align:left;">
+      <div style="font-size:11px; font-weight:600; color:#ccff00; margin-bottom:4px;">Phone 3: Public Proof Page</div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.3); line-height:1.5;">
+        No-login-required scoreboard view<br>
+        Full match results with game details<br>
+        Player identity cards (public version)<br>
+        OG meta preview for WhatsApp link shares<br>
+        CTA to join KelabSukan
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

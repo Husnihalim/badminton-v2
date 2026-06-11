@@ -174,7 +174,7 @@ export default function GameDaySharePage() {
         <CardContent className="space-y-5">
           {pageError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{pageError}</p> : null}
 
-          <div className="grid gap-3 rounded-lg border border-slate-600 bg-[#0b1322] p-3 text-sm text-[var(--arena-text-dim)]">
+          <div className="grid gap-3 rounded-lg border border-slate-600 bg-[var(--arena-surface)] p-3 text-sm text-[var(--arena-text-dim)]">
             <p className="inline-flex items-center gap-2 font-semibold text-[var(--arena-text)]">
               <CalendarDays size={17} aria-hidden="true" />
               {new Date(event.event_date).toLocaleString()}
@@ -190,7 +190,7 @@ export default function GameDaySharePage() {
               <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
                 {event.signup_open ? 'Open' : 'Closed'}
               </Badge>
-              {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[#0b1322] text-[var(--arena-text-dim)]">{acceptedRsvps.length}/{event.max_participants} accepted</Badge> : null}
+              {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-dim)]">{acceptedRsvps.length}/{event.max_participants} accepted</Badge> : null}
             </div>
           </div>
 
@@ -199,7 +199,7 @@ export default function GameDaySharePage() {
               <Share2 size={17} aria-hidden="true" />
               Share
             </Button>
-            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-4 py-2.5 text-sm font-semibold text-[var(--arena-text-dim)] transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
+            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--arena-text-dim)] transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
               <MessageCircle size={17} aria-hidden="true" />
               WhatsApp
             </a>
@@ -257,11 +257,11 @@ export default function GameDaySharePage() {
           )}
 
           {user ? (
-            <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] p-3">
+            <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-3">
               <div className="flex flex-wrap gap-2">
                 <Badge className="border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">{acceptedRsvps.length} accepted</Badge>
                 <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-                <Badge className="border-slate-600 bg-[#0b1322] text-[var(--arena-text-dim)]">{rejectedRsvps.length} rejected</Badge>
+                <Badge className="border-slate-600 bg-[var(--arena-surface)] text-[var(--arena-text-dim)]">{rejectedRsvps.length} rejected</Badge>
               </div>
               {acceptedRsvps.length ? (
                 <p className="text-sm leading-6 text-[var(--arena-text-dim)]">

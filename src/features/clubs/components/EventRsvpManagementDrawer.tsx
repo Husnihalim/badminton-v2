@@ -84,7 +84,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
         </h4>
         
         {/* Summary Stats Panel */}
-        <div className="p-2.5 bg-[#0b1322] rounded-md border border-[var(--arena-border)]/80 text-[11px] font-medium text-slate-300 grid grid-cols-2 gap-2 shadow-sm">
+        <div className="p-2.5 bg-[var(--arena-surface)] rounded-md border border-[var(--arena-border)]/80 text-[11px] font-medium text-slate-300 grid grid-cols-2 gap-2 shadow-sm">
           <div>
             📊 <span className="font-bold text-slate-900">Attended:</span> {attendedCount}
           </div>
@@ -107,7 +107,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
           placeholder="Search members..."
           value={rsvpSearchQuery}
           onChange={(e) => setRsvpSearchQuery(e.target.value)}
-          className={`min-h-9 text-xs flex-1 bg-[#0b1322] border-[var(--arena-border)] focus:border-${accentColor}-600 focus:ring-1 focus:ring-${accentColor}-600/20`}
+          className={`min-h-9 text-xs flex-1 bg-[var(--arena-surface)] border-[var(--arena-border)] focus:border-${accentColor}-600 focus:ring-1 focus:ring-${accentColor}-600/20`}
         />
         {rsvpSearchQuery && (
           <Button
@@ -160,7 +160,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
                             handleAdminRsvpUpdate(member.user_id, val, rsvp?.attended, rsvp?.paid)
                           }
                         }}
-                        className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-[var(--arena-border)] rounded-md w-20 font-bold bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accentColor}-500`}
+                        className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-[var(--arena-border)] rounded-md w-20 font-bold bg-[var(--arena-surface)] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accentColor}-500`}
                       >
                         {rsvpStatus === 'no_response' && <option value="no_response">Pending</option>}
                         <option value="going">Going</option>
@@ -174,7 +174,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
                         className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                           rsvp?.attended
                             ? `${theme.bg} ${theme.border} text-white`
-                            : 'bg-[#0b1322] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
+                            : 'bg-[var(--arena-surface)] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
                         }`}
                         onClick={() => handleAdminRsvpUpdate(
                           member.user_id,
@@ -194,7 +194,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
                         className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                           rsvp?.paid
                             ? 'bg-amber-500 border-amber-500 text-white'
-                            : 'bg-[#0b1322] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
+                            : 'bg-[var(--arena-surface)] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
                         }`}
                         onClick={() => handleAdminRsvpUpdate(
                           member.user_id,

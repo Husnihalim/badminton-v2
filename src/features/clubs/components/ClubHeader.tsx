@@ -72,7 +72,7 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl shadow-sm border border-[var(--arena-border)] bg-[#0b1322]">
+    <div className="relative overflow-hidden rounded-2xl shadow-sm border border-[var(--arena-border)] bg-[var(--arena-surface)]">
       {/* Banner Image / Gradient */}
       <div 
         className={`h-40 sm:h-52 w-full relative ${
@@ -166,7 +166,7 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
               Base location: <strong className="break-words text-[var(--arena-text)]">{locationQuery}</strong>
             </p>
             <a 
-              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 shadow-sm" 
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 shadow-sm" 
               href={mapUrl} 
               target="_blank" 
               rel="noreferrer"

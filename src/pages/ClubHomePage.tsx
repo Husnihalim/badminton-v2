@@ -317,7 +317,7 @@ export default function ClubHomePage() {
         <>
           <CelebrationConfetti />
           <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setShowCelebrationModal(false)}>
-            <Card className="relative w-full max-w-md overflow-hidden rounded-2xl border-none bg-[#0b1322] text-center shadow-2xl transition-all" onClick={(e) => e.stopPropagation()}>
+            <Card className="relative w-full max-w-md overflow-hidden rounded-2xl border-none bg-[var(--arena-surface)] text-center shadow-2xl transition-all" onClick={(e) => e.stopPropagation()}>
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
               <CardContent className="space-y-6 px-6 pt-10 pb-8 sm:px-8">
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] shadow-inner animate-bounce">

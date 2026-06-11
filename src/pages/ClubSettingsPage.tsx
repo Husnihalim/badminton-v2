@@ -367,7 +367,7 @@ export default function ClubSettingsPage() {
                 <div className="space-y-2">
                   <span className="text-sm font-semibold text-[var(--arena-text-muted)] block">Club Logo</span>
                   <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 shrink-0 rounded-full border border-slate-600 bg-[#0b1322] flex items-center justify-center overflow-hidden">
+                    <div className="h-16 w-16 shrink-0 rounded-full border border-slate-600 bg-[var(--arena-surface)] flex items-center justify-center overflow-hidden">
                       {logoUrl ? (
                         <img src={logoUrl} alt="Club logo preview" className="h-full w-full object-cover" />
                       ) : (
@@ -410,7 +410,7 @@ export default function ClubSettingsPage() {
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs font-bold ${
                             isSelected 
                               ? 'bg-slate-900 border-slate-900 text-white shadow'
-                              : 'bg-[#0b1322] border-slate-600 text-[var(--arena-text-dim)] hover:bg-slate-700'
+                              : 'bg-[var(--arena-surface)] border-slate-600 text-[var(--arena-text-dim)] hover:bg-slate-700'
                           }`}
                         >
                           <span className={`h-3.5 w-3.5 rounded-full border ${c.class.split(' ')[0]} ${c.class.split(' ')[1]}`} />
@@ -454,7 +454,7 @@ export default function ClubSettingsPage() {
                   <span className="text-sm font-semibold text-[var(--arena-text-muted)] block">Or Upload Custom Cover Banner</span>
                   <div className="space-y-3">
                     {bannerUrl ? (
-                      <div className="h-20 w-full rounded-lg border border-slate-600 overflow-hidden bg-[#0b1322]">
+                      <div className="h-20 w-full rounded-lg border border-slate-600 overflow-hidden bg-[var(--arena-surface)]">
                         <img src={bannerUrl} alt="Custom banner preview" className="h-full w-full object-cover" />
                       </div>
                     ) : null}
@@ -597,7 +597,7 @@ export default function ClubSettingsPage() {
                         const isActiveInvite = !isUsed && !isRevoked && !isExpired
 
                         return (
-                          <div key={invite.id} className="grid gap-2 rounded-lg border border-slate-600 bg-[#0b1322] p-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                          <div key={invite.id} className="grid gap-2 rounded-lg border border-slate-600 bg-[var(--arena-surface)] p-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
                             <div className="min-w-0">
                               <p className="truncate font-mono text-xs font-semibold text-slate-900">{buildInviteUrl(invite.token)}</p>
                               <p className="text-xs text-[var(--arena-text-dim)]">

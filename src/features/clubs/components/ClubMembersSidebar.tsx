@@ -118,7 +118,7 @@ export function ClubMembersSidebar({ clubId }: ClubMembersSidebarProps) {
               {members.slice(0, 5).map((member) => {
                 const isCurrentUser = user && user.id === member.user_id
                 return (
-                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--arena-border)] p-3 bg-[#0b1322] shadow-sm hover:border-slate-350 transition">
+                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--arena-border)] p-3 bg-[var(--arena-surface)] shadow-sm hover:border-slate-350 transition">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="min-w-0 truncate font-semibold text-[var(--arena-text)]">
                         <Link to={`/member/${member.user_id}`} className={`hover:underline ${theme.text}`}>

@@ -157,14 +157,14 @@ function EventCard({
         <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
           {event.signup_open ? 'Open' : 'Closed'}
         </Badge>
-        {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[#0b1322] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
+        {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
         <Button type="button" size="sm" variant="secondary" onClick={handleNativeEventShare}>
           <Share2 size={15} aria-hidden="true" />
           Share
         </Button>
-        <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
+        <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
           <MessageCircle size={15} aria-hidden="true" />
           WhatsApp
         </a>
@@ -198,7 +198,7 @@ function EventCard({
         <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p>
       ) : null}
       {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
-      <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[#0b1322] p-3">
+      <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-3">
         <div className="flex flex-wrap gap-2">
           <Badge className={`border-${theme.borderLight} ${theme.bgLight} ${theme.textDark}`}>{acceptedRsvps.length} accepted</Badge>
           <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
@@ -436,7 +436,7 @@ export function ClubEventsCalendar({
                 type="button"
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'list'
-                    ? 'bg-[#0b1322] text-slate-300 shadow-sm'
+                    ? 'bg-[var(--arena-surface)] text-slate-300 shadow-sm'
                     : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]'
                 }`}
                 onClick={() => setEventsViewMode('list')}
@@ -447,7 +447,7 @@ export function ClubEventsCalendar({
                 type="button"
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'calendar'
-                    ? 'bg-[#0b1322] text-slate-300 shadow-sm'
+                    ? 'bg-[var(--arena-surface)] text-slate-300 shadow-sm'
                     : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]'
                 }`}
                 onClick={() => setEventsViewMode('calendar')}
@@ -546,7 +546,7 @@ export function ClubEventsCalendar({
                       onClick={() => setSelectedDate(cell.date)}
                       className={`relative flex flex-col items-center justify-between p-1 sm:p-2 min-h-10 sm:min-h-12 border rounded-lg transition-all ${
                         cell.isCurrentMonth 
-                          ? 'text-slate-300 bg-[#0b1322] border-[var(--arena-border)]/60' 
+                          ? 'text-slate-300 bg-[var(--arena-surface)] border-[var(--arena-border)]/60' 
                           : 'text-[var(--arena-text-dim)] bg-[var(--arena-surface-muted)]/50 border-slate-100'
                       } ${
                         isSelected 

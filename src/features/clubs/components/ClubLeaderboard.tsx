@@ -359,7 +359,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 onClick={() => setSortBy('elo')}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'elo'
-                    ? `bg-[#0b1322] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                    ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
                     : "text-[var(--arena-text-muted)] hover:text-slate-900"
                 }`}
               >
@@ -370,7 +370,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 onClick={() => setSortBy('win-rate')}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'win-rate'
-                    ? `bg-[#0b1322] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                    ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
                     : "text-[var(--arena-text-muted)] hover:text-slate-900"
                 }`}
               >
@@ -390,7 +390,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                   onClick={() => setTimeframe(tab.id)}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
                     timeframe === tab.id
-                      ? `bg-[#0b1322] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                      ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
                       : "text-[var(--arena-text-muted)] hover:text-slate-900"
                   }`}
                 >
@@ -408,7 +408,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                       setTimeframe(e.target.value)
                     }
                   }}
-                  className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-[var(--arena-border)] rounded-lg bg-[#0b1322] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
+                  className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-[var(--arena-border)] rounded-lg bg-[var(--arena-surface)] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
                 >
                   <option value="">🎯 Filter by Session</option>
                   {events

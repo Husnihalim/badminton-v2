@@ -304,7 +304,7 @@ export default function SuperAdminAnalyticsPage() {
       {/* Overview Aggregates Card Row */}
       {stats && activeTab === 'overview' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
+          <div className="bg-[var(--arena-surface)] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
             <div className="p-3 bg-[var(--arena-accent-soft)] rounded-lg text-[var(--arena-accent)]">
               <Users size={24} />
             </div>
@@ -314,7 +314,7 @@ export default function SuperAdminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
+          <div className="bg-[var(--arena-surface)] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
               <Database size={24} />
             </div>
@@ -324,7 +324,7 @@ export default function SuperAdminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
+          <div className="bg-[var(--arena-surface)] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
             <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
               <Activity size={24} />
             </div>
@@ -334,7 +334,7 @@ export default function SuperAdminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="bg-[#0b1322] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
+          <div className="bg-[var(--arena-surface)] p-4 rounded-xl border border-[var(--arena-border)] shadow-sm flex items-center gap-4">
             <div className="p-3 bg-rose-50 rounded-lg text-rose-600">
               <AlertTriangle size={24} />
             </div>
@@ -354,7 +354,7 @@ export default function SuperAdminAnalyticsPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-3 font-semibold text-sm border-b-2 transition-all duration-150 capitalize flex items-center gap-2 cursor-pointer ${
               activeTab === tab
-                ? 'border-emerald-600 text-[var(--arena-accent)] bg-[#0b1322]'
+                ? 'border-emerald-600 text-[var(--arena-accent)] bg-[var(--arena-surface)]'
                 : 'border-transparent text-[var(--arena-text-dim)] hover:text-slate-800 hover:border-[var(--arena-border)]'
             }`}
           >
@@ -379,7 +379,7 @@ export default function SuperAdminAnalyticsPage() {
       </div>
 
       {/* Tab Panel Content */}
-      <div className="bg-[#0b1322] rounded-2xl border border-[var(--arena-border)] shadow-sm p-4 md:p-6">
+      <div className="bg-[var(--arena-surface)] rounded-2xl border border-[var(--arena-border)] shadow-sm p-4 md:p-6">
         
         {/* TAB 1: OVERVIEW & INTERACTIVE ANALYTICS */}
         {activeTab === 'overview' && stats && (
@@ -990,7 +990,7 @@ export default function SuperAdminAnalyticsPage() {
       {/* Confirmation Modal for Deleting Clubs */}
       {clubToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-[#0b1322] rounded-xl max-w-sm w-full p-6 shadow-2xl">
+          <div className="bg-[var(--arena-surface)] rounded-xl max-w-sm w-full p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-[var(--arena-text)] mb-2">Delete Club?</h3>
             <p className="text-[var(--arena-text-muted)] text-sm mb-6">
               Are you sure you want to delete <strong>"{clubToDelete.name}"</strong>? This will permanently delete all club members, match histories, score sets, events, and RSVP records. This action is irreversible.

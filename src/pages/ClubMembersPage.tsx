@@ -173,7 +173,7 @@ export default function ClubMembersPage() {
           {sortedMembers.length ? (
             <div className="space-y-3">
               {sortedMembers.map((member) => (
-                <div key={member.id} className="grid gap-3 rounded-lg border border-slate-600 bg-[#0b1322] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div key={member.id} className="grid gap-3 rounded-lg border border-slate-600 bg-[var(--arena-surface)] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="flex min-w-0 items-start gap-3">
                     {member.avatar_url ? (
                       <img 
@@ -182,7 +182,7 @@ export default function ClubMembersPage() {
                         className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-[var(--arena-border)]"
                       />
                     ) : (
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0b1322] text-[var(--arena-text-dim)] shadow-sm">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-surface)] text-[var(--arena-text-dim)] shadow-sm">
                         <UserRound size={18} aria-hidden="true" />
                       </span>
                     )}
