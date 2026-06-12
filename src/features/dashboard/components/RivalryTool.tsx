@@ -292,7 +292,7 @@ export default function RivalryTool({
             className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
               comparisonMode === 'partner'
                 ? 'bg-surface text-[var(--arena-accent)] shadow-sm border border-[var(--arena-border)]/40'
-                : 'text-[var(--arena-text-muted)] hover:text-slate-900 font-bold'
+                : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)] font-bold'
             }`}
             onClick={() => {
               setComparisonMode('partner')
@@ -306,7 +306,7 @@ export default function RivalryTool({
             className={`min-h-9 rounded-md px-3 text-xs font-semibold capitalize transition ${
               comparisonMode === 'rival'
                 ? 'bg-surface text-[var(--arena-accent)] shadow-sm border border-[var(--arena-border)]/40'
-                : 'text-[var(--arena-text-muted)] hover:text-slate-900 font-bold'
+                : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)] font-bold'
             }`}
             onClick={() => {
               setComparisonMode('rival')
@@ -558,7 +558,7 @@ export default function RivalryTool({
                             <span className="text-xs font-bold text-[var(--arena-text-dim)] font-mono">
                               #{idx + 1}
                             </span>
-                            <span className="text-sm font-semibold text-slate-900 truncate">
+                            <span className="text-sm font-semibold text-[var(--arena-text)] truncate">
                               {p.name}
                             </span>
                           </div>
@@ -609,7 +609,7 @@ export default function RivalryTool({
                               <span className="text-xs font-bold text-[var(--arena-text-dim)] font-mono">
                                 #{idx + 1}
                               </span>
-                              <span className="text-sm font-semibold text-slate-900 truncate">
+                              <span className="text-sm font-semibold text-[var(--arena-text)] truncate">
                                 {r.name}
                               </span>
                               {isNemesis && (
@@ -667,7 +667,7 @@ export default function RivalryTool({
                             </span>
                           </div>
                           <p
-                            className="text-sm font-semibold text-slate-900 leading-tight line-clamp-2"
+                            className="text-sm font-semibold text-[var(--arena-text)] leading-tight line-clamp-2"
                             title={pair.names}
                           >
                             {pair.names}

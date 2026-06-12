@@ -149,7 +149,7 @@ function UpcomingEventCard({ event, myRsvp }: UpcomingEventCardProps) {
             Share
           </Button>
           <a
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-surface px-3 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-[var(--arena-surface-muted)]"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-surface px-3 py-2 text-sm font-semibold text-[var(--arena-text)] transition-colors hover:bg-[var(--arena-surface-muted)]"
             href={whatsappUrl}
             target="_blank"
             rel="noreferrer"
