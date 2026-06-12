@@ -298,7 +298,7 @@ export function ClubEventsCalendar({
   if (!club) return null
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
-  const isMember = !!myMembership
+  const isMember = myMembership?.status === 'active' || user?.role === 'superadmin'
   const accent = club.accent_color || 'emerald'
   const theme = THEME_MAP[accent] || THEME_MAP.emerald
 

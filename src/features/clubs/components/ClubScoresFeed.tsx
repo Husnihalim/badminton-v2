@@ -39,7 +39,7 @@ export function ClubScoresFeed({
   if (!club) return null
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
-  const isMember = !!myMembership
+  const isMember = myMembership?.status === 'active' || user?.role === 'superadmin'
 
   const filteredMatches = matches.filter((match) => {
     if (!matchSearchQuery.trim()) return true

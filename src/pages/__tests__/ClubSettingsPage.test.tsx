@@ -107,7 +107,7 @@ describe('ClubSettingsPage tests', () => {
     await waitFor(() => fireEvent.click(screen.getByRole('button', { name: /delete forever/i })));
 
     await waitFor(() =>
-      expect(screen.getByText(/Cannot delete club: it still has 1 other member/)).toBeInTheDocument()
+      expect(screen.getAllByText(/Cannot delete club: it still has 1 other member/)[0]).toBeInTheDocument()
     );
     expect(api.deleteClub).not.toHaveBeenCalled();
   });

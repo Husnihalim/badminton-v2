@@ -9,13 +9,14 @@ interface DeleteClubModalProps {
   onConfirm: () => void;
   isDeleting?: boolean;
   clubName?: string;
+  error?: string;
 }
 
 /**
  * Premium styled modal for confirming club deletion.
  * Uses glassmorphism background with subtle blur and a gradient primary button.
  */
-export default function DeleteClubModal({ isOpen, onClose, onConfirm, isDeleting = false, clubName }: DeleteClubModalProps) {
+export default function DeleteClubModal({ isOpen, onClose, onConfirm, isDeleting = false, clubName, error }: DeleteClubModalProps) {
   return (
     <Modal
       isOpen={isOpen}
@@ -27,6 +28,13 @@ export default function DeleteClubModal({ isOpen, onClose, onConfirm, isDeleting
         This action cannot be undone. All club data, members and events will be permanently removed.
         {clubName && <span> ({clubName})</span>}
       </p>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-950/50 p-3 text-sm text-red-200">
+          {error}
+        </div>
+      )}
+
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-4">
         <Button variant="secondary" onClick={onClose} disabled={isDeleting} fullWidth className="sm:w-auto">
           <X size={16} className="mr-2" /> Cancel

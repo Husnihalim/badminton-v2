@@ -79,6 +79,7 @@ export default function ClubHomePage() {
   if (!clubId || !club) return <Navigate to="/not-found" replace />
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
+  const isMember = myMembership?.status === 'active' || user?.role === 'superadmin'
   const inviteUrl = club.invite_code ? buildInviteUrl(club.invite_code) : ''
 
   const handleCopyInviteLink = async () => {
@@ -179,35 +180,48 @@ export default function ClubHomePage() {
           setActionError={setActionError} 
         />
 
-        {/* Admin controls quick access */}
-        {isAdmin ? (
+        {/* Club actions quick access */}
+        {isMember ? (
           <Card className="border-blue-200 bg-blue-50/60">
             <CardContent className="space-y-3 pt-4 sm:pt-5">
               <div className="flex items-center gap-2 text-blue-800">
                 <ShieldCheck size={18} aria-hidden="true" />
-                <h2 className="font-bold">Admin controls</h2>
+                <h2 className="font-bold">{isAdmin ? 'Admin controls' : 'Club quick actions'}</h2>
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <Button variant="secondary" onClick={handleCreateScore}>
                   <ClipboardPenLine size={17} aria-hidden="true" />
                   Record score
                 </Button>
-                <Button variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
-                  <UserPlus size={17} aria-hidden="true" />
-                  Copy invite
-                </Button>
-                <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
-                  <UserPlus size={17} aria-hidden="true" />
-                  Requests
-                </Button>
+                {isAdmin ? (
+                  <>
+                    <Button variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
+                      <UserPlus size={17} aria-hidden="true" />
+                      Copy invite
+                    </Button>
+                    <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
+                      <UserPlus size={17} aria-hidden="true" />
+                      Requests
+                    </Button>
+                  </>
+                ) : (
+                  inviteUrl && (
+                    <Button variant="secondary" onClick={handleCopyInviteLink}>
+                      <UserPlus size={17} aria-hidden="true" />
+                      Copy invite
+                    </Button>
+                  )
+                )}
                 <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/members`)}>
                   <Users size={17} aria-hidden="true" />
                   Members
                 </Button>
-                <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
-                  <Settings size={17} aria-hidden="true" />
-                  Settings
-                </Button>
+                {isAdmin && (
+                  <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
+                    <Settings size={17} aria-hidden="true" />
+                    Settings
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

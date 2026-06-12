@@ -645,7 +645,7 @@ export default function ClubSettingsPage() {
             <Button variant="danger" type="button" onClick={() => alert('Transfer ownership feature coming soon')}>
               Transfer ownership
             </Button>
-            <Button variant="danger" type="button" onClick={() => setIsDeleteModalOpen(true)} className="ml-2">
+            <Button variant="danger" type="button" onClick={() => { setError(''); setIsDeleteModalOpen(true); }} className="ml-2">
               Delete club
             </Button>
           </CardContent>
@@ -654,10 +654,14 @@ export default function ClubSettingsPage() {
       
       <DeleteClubModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setError('')
+        }}
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
         clubName={club.name}
+        error={error}
       />
     </Page>
   )
