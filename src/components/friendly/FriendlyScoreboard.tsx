@@ -66,7 +66,7 @@ export function FriendlyScoreboard({ friendly, onRecordMatch }: FriendlyScoreboa
 
   if (isLoading) {
     return (
-      <Card className="border-white/10 bg-[#0a0f0e]">
+      <Card className="border-white/10 bg-[var(--arena-surface)]">
         <CardContent className="p-6 text-center">
           <p className="text-slate-400">Loading scoreboard...</p>
         </CardContent>

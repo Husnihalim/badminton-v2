@@ -197,7 +197,7 @@ export function FriendlyShareCard({
       {/* Preview */}
       <Card className="overflow-hidden border-white/10">
         <CardContent className="p-0">
-          <div className="aspect-square bg-gradient-to-b from-[#040d0f] to-[#0a1f1a] p-6">
+          <div className="aspect-square bg-gradient-to-b from-[var(--arena-bg)] to-[var(--arena-surface)] p-6">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <Badge variant={isLive ? 'live' : isComplete ? 'blue' : 'muted'}>

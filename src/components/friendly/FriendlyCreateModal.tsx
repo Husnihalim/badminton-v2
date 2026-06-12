@@ -82,7 +82,7 @@ export function FriendlyCreateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <Card className="w-full max-w-lg border-white/10 bg-[#0a0f0e]">
+      <Card className="w-full max-w-lg border-white/10 bg-[var(--arena-surface)]">
         <CardContent className="p-6">
           {/* Header */}
           <div className="mb-6 flex items-center justify-between">
@@ -145,7 +145,7 @@ export function FriendlyCreateModal({
                   <div className="w-full border-t border-white/10" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-[#0a0f0e] px-4 text-xs text-slate-500">OR</span>
+                  <span className="bg-[var(--arena-surface)] px-4 text-xs text-slate-500">OR</span>
                 </div>
               </div>
 

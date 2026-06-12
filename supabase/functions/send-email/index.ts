@@ -163,8 +163,9 @@ Deno.serve(async (req) => {
     }
 
     // 3. Send email via Resend
+    const senderEmail = Deno.env.get("SENDER_EMAIL") || "KelabSukan <noreply@kelabsukan.com>";
     await resend.emails.send({
-      from: "KelabSukan <noreply@kelabsukan.com>",
+      from: senderEmail,
       to: email,
       subject: subject,
       html: htmlContent,

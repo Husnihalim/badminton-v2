@@ -78,14 +78,14 @@ export default function FriendliesListPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#040d0f]">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--arena-bg)]">
         <p className="text-slate-400">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#040d0f] p-4">
+    <div className="min-h-screen bg-[var(--arena-bg)] p-4">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -103,7 +103,7 @@ export default function FriendliesListPage() {
               className="rounded-md border border-white/10 bg-white/5 p-1 text-sm text-white focus:border-[var(--arena-lime)]"
             >
               {myClubs.map(c => (
-                <option key={c.id} value={c.id} className="bg-[#0a0f0e]">
+                <option key={c.id} value={c.id} className="bg-[var(--arena-surface)]">
                   {c.name}
                 </option>
               ))}
@@ -155,7 +155,7 @@ export default function FriendliesListPage() {
 
       {/* Empty State */}
       {friendlies.length === 0 && (
-        <Card className="border-white/10 bg-[#0a0f0e]">
+        <Card className="border-white/10 bg-[var(--arena-surface)]">
           <CardContent className="p-8 text-center">
             <div className="mb-4 flex justify-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
@@ -224,7 +224,7 @@ function FriendlyCard({ friendly, currentClubId, onClick }: FriendlyCardProps) {
 
   return (
     <Card
-      className="cursor-pointer border-white/10 bg-[#0a0f0e] transition-colors hover:border-white/20"
+      className="cursor-pointer border-white/10 bg-[var(--arena-surface)] transition-colors hover:border-white/20"
       onClick={onClick}
     >
       <CardContent className="p-4">

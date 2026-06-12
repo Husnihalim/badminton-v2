@@ -48,7 +48,7 @@ export function FriendlySection({ clubId, isAdmin }: FriendlySectionProps) {
 
   if (isLoading) {
     return (
-      <Card className="border-white/10 bg-[#0a0f0e]">
+      <Card className="border-white/10 bg-[var(--arena-surface)]">
         <CardContent className="p-4">
           <p className="text-slate-400">Loading friendlies...</p>
         </CardContent>
@@ -97,7 +97,7 @@ export function FriendlySection({ clubId, isAdmin }: FriendlySectionProps) {
       {/* Active Friendly */}
       {activeFriendly && (
         <Card 
-          className="cursor-pointer border-[var(--arena-lime)]/30 bg-[#0a0f0e] transition-colors hover:border-[var(--arena-lime)]/50"
+          className="cursor-pointer border-[var(--arena-lime)]/30 bg-[var(--arena-surface)] transition-colors hover:border-[var(--arena-lime)]/50"
           onClick={() => navigate(`/friendly/${activeFriendly.id}`)}
         >
           <CardContent className="p-4">
@@ -155,7 +155,7 @@ export function FriendlySection({ clubId, isAdmin }: FriendlySectionProps) {
 
       {/* Empty State */}
       {friendlies.length === 0 && isAdmin && (
-        <Card className="border-white/10 bg-[#0a0f0e]">
+        <Card className="border-white/10 bg-[var(--arena-surface)]">
           <CardContent className="p-6 text-center">
             <div className="mb-3 flex justify-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800">

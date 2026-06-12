@@ -59,7 +59,7 @@ export default function FriendlyLandingPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#040d0f]">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--arena-bg)]">
         <div className="text-[var(--arena-lime)]">Loading...</div>
       </div>
     )
@@ -67,8 +67,8 @@ export default function FriendlyLandingPage() {
 
   if (error || !friendly) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#040d0f] p-4">
-        <Card className="w-full max-w-md border-white/10 bg-[#0a0f0e]">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--arena-bg)] p-4">
+        <Card className="w-full max-w-md border-white/10 bg-[var(--arena-surface)]">
           <CardContent className="p-6 text-center">
             <p className="text-red-400">{error || 'Something went wrong'}</p>
             <Button
@@ -84,7 +84,7 @@ export default function FriendlyLandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#040d0f] p-4">
+    <div className="min-h-screen bg-[var(--arena-bg)] p-4">
       <div className="mx-auto max-w-md pt-8">
         {/* Logo */}
         <div className="mb-8 text-center">
@@ -92,7 +92,7 @@ export default function FriendlyLandingPage() {
         </div>
 
         {/* Inviting Club Card */}
-        <Card className="mb-6 border-white/10 bg-[#0a0f0e]">
+        <Card className="mb-6 border-white/10 bg-[var(--arena-surface)]">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800 text-2xl">
@@ -115,7 +115,7 @@ export default function FriendlyLandingPage() {
         </p>
 
         {/* Challenge Details */}
-        <Card className="mb-6 border-[var(--arena-lime)]/30 bg-[#0a0f0e]">
+        <Card className="mb-6 border-[var(--arena-lime)]/30 bg-[var(--arena-surface)]">
           <CardContent className="p-6">
             <Badge variant="live" className="mb-4">
               Friendly Challenge
@@ -160,7 +160,7 @@ export default function FriendlyLandingPage() {
             <div className="w-full border-t border-white/10" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-[#040d0f] px-4 text-xs text-slate-500">OR</span>
+            <span className="bg-[var(--arena-bg)] px-4 text-xs text-slate-500">OR</span>
           </div>
         </div>
 

@@ -28,7 +28,7 @@ export function FriendlyStoryCard({ story, onShare }: FriendlyStoryCardProps) {
   const Icon = config.icon
 
   return (
-    <Card className="border-white/10 bg-[#0a0f0e]">
+    <Card className="border-white/10 bg-[var(--arena-surface)]">
       <CardContent className="p-4">
         <div className="mb-3 flex items-start justify-between">
           <Badge variant={config.variant} className="gap-1.5">
@@ -70,7 +70,7 @@ interface FriendlyStoryListProps {
 export function FriendlyStoryList({ stories, onShareStory }: FriendlyStoryListProps) {
   if (stories.length === 0) {
     return (
-      <Card className="border-white/10 bg-[#0a0f0e]">
+      <Card className="border-white/10 bg-[var(--arena-surface)]">
         <CardContent className="p-6 text-center">
           <p className="text-slate-400">Stories will appear as the friendly progresses</p>
         </CardContent>
