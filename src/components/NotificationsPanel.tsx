@@ -39,7 +39,8 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
     
     const clubId = notification.data?.clubId
     if (typeof clubId === 'string') {
-      navigate(`/club/${clubId}`)
+      const isApproved = notification.type === 'join_approved'
+      navigate(`/club/${clubId}${isApproved ? '?celebrate=true' : ''}`)
     }
     onClose()
   }
