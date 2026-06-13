@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Megaphone, ChevronRight, Share2, MessageCircle, Copy, X } from 'lucide-react'
+import { Megaphone, ChevronRight, Share2, MessageCircle, Copy, X, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubMessages, useMyMembership } from '../hooks/useClubQueries'
 import { useCreateClubAnnouncement, useUpdateClubMessage, useDeleteClubMessage } from '../../hooks/useMutations'
@@ -235,7 +235,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
 
                 return (
                   <div key={item.id} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-2.5 hover:bg-[var(--arena-surface-muted)]/80 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-2.5">
                       <div 
                         className="flex min-w-0 items-start gap-2.5 cursor-pointer flex-1"
                         onClick={() => toggleExpand(item.id, isLatest)}
@@ -270,12 +270,27 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                       </div>
 
                       {isAdmin ? (
-                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col lg:flex-row shrink-0">
-                          <Button type="button" size="sm" variant="secondary" className="min-h-8 h-8 text-xs px-2.5" onClick={(e) => { e.stopPropagation(); openEditMessageModal(item.message); }}>
-                            Edit
+                        <div className="flex items-center gap-1 shrink-0 self-start">
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            className="min-h-8 h-8 w-8 p-0 text-[var(--arena-text-muted)] hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] rounded-lg flex items-center justify-center shrink-0" 
+                            onClick={(e) => { e.stopPropagation(); openEditMessageModal(item.message); }}
+                            title="Edit announcement"
+                          >
+                            <Pencil size={14} aria-hidden="true" />
                           </Button>
-                          <Button type="button" size="sm" variant="danger" className="min-h-8 h-8 text-xs px-2.5" onClick={(e) => { e.stopPropagation(); handleDeleteMessage(item.message); }} disabled={deleteMessageMutation.isPending}>
-                            Delete
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            className="min-h-8 h-8 w-8 p-0 text-red-400/80 hover:bg-red-500/10 hover:text-red-400 rounded-lg flex items-center justify-center shrink-0" 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteMessage(item.message); }} 
+                            disabled={deleteMessageMutation.isPending}
+                            title="Delete announcement"
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
                           </Button>
                         </div>
                       ) : null}
