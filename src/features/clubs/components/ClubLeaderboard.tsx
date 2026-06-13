@@ -509,87 +509,106 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
         )}
 
         {computedLeaderboard.length ? (
-          <div className="space-y-2">
-            {computedLeaderboard.slice(0, showAllLeaderboard ? undefined : 10).map((player, index) => {
-              const streak = playerStreaks.get(player.name)
-              const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
-              const isMe = user && (
-                user.name?.toLowerCase() === player.name.toLowerCase() ||
-                user.display_name?.toLowerCase() === player.name.toLowerCase()
-              )
+          <div className="rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] overflow-hidden shadow-sm">
+            {/* High-density table headers */}
+            <div className="grid grid-cols-[2rem_1fr_4.5rem] sm:grid-cols-[3rem_1fr_3.5rem_5rem_4.5rem] gap-2 px-3 py-2 text-[10px] sm:text-xs font-bold text-[var(--arena-text-muted)] border-b border-[var(--arena-border)] uppercase tracking-wider items-center bg-[var(--arena-surface-muted)]/20">
+              <div className="text-center">Rank</div>
+              <div>Player</div>
+              <div className="hidden sm:block text-center">GP</div>
+              <div className="hidden sm:block text-center">Record</div>
+              <div className="text-right">Win %</div>
+            </div>
 
-              return (
-                <div key={player.name} className="rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3 sm:p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="shrink-0">{renderRankBadge(index + 1)}</div>
-                        {(() => {
-                          const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
-                          const elo = match?.elo_rating || 1200
-                          return match?.user_id ? (
-                            <Link to={`/member/${match.user_id}`} className={`flex items-center gap-2 min-w-0 truncate text-base sm:text-lg font-extrabold hover:underline ${theme.text}`}>
-                              <span className="truncate">{player.name}</span>
-                              <span className={`shrink-0 text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]`}>
-                                ⚡ {elo} Elo
-                              </span>
-                            </Link>
-                          ) : (
-                            <span className="flex items-center gap-2 min-w-0 truncate text-base sm:text-lg font-extrabold text-[var(--arena-text)]">
-                              <span className="truncate">{player.name}</span>
-                              <span className={`shrink-0 text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]`}>
-                                ⚡ {elo} Elo
-                              </span>
-                            </span>
-                          )
-                        })()}
-                      </div>
+            <div className="divide-y divide-[var(--arena-border)]/50">
+              {computedLeaderboard.map((player, index) => {
+                const streak = playerStreaks.get(player.name)
+                const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
+                const isMe = user && (
+                  user.name?.toLowerCase() === player.name.toLowerCase() ||
+                  user.display_name?.toLowerCase() === player.name.toLowerCase()
+                )
 
-                      <div className="mt-2 flex flex-nowrap items-center gap-1.5 overflow-x-hidden">
-                        {hasWinStreak ? (
-                          <Badge className="border-amber-200 bg-amber-50 text-amber-700 gap-0.5 text-[9px] sm:text-xs font-extrabold shadow-sm shrink-0 px-1.5 py-0.5 sm:px-2 sm:py-0.5 whitespace-nowrap">
-                            <Flame size={12} className="text-amber-500 animate-pulse shrink-0" />
-                            {streak.count} Hot Run
-                          </Badge>
-                        ) : null}
-                        {user && !isMe && (
-                          <Link
-                            to={`/dashboard?rival=${player.name}`}
-                            className={`inline-flex items-center gap-0.5 text-[8px] sm:text-[10px] font-extrabold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0 bg-${accent}-50 px-1.5 py-0.5 rounded border border-${accent}-100 shadow-sm whitespace-nowrap`}
-                            title={`Compare Head-to-Head with ${player.name}`}
-                          >
-                            ⚔️ H2H
-                          </Link>
-                        )}
-                      </div>
-
-                      <div className="mt-2 flex items-center gap-3 text-xs text-[var(--arena-text-muted)] dark:text-[var(--arena-text-muted)] font-semibold flex-wrap">
-                        <span>{player.games} GP</span>
-                        <span>{player.wins}W</span>
-                        <span>{player.losses}L</span>
-                        <span>{player.winPercentage}%</span>
-                      </div>
+                return (
+                  <div 
+                    key={player.name} 
+                    className={`grid grid-cols-[2rem_1fr_4.5rem] sm:grid-cols-[3rem_1fr_3.5rem_5rem_4.5rem] gap-2 px-3 py-2.5 items-center hover:bg-[var(--arena-surface-muted)]/30 transition-colors text-xs sm:text-sm ${
+                      isMe ? 'bg-[var(--arena-accent-soft)]/20' : ''
+                    }`}
+                  >
+                    {/* Rank */}
+                    <div className="flex justify-center items-center">
+                      {renderRankBadge(index + 1)}
                     </div>
 
-                    <div className="shrink-0 text-right min-w-[5.75rem] sm:min-w-[6.25rem]">
-                      <div className="text-[17px] sm:text-xl font-black leading-none text-[var(--arena-text)] whitespace-nowrap">{player.pointsFor} / {player.pointsAgainst}</div>
-                      <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] text-[var(--arena-text-muted)] mt-1">pts</div>
+                    {/* Player Info (Avatar, Name, Elo, Streak) */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      {(() => {
+                        const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
+                        const elo = match?.elo_rating || 1200
+                        const avatar = match?.avatar_url
+                        return (
+                          <>
+                            {avatar ? (
+                              <img src={avatar} alt="" className="h-6 w-6 rounded-full object-cover border border-[var(--arena-border)]" />
+                            ) : (
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)]">
+                                {player.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                              {match?.user_id ? (
+                                <Link to={`/member/${match.user_id}`} className="font-bold hover:underline truncate max-w-[80px] sm:max-w-none text-[var(--arena-text)]" title={player.name}>
+                                  {player.name}
+                                </Link>
+                              ) : (
+                                <span className="font-bold truncate max-w-[80px] sm:max-w-none text-[var(--arena-text)]" title={player.name}>
+                                  {player.name}
+                                </span>
+                              )}
+                              <span className="shrink-0 text-[10px] font-extrabold text-[var(--arena-accent)]">
+                                ⚡ {elo}
+                              </span>
+                              {hasWinStreak && (
+                                <span className="shrink-0 text-[9px] px-1 bg-amber-500/10 text-amber-500 rounded font-black flex items-center gap-0.5" title={`${streak.count} win streak`}>
+                                  <Flame size={10} className="fill-amber-500" />
+                                  {streak.count}
+                                </span>
+                              )}
+                              {user && !isMe && (
+                                <Link
+                                  to={`/dashboard?rival=${player.name}`}
+                                  className="text-[9px] font-extrabold text-[var(--arena-accent)] hover:underline opacity-80 hover:opacity-100"
+                                  title="Compare Head-to-Head"
+                                >
+                                  ⚔️ H2H
+                                </Link>
+                              )}
+                            </div>
+                          </>
+                        )
+                      })()}
+                    </div>
+
+                    {/* GP */}
+                    <div className="hidden sm:block text-center font-semibold text-[var(--arena-text-muted)]">
+                      {player.games}
+                    </div>
+
+                    {/* Record (W-L) */}
+                    <div className="hidden sm:block text-center font-semibold text-[var(--arena-text-dim)] text-[10px] sm:text-xs">
+                      <span className="text-[var(--arena-accent)]">{player.wins}W</span>
+                      <span className="mx-0.5 text-slate-500">-</span>
+                      <span className="text-red-500">{player.losses}L</span>
+                    </div>
+
+                    {/* Win % */}
+                    <div className="text-right font-bold text-[var(--arena-text)]">
+                      {player.winPercentage}%
                     </div>
                   </div>
-                </div>
-              )
-            })}
-            {computedLeaderboard.length > 10 && (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="mt-3"
-                onClick={() => setShowAllLeaderboard(!showAllLeaderboard)}
-              >
-                {showAllLeaderboard ? 'Show Less' : `View All Players (${computedLeaderboard.length})`}
-              </Button>
-            )}
+                )
+              })}
+            </div>
           </div>
         ) : (
           <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-muted)]">

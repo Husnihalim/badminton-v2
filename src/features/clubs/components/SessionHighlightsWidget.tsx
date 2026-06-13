@@ -273,59 +273,59 @@ export function SessionHighlightsWidget({
 
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 md:p-6" onClick={onClose}>
-      <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl shadow-2xl bg-slate-900 border border-slate-800 text-white overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/60 p-0 sm:p-4 md:p-6" onClick={onClose}>
+      <Card className="w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col rounded-none sm:rounded-xl shadow-2xl bg-slate-900 border-x-0 border-t-0 sm:border border-slate-800 text-white overflow-hidden" onClick={(e) => e.stopPropagation()}>
         
         {/* Header */}
-        <div className="relative px-6 py-6 md:py-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex-none">
-          <div className="absolute top-4 right-4">
-            <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-[var(--arena-text-dim)] hover:text-white hover:bg-slate-800 rounded-full">
-              <X size={20} />
+        <div className="relative px-4 py-4 md:px-6 md:py-5 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex-none">
+          <div className="absolute top-3 right-3 md:top-4 md:right-4">
+            <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-[var(--arena-text-dim)] hover:text-white hover:bg-slate-800 rounded-full h-8 w-8 md:h-9 md:w-9">
+              <X size={18} />
             </Button>
           </div>
-          <div className="flex flex-col gap-2 pr-10">
-            <Badge className="w-fit border-amber-500 bg-amber-500/10 text-amber-500 font-extrabold uppercase tracking-wider text-[10px]">
+          <div className="flex flex-col gap-1 pr-10">
+            <Badge className="w-fit border-amber-500 bg-amber-500/10 text-amber-500 font-extrabold uppercase tracking-wider text-[9px] px-2 py-0.5">
               ⭐ Game Night Summary
             </Badge>
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400 bg-clip-text text-transparent">
+            <h2 className="text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400 bg-clip-text text-transparent">
               {event.title}
             </h2>
-            <p className="text-sm text-[var(--arena-text-dim)] font-medium">
+            <p className="text-xs text-[var(--arena-text-dim)] font-medium">
               📅 {eventDateStr} {event.location ? `· 📍 ${event.location}` : ''}
             </p>
           </div>
+        </div>
 
+        {/* Scrollable Content */}
+        <CardContent className="p-4 md:p-6 space-y-6 md:space-y-8 flex-1 overflow-y-auto bg-slate-950 text-slate-100">
+          
           {/* Session Quick Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               ['Active Players', highlights.stats.totalPlayers, '👥'],
               ['Matches Played', highlights.stats.totalMatches, '🎾'],
               ['Clutch Matches', highlights.stats.clutchMatches, '🔥'],
               ['Highest Set Score', highlights.stats.highestScoreStr, '⚡']
             ].map(([label, val, emoji]) => (
-              <div key={label} className="bg-slate-950/40 rounded-lg p-3 border border-slate-800/60 text-center">
-                <span className="text-2xl mb-1 block">{emoji}</span>
-                <span className="block text-lg font-bold text-white">{val}</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--arena-text-dim)]">{label}</span>
+              <div key={label} className="bg-slate-950/40 rounded-lg p-3 border border-slate-800/60 text-center flex flex-col items-center justify-center min-h-[80px]">
+                <span className="text-xl mb-1 block">{emoji}</span>
+                <span className="block text-base md:text-lg font-bold text-white leading-tight">{val}</span>
+                <span className="text-[9px] uppercase font-bold tracking-wider text-[var(--arena-text-dim)] mt-0.5">{label}</span>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Scrollable Content */}
-        <CardContent className="p-6 space-y-8 flex-1 overflow-y-auto bg-slate-950 text-slate-100">
-          
           {/* Accordion/Cards of highlights */}
           <div>
-            <h3 className="text-sm font-bold text-[var(--arena-text-dim)] uppercase tracking-widest mb-4">🏆 Tonight's Highlights</h3>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <h3 className="text-xs font-bold text-[var(--arena-text-dim)] uppercase tracking-widest mb-3">🏆 Tonight's Highlights</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               
               {/* MVP (King of the Court) */}
               {highlights.mvp && (
-                <div className="relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-transparent p-5 shadow-lg shadow-amber-950/20">
+                <div className="relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-transparent p-4 md:p-5 shadow-lg shadow-amber-950/20">
                   <div className="absolute top-2 right-2 text-2xl">👑</div>
                   <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">King of the Court</span>
-                  <h4 className="mt-1.5 text-lg font-extrabold text-white truncate">{highlights.mvp.name}</h4>
+                  <h4 className="mt-1.5 text-base md:text-lg font-extrabold text-white truncate">{highlights.mvp.name}</h4>
                   <p className="mt-2 text-xs font-semibold text-amber-400/90">
                     🔥 {Math.round(highlights.mvp.winRate)}% Win Rate ({highlights.mvp.wins}W-{highlights.mvp.losses}L)
                   </p>
@@ -338,10 +338,10 @@ export function SessionHighlightsWidget({
 
               {/* Streak Star */}
               {highlights.streakStar && (
-                <div className="relative overflow-hidden rounded-xl border border-orange-500/30 bg-gradient-to-b from-orange-500/10 to-transparent p-5 shadow-lg shadow-orange-950/20">
+                <div className="relative overflow-hidden rounded-xl border border-orange-500/30 bg-gradient-to-b from-orange-500/10 to-transparent p-4 md:p-5 shadow-lg shadow-orange-950/20">
                   <div className="absolute top-2 right-2 text-2xl">🔥</div>
                   <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Streak Star</span>
-                  <h4 className="mt-1.5 text-lg font-extrabold text-white truncate">{highlights.streakStar.name}</h4>
+                  <h4 className="mt-1.5 text-base md:text-lg font-extrabold text-white truncate">{highlights.streakStar.name}</h4>
                   <p className="mt-2 text-xs font-semibold text-orange-400/90">
                     📈 {highlights.streakStar.longestStreak} Win Streak
                   </p>
@@ -354,10 +354,10 @@ export function SessionHighlightsWidget({
 
               {/* Resilience Award */}
               {highlights.resilience && (
-                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-accent)]/30 bg-gradient-to-b from-[var(--arena-accent)]/10 to-transparent p-5 shadow-lg shadow-[var(--arena-bg)]/20">
+                <div className="relative overflow-hidden rounded-xl border border-[var(--arena-accent)]/30 bg-gradient-to-b from-[var(--arena-accent)]/10 to-transparent p-4 md:p-5 shadow-lg shadow-[var(--arena-bg)]/20">
                   <div className="absolute top-2 right-2 text-2xl">🛠️</div>
                   <span className="text-[10px] font-bold text-[var(--arena-accent)] uppercase tracking-widest">Resilience Award</span>
-                  <h4 className="mt-1.5 text-lg font-extrabold text-white truncate">{highlights.resilience.name}</h4>
+                  <h4 className="mt-1.5 text-base md:text-lg font-extrabold text-white truncate">{highlights.resilience.name}</h4>
                   <p className="mt-2 text-xs font-semibold text-[var(--arena-accent)]/90">
                     💪 Played {highlights.resilience.games} Matches
                   </p>
@@ -370,7 +370,7 @@ export function SessionHighlightsWidget({
 
               {/* Power Duo */}
               {highlights.powerDuo && (
-                <div className="relative overflow-hidden rounded-xl border border-indigo-500/30 bg-gradient-to-b from-indigo-500/10 to-transparent p-5 shadow-lg shadow-indigo-950/20">
+                <div className="relative overflow-hidden rounded-xl border border-indigo-500/30 bg-gradient-to-b from-indigo-500/10 to-transparent p-4 md:p-5 shadow-lg shadow-indigo-950/20">
                   <div className="absolute top-2 right-2 text-2xl">🤝</div>
                   <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Power Duo</span>
                   <h4 className="mt-1.5 text-sm font-extrabold text-white truncate" title={highlights.powerDuo.names}>{highlights.powerDuo.names}</h4>
@@ -386,7 +386,7 @@ export function SessionHighlightsWidget({
 
               {/* Rivalry of the Night */}
               {highlights.rivalry && (
-                <div className="relative overflow-hidden rounded-xl border border-red-500/30 bg-gradient-to-b from-red-500/10 to-transparent p-5 shadow-lg shadow-red-950/20">
+                <div className="relative overflow-hidden rounded-xl border border-red-500/30 bg-gradient-to-b from-red-500/10 to-transparent p-4 md:p-5 shadow-lg shadow-red-950/20">
                   <div className="absolute top-2 right-2 text-2xl">⚔️</div>
                   <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Night's Rivalry</span>
                   <h4 className="mt-1.5 text-sm font-extrabold text-white truncate" title={highlights.rivalry.names}>{highlights.rivalry.names}</h4>
@@ -405,18 +405,18 @@ export function SessionHighlightsWidget({
 
           {/* Night's Standings */}
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-[var(--arena-text-dim)] uppercase tracking-widest">📈 Standings for this Session</h3>
+            <h3 className="text-xs font-bold text-[var(--arena-text-dim)] uppercase tracking-widest">📈 Standings for this Session</h3>
             <div className="border border-slate-800 rounded-lg overflow-x-auto bg-slate-900/60 font-sans">
-              <table className="w-full text-left border-collapse text-xs md:text-sm">
+              <table className="w-full text-left border-collapse text-[11px] md:text-sm">
                 <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950/80 text-[var(--arena-text-dim)] font-bold uppercase tracking-wider text-[10px]">
-                    <th className="py-3 px-4">Rank</th>
-                    <th className="py-3 px-4">Player</th>
-                    <th className="py-3 px-4 text-center">GP</th>
-                    <th className="py-3 px-4 text-center">W - L</th>
-                    <th className="py-3 px-4 text-center">Win %</th>
-                    <th className="py-3 px-4 text-right">Pts Ratio</th>
-                    <th className="py-3 px-4 text-right">Points Diff</th>
+                  <tr className="border-b border-slate-800 bg-slate-950/80 text-[var(--arena-text-dim)] font-bold uppercase tracking-wider text-[9px] md:text-[10px]">
+                    <th className="py-2.5 px-2.5 md:py-3 md:px-4">Rank</th>
+                    <th className="py-2.5 px-2.5 md:py-3 md:px-4">Player</th>
+                    <th className="py-2.5 px-2.5 md:py-3 md:px-4 text-center">GP</th>
+                    <th className="py-2.5 px-2.5 md:py-3 md:px-4 text-center">W-L</th>
+                    <th className="py-2.5 px-2.5 md:py-3 md:px-4 text-center">Win%</th>
+                    <th className="py-2.5 px-2.5 md:py-3 md:px-4 text-right">Pts Ratio</th>
+                    <th className="py-2.5 px-2.5 md:py-3 md:px-4 text-right">Diff</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
@@ -424,8 +424,8 @@ export function SessionHighlightsWidget({
                     const m = members.find(mem => mem.name?.toLowerCase() === player.name.toLowerCase())
                     return (
                       <tr key={player.name} className="hover:bg-slate-800/40 text-slate-200">
-                        <td className="py-3 px-4 font-bold text-[var(--arena-text-dim)]">{idx + 1}</td>
-                        <td className="py-3 px-4 font-semibold text-white">
+                        <td className="py-2.5 px-2.5 md:py-3 md:px-4 font-bold text-[var(--arena-text-dim)]">{idx + 1}</td>
+                        <td className="py-2.5 px-2.5 md:py-3 md:px-4 font-semibold text-white">
                           {m?.user_id ? (
                             <Link to={`/member/${m.user_id}`} onClick={onClose} className="hover:underline text-white">
                               {player.name}
@@ -434,11 +434,11 @@ export function SessionHighlightsWidget({
                             <span>{player.name}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-center font-mono">{player.games}</td>
-                        <td className="py-3 px-4 text-center font-mono text-slate-300">{player.wins} - {player.losses}</td>
-                        <td className="py-3 px-4 text-center font-mono">{Math.round(player.winRate)}%</td>
-                        <td className="py-3 px-4 text-right font-mono text-[var(--arena-text-dim)]">{player.pointsFor} / {player.pointsAgainst}</td>
-                        <td className="py-3 px-4 text-right font-mono font-bold text-[var(--arena-accent)]">{player.pointDiff > 0 ? `+${player.pointDiff}` : player.pointDiff}</td>
+                        <td className="py-2.5 px-2.5 md:py-3 md:px-4 text-center font-mono">{player.games}</td>
+                        <td className="py-2.5 px-2.5 md:py-3 md:px-4 text-center font-mono text-slate-300">{player.wins} - {player.losses}</td>
+                        <td className="py-2.5 px-2.5 md:py-3 md:px-4 text-center font-mono">{Math.round(player.winRate)}%</td>
+                        <td className="py-2.5 px-2.5 md:py-3 md:px-4 text-right font-mono text-[var(--arena-text-dim)]">{player.pointsFor} / {player.pointsAgainst}</td>
+                        <td className="py-2.5 px-2.5 md:py-3 md:px-4 text-right font-mono font-bold text-[var(--arena-accent)]">{player.pointDiff > 0 ? `+${player.pointDiff}` : player.pointDiff}</td>
                       </tr>
                     )
                   })}
@@ -449,7 +449,7 @@ export function SessionHighlightsWidget({
 
           {/* Session Match Logs */}
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-[var(--arena-text-dim)] uppercase tracking-widest">📝 Match Records</h3>
+            <h3 className="text-xs font-bold text-[var(--arena-text-dim)] uppercase tracking-widest">📝 Match Records</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               {eventMatches.map((match) => {
                 const t1 = match.participants.filter(p => p.team === 1).map(p => p.name || p.guest_name || 'Guest').join(' & ')
@@ -461,7 +461,7 @@ export function SessionHighlightsWidget({
                 const matchWinner = t1Sets > t2Sets ? 1 : 2
 
                 return (
-                  <div key={match.id} className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-4 space-y-2">
+                  <div key={match.id} className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3.5 md:p-4 space-y-2">
                     <div className="flex justify-between items-start">
                       <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{match.sport} · {match.match_type}</span>
                       <span className="text-[10px] text-[var(--arena-text-dim)]">{new Date(match.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -502,9 +502,9 @@ export function SessionHighlightsWidget({
         </CardContent>
 
         {/* Footer */}
-        <div className="bg-slate-900 px-6 py-4 border-t border-slate-800 flex justify-between items-center text-xs text-[var(--arena-text-dim)] flex-none">
-          <span>POWERED BY KELABSUKAN.COM</span>
-          <Button type="button" size="sm" variant="secondary" onClick={onClose}>
+        <div className="bg-slate-900 px-4 py-3 md:px-6 md:py-4 border-t border-slate-800 flex justify-between items-center text-xs text-[var(--arena-text-dim)] flex-none">
+          <span className="text-[10px] md:text-xs tracking-wider">POWERED BY KELABSUKAN.COM</span>
+          <Button type="button" size="sm" variant="secondary" onClick={onClose} className="h-8 md:h-9 text-xs">
             Close Summary
           </Button>
         </div>

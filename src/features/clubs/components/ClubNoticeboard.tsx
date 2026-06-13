@@ -198,7 +198,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                   <Share2 size={16} aria-hidden="true" />
                   Share
                 </Button>
-                <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700 ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
+                 <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-2 text-sm font-semibold text-[var(--arena-text-muted)] transition-colors hover:bg-[var(--arena-surface-muted)] ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
                   <MessageCircle size={16} aria-hidden="true" />
                   WhatsApp
                 </a>
@@ -213,20 +213,20 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
           {isAdmin ? (
             <button
               type="button"
-              className="flex w-full items-center gap-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3 text-left transition-colors hover:bg-slate-100"
+              className="flex w-full items-center gap-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-left transition-colors hover:bg-[var(--arena-surface-muted)]/80"
               onClick={openCreateMessageModal}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm border border-emerald-800">
-                <Megaphone size={18} aria-hidden="true" />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm border border-[var(--arena-border)]">
+                <Megaphone size={14} aria-hidden="true" />
               </span>
-              <span className="min-h-10 flex-1 rounded-full border border-[var(--arena-border)] bg-[var(--arena-surface)] px-4 py-2.5 text-sm font-semibold text-slate-300">
+              <span className="min-h-8 flex-1 flex items-center rounded-full border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--arena-text-muted)]">
                 Post an announcement
               </span>
             </button>
           ) : null}
 
           {announcementItems.length ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {announcementItems.map((item, index) => {
                 const isLatest = index === 0
                 const isExpanded = isLatest 
@@ -234,34 +234,34 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                   : !!expandedMessages[item.id]
 
                 return (
-                  <div key={item.id} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3 hover:bg-[var(--arena-surface-muted)] transition-colors">
+                  <div key={item.id} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-2.5 hover:bg-[var(--arena-surface-muted)]/80 transition-colors">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div 
-                        className="flex min-w-0 items-start gap-3 cursor-pointer flex-1"
+                        className="flex min-w-0 items-start gap-2.5 cursor-pointer flex-1"
                         onClick={() => toggleExpand(item.id, isLatest)}
                       >
-                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] ${theme.text} shadow-sm`}>
-                          <Megaphone size={18} aria-hidden="true" />
+                        <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]`}>
+                          <Megaphone size={14} aria-hidden="true" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-[var(--arena-text)]">{item.actor}</p>
-                            <Badge className="border-blue-200 bg-blue-50 text-blue-800 text-[10px]">Announcement</Badge>
-                            <span className="text-[10px] text-[var(--arena-text-dim)]">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="font-semibold text-xs text-[var(--arena-text)]">{item.actor}</p>
+                            <Badge className="border-blue-200/50 bg-blue-50/10 text-blue-400 text-[9px] px-1 py-0">Announcement</Badge>
+                            <span className="text-[9px] text-[var(--arena-text-dim)]">
                               {isExpanded ? 'Click to collapse' : 'Click to expand'}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs text-[var(--arena-text-dim)]">{new Date(item.createdAt).toLocaleString()}</p>
-                          <div className="mt-2 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-bold text-[var(--arena-text)]">{item.title}</p>
+                          <p className="mt-0.5 text-[10px] text-[var(--arena-text-dim)]">{new Date(item.createdAt).toLocaleString()}</p>
+                          <div className="mt-1 space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-bold text-xs text-[var(--arena-text)]">{item.title}</p>
                               <span className="text-[var(--arena-text-dim)]">
-                                <ChevronRight className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} size={16} />
+                                <ChevronRight className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} size={14} />
                               </span>
                             </div>
                             
                             {isExpanded && (
-                              <p className="mt-2 text-sm leading-6 text-slate-300 bg-[var(--arena-surface)]/75 rounded-lg p-2.5 border border-slate-100 whitespace-pre-wrap">
+                              <p className="mt-1.5 text-xs leading-relaxed text-[var(--arena-text-muted)] bg-[var(--arena-surface)]/75 rounded p-2 border border-[var(--arena-border)]/50 whitespace-pre-wrap">
                                 {item.body}
                               </p>
                             )}
@@ -271,10 +271,10 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
 
                       {isAdmin ? (
                         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col lg:flex-row shrink-0">
-                          <Button type="button" size="sm" variant="secondary" className="min-h-9 h-9" onClick={(e) => { e.stopPropagation(); openEditMessageModal(item.message); }}>
+                          <Button type="button" size="sm" variant="secondary" className="min-h-8 h-8 text-xs px-2.5" onClick={(e) => { e.stopPropagation(); openEditMessageModal(item.message); }}>
                             Edit
                           </Button>
-                          <Button type="button" size="sm" variant="danger" className="min-h-9 h-9" onClick={(e) => { e.stopPropagation(); handleDeleteMessage(item.message); }} disabled={deleteMessageMutation.isPending}>
+                          <Button type="button" size="sm" variant="danger" className="min-h-8 h-8 text-xs px-2.5" onClick={(e) => { e.stopPropagation(); handleDeleteMessage(item.message); }} disabled={deleteMessageMutation.isPending}>
                             Delete
                           </Button>
                         </div>

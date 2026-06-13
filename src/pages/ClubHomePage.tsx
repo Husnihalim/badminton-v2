@@ -7,6 +7,9 @@ import {
   Users,
   Settings,
   X,
+  LayoutDashboard,
+  Trophy,
+  Megaphone,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import ScorecardShareModal from '../components/ScorecardShareModal'
@@ -37,6 +40,7 @@ export default function ClubHomePage() {
   const { data: members = [] } = useClubMembers(clubId)
   const { data: matches = [] } = useAllClubMatches(clubId)
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'leaderboard' | 'noticeboard'>('overview')
   const [showCelebrationModal, setShowCelebrationModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [actionError, setActionError] = useState('')
@@ -173,88 +177,138 @@ export default function ClubHomePage() {
           setActionError={setActionError} 
         />
 
-        {/* Pinned noticeboard announcements */}
-        <ClubNoticeboard 
-          clubId={clubId} 
-          setSuccessMessage={setSuccessMessage} 
-          setActionError={setActionError} 
-        />
+        {/* Tab Navigation */}
+        <div className="border-b border-[var(--arena-border)] flex gap-1 overflow-x-auto whitespace-nowrap">
+          {(['overview', 'leaderboard', 'noticeboard'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-3 font-semibold text-sm border-b-2 transition-all duration-150 capitalize flex items-center gap-2 cursor-pointer ${
+                activeTab === tab
+                  ? 'border-emerald-600 text-[var(--arena-accent)] bg-[var(--arena-surface)]'
+                  : 'border-transparent text-[var(--arena-text-dim)] hover:text-slate-800 hover:border-[var(--arena-border)]'
+              }`}
+            >
+              {tab === 'overview' && <LayoutDashboard size={16} />}
+              {tab === 'leaderboard' && <Trophy size={16} />}
+              {tab === 'noticeboard' && <Megaphone size={16} />}
+              {tab === 'overview' ? 'Home' : tab === 'noticeboard' ? 'Notice Board' : tab}
+            </button>
+          ))}
+        </div>
 
-        {/* Club actions quick access */}
-        {isMember ? (
-          <Card className="border-blue-200 bg-blue-50/60">
-            <CardContent className="space-y-3 pt-4 sm:pt-5">
-              <div className="flex items-center gap-2 text-blue-800">
-                <ShieldCheck size={18} aria-hidden="true" />
-                <h2 className="font-bold">{isAdmin ? 'Admin controls' : 'Club quick actions'}</h2>
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Pinned noticeboard announcements */}
+            {club.announcement ? (
+              <div className="rounded-2xl border border-amber-250 bg-amber-50/60 p-4 shadow-sm animate-fade-in">
+                <div className="flex gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-amber-700 shadow-sm border border-amber-200">
+                    <Megaphone size={18} aria-hidden="true" />
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <h3 className="text-sm font-bold text-amber-900">Pinned Announcement</h3>
+                      {club.announcement_updated_at ? (
+                        <span className="text-xs text-amber-600">
+                          Updated {new Date(club.announcement_updated_at).toLocaleDateString()}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-2 text-sm text-amber-850 leading-relaxed whitespace-pre-wrap">
+                      {club.announcement}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <Button variant="secondary" onClick={handleCreateScore}>
-                  <ClipboardPenLine size={17} aria-hidden="true" />
-                  Record score
-                </Button>
-                {isAdmin ? (
-                  <>
-                    <Button variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
-                      <UserPlus size={17} aria-hidden="true" />
-                      Copy invite
-                    </Button>
-                    <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
-                      <UserPlus size={17} aria-hidden="true" />
-                      Requests
-                    </Button>
-                  </>
-                ) : (
-                  inviteUrl && (
-                    <Button variant="secondary" onClick={handleCopyInviteLink}>
-                      <UserPlus size={17} aria-hidden="true" />
-                      Copy invite
-                    </Button>
-                  )
-                )}
-                <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/members`)}>
-                  <Users size={17} aria-hidden="true" />
-                  Members
-                </Button>
-                {isAdmin && (
-                  <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
-                    <Settings size={17} aria-hidden="true" />
-                    Settings
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
+            ) : null}
 
-        {/* Upcoming events calendar */}
-        <ClubEventsCalendar 
-          clubId={clubId} 
-          onRecordScoreForEvent={handleCreateScoreForEvent}
-          onViewHighlightsForEvent={setShowHighlightsEvent}
-          setSuccessMessage={setSuccessMessage}
-          setActionError={setActionError}
-        />
+            {/* Club actions quick access */}
+            {isMember ? (
+              <Card className="border-blue-200 bg-blue-50/60">
+                <CardContent className="space-y-3 pt-4 sm:pt-5">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <ShieldCheck size={18} aria-hidden="true" />
+                    <h2 className="font-bold">{isAdmin ? 'Admin controls' : 'Club quick actions'}</h2>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <Button variant="secondary" onClick={handleCreateScore}>
+                      <ClipboardPenLine size={17} aria-hidden="true" />
+                      Record score
+                    </Button>
+                    {isAdmin ? (
+                      <>
+                        <Button variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
+                          <UserPlus size={17} aria-hidden="true" />
+                          Copy invite
+                        </Button>
+                        <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
+                          <UserPlus size={17} aria-hidden="true" />
+                          Requests
+                        </Button>
+                      </>
+                    ) : (
+                      inviteUrl && (
+                        <Button variant="secondary" onClick={handleCopyInviteLink}>
+                          <UserPlus size={17} aria-hidden="true" />
+                          Copy invite
+                        </Button>
+                      )
+                    )}
+                    <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/members`)}>
+                      <Users size={17} aria-hidden="true" />
+                      Members
+                    </Button>
+                    {isAdmin && (
+                      <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
+                        <Settings size={17} aria-hidden="true" />
+                        Settings
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
 
-        {/* Leaderboard */}
-        <ClubLeaderboard 
-          clubId={clubId} 
-          setSuccessMessage={setSuccessMessage} 
-          setActionError={setActionError}
-        />
+            {/* Upcoming events calendar */}
+            <ClubEventsCalendar 
+              clubId={clubId} 
+              onRecordScoreForEvent={handleCreateScoreForEvent}
+              onViewHighlightsForEvent={setShowHighlightsEvent}
+              setSuccessMessage={setSuccessMessage}
+              setActionError={setActionError}
+            />
 
-        {/* Scores feed vs Members sidebar */}
-        <div className="grid gap-5 lg:grid-cols-2">
-          <ClubScoresFeed 
+            {/* Scores feed vs Members sidebar */}
+            <div className="grid gap-5 lg:grid-cols-2">
+              <ClubScoresFeed 
+                clubId={clubId} 
+                onRecordScore={handleCreateScore} 
+                onEditMatch={handleEditMatch}
+                onShareMatch={setShareMatch}
+                setSuccessMessage={setSuccessMessage}
+                setActionError={setActionError}
+              />
+              <ClubMembersSidebar clubId={clubId} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <ClubLeaderboard 
             clubId={clubId} 
-            onRecordScore={handleCreateScore} 
-            onEditMatch={handleEditMatch}
-            onShareMatch={setShareMatch}
-            setSuccessMessage={setSuccessMessage}
+            setSuccessMessage={setSuccessMessage} 
             setActionError={setActionError}
           />
-          <ClubMembersSidebar clubId={clubId} />
-        </div>
+        )}
+
+        {activeTab === 'noticeboard' && (
+          <ClubNoticeboard 
+            clubId={clubId} 
+            setSuccessMessage={setSuccessMessage} 
+            setActionError={setActionError} 
+          />
+        )}
       </div>
 
       {/* Modals & Portals */}

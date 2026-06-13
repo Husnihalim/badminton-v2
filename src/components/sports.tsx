@@ -279,7 +279,7 @@ export function PlayerIdentityCard({
     <Card variant="live" className="overflow-hidden">
       <CardContent className="p-0">
         <div className="grid gap-0 md:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="relative min-h-72 bg-slate-950">
+          <div className="relative min-h-48 md:min-h-72 bg-slate-950">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(204,255,0,0.22),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_34%),linear-gradient(160deg,#08110f,#020706_62%,#102310)]" />
             <div className="absolute inset-x-5 bottom-5 top-8 overflow-hidden rounded-lg border border-white/10 bg-slate-950/45 shadow-2xl">
               {avatarUrl ? (

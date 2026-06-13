@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Trophy, ArrowRight } from 'lucide-react'
+import { Trophy, ArrowRight, MapPin, ExternalLink, Info } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubMembers, useAllClubMatches } from '../hooks/useClubQueries'
 import { THEME_MAP } from '../constants'
@@ -71,8 +71,52 @@ export function ClubMembersSidebar({ clubId }: ClubMembersSidebarProps) {
   const accent = club.accent_color || 'emerald'
   const theme = THEME_MAP[accent] || THEME_MAP.emerald
 
+  const locationQuery = [club.location, club.city].filter(Boolean).join(', ')
+  const mapUrl = locationQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}` : ''
+
   return (
     <div className="space-y-5">
+      {/* Club Information Card */}
+      <Card>
+        <CardContent className="space-y-4 pt-4 sm:pt-5">
+          <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
+            <Info size={18} className={`${theme.text} shrink-0`} />
+            Club Information
+          </h2>
+          
+          {club.description ? (
+            <p className="text-sm text-[var(--arena-text-muted)] leading-relaxed whitespace-pre-wrap">
+              {club.description}
+            </p>
+          ) : (
+            <p className="text-sm text-[var(--arena-text-dim)] italic">
+              No description provided yet.
+            </p>
+          )}
+
+          {locationQuery ? (
+            <div className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3 space-y-3">
+              <div className="flex items-start gap-2.5 text-sm text-[var(--arena-text-muted)]">
+                <MapPin size={16} className="text-[var(--arena-text-dim)] mt-0.5 shrink-0" aria-hidden="true" />
+                <div className="min-w-0">
+                  <span className="block font-semibold text-xs text-[var(--arena-text-dim)] uppercase tracking-wider">Base Location</span>
+                  <span className="break-words text-[var(--arena-text)]">{locationQuery}</span>
+                </div>
+              </div>
+              <a 
+                className="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 shadow-sm transition-colors"
+                href={mapUrl} 
+                target="_blank" 
+                rel="noreferrer"
+              >
+                <ExternalLink size={14} aria-hidden="true" />
+                Open in Maps
+              </a>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
       {topDoublesPairs.length ? (
         <Card>
           <CardContent className="space-y-4 pt-4 sm:pt-5">

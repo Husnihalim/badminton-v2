@@ -1,12 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Users, ExternalLink, UserPlus, Settings } from 'lucide-react'
+import { MapPin, Users, UserPlus, Settings } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubMembers, useMyMembership } from '../hooks/useClubQueries'
-import { useRequestJoinClub, useRegenerateInviteLink } from '../../hooks/useMutations'
+import { useRequestJoinClub } from '../../hooks/useMutations'
 import { BANNER_PRESETS, THEME_MAP } from '../constants'
 import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
-import { buildInviteUrl } from '../../../lib/api'
 
 interface ClubHeaderProps {
   clubId: string
@@ -23,7 +22,6 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
   const { data: myMembership } = useMyMembership(clubId, !!user)
 
   const joinMutation = useRequestJoinClub()
-  const regenerateMutation = useRegenerateInviteLink()
 
   if (clubLoading || !club) {
     return <div className="h-40 sm:h-52 animate-pulse bg-slate-800 rounded-2xl" />
@@ -32,7 +30,6 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = !!myMembership
   const canJoin = user && !isMember && club.open_join !== false
-  const inviteUrl = club.invite_code ? buildInviteUrl(club.invite_code) : ''
 
   const accent = club.accent_color || 'emerald'
   const theme = THEME_MAP[accent] || THEME_MAP.emerald
@@ -40,8 +37,6 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
     ? `${theme.bg} ${theme.bgHover} text-white shadow-none`
     : ''
 
-  const locationQuery = [club.location, club.city].filter(Boolean).join(', ')
-  const mapUrl = locationQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}` : ''
   const memberCount = members?.length || club.membersCount || 0
 
   const handleJoinClub = async () => {
@@ -51,23 +46,6 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to send join request.')
-    }
-  }
-
-  const handleCopyInviteLink = async () => {
-    if (!inviteUrl) return
-    await navigator.clipboard.writeText(inviteUrl)
-    setSuccessMessage('General request link copied.')
-    setTimeout(() => setSuccessMessage(''), 3000)
-  }
-
-  const handleGenerateInviteLink = async () => {
-    try {
-      await regenerateMutation.mutateAsync(clubId)
-      setSuccessMessage('General request link generated.')
-      setTimeout(() => setSuccessMessage(''), 3000)
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to generate invite link.')
     }
   }
 
@@ -159,44 +137,6 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
             <strong>{memberCount}</strong> members
           </span>
         </div>
-
-        {locationQuery ? (
-          <div className="mt-4 grid gap-2 rounded-lg border border-slate-150 bg-[var(--arena-surface-muted)]/50 p-3 text-sm text-[var(--arena-text-muted)] sm:grid-cols-[1fr_auto] sm:items-center">
-            <p className="min-w-0">
-              Base location: <strong className="break-words text-[var(--arena-text)]">{locationQuery}</strong>
-            </p>
-            <a 
-              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 shadow-sm" 
-              href={mapUrl} 
-              target="_blank" 
-              rel="noreferrer"
-            >
-              <ExternalLink size={14} aria-hidden="true" />
-              Open in Maps
-            </a>
-          </div>
-        ) : null}
-
-        {isAdmin && (
-          inviteUrl ? (
-            <div className="mt-3 grid gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3 text-sm text-slate-650 sm:grid-cols-[1fr_auto] sm:items-center">
-              <p className="min-w-0">
-                General invite request link: <strong className="break-all font-mono text-[var(--arena-text)]">{inviteUrl}</strong>
-              </p>
-              <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink}>
-                Copy Link
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-3 space-y-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3 text-sm text-slate-650">
-              <p className="text-slate-900">No invite link is available yet.</p>
-              <p>Generate a general link so new people can request admin approval.</p>
-              <Button type="button" size="sm" variant="secondary" onClick={handleGenerateInviteLink} disabled={regenerateMutation.isPending}>
-                Generate invite link
-              </Button>
-            </div>
-          )
-        )}
       </div>
     </div>
   )
