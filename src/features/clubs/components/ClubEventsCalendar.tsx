@@ -149,25 +149,24 @@ function EventCard({
           </div>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
-          {event.signup_open ? 'Open' : 'Closed'}
-        </Badge>
-        {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
-      </div>
-      <div className="grid grid-cols-3 gap-1.5">
-        <Button type="button" size="sm" variant="secondary" onClick={handleNativeEventShare} className="text-[11px] sm:text-xs px-2 min-h-8 sm:min-h-9 gap-1">
-          <Share2 size={13} aria-hidden="true" />
-          Share
-        </Button>
-        <a className="inline-flex min-h-8 sm:min-h-9 items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] px-2 text-[11px] sm:text-xs font-semibold text-[var(--arena-text)] transition-all duration-150 hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] active:scale-[0.98]" href={whatsappUrl} target="_blank" rel="noreferrer">
-          <MessageCircle size={13} aria-hidden="true" />
-          WhatsApp
-        </a>
-        <Button type="button" size="sm" variant="secondary" onClick={handleCopyEventShareLink} className="text-[11px] sm:text-xs px-2 min-h-8 sm:min-h-9 gap-1">
-          <Copy size={13} aria-hidden="true" />
-          Copy link
-        </Button>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-1.5">
+          <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+            {event.signup_open ? 'Open' : 'Closed'}
+          </Badge>
+          {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button type="button" size="icon" variant="secondary" onClick={handleNativeEventShare} title="Share" className="h-7 w-7 min-h-0 rounded-full bg-[var(--arena-surface-elevated)] border-[var(--arena-border)]">
+            <Share2 size={13} aria-hidden="true" />
+          </Button>
+          <a className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] transition-all" href={whatsappUrl} target="_blank" rel="noreferrer" title="Share via WhatsApp">
+            <MessageCircle size={13} aria-hidden="true" />
+          </a>
+          <Button type="button" size="icon" variant="secondary" onClick={handleCopyEventShareLink} title="Copy link" className="h-7 w-7 min-h-0 rounded-full bg-[var(--arena-surface-elevated)] border-[var(--arena-border)]">
+            <Copy size={13} aria-hidden="true" />
+          </Button>
+        </div>
       </div>
       {isMember && event.signup_open ? (
         <div className="grid grid-cols-3 gap-1.5">
