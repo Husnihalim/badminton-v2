@@ -48,6 +48,7 @@ function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardR
     }
 
     for (const participant of match.participants) {
+      if (participant.is_guest) continue
       const name = participant.name || participant.guest_name || 'Guest'
       const isWin = participant.team === winningTeam
 
@@ -311,6 +312,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
       const winningTeam = team1Sets > team2Sets ? 1 : 2
 
       for (const p of match.participants) {
+        if (p.is_guest) continue
         const name = p.name || p.guest_name || 'Guest'
         const isWin = p.team === winningTeam
         

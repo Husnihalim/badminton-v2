@@ -269,7 +269,7 @@ export async function getMyClubs(): Promise<(Club & { role: string })[]> {
 export async function getClubMembers(clubId: string): Promise<Membership[]> {
   const { data, error } = await supabase
     .from('memberships')
-    .select('*, profiles(name, email, avatar_url)')
+    .select('*, profiles(name, display_name, email, avatar_url)')
     .eq('club_id', clubId)
     .eq('status', 'active')
 
@@ -280,7 +280,7 @@ export async function getClubMembers(clubId: string): Promise<Membership[]> {
 
   return ((data || []) as unknown as MembershipProfileRow[]).map((m) => ({
     ...m,
-    name: m.profiles?.name || 'Unknown',
+    name: m.profiles?.display_name || m.profiles?.name || 'Unknown',
     email: m.profiles?.email || '',
     avatar_url: m.profiles?.avatar_url || null,
   }))

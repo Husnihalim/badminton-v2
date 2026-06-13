@@ -139,34 +139,42 @@ export default function MemberProfilePage() {
               
               allMatches.push(...clubMatches)
 
-              // Build leaderboard map and capture this user's rank
-              const lbMap: Record<string, number> = {}
-              if (leaderboardRows.length) {
-                leaderboardRows.forEach((row, rIdx) => {
-                  lbMap[row.name.toLowerCase()] = rIdx + 1
-                })
-                 // Find rank for the viewed user (match by display_name or name)
-                 const normalize = (value?: string | null) => (value || '').trim().toLowerCase()
-                 const viewedName = normalize(userProfile.display_name) || normalize(userProfile.name)
-                 const userRankPos = leaderboardRows.findIndex(
-                   row => normalize(row.name) === viewedName || normalize(row.name) === normalize(userProfile.name)
-                 )
-                if (userRankPos !== -1) {
-                  setClubRanks(prev => ({
-                    ...prev,
-                    [club.id]: { rank: userRankPos + 1, total: leaderboardRows.length }
-                  }))
-                }
-              }
-              clubLeaderboards[club.id] = lbMap
+              // Build leaderboard map and capture this user's rank based on Elo ranking
+              const normalize = (value?: string | null) => (value || '').trim().toLowerCase()
+              const viewedName = normalize(userProfile.display_name) || normalize(userProfile.name)
 
-              const index = leaderboardRows.findIndex(
-                (row) => row.name.toLowerCase() === userProfile.name.toLowerCase() ||
-                        (userProfile.display_name && row.name.toLowerCase() === userProfile.display_name.toLowerCase())
+              // Only rank members who have played at least one match
+              const activeMembersWithMatches = members.filter(m =>
+                leaderboardRows.some(row =>
+                  normalize(row.name) === normalize(m.name)
+                )
               )
+
+              // Sort by Elo rating DESC, then join date ASC
+              const sortedMembers = [...activeMembersWithMatches].sort((a, b) => {
+                const eloA = a.elo_rating ?? 1200
+                const eloB = b.elo_rating ?? 1200
+                if (eloB !== eloA) return eloB - eloA
+                return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+              })
+
+              const index = sortedMembers.findIndex(
+                m => normalize(m.name) === viewedName || m.user_id === userProfile.id
+              )
+
               if (index !== -1) {
-                ranks[club.id] = { rank: index + 1, total: leaderboardRows.length }
+                ranks[club.id] = { rank: index + 1, total: sortedMembers.length }
+                setClubRanks(prev => ({
+                  ...prev,
+                  [club.id]: { rank: index + 1, total: sortedMembers.length }
+                }))
               }
+
+              const lbMap: Record<string, number> = {}
+              sortedMembers.forEach((m, sIdx) => {
+                lbMap[normalize(m.name)] = sIdx + 1
+              })
+              clubLeaderboards[club.id] = lbMap
 
               members.forEach((m) => {
                 const mName = m.name || 'Unknown'
