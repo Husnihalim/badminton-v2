@@ -164,7 +164,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
     <div className="space-y-4">
       {/* Pinned Noticeboard Announcement */}
       {club.announcement ? (
-        <div className="rounded-2xl border border-amber-250 bg-amber-50/60 p-4 shadow-sm">
+        <div className="rounded-xl border border-amber-250 bg-amber-50/60 p-3 shadow-sm sm:rounded-2xl sm:p-4">
           <div className="flex gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-amber-700 shadow-sm border border-amber-200">
               <Megaphone size={18} aria-hidden="true" />

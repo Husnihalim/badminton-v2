@@ -10,7 +10,7 @@ type PageHeaderProps = {
 }
 
 export function Page({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('space-y-6 sm:space-y-7', className)} {...props} />
+  return <div className={cn('space-y-4 sm:space-y-7', className)} {...props} />
 }
 
 export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {

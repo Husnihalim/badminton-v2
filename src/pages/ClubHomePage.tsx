@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ShieldCheck,
   ClipboardPenLine,
   UserPlus,
-  Users,
-  Settings,
   X,
   LayoutDashboard,
   Trophy,
@@ -31,7 +29,6 @@ import { SessionHighlightsWidget } from '../features/clubs/components/SessionHig
 
 export default function ClubHomePage() {
   const { clubId } = useParams()
-  const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -198,10 +195,10 @@ export default function ClubHomePage() {
         </div>
 
         {activeTab === 'overview' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Pinned noticeboard announcements */}
             {club.announcement ? (
-              <div className="rounded-2xl border border-amber-250 bg-amber-50/60 p-4 shadow-sm animate-fade-in">
+              <div className="rounded-xl border border-amber-250 bg-amber-50/60 p-3 shadow-sm sm:rounded-2xl sm:p-4 animate-fade-in">
                 <div className="flex gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-amber-700 shadow-sm border border-amber-200">
                     <Megaphone size={18} aria-hidden="true" />
@@ -255,16 +252,7 @@ export default function ClubHomePage() {
                         </Button>
                       )
                     )}
-                    <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/members`)}>
-                      <Users size={17} aria-hidden="true" />
-                      Members
-                    </Button>
-                    {isAdmin && (
-                      <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)}>
-                        <Settings size={17} aria-hidden="true" />
-                        Settings
-                      </Button>
-                    )}
+
                   </div>
                 </CardContent>
               </Card>
@@ -280,16 +268,19 @@ export default function ClubHomePage() {
             />
 
             {/* Scores feed vs Members sidebar */}
-            <div className="grid gap-5 lg:grid-cols-2">
-              <ClubScoresFeed 
-                clubId={clubId} 
-                onRecordScore={handleCreateScore} 
-                onEditMatch={handleEditMatch}
-                onShareMatch={setShareMatch}
-                setSuccessMessage={setSuccessMessage}
-                setActionError={setActionError}
-              />
-              <ClubMembersSidebar clubId={clubId} />
+            <div className="grid gap-4 lg:gap-5 lg:grid-cols-[1.15fr_0.85fr] items-start">
+              <div className="order-2 lg:order-1">
+                <ClubScoresFeed 
+                  clubId={clubId} 
+                  onEditMatch={handleEditMatch}
+                  onShareMatch={setShareMatch}
+                  setSuccessMessage={setSuccessMessage}
+                  setActionError={setActionError}
+                />
+              </div>
+              <div className="order-1 lg:order-2">
+                <ClubMembersSidebar clubId={clubId} />
+              </div>
             </div>
           </div>
         )}

@@ -339,7 +339,13 @@
   border-radius: 12px;
   background: var(--arena-surface);
   box-shadow: var(--arena-shadow);
-  padding: 20px;
+  padding: 12px;
+}
+
+@media (min-width: 768px) {
+  .app-section {
+    padding: 20px;
+  }
 }
 
 .app-section-header {
@@ -371,7 +377,13 @@
   border: 1px solid var(--arena-border);
   border-radius: 10px;
   background: var(--arena-surface-muted);
-  padding: 16px;
+  padding: 10px 12px;
+}
+
+@media (min-width: 768px) {
+  .metric-tile {
+    padding: 16px;
+  }
 }
 
 .metric-label {
@@ -541,7 +553,13 @@
   border-radius: 12px;
   background: var(--arena-surface);
   box-shadow: var(--arena-shadow);
-  padding: 24px;
+  padding: 14px;
+}
+
+@media (min-width: 768px) {
+  .section-card {
+    padding: 24px;
+  }
 }
 
 .page-title {

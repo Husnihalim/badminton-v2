@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, ClipboardPenLine } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useAllClubMatches, useMyMembership } from '../hooks/useClubQueries'
 import { useDeleteMatch } from '../../hooks/useMutations'
@@ -11,7 +11,6 @@ import type { MatchWithDetails } from '../../../types'
 
 interface ClubScoresFeedProps {
   clubId: string
-  onRecordScore: () => void
   onEditMatch: (match: MatchWithDetails) => void
   onShareMatch: (match: MatchWithDetails) => void
   setSuccessMessage: (msg: string) => void
@@ -20,7 +19,6 @@ interface ClubScoresFeedProps {
 
 export function ClubScoresFeed({
   clubId,
-  onRecordScore,
   onEditMatch,
   onShareMatch,
   setSuccessMessage,
@@ -39,7 +37,6 @@ export function ClubScoresFeed({
   if (!club) return null
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
-  const isMember = myMembership?.status === 'active' || user?.role === 'superadmin'
 
   const filteredMatches = matches.filter((match) => {
     if (!matchSearchQuery.trim()) return true
@@ -69,18 +66,6 @@ export function ClubScoresFeed({
       <CardContent className="space-y-4 pt-4 sm:pt-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h2 className="text-lg font-bold text-[var(--arena-text)]">Recent scores</h2>
-          {isMember && (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="flex items-center justify-center gap-1.5"
-              onClick={onRecordScore}
-            >
-              <ClipboardPenLine size={14} className="text-[var(--arena-text-muted)]" />
-              Record Score
-            </Button>
-          )}
         </div>
 
         {matches.length ? (

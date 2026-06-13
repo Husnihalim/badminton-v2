@@ -32,9 +32,9 @@ export function Card({ className, variant, ...props }: CardProps) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('space-y-2 p-4 pb-3 sm:p-5 sm:pb-3', className)} {...props} />
+  return <div className={cn('space-y-1.5 p-3 pb-2 sm:p-5 sm:pb-3', className)} {...props} />
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-4 sm:p-5 [&:not(:first-child)]:pt-0', className)} {...props} />
+  return <div className={cn('p-3 sm:p-5 [&:not(:first-child)]:pt-0', className)} {...props} />
 }
