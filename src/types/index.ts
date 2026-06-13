@@ -226,6 +226,7 @@ export interface EventRsvp {
   updated_at: string
   // Joined fields
   name?: string
+  avatar_url?: string | null
 }
 
 export interface Notification {

@@ -1214,7 +1214,7 @@ export async function getMyEventRsvps(): Promise<EventRsvp[]> {
 export async function getEventRsvps(eventId: string): Promise<EventRsvp[]> {
   const { data, error } = await supabase
     .from('event_rsvps')
-    .select('*, profiles(name, display_name)')
+    .select('*, profiles(name, display_name, avatar_url)')
     .eq('event_id', eventId)
 
   if (error) {
@@ -1225,6 +1225,7 @@ export async function getEventRsvps(eventId: string): Promise<EventRsvp[]> {
   return ((data || []) as unknown as EventRsvpProfileRow[]).map((r) => ({
     ...r,
     name: r.profiles?.display_name || r.profiles?.name || 'Unknown',
+    avatar_url: r.profiles?.avatar_url,
   }))
 }
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Check, DollarSign, Share2, MessageCircle, Copy, ChevronLeft, ChevronRight, X, Users, Trophy, ClipboardPenLine } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubEvents, useMyMembership, useMyRsvps, useEventRsvps } from '../hooks/useClubQueries'
@@ -57,7 +58,6 @@ function EventCard({
   setSuccessMessage, 
   setActionError,
   onEditEvent,
-  onDuplicateEvent,
   onDeleteEvent
 }: {
   event: ClubEvent
@@ -71,7 +71,6 @@ function EventCard({
   setSuccessMessage: (msg: string) => void
   setActionError: (msg: string) => void
   onEditEvent: (event: ClubEvent) => void
-  onDuplicateEvent: (event: ClubEvent) => void
   onDeleteEvent: (event: ClubEvent) => void
 }) {
   const { user } = useAuth()
@@ -126,55 +125,52 @@ function EventCard({
   }
 
   return (
-    <div key={event.id} className="space-y-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3">
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-        <div className="space-y-1">
-          <h3 className="font-bold text-[var(--arena-text)]">{event.title}</h3>
-          <p className="text-sm text-[var(--arena-text-muted)]">{new Date(event.event_date).toLocaleString()}</p>
-          {event.location ? <p className="text-sm text-[var(--arena-text-muted)]">{event.location}</p> : null}
+    <div key={event.id} className="space-y-2.5 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2.5">
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+        <div className="space-y-0.5">
+          <h3 className="font-bold text-[var(--arena-text)] text-sm sm:text-base">{event.title}</h3>
+          <p className="text-xs text-[var(--arena-text-muted)]">{new Date(event.event_date).toLocaleString()}</p>
+          {event.location ? <p className="text-xs text-[var(--arena-text-muted)]">{event.location}</p> : null}
           {formatEventCost(event) ? (
-            <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800">
-              <DollarSign size={15} aria-hidden="true" />
+            <p className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800">
+              <DollarSign size={13} aria-hidden="true" />
               {formatEventCost(event)}
             </p>
           ) : null}
         </div>
         {isAdmin ? (
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="secondary" onClick={() => onEditEvent(event)}>
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" size="sm" variant="secondary" onClick={() => onEditEvent(event)} className="min-h-7 px-2 py-0.5 text-xs">
               Edit
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => onDuplicateEvent(event)}>
-              Duplicate
-            </Button>
-            <Button type="button" size="sm" variant="danger" onClick={() => onDeleteEvent(event)}>
+            <Button type="button" size="sm" variant="danger" onClick={() => onDeleteEvent(event)} className="min-h-7 px-2 py-0.5 text-xs">
               Delete
             </Button>
           </div>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
           {event.signup_open ? 'Open' : 'Closed'}
         </Badge>
         {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
       </div>
-      <div className="grid gap-2 sm:grid-cols-3">
-        <Button type="button" size="sm" variant="secondary" onClick={handleNativeEventShare}>
-          <Share2 size={15} aria-hidden="true" />
+      <div className="grid grid-cols-3 gap-1.5">
+        <Button type="button" size="sm" variant="secondary" onClick={handleNativeEventShare} className="text-[11px] sm:text-xs px-2 min-h-8 sm:min-h-9 gap-1">
+          <Share2 size={13} aria-hidden="true" />
           Share
         </Button>
-        <a className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
-          <MessageCircle size={15} aria-hidden="true" />
+        <a className="inline-flex min-h-8 sm:min-h-9 items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] px-2 text-[11px] sm:text-xs font-semibold text-[var(--arena-text)] transition-all duration-150 hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] active:scale-[0.98]" href={whatsappUrl} target="_blank" rel="noreferrer">
+          <MessageCircle size={13} aria-hidden="true" />
           WhatsApp
         </a>
-        <Button type="button" size="sm" variant="secondary" onClick={handleCopyEventShareLink}>
-          <Copy size={15} aria-hidden="true" />
+        <Button type="button" size="sm" variant="secondary" onClick={handleCopyEventShareLink} className="text-[11px] sm:text-xs px-2 min-h-8 sm:min-h-9 gap-1">
+          <Copy size={13} aria-hidden="true" />
           Copy link
         </Button>
       </div>
       {isMember && event.signup_open ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {[
             ['going', 'Accept'],
             ['maybe', 'Hold'],
@@ -187,43 +183,70 @@ function EventCard({
               variant={myRsvp?.status === status ? 'primary' : 'secondary'}
               disabled={status === 'going' && isFull && myRsvp?.status !== 'going'}
               onClick={() => handleRsvp(status as 'going' | 'maybe' | 'not_going')}
+              className="min-h-8 sm:min-h-9 text-xs"
             >
-              {myRsvp?.status === status ? <Check size={15} aria-hidden="true" /> : null}
+              {myRsvp?.status === status ? <Check size={13} aria-hidden="true" /> : null}
               {label}
             </Button>
           ))}
         </div>
       ) : null}
       {myRsvp ? (
-        <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p>
+        <p className="text-xs font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p>
       ) : null}
-      {isFull ? <p className="text-sm font-semibold text-red-600">Session full</p> : null}
-      <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-3">
-        <div className="flex flex-wrap gap-2">
-          <Badge className={`border-${theme.borderLight} ${theme.bgLight} ${theme.textDark}`}>{acceptedRsvps.length} accepted</Badge>
-          <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-          <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]">{rejectedRsvps.length} rejected</Badge>
+      {isFull ? <p className="text-xs font-semibold text-red-600">Session full</p> : null}
+      <div className="space-y-1.5 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-2">
+        <div className="flex flex-wrap gap-1.5">
+          <Badge className={`border-${theme.borderLight} ${theme.bgLight} ${theme.textDark} text-[10px] px-1.5 py-0.5`}>{acceptedRsvps.length} accepted</Badge>
+          <Badge className="border-amber-200 bg-amber-50 text-amber-800 text-[10px] px-1.5 py-0.5">{holdingRsvps.length} holding</Badge>
+          <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)] text-[10px] px-1.5 py-0.5">{rejectedRsvps.length} rejected</Badge>
         </div>
         {acceptedRsvps.length ? (
-          <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
-            Joining: <span className="font-semibold">{acceptedRsvps.map((r) => r.name || 'Member').join(', ')}</span>
-          </p>
+          <div className="flex flex-wrap gap-x-2 gap-y-1 items-center text-xs text-[var(--arena-text-muted)] pt-1">
+            <span className="font-semibold shrink-0">Joining:</span>
+            <div className="flex flex-wrap gap-1">
+              {acceptedRsvps.map((r) => {
+                const name = r.name || 'Member'
+                const chip = (
+                  <div className="inline-flex items-center gap-1 rounded bg-[var(--arena-surface-muted)] px-1.5 py-0.5 text-[11px] text-[var(--arena-text)] hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] border border-[var(--arena-border)] transition-colors shrink-0">
+                    {r.avatar_url ? (
+                      <img src={r.avatar_url} alt="" className="rounded-full object-cover shrink-0" style={{ height: '16px', width: '16px' }} />
+                    ) : (
+                      <div className="flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-slate-700 text-[8px] font-bold uppercase text-[var(--arena-text-muted)]">
+                        {name.charAt(0)}
+                      </div>
+                    )}
+                    <span className="font-medium max-w-[80px] truncate">{name}</span>
+                  </div>
+                )
+                return r.user_id ? (
+                  <Link key={r.id} to={`/member/${r.user_id}`} className="inline-flex shrink-0">
+                    {chip}
+                  </Link>
+                ) : (
+                  <div key={r.id} className="inline-flex shrink-0">
+                    {chip}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         ) : (
-          <p className="text-sm text-[var(--arena-text-dim)]">No accepted members yet.</p>
+          <p className="text-xs text-[var(--arena-text-dim)] pt-0.5">No accepted members yet.</p>
         )}
       </div>
 
       {/* Admin Attendance Management Panel */}
       {isAdmin && (
-        <div className="pt-2">
+        <div className="pt-1">
           <Button
             type="button"
             size="sm"
             variant="secondary"
-            className="w-full flex items-center justify-center gap-1.5"
+            className="w-full flex items-center justify-center gap-1.5 min-h-8 text-xs"
             onClick={() => setShowManageRsvp(!showManageRsvp)}
           >
-            <Users size={14} aria-hidden="true" />
+            <Users size={13} aria-hidden="true" />
             {showManageRsvp ? 'Hide attendance settings' : 'Manage member RSVPs'}
           </Button>
 
@@ -238,14 +261,14 @@ function EventCard({
       )}
 
       {/* Session Highlights & Recording Buttons */}
-      <div className="grid gap-2 pt-2 border-t border-[var(--arena-border)] sm:grid-cols-2">
+      <div className={`grid gap-1.5 pt-1.5 border-t border-[var(--arena-border)] ${isMember ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <Button
           type="button"
           size="sm"
-          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold flex items-center justify-center gap-1.5 shadow-sm border-0"
+          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold flex items-center justify-center gap-1.5 shadow-sm border-0 min-h-8 text-xs"
           onClick={() => onViewHighlights(event)}
         >
-          <Trophy size={14} className="text-amber-100" />
+          <Trophy size={13} className="text-amber-100" />
           View Highlights
         </Button>
         {isMember ? (
@@ -253,10 +276,10 @@ function EventCard({
             type="button"
             size="sm"
             variant="secondary"
-            className="flex items-center justify-center gap-1.5"
+            className="flex items-center justify-center gap-1.5 min-h-8 text-xs"
             onClick={() => onRecordScore(event)}
           >
-            <ClipboardPenLine size={14} className="text-[var(--arena-text-muted)]" />
+            <ClipboardPenLine size={13} className="text-[var(--arena-text-muted)]" />
             Record Score
           </Button>
         ) : null}
@@ -369,16 +392,6 @@ export function ClubEventsCalendar({
     setShowEventModal(true)
   }
 
-  const openDuplicateEventModal = (event: ClubEvent) => {
-    setEditingEvent(null)
-    setEventTitle(event.title)
-    setEventDate('')
-    setEventLocation(event.location || '')
-    setEventCostAmount(event.cost_amount != null ? String(event.cost_amount) : '')
-    setEventCostNote(event.cost_note || '')
-    setShowEventModal(true)
-  }
-
   const handleCreateEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -477,7 +490,6 @@ export function ClubEventsCalendar({
                       setSuccessMessage={setSuccessMessage}
                       setActionError={setActionError}
                       onEditEvent={openEditEventModal}
-                      onDuplicateEvent={openDuplicateEventModal}
                       onDeleteEvent={handleDeleteEvent}
                     />
                   ))}
@@ -598,7 +610,6 @@ export function ClubEventsCalendar({
                         setSuccessMessage={setSuccessMessage}
                         setActionError={setActionError}
                         onEditEvent={openEditEventModal}
-                        onDuplicateEvent={openDuplicateEventModal}
                         onDeleteEvent={handleDeleteEvent}
                       />
                     ))}
