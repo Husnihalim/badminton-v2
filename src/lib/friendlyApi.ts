@@ -426,7 +426,7 @@ export function subscribeToFriendly(friendlyId: string, callback: (payload: { ne
         table: 'friendlies',
         filter: `id=eq.${friendlyId}`,
       },
-      (payload) => callback(payload as any)
+      (payload) => callback(payload as unknown as { new: Friendly })
     )
     .subscribe()
 }
@@ -443,7 +443,7 @@ export function subscribeToMatchups(friendlyId: string, callback: (payload: { ne
         table: 'friendly_matchups',
         filter: `friendly_id=eq.${friendlyId}`,
       },
-      (payload) => callback(payload as any)
+      (payload) => callback(payload as unknown as { new: FriendlyMatchup })
     )
     .subscribe()
 }

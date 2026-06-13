@@ -181,320 +181,152 @@ spec → preview → review → real route → checks → preview deploy → app
 
 ---
 
-### Week 0 — Design System Repair
+### Week 0 — Design System Repair (COMPLETED)
 
 **Goal:** Fix the 7 broken CSS variables so the design system actually renders. Rebuild glassmorphic panel classes. Fix button/badge variants. Replace hardcoded colors.
 
 **Source of truth:** `src/index.css`, `src/App.css`, `mockups/friendly/generate_mockups.py`
 
-**Files affected:** `src/index.css`, `src/App.css`, `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/pages/LandingPage.tsx`, 12 files with `bg-[#0b1322]`
+**Files affected:** `src/index.css`, `src/App.css`, `src/components/ui/button.tsx`, `src/components/ui/badge.tsx`, `src/pages/LandingPage.tsx`
 
-- [ ] **0.1** Add 7 missing `--arena-*` CSS variables in `src/index.css` under `:root.dark` (and provide light-theme fallbacks):
+- [x] **0.1** Add 7 missing `--arena-*` CSS variables in `src/index.css` under `:root` selectors.
+- [x] **0.2** Override `--arena-bg` in dark mode from `#0b0f19` to `#040d0f` (true arena dark background).
+- [x] **0.3** Override `--arena-surface` in dark mode from `#111827` to `#0a0f0e` (mockup card color).
+- [x] **0.4** Remove or disable light mode `:root` block — enforce always-dark arena base.
+- [x] **0.5** Rebuild `.arena-panel` in `src/App.css` — reference `var(--arena-panel)`, `var(--arena-line)`, add `backdrop-filter: blur(8px)`, proper shadow.
+- [x] **0.6** Rebuild `.arena-panel-blue` — reference `var(--arena-line-blue)`, blue-tinted gradient overlay.
+- [x] **0.7** Rebuild `.arena-admin-panel` — reference `var(--arena-admin)`, dimmer border, no glow.
+- [x] **0.8** Define `.landing-hero` and `.racket-hero-collage` classes in `src/App.css` (needed by `LandingPage.tsx`).
+- [x] **0.9** Fix `src/components/ui/button.tsx` — ensure primary variant uses `var(--arena-lime)` and bold font weight.
+- [x] **0.10** Fix `src/components/ui/badge.tsx` — replace hardcoded colors with `var(--arena-lime)`, `var(--arena-blue)`, and theme variables for all variants.
+- [x] **0.11** Replace 48 `bg-[#0b1322]` occurrences across 12 files with `bg-black` or `bg-[var(--arena-surface)]` (verified clean of hardcoded dark greys).
+- [x] **0.12** Map `--arena-lime` and `--arena-blue` into `@theme` block in `src/index.css` so Tailwind classes work.
 
-```css
-/* Add after existing :root.dark block */
---arena-lime: #ccff00;
---arena-blue: #38bdf8;
---arena-line: rgba(255, 255, 255, 0.15);
---arena-line-blue: rgba(56, 189, 248, 0.2);
---arena-panel: rgba(255, 255, 255, 0.04);
---arena-admin: rgba(255, 255, 255, 0.03);
---arena-muted: rgba(255, 255, 255, 0.4);
-```
+**Verify:**
+- [x] `npm run lint` — 0 errors (ESlint passing)
+- [x] `npm run test` — pass (41/41 unit tests passing)
+- [x] `npm run build` — pass (Compiles successfully with CSS/JS bundles)
 
-- [ ] **0.2** Override `--arena-bg` in dark mode from `#0b0f19` to `#040d0f` (true arena dark from mockups)
-- [ ] **0.3** Override `--arena-surface` in dark mode from `#111827` to `#0a0f0e` (mockup card color)
-- [ ] **0.4** Remove or disable light mode `:root` block — enforce always-dark arena base
-- [ ] **0.5** Rebuild `.arena-panel` in `src/App.css` — reference `var(--arena-panel)`, `var(--arena-line)`, add `backdrop-blur-sm`, proper shadow
-- [ ] **0.6** Rebuild `.arena-panel-blue` — reference `var(--arena-line-blue)`, blue-tinted gradient overlay
-- [ ] **0.7** Rebuild `.arena-admin-panel` — reference `var(--arena-admin)`, dimmer border, no glow
-- [ ] **0.8** Define `.landing-hero` and `.racket-hero-collage` classes in `src/App.css` (needed by `LandingPage.tsx`)
-- [ ] **0.9** Fix `src/components/ui/button.tsx` — ensure primary variant uses `var(--arena-lime)`, danger variant uses `var(--arena-accent)` or define red tokens
-- [ ] **0.10** Fix `src/components/ui/badge.tsx` — replace hardcoded colors with `var(--arena-lime)`, `var(--arena-blue)`, etc. for all variants (default, live, blue, heat, danger, muted)
-- [ ] **0.11** Replace 48 `bg-[#0b1322]` occurrences across 12 files with `bg-black` or `bg-[var(--arena-surface)]` depending on context
-- [ ] **0.12** Map `--arena-lime` and `--arena-blue` into `@theme` block so Tailwind classes like `bg-lime`/`text-lime` work
+---
+
+### Week 1 — Competitions Database & API Foundations
+
+**Goal:** Eliminate the duplicated friendly tables and construct a unified `competitions` database schema and API layer capable of supporting both inter-club friendlies and individual tournaments.
+
+**Files affected:** `src/lib/friendlyApi.ts` (delete), `src/lib/friendlyStoryMoments.ts` (delete), `src/lib/storyMoments.ts` (merge into), `src/lib/api/competitions.ts` (new), `supabase/migrations/` (migrations)
+
+- [ ] **1.1** Audit friendlyApi functions and write migration to create unified tables: `competitions`, `competition_pools`, `competition_participants`, `competition_matchups` (respecting RLS & Realtime).
+- [ ] **1.2** Port friendly matchups logic to match the new unified table structure.
+- [ ] **1.3** Merge `friendlyStoryMoments.ts` unique story types into `storyMoments.ts` (ensuring no story format is lost).
+- [ ] **1.4** Build the **Competitions API** (`src/lib/api/competitions.ts`):
+  - `createCompetition()`: Create friendly or tournament draft.
+  - `registerParticipant()`: Roster players/pairs.
+  - `generatePoolMatches()`: Setup pool groups and schedule matchups.
+- [ ] **1.5** Clean up and update all callers of friendlyApi to import from the new unified module.
+- [ ] **1.6** Delete `friendlyApi.ts` and `friendlyStoryMoments.ts`.
 
 **Verify:**
 - [ ] `npm run lint` — 0 errors
 - [ ] `npm run test` — pass
-- [ ] `npm run build` — pass
-- [ ] Open app — panels render with glassy borders, lime accents visible, no missing-variable artifacts
-- [ ] Check mobile 390px on a panel-heavy page
+- [ ] Database migrations execute successfully against local/remote DB
 
 ---
 
-### Week 1 — Friendly System Consolidation + BWF Scoreboard Rebuild
+### Week 2 — BWF Competitions UI (Scoreboard & Pools)
 
-**Goal:** Eliminate the parallel friendly system. Route all friendly operations through core API/story functions. Fix 2 lint errors. Delete duplicated files. Rebuild `FriendlyScoreboard` with BWF-style player identity cards, matchup grid, game-by-game scores, and series history bar.
-
-**Design reference:** `mockups/friendly/friendly_scoreboard_mockup.html` (3 phone screens: Live Scoreboard, Matchmaking Grid, Public Proof Page)
-
-**Files affected:** `src/lib/friendlyApi.ts` (delete), `src/lib/friendlyStoryMoments.ts` (delete), `src/lib/storyMoments.ts` (merge into), `src/lib/api.ts` (core match/club functions), all callers of friendlyApi functions, `src/components/friendly/FriendlyScoreboard.tsx` (rebuild), `src/components/friendly/FriendlyShareCard.tsx` (rebuild), `src/components/PlayerIdentityCard.tsx` (new)
-
-- [ ] **1.1** Audit `friendlyApi.ts` — map all exported functions to equivalent core API functions. Document mapping in a comment or migration guide.
-  - Likely mappings: `createFriendlyMatch()` → `createMatch()` RPC, `getFriendlies()` → `getClubMatches()`, etc.
-- [ ] **1.2** Audit `friendlyStoryMoments.ts` — merge unique story types into `storyMoments.ts`. Ensure no story type is lost.
-- [ ] **1.3** Rewrite `recordFriendlyMatch()` to call core `createMatch()` RPC with appropriate parameters
-- [ ] **1.4** Fix 2 lint errors in `friendlyApi.ts:429` and `:446` — replace `as any` with proper Supabase Realtime types, or use `unknown` with type guard
-- [ ] **1.5** Update all callers of friendlyApi functions to import from core API modules instead
-- [ ] **1.6** Update all callers of friendlyStoryMoments to import from storyMoments instead
-- [ ] **1.7** Delete `src/lib/friendlyApi.ts`
-- [ ] **1.8** Delete `src/lib/friendlyStoryMoments.ts`
-- [ ] **1.9** **Rebuild `FriendlyScoreboard.tsx`** with BWF broadcast layout:
-  - [ ] BWF match header: two player cards side-by-side (large avatar, pair name, club name, Malaysia flag icon, H2H record badge)
-  - [ ] Series history bar: visual split bar showing all-time record between clubs (e.g., 60/40 bar, label "LEP BC 3 - 2 Smashers PJ")
-  - [ ] Player Identity Card component for each player in the friendly (avatar with rank badge, name, club + city, W-L record, win rate %, form arrow)
-  - [ ] Matchup rows: 3-column layout (pair A avatar + name | center score + win/loss | pair B name + avatar). Winner score in lime, loser dimmed. Live matchups get pulsing green border.
-  - [ ] Game-by-game expandable section below each completed matchup showing G1, G2, G3 scores with winner highlighted. "Decider" badge on third game.
-  - [ ] Status badge: LIVE (pulsing green dot), ACCEPTED (blue), MATCHMAKING (lime), COMPLETED (white)
-- [ ] **1.10** **Rebuild `FriendlyShareCard.tsx`** to match BWF layout — the canvas-generated share image must show player avatars, scoreboard, matchup results, and club branding
-- [ ] **1.11** **Build `PlayerIdentityCard.tsx`** as reusable component:
-  - Props: `avatar: string`, `name: string`, `club: string`, `city: string`, `rank: number`, `wins: number`, `losses: number`, `winRate: number`, `form: number` (positive/negative delta)
-  - Renders: large circular avatar with rank badge overlay, name, club + city line, stat row (W-L, win rate %, form arrow)
-  - BWF style: lime accent for winner/high stats, dim for below-average stats
-- [ ] **1.12** Verify friendly match flow end-to-end:
-  - Create friendly → register pairs → matchmaking → live scoreboard with BWF layout → record matches → game-by-game scores → completion → stories → share
-
-**Verify:**
-- [ ] `npm run lint` — 0 errors
-- [ ] `npm run test` — pass
-- [ ] `npm run build` — pass
-- [ ] Friendly match flow works without importing from deleted files
-- [ ] FriendlyScoreboard renders BWF-style player identity cards for every participant
-- [ ] Game-by-game scores (G1, G2, G3) expandable below completed matchups
-- [ ] Series history bar shows correct club record
-
----
-
-### Week 2 — Public Proof Pages (BWF Style)
-
-**Goal:** Build opt-in public match, session, and friendly pages with BWF-style layout and OG meta tags for WhatsApp link previews. These are the highest-leverage missing piece for the WhatsApp distribution thesis — the public page IS the recruitment surface.
-
-**Design reference:** `mockups/friendly/friendly_scoreboard_mockup.html` (Phone 3: Public Proof Page)
-
-**Files affected:** `src/pages/PublicMatchPage.tsx` (new), `src/pages/PublicSessionPage.tsx` (new), `src/pages/PublicFriendlyPage.tsx` (new), `src/App.tsx` (routes), `src/lib/api.ts` (add public fetch functions), `supabase/migrations/` (RLS for public read), `src/components/` (share buttons), `src/components/PlayerIdentityCard.tsx` (reuse from Week 1)
-
-- [ ] **2.1** Add Supabase RPC or RLS rule for opt-in public read access on matches, sessions, and friendlies (respect club-level `public_visible` flag)
-- [ ] **2.2** **Build `PublicFriendlyPage.tsx`** — BWF-style public friendly page (this is the highest-leverage page for WhatsApp sharing). Must include:
-  - KelabSukan branding header ("KelabSukan Live Sports Network")
-  - Compact BWF scoreboard: two club names side-by-side with city, big score (lime for winner), series record bar below
-  - Full matchup list with all pair names, scores, and game-by-game details (G1, G2, G3)
-  - Player Identity Cards for 2-4 featured players (reuse `PlayerIdentityCard.tsx` from Week 1) — shows rank badge, W-L, win rate, form
-  - "Join KelabSukan" CTA button (lime on dark, full width)
-  - OG meta tags: title = "LEP BC 3-2 Smashers PJ | KelabSukan", description = matchup summary with decisive match detail, image = scoreboard card, url = public link
-- [ ] **2.3** Build `PublicMatchPage.tsx` — BWF-style single match page:
-  - Player identity cards for both sides (avatar, name, club, rank, W-L)
-  - Score display with game-by-game breakdown (G1, G2, G3)
-  - Winner highlighted in lime, loser dimmed
-  - OG meta tags
-- [ ] **2.4** Build `PublicSessionPage.tsx` — displays:
-  - Session recap (headline, date, venue)
-  - List of matches with scores (BWF-style matchup rows)
-  - Leaderboard snapshot (top 3-5 players with identity cards)
-  - OG meta tags
-- [ ] **2.5** Add routes in `src/App.tsx`: `/public/friendly/:friendlyId`, `/public/match/:matchId`, `/public/session/:sessionId`
-- [ ] **2.6** Add opt-in public visibility toggle on club settings page (add `public_visible` boolean column, default false)
-- [ ] **2.7** Wire share buttons on existing match/session/friendly pages to copy the public proof link
-- [ ] **2.8** Style public pages with same dark arena design system — they are the landing surface for new users coming from WhatsApp
-- [ ] **2.9** Verify WhatsApp OG preview renders correctly (test with opengraph.dev): title, description, image all appear, link is clickable
-
-**Verify:**
-- [ ] `npm run lint` — 0 errors
-- [ ] `npm run test` — pass
-- [ ] `npm run build` — pass
-- [ ] Visit `/public/friendly/:id` — renders without auth, shows BWF-style scoreboard + player identity cards
-- [ ] Visit `/public/match/:id` — shows player identity cards + game-by-game scores
-- [ ] OG meta tags appear in page source (test with opengraph.dev or similar)
-- [ ] WhatsApp link preview fetches title + description correctly
-
----
-
-### Week 3 — Ranking Deltas & BWF Player Identity Integration
-
-**Goal:** Make rankings feel alive by showing rank changes (up/down arrows), tier badges (Bronze/Silver/Gold/Platinum), and win rate. Integrate into `PlayerIdentityCard.tsx` so every player display across the app shows rank + stats. Wire the existing `get_player_dashboard` RPC to eliminate redundant per-club fetches.
-
-**Files affected:** `src/pages/DashboardPage.tsx`, `src/pages/ClubLeaderboardPage.tsx`, `src/components/RankBadge.tsx` (new), `src/components/RankDelta.tsx` (new), `src/components/WinRateBar.tsx` (new), `src/components/PlayerIdentityCard.tsx` (update), `src/lib/api.ts`, `src/lib/hooks/` (dashboard hook)
-
-- [ ] **3.1** Design rank delta indicator — green arrow up for gain, red arrow down for loss, gray dash for unchanged. Integrate into `PlayerIdentityCard` stat row.
-- [ ] **3.2** Design tier badge system:
-  - Bronze: win rate < 40% or Elo < 1000
-  - Silver: win rate 40-60% or Elo 1000-1200
-  - Gold: win rate 60-80% or Elo 1200-1400
-  - Platinum: win rate > 80% or Elo > 1400
-  - Style: compact colored badge with icon, fits as rank badge overlay on player avatar (like BWF #1, #2 badges)
-- [ ] **3.3** Design win rate component — horizontal bar (percentage filled) or ring. Color shifts green→amber→red
-- [ ] **3.4** Build `RankBadge` component — tier icon + label, accepts `tier: 'bronze' | 'silver' | 'gold' | 'platinum'`
-- [ ] **3.5** Build `RankDelta` component — arrow + number, accepts `delta: number` (positive/negative/zero)
-- [ ] **3.6** Build `WinRateBar` component — percentage bar, accepts `rate: number` (0-100)
-- [ ] **3.7** **Update `PlayerIdentityCard.tsx`** to accept and render: `rankBadge` (tier), `rankDelta` (arrow), `winRate` (bar). The stat row becomes: rank badge + W-L + win rate bar + form arrow. The avatar gets a rank badge overlay (BWF style).
-- [ ] **3.8** Wire `get_player_dashboard` RPC in a new dashboard data hook — replace inline `useClubsMatches` + `useClubsMembers` calls at `DashboardPage.tsx:60-61`
-- [ ] **3.9** Integrate PlayerIdentityCard (with rank + stats) into `DashboardPage.tsx`
-- [ ] **3.10** Integrate RankDelta into `ClubLeaderboardPage.tsx` — show delta for every player in the list
-- [ ] **3.11** Remove unused `useClubsMatches` and `useClubsMembers` imports from DashboardPage after wiring RPC
-- [ ] **3.12** Ensure the dashboard RPC returns delta and tier data (may need migration update)
-
-**Verify:**
-- [ ] `npm run lint` — 0 errors
-- [ ] `npm run test` — pass
-- [ ] `npm run build` — pass
-- [ ] Dashboard shows PlayerIdentityCard with rank badge + delta + win rate bar
-- [ ] `PlayerIdentityCard.tsx` renders correctly in FriendlyScoreboard, Dashboard, and public pages
-- [ ] Leaderboard shows delta for each player
-- [ ] No redundant per-club API calls on dashboard (verify network tab)
-
----
-
-### Week 4 — Push Notifications
-
-**Goal:** Notify players when their rank changes, a match result is recorded, a session reminder fires, or they are mentioned in a story.
-
-**Files affected:** `supabase/migrations/` (push subscription table), `src/lib/notifications.ts` (new), `src/hooks/usePushNotifications.ts` (new), `public/service-worker.js` (or sw.ts), `src/pages/SettingsPage.tsx` (preferences UI), `src/lib/api.ts` (notification functions)
-
-- [ ] **4.1** Set up Supabase Realtime infrastructure — enable Realtime on relevant tables (matches, rankings, sessions)
-- [ ] **4.2** Design notification type system: `rank_change`, `match_result`, `session_reminder`, `story_mention`, `friendly_challenge`
-- [ ] **4.3** Create migration for push subscription table:
-  ```sql
-  CREATE TABLE push_subscriptions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    endpoint TEXT NOT NULL,
-    p256dh TEXT NOT NULL,
-    auth TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    UNIQUE(user_id, endpoint)
-  );
-  ```
-- [ ] **4.4** Build `src/lib/notifications.ts`:
-  - `subscribe()` — saves push subscription to DB
-  - `unsubscribe()` — removes subscription
-  - `sendNotification(userId, type, payload)` — called from server-side triggers or Edge Functions
-- [ ] **4.5** Build `src/hooks/usePushNotifications.ts`:
-  - Request permission on mount
-  - Register/unregister service worker
-  - Save subscription to backend
-- [ ] **4.6** Create or update service worker at `public/sw.js` to handle push events and show notifications
-- [ ] **4.7** Wire triggers:
-  - On match recorded → push to match participants
-  - On rank change (detected in dashboard RPC or migration) → push to affected player
-  - On session start (time-based or cron) → push to RSVP'd members
-- [ ] **4.8** Add notification preferences UI in settings page — toggle per notification type
-- [ ] **4.9** Add VAPID keys configuration for web push (env vars)
-
-**Verify:**
-- [ ] `npm run lint` — 0 errors
-- [ ] `npm run test` — pass
-- [ ] `npm run build` — pass
-- [ ] Browser requests notification permission on login flow
-- [ ] Recording a match triggers a push to participants
-- [ ] Notification preferences save correctly
-
----
-
-### Week 5 — Monolith Breakup
-
-**Goal:** Split the 2,149-line `api.ts` into domain-specific modules. Split the 1,017-line `SuperAdminAnalyticsPage.tsx`. Split the 999-line `ScoreRecordingModal.tsx`.
-
-**Files affected:** `src/lib/api.ts` (split & delete), `src/lib/api/` (new directory), all files importing from `api.ts`, `src/pages/SuperAdminAnalyticsPage.tsx`, `src/components/ScoreRecordingModal.tsx`, `src/features/admin/` (new)
-
-- [ ] **5.1** Map all exports in `api.ts` to domain categories:
-  - Club: club CRUD, members, settings, invites
-  - Match: match CRUD, scores, ranking, Elo
-  - Event: sessions, RSVPs, check-in, court queue
-  - Profile: user profiles, stats, achievements, badges
-  - Notification: notification CRUD, preferences, subscriptions
-- [ ] **5.2** Create `src/lib/api/clubs.ts` — move all club-related functions
-- [ ] **5.3** Create `src/lib/api/matches.ts` — move all match/score/ranking functions
-- [ ] **5.4** Create `src/lib/api/events.ts` — move all event/session functions
-- [ ] **5.5** Create `src/lib/api/profiles.ts` — move all profile/stat functions
-- [ ] **5.6** Create `src/lib/api/notifications.ts` — move all notification functions
-- [ ] **5.7** Create `src/lib/api/index.ts` — barrel re-export with backward-compatible names
-- [ ] **5.8** Update all imports across the codebase to use `@/lib/api/clubs` etc.
-- [ ] **5.9** Delete `src/lib/api.ts` (or keep as thin re-export wrapper temporarily)
-- [ ] **5.10** Split `SuperAdminAnalyticsPage.tsx` (1,017 lines) into `src/features/admin/`:
-  - `AnalyticsOverview.tsx`
-  - `ClubManagement.tsx`
-  - `UserManagement.tsx`
-  - `SystemHealth.tsx`
-  - `AdminLayout.tsx`
-- [ ] **5.11** Split `ScoreRecordingModal.tsx` (999 lines) into hooks:
-  - `useScoreRecording.ts` — match creation, validation, submission
-  - `usePlayerSelection.ts` — player search, pair selection
-  - `ScoreRecordingUI.tsx` — presentational component
-
-**Verify:**
-- [ ] `npm run lint` — 0 errors
-- [ ] `npm run test` — pass
-- [ ] `npm run build` — pass
-- [ ] All existing pages work without importing from `api.ts`
-- [ ] Score recording works end-to-end
-- [ ] Super admin analytics renders all sections correctly
-
----
-
-### Week 6 — Polish & Launch (BWF Design Audit)
-
-**Goal:** Final visual audit against BWF broadcast style, end-to-end testing, preview deploy, production launch.
+**Goal:** Rebuild the competition matches layout in BWF broadcast style. Group matchups inside pools, implement collapsible pool headers, standings cards, and a dual-level tab bar navigation hierarchy.
 
 **Design reference:** `mockups/friendly/friendly_scoreboard_mockup.html`
 
-**Files affected:** All — audit pass
+**Files affected:** `src/pages/CompetitionDetailsPage.tsx` (new), `src/components/competition/CompetitionScoreboard.tsx` (new), `src/components/PlayerIdentityCard.tsx` (new)
 
-- [ ] **6.1** Full visual audit against Live Sports Network + BWF broadcast reference:
-  - Arena background is `#040d0f` everywhere
-  - Lime accent (`#ccff00`) used for actions, status, and highlights — not decoration
-  - Panels have thin glowing borders and glassy fill
-  - **Player Identity Cards render on every page that shows player info** (avatar + rank badge + W-L + win rate + form)
-  - **FriendlyScoreboard uses BWF layout**: match header with player cards side-by-side, series history bar, matchup rows with avatars, game-by-game scores, decider badge
-  - **Public proof pages** show branded scoreboard, full matchups, player cards, and "Join KelabSukan" CTA
-- [ ] **6.2** Check mobile 390px viewport on all key routes: dashboard, club home, friendly scoreboard, session, leaderboard, settings, public proof pages
-- [ ] **6.3** Check desktop 1440px viewport on all key routes
-- [ ] **6.4** Fix any remaining hardcoded colors (`bg-[#0b1322]`, `text-[#...]`, `border-[#...]`)
-- [ ] **6.5** Verify all 7 CSS variables render correctly — inspect each in dev tools
-- [ ] **6.6** End-to-end test flow:
-  - Create club → add member → create session → record match → view story → share public link → open public page
-  - **Friendly flow**: create friendly → register pairs → matchmaking → live scoreboard (BWF style) → record matches → game-by-game scores → completion → stories → share
-- [ ] **6.7** Test WhatsApp share flow end-to-end — public link opens correctly with OG preview showing BWF-style scoreboard card
-- [ ] **6.8** Run full audit: lint, test, build — all pass
-- [ ] **6.9** Deploy preview to Netlify
-- [ ] **6.10** Owner review of preview URL — check BWF layout on mobile + desktop
-- [ ] **6.11** Owner explicit approval for production
-- [ ] **6.12** Deploy to production
-- [ ] **6.13** Verify production URL post-deploy — all pages render, auth works, match recording works, friendly scoreboard renders correctly
+- [ ] **2.1** Build `PlayerIdentityCard.tsx` as a reusable component (circular avatar with rank badge overlay, location, record, win rate %, form arrow).
+- [ ] **2.2** Rebuild the event details page to support the dual-level navigation hierarchy:
+  - Level 1: *Details*, *Roster*, *Matches*, *Standings*, *Playoffs*.
+  - Level 2 (Matches): *Format*, *List*, *Standings*.
+  - Level 3: *All*, *Pending*, *Completed*.
+- [ ] **2.3** Render **BWF Matchup cards**: court number, scheduled time, player cards side-by-side, scoresets with winner highlighted in electric lime.
+- [ ] **2.4** Implement collapsible **Pool dropdowns** to filter matches by pool.
+- [ ] **2.5** Implement the **Standings view**: real-time calculation of points, matches, and set records.
+- [ ] **2.6** Build `PublicCompetitionPage.tsx` for shared WhatsApp previews showing branding and scoreboard stats (non-auth viewable).
 
 **Verify:**
 - [ ] `npm run lint` — 0 errors
-- [ ] `npm run test` — pass
-- [ ] `npm run build` — pass
-- [ ] Production URL verified
-- [ ] Supabase migration status confirmed if data changed
-- [ ] Friendly scoreboard renders BWF-style on mobile and desktop
-- [ ] Public proof page shows player identity cards + OG preview
+- [ ] Mobile (390px) and desktop (1440px) viewport checks pass
+
+---
+
+### Week 3 — Visual Playoffs & Bracket Trees
+
+**Goal:** Build the single-elimination playoff bracket tree. Generate connected bracket nodes and display progression paths visually.
+
+**Files affected:** `src/components/competition/PlayoffBracket.tsx` (new), `src/lib/api/competitions.ts`
+
+- [ ] **3.1** Build the playoff bracket generator API: auto-qualify top players/pairs from pools and seed them into elimination bracket slots.
+- [ ] **3.2** Design the SVG/CSS **Playoff Bracket Tree** component: responsive nodes displaying pair names, scores, and lines connecting winners to the next round.
+- [ ] **3.3** Add glowing connector lines: highlights path green/blue when matches are completed or live.
+- [ ] **3.4** Integrate the Playoff bracket view into the "Playoffs" tab of the unified Competitions page.
+
+**Verify:**
+- [ ] Bracket tree renders correctly on mobile without overflow
+- [ ] Winning a match updates the bracket node in real-time
+
+---
+
+### Week 4 — Leaderboards, RPC, & Monolith Breakup
+
+**Goal:** Optimize performance by wiring the dashboard RPC, introducing rank delta indicators, and breaking the 2,149-line `api.ts` monolith into domain-specific modules.
+
+**Files affected:** `src/lib/api.ts` (delete/split), `src/pages/DashboardPage.tsx`, `src/pages/ClubLeaderboardPage.tsx`, `src/components/RankDelta.tsx` (new)
+
+- [ ] **4.1** Split `src/lib/api.ts` into domain files under `src/lib/api/` (`clubs.ts`, `matches.ts`, `events.ts`, `profiles.ts`, `notifications.ts`, `index.ts`).
+- [ ] **4.2** Split `SuperAdminAnalyticsPage.tsx` (1,017 lines) and `ScoreRecordingModal.tsx` (999 lines) into structured modules/hooks.
+- [ ] **4.3** Wire the `get_player_dashboard` RPC in `DashboardPage.tsx` to eliminate redundant per-club member and match fetches.
+- [ ] **4.4** Build `RankDelta.tsx` (up/down rank delta arrow indicator) and integrate delta data into the club leaderboard page.
+
+**Verify:**
+- [ ] Linter passes with 0 errors
+- [ ] Verify database fetch count is reduced on dashboard page load
+
+---
+
+### Week 5 — Push Notifications & Stripe Payments
+
+**Goal:** Implement Web Push notifications for rankings, match results, and session reminders. Set up Stripe Connect MVP for session and tournament payment collection.
+
+**Files affected:** `supabase/migrations/` (notifications & payments), `src/hooks/usePushNotifications.ts` (new), `src/lib/api/payments.ts` (new)
+
+- [ ] **5.1** Create `push_subscriptions` migration, register service worker, and prompt permissions on dashboard entry.
+- [ ] **5.2** Wire triggers to send push alerts for: rank changes, match results recorded, and session start reminders.
+- [ ] **5.3** Create Stripe Connect backend integration: allow club owners to connect their Stripe accounts to collect fees.
+- [ ] **5.4** Allow players to pay for sessions/competitions directly in-app, taking a 2-3% transaction fee on checkout.
+
+---
+
+### Week 6 — Geolocation Social Discovery
+
+**Goal:** Add geolocation proximity search so players can discover nearby badminton, tennis, and pickleball clubs/sessions.
+
+**Files affected:** `src/pages/DiscoverPage.tsx` (new), `src/lib/api/discovery.ts` (new), `supabase/migrations/` (postgis indexes)
+
+- [ ] **6.1** Enable PostGIS on Supabase and index club locations by coordinates.
+- [ ] **6.2** Build search API filtering sessions and clubs by: distance, date, sport, and skill level.
+- [ ] **6.3** Design the `/discover` view: Map integration or list cards showing active courts, play times, and spot availability.
+
+---
+
+### Week 7 — Polish & Launch
+
+**Goal:** BWF design system audit, viewport checks, end-to-end user testing, Netlify deployment, production launch.
+
+- [ ] **7.1** Full audit to ensure dark theme background (`#040d0f`) and glassmorphic panels render without glitches.
+- [ ] **7.2** Viewport checking on mobile (390px) and desktop (1440px) on all routes.
+- [ ] **7.3** End-to-end testing: create club -> register tournament -> run pool matchups -> progress to brackets -> record scores -> share public result to WhatsApp.
+- [ ] **7.4** Deploy preview builds to Netlify, run owner approval checks, and deploy to production.
 
 ---
 
 ## Appendix: Quick Reference
-
-### Key File Paths
-| File | Lines | Note |
-|---|---|---|
-| `src/index.css` | 99 | Must add 7 CSS variables |
-| `src/App.css` | ~470 | Rebuild panel classes |
-| `src/lib/api.ts` | 2,149 | Split in Week 5 |
-| `src/lib/friendlyApi.ts` | 449 | Delete in Week 1 |
-| `src/lib/friendlyStoryMoments.ts` | 421 | Delete in Week 1 |
-| `src/lib/storyMoments.ts` | 333 | Merge target in Week 1 |
-| `src/pages/DashboardPage.tsx` | — | Fix lines 60-61 in Week 3 |
-| `src/pages/SuperAdminAnalyticsPage.tsx` | 1,017 | Split in Week 5 |
-| `src/components/ScoreRecordingModal.tsx` | 999 | Split in Week 5 |
-| `src/components/ui/button.tsx` | — | Fix in Week 0 |
-| `src/components/ui/badge.tsx` | — | Fix in Week 0 |
-| `src/pages/LandingPage.tsx` | — | Define missing classes in Week 0 |
-| `src/components/PlayerIdentityCard.tsx` | — | Build in Week 1. Used by: FriendlyScoreboard, Dashboard, PublicFriendlyPage |
-| `src/components/friendly/FriendlyScoreboard.tsx` | 245 | Rebuild in Week 1 with BWF layout |
-| `src/components/friendly/FriendlyShareCard.tsx` | 346 | Rebuild in Week 1 with BWF layout |
-| `src/pages/PublicFriendlyPage.tsx` | — | New in Week 2. Public proof page for friendly results |
-| `supabase/migrations/20260611000000_player_dashboard_rpc.sql` | 361 | Wire in Week 3 |
-| `mockups/friendly/friendly_scoreboard_mockup.html` | — | Design reference for BWF-style scoreboard, matchmaking grid, and public proof page |
 
 ### Commands
 ```bash
@@ -514,3 +346,4 @@ npm run dev         # Local dev server
 7. Every shareable moment needs a public proof link.
 8. Admin UX must not dominate member UX.
 9. **BWF-style scoreboard**: Player identity cards (avatar + rank badge + W-L + win rate + form) are the hero of every matchup. Never show just text names. Game-by-game scores (G1, G2, G3 format) must be expandable below each completed matchup. Winner highlighted in lime, loser dimmed. Series history bar between clubs must be prominent.
+

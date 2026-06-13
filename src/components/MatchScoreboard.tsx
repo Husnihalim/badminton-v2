@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Share2, Palette, Check, MessageCircle, Trash2 } from 'lucide-react'
+import { Share2, Palette, Check } from 'lucide-react'
 import { Button } from './ui/button'
 import type { MatchWithDetails } from '../types'
 import { useAuth } from '../context/AuthContext'
-import { toggleMatchReaction, addMatchComment, deleteMatchComment } from '../lib/api'
 import { PlayerCard } from './PlayerCard'
 import { cn } from '../lib/utils'
 
@@ -27,17 +26,10 @@ export function MatchScoreboard({
   onEdit,
   onDelete,
 }: MatchScoreboardProps) {
-  const { user } = useAuth()
   const menuRef = useRef<HTMLDivElement>(null)
-  const reactionIdRef = useRef(0)
 
   const [showLineup, setShowLineup] = useState(false)
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false)
-  const [showComments, setShowComments] = useState(false)
-  const [newCommentText, setNewCommentText] = useState('')
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
-  const [reactions, setReactions] = useState(match.reactions || [])
-  const [comments, setComments] = useState(match.comments || [])
   const [isSystemDark, setIsSystemDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [cardTheme, setCardTheme] = useState<CardTheme>(() => {
     const saved = localStorage.getItem('scoreboard-card-theme')
@@ -55,14 +47,6 @@ export function MatchScoreboard({
   const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
   const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
   const winner = team1Sets > team2Sets ? 1 : team2Sets > team1Sets ? 2 : 0
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setReactions(match.reactions || [])
-      setComments(match.comments || [])
-    }, 0)
-    return () => window.clearTimeout(timeout)
-  }, [match.reactions, match.comments])
 
   useEffect(() => {
     const handleThemeChange = (e: Event) => {
@@ -90,13 +74,13 @@ export function MatchScoreboard({
 
   const effectiveTheme = cardTheme === 'adaptive' ? (isSystemDark ? 'dark' : 'light') : cardTheme
 
-  const themeStyles: Record<CardTheme, { card: string; topBar: string; actionBtn: string; actionBtnDelete: string; label: string; pair: string; pairWinner: string; scoreBox: string; scoreText: string; accentBorder: string }> = {
-    adaptive: { card: 'bg-[var(--arena-surface)] border-[var(--arena-border)] text-[var(--arena-text)]', topBar: 'bg-[var(--arena-surface-muted)]/90 border-b border-[var(--arena-border)]', actionBtn: 'text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:bg-[var(--arena-surface-muted)]', actionBtnDelete: 'text-red-500 hover:text-red-300 hover:bg-red-950/40', label: 'text-[var(--arena-text-dim)]', pair: 'text-[var(--arena-text-dim)]', pairWinner: 'text-[var(--arena-accent)]', scoreBox: 'border-[var(--arena-border)] bg-[var(--arena-surface-muted)]', scoreText: 'text-[var(--arena-accent)]', accentBorder: 'border-l-[var(--arena-accent)]' },
-    light: { card: 'bg-[var(--arena-surface)] border-[var(--arena-border)] text-[var(--arena-text)]', topBar: 'bg-[var(--arena-surface-muted)]/90 border-b border-[var(--arena-border)]', actionBtn: 'text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:bg-[var(--arena-surface-muted)]', actionBtnDelete: 'text-red-500 hover:text-red-300 hover:bg-red-950/40', label: 'text-[var(--arena-text-dim)]', pair: 'text-[var(--arena-text-dim)]', pairWinner: 'text-[var(--arena-accent)]', scoreBox: 'border-[var(--arena-border)] bg-[var(--arena-surface-muted)]', scoreText: 'text-[var(--arena-accent)]', accentBorder: 'border-l-[var(--arena-accent)]' },
-    dark: { card: 'bg-[var(--arena-surface)] border-[var(--arena-border)] text-[var(--arena-text)]', topBar: 'bg-[var(--arena-bg)] border-b border-[var(--arena-border)]', actionBtn: 'text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:bg-[var(--arena-surface-muted)]', actionBtnDelete: 'text-red-500 hover:text-red-300 hover:bg-red-950/40', label: 'text-[var(--arena-text-dim)]', pair: 'text-[var(--arena-text-dim)]', pairWinner: 'text-[var(--arena-accent)]', scoreBox: 'border-[var(--arena-border)] bg-[var(--arena-surface-muted)]', scoreText: 'text-[var(--arena-accent)]', accentBorder: 'border-l-[var(--arena-accent)]' },
-    forest: { card: 'bg-[#031d12] border-emerald-900/65 text-emerald-50', topBar: 'bg-[#01140b] border-b border-emerald-950/50', actionBtn: 'text-emerald-400 hover:text-white hover:bg-emerald-900/50', actionBtnDelete: 'text-red-400 hover:text-red-300 hover:bg-red-950/40', label: 'text-emerald-500/80', pair: 'text-emerald-400/60', pairWinner: 'text-emerald-300', scoreBox: 'border-emerald-900/65 bg-[#01140b]', scoreText: 'text-emerald-300', accentBorder: 'border-l-emerald-400' },
-    ocean: { card: 'bg-[#091526] border-blue-900/65 text-blue-50', topBar: 'bg-[#050c17] border-b border-blue-950/50', actionBtn: 'text-blue-400 hover:text-white hover:bg-blue-900/40', actionBtnDelete: 'text-red-400 hover:text-red-300 hover:bg-red-950/40', label: 'text-blue-500/80', pair: 'text-blue-300/60', pairWinner: 'text-blue-300', scoreBox: 'border-blue-900/65 bg-[#050c17]', scoreText: 'text-blue-300', accentBorder: 'border-l-blue-400' },
-    clay: { card: 'bg-[#240e06] border-orange-950/65 text-orange-50', topBar: 'bg-[#160803] border-b border-orange-980/50', actionBtn: 'text-orange-400 hover:text-white hover:bg-orange-900/50', actionBtnDelete: 'text-red-400 hover:text-red-300 hover:bg-red-950/40', label: 'text-orange-400/80', pair: 'text-orange-300/60', pairWinner: 'text-orange-300', scoreBox: 'border-orange-950/65 bg-[#160803]', scoreText: 'text-orange-300', accentBorder: 'border-l-orange-400' },
+  const themeStyles: Record<CardTheme, { card: string; topBar: string; actionBtn: string; actionBtnDelete: string; label: string; pair: string; pairWinner: string; accentBorder: string }> = {
+    adaptive: { card: 'bg-[var(--arena-surface)] border-[var(--arena-border)] text-[var(--arena-text)]', topBar: 'bg-[var(--arena-surface-muted)]/90 border-b border-[var(--arena-border)]', actionBtn: 'text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:bg-[var(--arena-surface-muted)]', actionBtnDelete: 'text-red-500 hover:text-red-300 hover:bg-red-950/40', label: 'text-[var(--arena-text-dim)]', pair: 'text-[var(--arena-text-dim)]', pairWinner: 'text-[var(--arena-accent)]', accentBorder: 'border-l-[var(--arena-accent)]' },
+    light: { card: 'bg-[var(--arena-surface)] border-[var(--arena-border)] text-[var(--arena-text)]', topBar: 'bg-[var(--arena-surface-muted)]/90 border-b border-[var(--arena-border)]', actionBtn: 'text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:bg-[var(--arena-surface-muted)]', actionBtnDelete: 'text-red-500 hover:text-red-300 hover:bg-red-950/40', label: 'text-[var(--arena-text-dim)]', pair: 'text-[var(--arena-text-dim)]', pairWinner: 'text-[var(--arena-accent)]', accentBorder: 'border-l-[var(--arena-accent)]' },
+    dark: { card: 'bg-[var(--arena-surface)] border-[var(--arena-border)] text-[var(--arena-text)]', topBar: 'bg-[var(--arena-bg)] border-b border-[var(--arena-border)]', actionBtn: 'text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:bg-[var(--arena-surface-muted)]', actionBtnDelete: 'text-red-500 hover:text-red-300 hover:bg-red-950/40', label: 'text-[var(--arena-text-dim)]', pair: 'text-[var(--arena-text-dim)]', pairWinner: 'text-[var(--arena-accent)]', accentBorder: 'border-l-[var(--arena-accent)]' },
+    forest: { card: 'bg-[#031d12] border-emerald-900/65 text-emerald-50', topBar: 'bg-[#01140b] border-b border-emerald-950/50', actionBtn: 'text-emerald-400 hover:text-white hover:bg-emerald-900/50', actionBtnDelete: 'text-red-400 hover:text-red-300 hover:bg-red-950/40', label: 'text-emerald-500/80', pair: 'text-emerald-400/60', pairWinner: 'text-emerald-300', accentBorder: 'border-l-emerald-400' },
+    ocean: { card: 'bg-[#091526] border-blue-900/65 text-blue-50', topBar: 'bg-[#050c17] border-b border-blue-950/50', actionBtn: 'text-blue-400 hover:text-white hover:bg-blue-900/40', actionBtnDelete: 'text-red-400 hover:text-red-300 hover:bg-red-950/40', label: 'text-blue-500/80', pair: 'text-blue-300/60', pairWinner: 'text-blue-300', accentBorder: 'border-l-blue-400' },
+    clay: { card: 'bg-[#240e06] border-orange-950/65 text-orange-50', topBar: 'bg-[#160803] border-b border-orange-980/50', actionBtn: 'text-orange-400 hover:text-white hover:bg-orange-900/50', actionBtnDelete: 'text-red-400 hover:text-red-300 hover:bg-red-950/40', label: 'text-orange-400/80', pair: 'text-orange-300/60', pairWinner: 'text-orange-300', accentBorder: 'border-l-orange-400' },
   }
 
   const s = themeStyles[effectiveTheme]
@@ -149,40 +133,6 @@ export function MatchScoreboard({
     </div>
   )
 
-  const reactionEmojis = ['🔥', '💪', '👏', '🎯', '😱', '😢']
-  const getReactionCount = (emoji: string) => reactions.filter((r) => r.reaction === emoji).length
-  const hasReacted = (emoji: string) => (user ? reactions.some((r) => r.user_id === user.id && r.reaction === emoji) : false)
-
-  const handleToggleReaction = async (emoji: string) => {
-    if (!user) return
-    const hasAlreadyReacted = reactions.some((r) => r.user_id === user.id && r.reaction === emoji)
-    const updated = hasAlreadyReacted
-      ? reactions.filter((r) => !(r.user_id === user.id && r.reaction === emoji))
-      : [...reactions, { id: `temp-id-${++reactionIdRef.current}`, match_id: match.id, user_id: user.id, reaction: emoji, created_at: new Date().toISOString(), name: user.name, display_name: user.display_name || user.name }]
-    setReactions(updated)
-    try { await toggleMatchReaction(match.id, emoji) } catch (err) { console.error('Failed to toggle reaction:', err); setReactions(reactions) }
-  }
-
-  const handleAddComment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user || !newCommentText.trim() || isSubmittingComment) return
-    try {
-      setIsSubmittingComment(true)
-      const newComment = await addMatchComment(match.id, newCommentText.trim())
-      setComments((prev) => [...prev, newComment])
-      setNewCommentText('')
-    } finally {
-      setIsSubmittingComment(false)
-    }
-  }
-
-  const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('Delete this comment?')) return
-    const previous = [...comments]
-    setComments((prev) => prev.filter((c) => c.id !== commentId))
-    try { await deleteMatchComment(commentId) } catch (err) { console.error('Failed to delete comment:', err); setComments(previous) }
-  }
-
   return (
     <div className={cn('relative w-full max-w-[560px] mx-auto overflow-hidden rounded-2xl border shadow-lg', s.card, winner ? s.accentBorder : '')}>
       <div className={cn('flex items-center justify-between gap-2 px-3 py-2', s.topBar)}>
@@ -209,14 +159,18 @@ export function MatchScoreboard({
         </div>
       </div>
 
-      <div className="p-3 sm:p-4 space-y-2.5">
-        <div className="grid grid-cols-[minmax(0,1fr)_3.5rem] items-center gap-2">
+      <div className="px-4 py-3 space-y-2">
+        <div className="flex items-center justify-between gap-4">
           {teamLine(team1, winner === 1)}
-          <div className={cn('h-10 rounded-xl border flex items-center justify-center font-mono text-[22px] font-black leading-none', s.scoreBox, s.scoreText)}>{team1Score}</div>
+          <div className={cn('font-mono font-bold text-[12px] sm:text-[13px] leading-none shrink-0 text-right w-6', winner === 1 ? s.pairWinner : s.pair)}>
+            {team1Score}
+          </div>
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_3.5rem] items-center gap-2">
+        <div className="flex items-center justify-between gap-4">
           {teamLine(team2, winner === 2)}
-          <div className={cn('h-10 rounded-xl border flex items-center justify-center font-mono text-[22px] font-black leading-none', s.scoreBox, s.scoreText)}>{team2Score}</div>
+          <div className={cn('font-mono font-bold text-[12px] sm:text-[13px] leading-none shrink-0 text-right w-6', winner === 2 ? s.pairWinner : s.pair)}>
+            {team2Score}
+          </div>
         </div>
       </div>
 
@@ -232,76 +186,6 @@ export function MatchScoreboard({
               <div className="grid gap-3">{team2.map((p, idx) => <PlayerCard key={p.id || idx} profile={p.profile || { name: p.guest_name || 'Guest', display_name: p.guest_name || 'Guest Player' }} isSimplified className="border-[var(--arena-border)]" />)}</div>
             </div>
           </div>
-        </div>
-      )}
-
-      <div className="border-t border-[var(--arena-border)] px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex flex-wrap gap-1.5">
-          {reactionEmojis.map((emoji) => {
-            const count = getReactionCount(emoji)
-            const active = hasReacted(emoji)
-            return (
-              <button key={emoji} type="button" onClick={() => handleToggleReaction(emoji)} disabled={!user} className={cn('inline-flex items-center gap-1 px-2 py-1 rounded-full border transition', active ? 'bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border-[var(--arena-accent)]/30 font-bold' : 'bg-[var(--arena-surface-muted)] border-[var(--arena-border)] text-[var(--arena-text-dim)] hover:bg-[var(--arena-surface)] hover:text-[var(--arena-text)]')}>
-                <span>{emoji}</span>{count > 0 && <span className="text-[10px] font-extrabold">{count}</span>}
-              </button>
-            )
-          })}
-        </div>
-        <button type="button" onClick={() => setShowComments((v) => !v)} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[var(--arena-text-dim)] hover:text-[var(--arena-text)]"><MessageCircle size={14} /><span className="font-bold">{comments.length > 0 ? `${comments.length} Comments` : 'Comment'}</span></button>
-      </div>
-
-      {showComments && (
-        <div className="border-t border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-3.5 sm:p-4 space-y-4">
-          {comments.length > 0 ? (
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-              {comments.map((comment) => {
-                const canDelete = user && (comment.user_id === user.id || isAdmin || user.role === 'superadmin')
-                const avatarEl = comment.avatar_url ? (
-                  <img src={comment.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
-                ) : (
-                  <div className="h-[20px] w-[20px] rounded-full bg-[var(--arena-accent)] text-[var(--arena-accent-text)] flex items-center justify-center font-bold text-[9px] shrink-0 uppercase">
-                    {comment.display_name ? comment.display_name.slice(0, 2).toUpperCase() : 'M'}
-                  </div>
-                )
-                return (
-                  <div key={comment.id} className="flex gap-2.5 items-start text-xs">
-                    {comment.user_id ? (
-                      <Link to={`/member/${comment.user_id}`} className="shrink-0">
-                        {avatarEl}
-                      </Link>
-                    ) : (
-                      avatarEl
-                    )}
-                    <div className="flex-1 min-w-0 bg-[var(--arena-surface)] p-2.5 rounded-xl border border-[var(--arena-border)] space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        {comment.user_id ? (
-                          <Link to={`/member/${comment.user_id}`} className="font-bold text-[var(--arena-text)] truncate hover:underline">
-                            {comment.display_name}
-                          </Link>
-                        ) : (
-                          <span className="font-bold text-[var(--arena-text)] truncate">{comment.display_name}</span>
-                        )}
-                        <span className="text-[10px] text-[var(--arena-text-dim)] shrink-0 font-semibold">{new Date(comment.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                      <p className="text-[var(--arena-text-muted)] break-words leading-relaxed">{comment.content}</p>
-                    </div>
-                    {canDelete && <button type="button" onClick={() => handleDeleteComment(comment.id)} className="p-1 text-[var(--arena-text-dim)] hover:text-red-500 shrink-0 self-center"><Trash2 size={13} /></button>}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="text-center text-xs text-[var(--arena-text-dim)] py-3 italic">No comments yet. Start the conversation!</p>
-          )}
-
-          {user ? (
-            <form onSubmit={handleAddComment} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <input value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)} placeholder="Write a comment..." maxLength={280} required disabled={isSubmittingComment} className="flex-1 min-w-0 bg-[var(--arena-surface)] border border-[var(--arena-border)] rounded-lg px-3 py-2 text-xs text-[var(--arena-text)] placeholder:text-[var(--arena-text-dim)] focus:outline-none focus:ring-1 focus:ring-[var(--arena-accent)]" />
-              <button type="submit" disabled={isSubmittingComment || !newCommentText.trim()} className="bg-[var(--arena-accent)] hover:brightness-110 text-[var(--arena-accent-text)] font-extrabold text-xs px-3.5 py-2 rounded-lg disabled:opacity-50">Post</button>
-            </form>
-          ) : (
-            <p className="text-center text-xs text-[var(--arena-text-dim)] pt-1">Please <Link to="/login" className="text-[var(--arena-accent)] font-bold hover:underline">login</Link> to post comments.</p>
-          )}
         </div>
       )}
     </div>

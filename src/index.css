@@ -20,38 +20,12 @@
   --color-blue: var(--arena-blue);
 }
 
-:root {
+:root,
+:root.dark,
+:root[data-theme='dark'] {
   font-family: var(--font-sans);
   line-height: 1.5;
   font-size: 14px; /* Default for mobile/smaller viewports */
-
-  --arena-bg: #f8fafc;
-  --arena-surface: #ffffff;
-  --arena-surface-muted: #f1f5f9;
-  --arena-surface-elevated: #ffffff;
-  --arena-text: #0f172a;
-  --arena-text-muted: #475569;
-  --arena-text-dim: #64748b;
-  --arena-border: rgba(15, 23, 42, 0.12);
-  --arena-accent: #0f766e;
-  --arena-accent-soft: rgba(15, 118, 110, 0.1);
-  --arena-accent-text: #ffffff;
-  --arena-nav-bg: rgba(255, 255, 255, 0.92);
-  --arena-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 18px 48px rgba(15, 23, 42, 0.08);
-  --arena-glow: 0 0 20px rgba(15, 118, 110, 0.08);
-  --arena-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(241, 245, 249, 0.95));
-  --arena-lime: #ccff00;
-  --arena-blue: #38bdf8;
-  --arena-line: rgba(15, 23, 42, 0.12);
-  --arena-line-blue: rgba(56, 189, 248, 0.2);
-  --arena-panel: rgba(0, 0, 0, 0.02);
-  --arena-admin: rgba(0, 0, 0, 0.03);
-  --arena-muted: rgba(15, 23, 42, 0.4);
-  color-scheme: light;
-}
-
-:root.dark,
-:root[data-theme='dark'] {
   color-scheme: dark;
 
   --arena-bg: #040d0f;
