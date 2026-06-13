@@ -173,19 +173,19 @@ export default function ClubMembersPage() {
           {sortedMembers.length ? (
             <div className="space-y-3">
               {sortedMembers.map((member) => (
-                <div key={member.id} className="grid gap-3 rounded-lg border border-slate-600 bg-[var(--arena-surface)] p-3 sm:grid-cols-[1fr_auto] sm:items-center">
-                  <div className="flex min-w-0 items-start gap-3">
+                <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-600 bg-[var(--arena-surface)] p-2 px-3 sm:p-2.5 sm:px-4">
+                  <div className="flex min-w-0 items-center gap-3">
                     {member.user_id ? (
                       <Link to={`/member/${member.user_id}`} className="shrink-0 flex items-center">
                         {member.avatar_url ? (
                           <img 
                             src={member.avatar_url} 
                             alt={member.name || 'Member'} 
-                            className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-[var(--arena-border)]"
+                            className="h-10 w-10 shrink-0 rounded-lg object-cover shadow-sm border border-[var(--arena-border)]"
                           />
                         ) : (
-                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-surface)] text-[var(--arena-text-dim)] shadow-sm border border-[var(--arena-border)]">
-                            <UserRound size={18} aria-hidden="true" />
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-surface)] text-[var(--arena-text-dim)] shadow-sm border border-[var(--arena-border)]">
+                            <UserRound size={16} aria-hidden="true" />
                           </span>
                         )}
                       </Link>
@@ -194,44 +194,53 @@ export default function ClubMembersPage() {
                         <img 
                           src={member.avatar_url} 
                           alt={member.name || 'Member'} 
-                          className="h-11 w-11 shrink-0 rounded-lg object-cover shadow-sm border border-[var(--arena-border)]"
+                          className="h-10 w-10 shrink-0 rounded-lg object-cover shadow-sm border border-[var(--arena-border)]"
                         />
                       ) : (
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-surface)] text-[var(--arena-text-dim)] shadow-sm border border-[var(--arena-border)]">
-                          <UserRound size={18} aria-hidden="true" />
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-surface)] text-[var(--arena-text-dim)] shadow-sm border border-[var(--arena-border)]">
+                          <UserRound size={16} aria-hidden="true" />
                         </span>
                       )
                     )}
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-bold text-[var(--arena-text)]">
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <h3 className="truncate font-bold text-[var(--arena-text)] text-sm sm:text-base">
                           <Link to={`/member/${member.user_id}`} className="hover:underline text-[var(--arena-accent)]">
                             {member.name || 'Unknown member'}
                           </Link>
                         </h3>
-                        <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
-                        {member.user_id === user?.id ? <span className="text-xs font-semibold text-[var(--arena-text-dim)]">You</span> : null}
+                        <Badge className={`${roleBadgeClass(member.role)} text-[10px] px-1.5 py-0`}>{member.role}</Badge>
+                        {member.user_id === user?.id ? <span className="text-[10px] font-semibold text-[var(--arena-text-dim)]">You</span> : null}
                       </div>
-                        <p className="break-words text-sm text-[var(--arena-text-muted)]">{member.email}</p>
-                        <p className="text-xs text-[var(--arena-text-muted)]">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--arena-text-muted)]">
+                        <span className="truncate max-w-[150px] sm:max-w-[240px] md:max-w-none">{member.email}</span>
+                        <span className="text-[10px] text-[var(--arena-text-dim)]">•</span>
+                        <span>Joined {new Date(member.joined_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
                   </div>
 
                   {isAdmin && member.user_id !== user?.id && member.role !== 'owner' ? (
-                    <div className="flex flex-wrap gap-2 sm:justify-end">
+                    <div className="flex items-center gap-2 shrink-0">
                       {isOwner ? (
                         <Select
                           value={member.role}
                           onChange={(e) => handleRoleChange(member, e.target.value as 'admin' | 'member')}
-                          className="min-w-32"
+                          className="h-8 min-h-8 w-24 sm:w-28 py-0.5 px-2 text-xs"
                         >
                           <option value="member">Member</option>
                           <option value="admin">Admin</option>
                         </Select>
                       ) : null}
-                      <Button variant="secondary" type="button" onClick={() => setMemberToRemove(member)}>
-                        <Trash2 size={16} aria-hidden="true" />
-                        Remove
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="h-8 w-8 min-h-8 p-0 flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 hover:border-red-500/60"
+                        type="button"
+                        onClick={() => setMemberToRemove(member)}
+                        title="Remove member"
+                      >
+                        <Trash2 size={14} aria-hidden="true" />
                       </Button>
                     </div>
                   ) : null}
