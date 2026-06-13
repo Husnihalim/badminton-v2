@@ -224,6 +224,29 @@ export default function ScoreRecordingModal({
       }
     })
 
+    const cleanGuestName = (name: string) => {
+      let cleaned = name.trim()
+      if (cleaned.toUpperCase().endsWith(' (G)')) {
+        cleaned = cleaned.slice(0, -4).trim()
+      }
+      return cleaned
+    }
+
+    const guestFields = [player1A, player1B, player2A, player2B]
+      .slice(0, matchType === 'doubles' ? 4 : 2)
+      .filter((field) => !field.memberId && field.customName.trim())
+
+    for (const field of guestFields) {
+      const cleanedInput = cleanGuestName(field.customName).toLowerCase()
+      const matchedMember = members.find(
+        (m) => m.name && m.name.toLowerCase() === cleanedInput
+      )
+      if (matchedMember) {
+        nextErrors.duplicate = `"${cleanGuestName(field.customName)}" is already a member of this club. Please select them from the list instead of adding them as a guest.`
+        break
+      }
+    }
+
     const names = [
       getPlayerName(player1A, members),
       matchType === 'doubles' ? getPlayerName(player1B, members) : null,
@@ -231,7 +254,10 @@ export default function ScoreRecordingModal({
       matchType === 'doubles' ? getPlayerName(player2B, members) : null,
     ].filter(Boolean) as string[]
 
-    if (new Set(names).size !== names.length) nextErrors.duplicate = 'Each player must be unique.'
+    const normalizedPlayerNames = names.map((n) => cleanGuestName(n).toLowerCase())
+    if (new Set(normalizedPlayerNames).size !== normalizedPlayerNames.length) {
+      nextErrors.duplicate = 'Each player must be unique.'
+    }
     if ([player1A, player1B, player2A, player2B].some((field) => field.customName.length > 120)) {
       nextErrors.duplicate = 'Guest names must be 120 characters or fewer.'
     }
@@ -256,6 +282,14 @@ export default function ScoreRecordingModal({
         team1_score: Number(set.team1),
         team2_score: Number(set.team2),
       }))
+
+      const normalizeGuestName = (name: string) => {
+        const trimmed = name.trim().toUpperCase()
+        if (trimmed.endsWith(' (G)')) {
+          return trimmed
+        }
+        return trimmed + ' (G)'
+      }
 
       if (onSave) {
         const participants: { user_id: string; team: number }[] = []
@@ -286,14 +320,14 @@ export default function ScoreRecordingModal({
           isGuest: boolean
           guestName?: string
         }[] = [
-          { team: 1, userId: player1A.memberId || undefined, isGuest: !player1A.memberId, guestName: player1A.customName || undefined },
-          { team: 2, userId: player2A.memberId || undefined, isGuest: !player2A.memberId, guestName: player2A.customName || undefined },
+          { team: 1, userId: player1A.memberId || undefined, isGuest: !player1A.memberId, guestName: player1A.customName ? normalizeGuestName(player1A.customName) : undefined },
+          { team: 2, userId: player2A.memberId || undefined, isGuest: !player2A.memberId, guestName: player2A.customName ? normalizeGuestName(player2A.customName) : undefined },
         ]
 
         if (matchType === 'doubles') {
           participants.push(
-            { team: 1, userId: player1B.memberId || undefined, isGuest: !player1B.memberId, guestName: player1B.customName || undefined },
-            { team: 2, userId: player2B.memberId || undefined, isGuest: !player2B.memberId, guestName: player2B.customName || undefined }
+            { team: 1, userId: player1B.memberId || undefined, isGuest: !player1B.memberId, guestName: player1B.customName ? normalizeGuestName(player1B.customName) : undefined },
+            { team: 2, userId: player2B.memberId || undefined, isGuest: !player2B.memberId, guestName: player2B.customName ? normalizeGuestName(player2B.customName) : undefined }
           )
         }
 

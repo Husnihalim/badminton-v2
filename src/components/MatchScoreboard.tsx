@@ -113,10 +113,28 @@ export function MatchScoreboard({
       <div className={cn('min-w-0 flex flex-wrap items-center gap-1.5 uppercase tracking-wide font-semibold text-[12px] sm:text-[13px] leading-none', isWinner ? s.pairWinner : s.pair)}>
         {players.map((p, idx) => {
           const name = p.name || p.guest_name || 'Guest'
+          const avatarUrl = p.profile?.avatar_url
+          const avatarEl = avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-[var(--arena-border)] mr-1 shrink-0" />
+          ) : (
+            <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[8px] font-black text-[var(--arena-text-muted)] border border-[var(--arena-border)] mr-1 uppercase">
+              {name.charAt(0)}
+            </div>
+          )
           return (
             <span key={p.id || idx} className="min-w-0 flex items-center">
-              <span className="relative group inline-block min-w-0">
-                {p.user_id ? <Link to={`/member/${p.user_id}`} className="hover:underline">{name}</Link> : <span>{name}</span>}
+              <span className="relative group inline-flex items-center min-w-0">
+                {p.user_id ? (
+                  <Link to={`/member/${p.user_id}`} className="hover:underline inline-flex items-center min-w-0">
+                    {avatarEl}
+                    <span className="truncate">{name}</span>
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center min-w-0">
+                    {avatarEl}
+                    <span className="truncate">{name}</span>
+                  </span>
+                )}
                 {p.profile && (
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-[60] w-60 text-left pointer-events-none">
                     <PlayerCard profile={p.profile} isSimplified={true} className="border-[var(--arena-accent)]/20 shadow-2xl shadow-black bg-[var(--arena-bg)] text-[var(--arena-text)]" />
@@ -238,11 +256,33 @@ export function MatchScoreboard({
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {comments.map((comment) => {
                 const canDelete = user && (comment.user_id === user.id || isAdmin || user.role === 'superadmin')
+                const avatarEl = comment.avatar_url ? (
+                  <img src={comment.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
+                ) : (
+                  <div className="h-[20px] w-[20px] rounded-full bg-[var(--arena-accent)] text-[var(--arena-accent-text)] flex items-center justify-center font-bold text-[9px] shrink-0 uppercase">
+                    {comment.display_name ? comment.display_name.slice(0, 2).toUpperCase() : 'M'}
+                  </div>
+                )
                 return (
                   <div key={comment.id} className="flex gap-2.5 items-start text-xs">
-                    <div className="h-6 w-6 rounded-full bg-[var(--arena-accent)] text-[var(--arena-accent-text)] flex items-center justify-center font-bold text-[10px] shrink-0 uppercase">{comment.display_name ? comment.display_name.slice(0, 2).toUpperCase() : 'M'}</div>
+                    {comment.user_id ? (
+                      <Link to={`/member/${comment.user_id}`} className="shrink-0">
+                        {avatarEl}
+                      </Link>
+                    ) : (
+                      avatarEl
+                    )}
                     <div className="flex-1 min-w-0 bg-[var(--arena-surface)] p-2.5 rounded-xl border border-[var(--arena-border)] space-y-1">
-                      <div className="flex items-center justify-between gap-2"><span className="font-bold text-[var(--arena-text)] truncate">{comment.display_name}</span><span className="text-[10px] text-[var(--arena-text-dim)] shrink-0 font-semibold">{new Date(comment.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span></div>
+                      <div className="flex items-center justify-between gap-2">
+                        {comment.user_id ? (
+                          <Link to={`/member/${comment.user_id}`} className="font-bold text-[var(--arena-text)] truncate hover:underline">
+                            {comment.display_name}
+                          </Link>
+                        ) : (
+                          <span className="font-bold text-[var(--arena-text)] truncate">{comment.display_name}</span>
+                        )}
+                        <span className="text-[10px] text-[var(--arena-text-dim)] shrink-0 font-semibold">{new Date(comment.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
                       <p className="text-[var(--arena-text-muted)] break-words leading-relaxed">{comment.content}</p>
                     </div>
                     {canDelete && <button type="button" onClick={() => handleDeleteComment(comment.id)} className="p-1 text-[var(--arena-text-dim)] hover:text-red-500 shrink-0 self-center"><Trash2 size={13} /></button>}

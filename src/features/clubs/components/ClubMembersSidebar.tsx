@@ -164,12 +164,31 @@ export function ClubMembersSidebar({ clubId }: ClubMembersSidebarProps) {
                 return (
                   <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--arena-border)] p-3 bg-[var(--arena-surface)] shadow-sm hover:border-slate-350 transition">
                     <div className="flex items-center gap-2 min-w-0">
+                      {member.user_id ? (
+                        <Link to={`/member/${member.user_id}`} className="shrink-0 flex items-center">
+                          {member.avatar_url ? (
+                            <img src={member.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)]" />
+                          ) : (
+                            <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)] uppercase">
+                              {(member.name || 'U').charAt(0)}
+                            </div>
+                          )}
+                        </Link>
+                      ) : (
+                        member.avatar_url ? (
+                          <img src={member.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
+                        ) : (
+                          <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)] uppercase">
+                            {(member.name || 'U').charAt(0)}
+                          </div>
+                        )
+                      )}
                       <span className="min-w-0 truncate font-semibold text-[var(--arena-text)]">
                         <Link to={`/member/${member.user_id}`} className={`hover:underline ${theme.text}`}>
                           {member.name || 'Unknown member'}
                         </Link>
                       </span>
-                      <Badge className="text-[9px] bg-[var(--arena-surface-muted)] border-[var(--arena-border)] text-[var(--arena-text-muted)] capitalize font-medium">{member.role}</Badge>
+                      <Badge className="text-[9px] bg-[var(--arena-surface-muted)] border-[var(--arena-border)] text-[var(--arena-text-muted)] capitalize font-medium shrink-0">{member.role}</Badge>
                     </div>
                     {user && !isCurrentUser && (
                       <Link

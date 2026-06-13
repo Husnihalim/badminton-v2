@@ -23,7 +23,7 @@
 :root {
   font-family: var(--font-sans);
   line-height: 1.5;
-  font-size: 16px;
+  font-size: 14px; /* Default for mobile/smaller viewports */
 
   --arena-bg: #f8fafc;
   --arena-surface: #ffffff;
@@ -78,6 +78,12 @@
   --arena-muted: rgba(255, 255, 255, 0.4);
 }
 
+@media (min-width: 768px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
 * { box-sizing: border-box; }
 
 html {
@@ -102,13 +108,16 @@ button:disabled { cursor: not-allowed; }
 
 main {
   flex: 1;
-  width: min(1180px, 100% - 32px);
+  width: min(1180px, 100% - 24px);
   margin: 0 auto;
-  padding: 20px 0 88px;
+  padding: 16px 0 80px;
 }
 
 @media (min-width: 768px) {
-  main { padding: 28px 0 96px; }
+  main {
+    width: min(1180px, 100% - 32px);
+    padding: 28px 0 96px;
+  }
 }
 
 .bg-surface { background-color: var(--arena-surface); }

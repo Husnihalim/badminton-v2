@@ -5,8 +5,6 @@ import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubEvents, useClubMembers, useAllClubMatches } from '../hooks/useClubQueries'
 import { THEME_MAP } from '../constants'
 import { Card, CardContent } from '../../../components/ui/card'
-import { Button } from '../../../components/ui/button'
-import { Badge } from '../../../components/ui/badge'
 import type { MatchWithDetails } from '../../../types'
 import type { ClubLeaderboardRow } from '../../../lib/api'
 
@@ -218,7 +216,6 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
 
   const [timeframe, setTimeframe] = useState<string>('all-time')
   const [sortBy, setSortBy] = useState<'win-rate' | 'elo'>('elo')
-  const [showAllLeaderboard, setShowAllLeaderboard] = useState(false)
 
 
 
@@ -436,13 +433,33 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                   <div className="absolute top-2 right-2 text-sm">🏆</div>
                   <div>
                     <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">Weekly MVP</span>
-                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 min-w-0">
                       {m?.user_id ? (
-                        <Link to={`/member/${m.user_id}`} className={`hover:underline ${theme.text} dark:${theme.textLight}`}>
-                          {mvp.name}
-                        </Link>
+                        <>
+                          <Link to={`/member/${m.user_id}`} className="shrink-0 flex items-center">
+                            {m.avatar_url ? (
+                              <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-amber-500/20" />
+                            ) : (
+                              <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-amber-500/10 text-[9px] font-bold text-amber-700 dark:text-amber-450 border border-amber-500/20">
+                                {mvp.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </Link>
+                          <Link to={`/member/${m.user_id}`} className={`hover:underline truncate ${theme.text} dark:${theme.textLight}`}>
+                            {mvp.name}
+                          </Link>
+                        </>
                       ) : (
-                        <span>{mvp.name}</span>
+                        <>
+                          {m?.avatar_url ? (
+                            <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-amber-500/20 shrink-0" />
+                          ) : (
+                            <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[9px] font-bold text-amber-700 dark:text-amber-450 border border-amber-500/20">
+                              {mvp.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="truncate">{mvp.name}</span>
+                        </>
                       )}
                     </h4>
                   </div>
@@ -462,13 +479,33 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                   <div className="absolute top-2 right-2 text-sm">🔥</div>
                   <div>
                     <span className="text-[10px] font-extrabold text-orange-705 dark:text-orange-400 uppercase tracking-wider block">Streak Star</span>
-                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 min-w-0">
                       {m?.user_id ? (
-                        <Link to={`/member/${m.user_id}`} className={`hover:underline ${theme.text} dark:${theme.textLight}`}>
-                          {streakStar.name}
-                        </Link>
+                        <>
+                          <Link to={`/member/${m.user_id}`} className="shrink-0 flex items-center">
+                            {m.avatar_url ? (
+                              <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-orange-500/20" />
+                            ) : (
+                              <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-orange-500/10 text-[9px] font-bold text-orange-700 dark:text-orange-450 border border-orange-500/20">
+                                {streakStar.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </Link>
+                          <Link to={`/member/${m.user_id}`} className={`hover:underline truncate ${theme.text} dark:${theme.textLight}`}>
+                            {streakStar.name}
+                          </Link>
+                        </>
                       ) : (
-                        <span>{streakStar.name}</span>
+                        <>
+                          {m?.avatar_url ? (
+                            <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-orange-500/20 shrink-0" />
+                          ) : (
+                            <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-[9px] font-bold text-orange-700 dark:text-orange-450 border border-orange-500/20">
+                              {streakStar.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="truncate">{streakStar.name}</span>
+                        </>
                       )}
                     </h4>
                   </div>
@@ -488,13 +525,33 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                   <div className="absolute top-2 right-2 text-sm">💪</div>
                   <div>
                     <span className={`text-[10px] font-extrabold ${theme.text} dark:${theme.textLight} uppercase tracking-wider block`}>Resilience</span>
-                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 min-w-0">
                       {m?.user_id ? (
-                        <Link to={`/member/${m.user_id}`} className={`hover:underline ${theme.text} dark:${theme.textLight}`}>
-                          {resilience.name}
-                        </Link>
+                        <>
+                          <Link to={`/member/${m.user_id}`} className="shrink-0 flex items-center">
+                            {m.avatar_url ? (
+                              <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-emerald-500/20" />
+                            ) : (
+                              <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-slate-500/10 text-[9px] font-bold text-slate-500 border border-slate-500/20">
+                                {resilience.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </Link>
+                          <Link to={`/member/${m.user_id}`} className={`hover:underline truncate ${theme.text} dark:${theme.textLight}`}>
+                            {resilience.name}
+                          </Link>
+                        </>
                       ) : (
-                        <span>{resilience.name}</span>
+                        <>
+                          {m?.avatar_url ? (
+                            <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-emerald-500/20 shrink-0" />
+                          ) : (
+                            <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-slate-500/10 text-[9px] font-bold text-slate-500 border border-slate-500/20">
+                              {resilience.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="truncate">{resilience.name}</span>
+                        </>
                       )}
                     </h4>
                   </div>
@@ -546,14 +603,21 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                         const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
                         const elo = match?.elo_rating || 1200
                         const avatar = match?.avatar_url
+                        const avatarEl = avatar ? (
+                          <img src={avatar} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
+                        ) : (
+                          <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)] uppercase">
+                            {player.name.charAt(0)}
+                          </div>
+                        )
                         return (
                           <>
-                            {avatar ? (
-                              <img src={avatar} alt="" className="h-6 w-6 rounded-full object-cover border border-[var(--arena-border)]" />
+                            {match?.user_id ? (
+                              <Link to={`/member/${match.user_id}`} className="shrink-0 flex items-center">
+                                {avatarEl}
+                              </Link>
                             ) : (
-                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)]">
-                                {player.name.charAt(0).toUpperCase()}
-                              </div>
+                              avatarEl
                             )}
                             <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                               {match?.user_id ? (

@@ -743,7 +743,8 @@ async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<Club
     const winningTeam = team1Sets > team2Sets ? 1 : 2
 
     for (const participant of match.match_participants || []) {
-      const name = participant.profiles?.display_name || participant.profiles?.name || participant.guest_name || 'Unknown'
+      if (!participant.profiles) continue // Exclude guest players from the leaderboard
+      const name = participant.profiles.display_name || participant.profiles.name || 'Unknown'
       const stats = leaderboard.get(name) ?? { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 }
 
       if (participant.team === 1) {

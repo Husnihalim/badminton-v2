@@ -426,13 +426,36 @@ export function SessionHighlightsWidget({
                       <tr key={player.name} className="hover:bg-slate-800/40 text-slate-200">
                         <td className="py-2.5 px-2.5 md:py-3 md:px-4 font-bold text-[var(--arena-text-dim)]">{idx + 1}</td>
                         <td className="py-2.5 px-2.5 md:py-3 md:px-4 font-semibold text-white">
-                          {m?.user_id ? (
-                            <Link to={`/member/${m.user_id}`} onClick={onClose} className="hover:underline text-white">
-                              {player.name}
-                            </Link>
-                          ) : (
-                            <span>{player.name}</span>
-                          )}
+                          <div className="flex items-center gap-2 min-w-0">
+                            {m?.avatar_url ? (
+                              m.user_id ? (
+                                <Link to={`/member/${m.user_id}`} onClick={onClose} className="shrink-0 flex items-center">
+                                  <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-slate-700" />
+                                </Link>
+                              ) : (
+                                <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-slate-700 shrink-0" />
+                              )
+                            ) : (
+                              m?.user_id ? (
+                                <Link to={`/member/${m.user_id}`} onClick={onClose} className="shrink-0 flex items-center">
+                                  <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-slate-800 text-[9px] font-bold text-slate-400 border border-slate-700 uppercase">
+                                    {player.name.charAt(0)}
+                                  </div>
+                                </Link>
+                              ) : (
+                                <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-slate-800 text-[9px] font-bold text-slate-400 border border-slate-700 uppercase">
+                                  {player.name.charAt(0)}
+                                </div>
+                              )
+                            )}
+                            {m?.user_id ? (
+                              <Link to={`/member/${m.user_id}`} onClick={onClose} className="hover:underline text-white truncate">
+                                {player.name}
+                              </Link>
+                            ) : (
+                              <span className="truncate">{player.name}</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-2.5 px-2.5 md:py-3 md:px-4 text-center font-mono">{player.games}</td>
                         <td className="py-2.5 px-2.5 md:py-3 md:px-4 text-center font-mono text-slate-300">{player.wins} - {player.losses}</td>
