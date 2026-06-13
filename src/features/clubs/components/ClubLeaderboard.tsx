@@ -382,24 +382,24 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
               <select
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
-                className={`text-xs font-semibold py-1.5 pl-2.5 pr-8 border border-[var(--arena-border)] rounded-lg bg-[var(--arena-surface)] text-[var(--arena-text)] shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600 appearance-none min-h-[30px]`}
+                className={`text-xs font-semibold py-1.5 pl-2.5 pr-8 border border-slate-700 rounded-lg bg-slate-900 text-slate-100 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600 appearance-none min-h-[30px]`}
                 style={{
-                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.6)'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/></svg>")`,
+                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.85)'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/></svg>")`,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 0.5rem center',
                   backgroundSize: '1em',
                 }}
               >
-                <option value="all-time">🏆 All-Time</option>
-                <option value="week">📅 This Week</option>
-                <option value="month">📅 This Month</option>
+                <option value="all-time" className="bg-slate-900 text-slate-100">🏆 All-Time</option>
+                <option value="week" className="bg-slate-900 text-slate-100">📅 This Week</option>
+                <option value="month" className="bg-slate-900 text-slate-100">📅 This Month</option>
                 {events.length > 0 && (
-                  <optgroup label="Sessions" className="bg-[var(--arena-surface)] text-[var(--arena-text)]">
+                  <optgroup label="Sessions" className="bg-slate-900 text-slate-350">
                     {events
                       .slice()
                       .reverse()
                       .map((event) => (
-                        <option key={event.id} value={event.id} className="text-xs">
+                        <option key={event.id} value={event.id} className="bg-slate-900 text-slate-100 text-xs">
                           🎯 {event.title}
                         </option>
                       ))}
@@ -424,21 +424,21 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 </div>
               )
               return (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/5 dark:bg-amber-950/10 border border-amber-500/20 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-xs text-slate-100 shadow-sm">
                   <span title="Weekly MVP">🏆</span>
-                  <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">MVP</span>
+                  <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">MVP</span>
                   {m?.user_id ? (
-                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-slate-100">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{mvp.name}</span>
                     </Link>
                   ) : (
-                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
+                    <span className="flex items-center gap-1 font-bold text-slate-100">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{mvp.name}</span>
                     </span>
                   )}
-                  <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold">({Math.round(mvp.winRate)}% Win)</span>
+                  <span className="text-[10px] text-amber-300/80 font-semibold">({Math.round(mvp.winRate)}% Win)</span>
                 </div>
               )
             })()}
@@ -454,21 +454,21 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 </div>
               )
               return (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/5 dark:bg-orange-950/10 border border-orange-500/20 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 px-2.5 py-0.5 text-xs text-slate-100 shadow-sm">
                   <span title="Streak Star">🔥</span>
-                  <span className="text-[10px] font-extrabold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Streak</span>
+                  <span className="text-[10px] font-black text-orange-400 uppercase tracking-wider">Streak</span>
                   {m?.user_id ? (
-                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-slate-100">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{streakStar.name}</span>
                     </Link>
                   ) : (
-                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
+                    <span className="flex items-center gap-1 font-bold text-slate-100">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{streakStar.name}</span>
                     </span>
                   )}
-                  <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold">({streakStar.longestStreak} W)</span>
+                  <span className="text-[10px] text-orange-300/80 font-semibold">({streakStar.longestStreak} W)</span>
                 </div>
               )
             })()}
@@ -484,21 +484,21 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 </div>
               )
               return (
-                <div className={`inline-flex items-center gap-1.5 rounded-full bg-${accent}-500/5 dark:bg-${accent}-950/10 border border-${accent}-500/20 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm`}>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-xs text-slate-100 shadow-sm">
                   <span title="Resilience">💪</span>
-                  <span className={`text-[10px] font-extrabold text-${accent}-600 dark:text-${accent}-400 uppercase tracking-wider`}>Resilience</span>
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Resilience</span>
                   {m?.user_id ? (
-                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-slate-100">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{resilience.name}</span>
                     </Link>
                   ) : (
-                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
+                    <span className="flex items-center gap-1 font-bold text-slate-100">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{resilience.name}</span>
                     </span>
                   )}
-                  <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold">({resilience.games} G)</span>
+                  <span className="text-[10px] text-emerald-300/80 font-semibold">({resilience.games} G)</span>
                 </div>
               )
             })()}
