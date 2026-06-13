@@ -4,9 +4,9 @@ import { Trophy, Users, MapPin, ArrowRight } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
-import { getFriendlyByInviteCode } from '../lib/friendlyApi'
+import { getFriendlyByInviteCode } from '../lib/api/competitions'
 import { useAuth } from '../context/AuthContext'
-import type { Friendly } from '../types/friendly'
+import type { Friendly } from '../types/competition'
 
 export default function FriendlyLandingPage() {
   const { inviteCode } = useParams<{ inviteCode: string }>()

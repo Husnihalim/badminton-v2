@@ -3,8 +3,8 @@ import { Trophy, Share2, Download } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
-import type { Friendly, FriendlyMatchup } from '../../types/friendly'
-import type { FriendlyStoryMoment } from '../../lib/friendlyStoryMoments'
+import type { Friendly, FriendlyMatchup } from '../../types/competition'
+import type { FriendlyStoryMoment } from '../../lib/storyMoments'
 
 interface FriendlyShareCardProps {
   friendly: Friendly

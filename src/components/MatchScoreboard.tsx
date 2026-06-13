@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { Share2, Palette, Check } from 'lucide-react'
 import { Button } from './ui/button'
 import type { MatchWithDetails } from '../types'
-import { useAuth } from '../context/AuthContext'
 import { PlayerCard } from './PlayerCard'
 import { cn } from '../lib/utils'
 

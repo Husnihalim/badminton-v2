@@ -3,8 +3,8 @@ import { Trophy, CheckCircle2, Circle, Clock, Play } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { subscribeToFriendly, subscribeToMatchups, getFriendlyMatchups } from '../../lib/friendlyApi'
-import type { Friendly, FriendlyMatchup } from '../../types/friendly'
+import { subscribeToFriendly, subscribeToMatchups, getFriendlyMatchups } from '../../lib/api/competitions'
+import type { Friendly, FriendlyMatchup } from '../../types/competition'
 
 interface FriendlyScoreboardProps {
   friendly: Friendly

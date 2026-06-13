@@ -2,7 +2,7 @@ import { Share2, Trophy, Zap, Flame, Target } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import type { FriendlyStoryMoment } from '../../lib/friendlyStoryMoments'
+import type { FriendlyStoryMoment } from '../../lib/storyMoments'
 
 interface FriendlyStoryCardProps {
   story: FriendlyStoryMoment

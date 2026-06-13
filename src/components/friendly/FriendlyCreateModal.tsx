@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Input } from '../ui/input'
 import { Badge } from '../ui/badge'
-import { createFriendly } from '../../lib/friendlyApi'
+import { createFriendly } from '../../lib/api/competitions'
 import type { Club } from '../../types'
 
 interface FriendlyCreateModalProps {
@@ -58,7 +58,7 @@ export function FriendlyCreateModal({
         selectedClub?.id
       )
 
-      if (error) throw error
+      if (error || !friendly) throw error || new Error('Failed to create friendly')
 
       setInviteCode(friendly.invite_code)
       setStep('invite')

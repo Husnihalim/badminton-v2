@@ -343,31 +343,31 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
   return (
     <Card>
       <CardContent className="space-y-4 pt-4 sm:pt-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[var(--arena-border)]/50 pb-3">
           <div>
             <h2 className="text-lg font-bold text-[var(--arena-text)]">Club leaderboard</h2>
             <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">
               {sortBy === 'elo' ? 'Rankings based on competitive Elo ratings.' : 'Rankings based on win rate for the selected timeframe.'}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Sort Toggle */}
             <div className="inline-flex rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setSortBy('elo')}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'elo'
                     ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
                     : "text-[var(--arena-text-muted)] hover:text-slate-900"
                 }`}
               >
-                ⚡ Elo Rating
+                ⚡ Elo
               </button>
               <button
                 type="button"
                 onClick={() => setSortBy('win-rate')}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'win-rate'
                     ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
                     : "text-[var(--arena-text-muted)] hover:text-slate-900"
@@ -377,98 +377,68 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
               </button>
             </div>
 
-            <div className="inline-flex rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-1 shadow-sm">
-              {[
-                { id: 'all-time', label: '🏆 All-Time' },
-                { id: 'week', label: '📅 This Week' },
-                { id: 'month', label: '📅 This Month' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setTimeframe(tab.id)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition select-none cursor-pointer ${
-                    timeframe === tab.id
-                      ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
-                      : "text-[var(--arena-text-muted)] hover:text-slate-900"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            {/* Combined Timeframe / Session Dropdown */}
+            <div className="relative">
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className={`text-xs font-semibold py-1.5 pl-2.5 pr-8 border border-[var(--arena-border)] rounded-lg bg-[var(--arena-surface)] text-[var(--arena-text)] shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600 appearance-none min-h-[30px]`}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.6)'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/></svg>")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundSize: '1em',
+                }}
+              >
+                <option value="all-time">🏆 All-Time</option>
+                <option value="week">📅 This Week</option>
+                <option value="month">📅 This Month</option>
+                {events.length > 0 && (
+                  <optgroup label="Sessions" className="bg-[var(--arena-surface)] text-[var(--arena-text)]">
+                    {events
+                      .slice()
+                      .reverse()
+                      .map((event) => (
+                        <option key={event.id} value={event.id} className="text-xs">
+                          🎯 {event.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                )}
+              </select>
             </div>
-
-            {events.length > 0 && (
-              <div className="relative">
-                <select
-                  value={['all-time', 'week', 'month'].includes(timeframe) ? '' : timeframe}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setTimeframe(e.target.value)
-                    }
-                  }}
-                  className={`min-h-9 text-xs font-semibold py-1.5 px-3 border border-[var(--arena-border)] rounded-lg bg-[var(--arena-surface)] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600`}
-                >
-                  <option value="">🎯 Filter by Session</option>
-                  {events
-                    .slice()
-                    .reverse()
-                    .map((event) => (
-                      <option key={event.id} value={event.id}>
-                        {event.title}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Weekly Highlights in Leaderboard */}
         {weeklyHighlights && (weeklyHighlights.mvp || weeklyHighlights.streakStar || weeklyHighlights.resilience) && (
-          <div className="bg-[var(--arena-surface-muted)]/50 dark:bg-slate-900/30 border border-[var(--arena-border)]/60 dark:border-slate-800 rounded-xl p-3 grid gap-3 sm:grid-cols-3">
+          <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
             {weeklyHighlights.mvp && (() => {
               const mvp = weeklyHighlights.mvp
               const m = members.find(mem => mem.name?.toLowerCase() === mvp.name.toLowerCase())
+              const avatarEl = m?.avatar_url ? (
+                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-amber-500/20 shrink-0" />
+              ) : (
+                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[8px] font-bold text-amber-500 border border-amber-500/20">
+                  {mvp.name.charAt(0).toUpperCase()}
+                </div>
+              )
               return (
-                <div className="relative overflow-hidden rounded-lg border border-amber-250 bg-amber-500/5 dark:bg-amber-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]">
-                  <div className="absolute top-2 right-2 text-sm">🏆</div>
-                  <div>
-                    <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">Weekly MVP</span>
-                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 min-w-0">
-                      {m?.user_id ? (
-                        <>
-                          <Link to={`/member/${m.user_id}`} className="shrink-0 flex items-center">
-                            {m.avatar_url ? (
-                              <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-amber-500/20" />
-                            ) : (
-                              <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-amber-500/10 text-[9px] font-bold text-amber-700 dark:text-amber-450 border border-amber-500/20">
-                                {mvp.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </Link>
-                          <Link to={`/member/${m.user_id}`} className={`hover:underline truncate ${theme.text} dark:${theme.textLight}`}>
-                            {mvp.name}
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          {m?.avatar_url ? (
-                            <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-amber-500/20 shrink-0" />
-                          ) : (
-                            <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[9px] font-bold text-amber-700 dark:text-amber-450 border border-amber-500/20">
-                              {mvp.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <span className="truncate">{mvp.name}</span>
-                        </>
-                      )}
-                    </h4>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs font-bold text-amber-750 dark:text-amber-400">
-                    <span>🔥 {Math.round(mvp.winRate)}% Win</span>
-                    <span className="text-[10px] text-[var(--arena-text-dim)] dark:text-[var(--arena-text-dim)] font-semibold">({mvp.wins}W-{mvp.losses}L)</span>
-                  </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/5 dark:bg-amber-950/10 border border-amber-500/20 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm">
+                  <span title="Weekly MVP">🏆</span>
+                  <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">MVP</span>
+                  {m?.user_id ? (
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
+                      {avatarEl}
+                      <span className="truncate max-w-[80px] sm:max-w-none">{mvp.name}</span>
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
+                      {avatarEl}
+                      <span className="truncate max-w-[80px] sm:max-w-none">{mvp.name}</span>
+                    </span>
+                  )}
+                  <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold">({Math.round(mvp.winRate)}% Win)</span>
                 </div>
               )
             })()}
@@ -476,45 +446,29 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
             {weeklyHighlights.streakStar && (() => {
               const streakStar = weeklyHighlights.streakStar
               const m = members.find(mem => mem.name?.toLowerCase() === streakStar.name.toLowerCase())
+              const avatarEl = m?.avatar_url ? (
+                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-orange-500/20 shrink-0" />
+              ) : (
+                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-[8px] font-bold text-orange-500 border border-orange-500/20">
+                  {streakStar.name.charAt(0).toUpperCase()}
+                </div>
+              )
               return (
-                <div className="relative overflow-hidden rounded-lg border border-orange-250 bg-orange-500/5 dark:bg-orange-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]">
-                  <div className="absolute top-2 right-2 text-sm">🔥</div>
-                  <div>
-                    <span className="text-[10px] font-extrabold text-orange-705 dark:text-orange-400 uppercase tracking-wider block">Streak Star</span>
-                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 min-w-0">
-                      {m?.user_id ? (
-                        <>
-                          <Link to={`/member/${m.user_id}`} className="shrink-0 flex items-center">
-                            {m.avatar_url ? (
-                              <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-orange-500/20" />
-                            ) : (
-                              <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-orange-500/10 text-[9px] font-bold text-orange-700 dark:text-orange-450 border border-orange-500/20">
-                                {streakStar.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </Link>
-                          <Link to={`/member/${m.user_id}`} className={`hover:underline truncate ${theme.text} dark:${theme.textLight}`}>
-                            {streakStar.name}
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          {m?.avatar_url ? (
-                            <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-orange-500/20 shrink-0" />
-                          ) : (
-                            <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-[9px] font-bold text-orange-700 dark:text-orange-450 border border-orange-500/20">
-                              {streakStar.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <span className="truncate">{streakStar.name}</span>
-                        </>
-                      )}
-                    </h4>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs font-bold text-orange-750 dark:text-orange-400">
-                    <span>📈 {streakStar.longestStreak} Streak</span>
-                    <span className="text-[10px] text-[var(--arena-text-dim)] dark:text-[var(--arena-text-dim)] font-semibold">{streakStar.wins} Wins</span>
-                  </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/5 dark:bg-orange-950/10 border border-orange-500/20 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm">
+                  <span title="Streak Star">🔥</span>
+                  <span className="text-[10px] font-extrabold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Streak</span>
+                  {m?.user_id ? (
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
+                      {avatarEl}
+                      <span className="truncate max-w-[80px] sm:max-w-none">{streakStar.name}</span>
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
+                      {avatarEl}
+                      <span className="truncate max-w-[80px] sm:max-w-none">{streakStar.name}</span>
+                    </span>
+                  )}
+                  <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold">({streakStar.longestStreak} W)</span>
                 </div>
               )
             })()}
@@ -522,45 +476,29 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
             {weeklyHighlights.resilience && (() => {
               const resilience = weeklyHighlights.resilience
               const m = members.find(mem => mem.name?.toLowerCase() === resilience.name.toLowerCase())
+              const avatarEl = m?.avatar_url ? (
+                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-emerald-500/20 shrink-0" />
+              ) : (
+                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-[8px] font-bold text-emerald-500 border border-emerald-500/20">
+                  {resilience.name.charAt(0).toUpperCase()}
+                </div>
+              )
               return (
-                <div className={`relative overflow-hidden rounded-lg border border-${accent}-250 bg-${accent}-500/5 dark:bg-${accent}-950/10 p-3 shadow-sm flex flex-col justify-between min-h-[90px]`}>
-                  <div className="absolute top-2 right-2 text-sm">💪</div>
-                  <div>
-                    <span className={`text-[10px] font-extrabold ${theme.text} dark:${theme.textLight} uppercase tracking-wider block`}>Resilience</span>
-                    <h4 className="mt-1 text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 min-w-0">
-                      {m?.user_id ? (
-                        <>
-                          <Link to={`/member/${m.user_id}`} className="shrink-0 flex items-center">
-                            {m.avatar_url ? (
-                              <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-emerald-500/20" />
-                            ) : (
-                              <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-slate-500/10 text-[9px] font-bold text-slate-500 border border-slate-500/20">
-                                {resilience.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </Link>
-                          <Link to={`/member/${m.user_id}`} className={`hover:underline truncate ${theme.text} dark:${theme.textLight}`}>
-                            {resilience.name}
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          {m?.avatar_url ? (
-                            <img src={m.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-emerald-500/20 shrink-0" />
-                          ) : (
-                            <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-slate-500/10 text-[9px] font-bold text-slate-500 border border-slate-500/20">
-                              {resilience.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <span className="truncate">{resilience.name}</span>
-                        </>
-                      )}
-                    </h4>
-                  </div>
-                  <div className={`mt-2 flex items-center justify-between text-xs font-bold text-${accent}-750 dark:${theme.textLight}`}>
-                    <span>{resilience.games} Matches</span>
-                    <span className="text-[10px] text-[var(--arena-text-dim)] dark:text-[var(--arena-text-dim)] font-semibold">({resilience.wins}W-{resilience.losses}L)</span>
-                  </div>
+                <div className={`inline-flex items-center gap-1.5 rounded-full bg-${accent}-500/5 dark:bg-${accent}-950/10 border border-${accent}-500/20 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm`}>
+                  <span title="Resilience">💪</span>
+                  <span className={`text-[10px] font-extrabold text-${accent}-600 dark:text-${accent}-400 uppercase tracking-wider`}>Resilience</span>
+                  {m?.user_id ? (
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
+                      {avatarEl}
+                      <span className="truncate max-w-[80px] sm:max-w-none">{resilience.name}</span>
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
+                      {avatarEl}
+                      <span className="truncate max-w-[80px] sm:max-w-none">{resilience.name}</span>
+                    </span>
+                  )}
+                  <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold">({resilience.games} G)</span>
                 </div>
               )
             })()}

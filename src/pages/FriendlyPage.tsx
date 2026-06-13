@@ -9,7 +9,7 @@ import { MatchmakingGrid } from '../components/friendly/MatchmakingGrid'
 import { PairRegistrationForm } from '../components/friendly/PairRegistrationForm'
 import { FriendlyStoryList } from '../components/friendly/FriendlyStoryCard'
 import { FriendlyShareButton } from '../components/friendly/FriendlyShareCard'
-import { generateFriendlyStories } from '../lib/friendlyStoryMoments'
+import { generateFriendlyStories } from '../lib/storyMoments'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import {
   getFriendly,
@@ -19,10 +19,10 @@ import {
   lockMatchmaking,
   recordFriendlyMatch,
   completeFriendly,
-} from '../lib/friendlyApi'
+} from '../lib/api/competitions'
 import { getMyClubs } from '../lib/api'
-import type { Friendly, FriendlyPair, FriendlyMatchup } from '../types/friendly'
-import type { FriendlyStoryMoment } from '../lib/friendlyStoryMoments'
+import type { Friendly, FriendlyPair, FriendlyMatchup } from '../types/competition'
+import type { FriendlyStoryMoment } from '../lib/storyMoments'
 import type { User, Club } from '../types'
 
 export default function FriendlyPage() {

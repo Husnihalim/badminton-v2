@@ -18,6 +18,17 @@ const momentStyles: Record<StoryMomentType, { label: string; className: string; 
   rivalry_watch: { label: 'Rivalry', className: 'border-red-200 bg-red-50 text-red-700', icon: Swords },
   best_partner: { label: 'Partnership', className: 'border-teal-200 bg-teal-50 text-teal-700', icon: Handshake },
   latest_result: { label: 'Latest', className: 'border-slate-250 bg-surface text-[var(--arena-text-muted)]', icon: Shield },
+  competition_invited: { label: 'Challenge', className: 'border-blue-200 bg-blue-50 text-blue-700', icon: Target },
+  competition_accepted: { label: 'Accepted', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: Handshake },
+  matchmaking_complete: { label: 'Matchmaking', className: 'border-blue-200 bg-blue-50 text-blue-700', icon: Shield },
+  upset_alert: { label: 'Upset Alert', className: 'border-rose-200 bg-rose-50 text-rose-700', icon: Flame },
+  clutch_moment: { label: 'Clutch', className: 'border-amber-200 bg-amber-50 text-amber-700', icon: Target },
+  comeback_in_progress: { label: 'Comeback', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: RotateCcw },
+  competition_completed: { label: 'Complete', className: 'border-blue-200 bg-blue-50 text-blue-700', icon: Trophy },
+  sweep_victory: { label: 'Sweep', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: Trophy },
+  narrow_escape: { label: 'Narrow Win', className: 'border-rose-200 bg-rose-50 text-rose-700', icon: Target },
+  upset_victory: { label: 'Upset Win', className: 'border-rose-200 bg-rose-50 text-rose-700', icon: Flame },
+  rivalry_formed: { label: 'Rivalry', className: 'border-red-200 bg-red-50 text-red-700', icon: Swords },
 }
 
 export function MomentCard({ moment, onShare }: MomentCardProps) {

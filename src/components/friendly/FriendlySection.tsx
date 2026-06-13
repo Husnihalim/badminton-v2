@@ -4,8 +4,8 @@ import { Trophy, Users, ArrowRight, Plus } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
-import { listClubFriendlies, getClubFriendlyStats } from '../../lib/friendlyApi'
-import type { Friendly } from '../../types/friendly'
+import { listClubFriendlies, getClubFriendlyStats } from '../../lib/api/competitions'
+import type { Friendly } from '../../types/competition'
 
 interface FriendlySectionProps {
   clubId: string
