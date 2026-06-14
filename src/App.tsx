@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -55,7 +55,8 @@ function App() {
                       <Route path="/register" element={<RegisterPage />} />
                       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                       <Route path="/reset-password" element={<ResetPasswordPage />} />
-                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/my-court" element={<DashboardPage />} />
+                      <Route path="/dashboard" element={<Navigate to="/my-court" replace />} />
                       <Route path="/player-home-preview" element={<PlayerHomePreviewPage />} />
                       <Route path="/ui-preview" element={<UiPreviewPage />} />
                       <Route path="/profile" element={<ProfilePage />} />

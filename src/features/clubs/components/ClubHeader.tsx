@@ -109,9 +109,14 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
               </Button>
             ) : null}
             {isAdmin ? (
-              <Button variant="secondary" onClick={() => navigate(`/club/${clubId}/settings`)} className="hover:bg-[var(--arena-surface-muted)]">
+              <Button
+                variant="secondary"
+                onClick={() => navigate(`/club/${clubId}/settings`)}
+                className="h-10 w-10 p-0 hover:bg-[var(--arena-surface-muted)] sm:w-auto sm:px-4 sm:py-2"
+                title="Settings"
+              >
                 <Settings size={17} aria-hidden="true" />
-                Settings
+                <span className="hidden sm:inline">Settings</span>
               </Button>
             ) : null}
           </div>

@@ -41,9 +41,14 @@ export default function PlayerHomePreviewPage() {
         title="Personal homepage"
         description="Mockup route for the player-card homepage direction. This is visible without login for review."
         actions={
-          <Button type="button" variant="secondary">
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-10 w-10 p-0 sm:w-auto sm:px-4 sm:py-2"
+            title="Edit profile"
+          >
             <Edit3 size={16} aria-hidden="true" />
-            Edit profile
+            <span className="hidden sm:inline">Edit profile</span>
           </Button>
         }
       />
@@ -111,19 +116,28 @@ export default function PlayerHomePreviewPage() {
               <h2 className="text-lg font-bold text-slate-950">Quick actions</h2>
               <p className="text-sm leading-6 text-slate-600">Move from personal identity into club activity.</p>
             </div>
-            <div className="grid gap-2">
-              <Button type="button" fullWidth>
-                <Club size={16} aria-hidden="true" />
-                Open club home
-              </Button>
-              <Button type="button" variant="secondary" fullWidth>
-                <Trophy size={16} aria-hidden="true" />
-                Club score tools
-              </Button>
-              <Button type="button" variant="secondary" fullWidth>
-                <Plus size={16} aria-hidden="true" />
-                Join another club
-              </Button>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[var(--arena-lime)] bg-[var(--arena-lime)] text-[#040d0f] p-2 text-center transition-all hover:brightness-110 active:scale-[0.98] min-h-[72px] cursor-pointer"
+              >
+                <Club size={18} aria-hidden="true" />
+                <span className="text-[10px] font-bold leading-tight">Club Home</span>
+              </button>
+              <button
+                type="button"
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 p-2 text-center transition-all hover:bg-slate-50 active:scale-[0.98] min-h-[72px] cursor-pointer"
+              >
+                <Trophy size={18} aria-hidden="true" />
+                <span className="text-[10px] font-bold leading-tight">Score Tools</span>
+              </button>
+              <button
+                type="button"
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 p-2 text-center transition-all hover:bg-slate-50 active:scale-[0.98] min-h-[72px] cursor-pointer"
+              >
+                <Plus size={18} aria-hidden="true" />
+                <span className="text-[10px] font-bold leading-tight">Join Club</span>
+              </button>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <MiniCount icon={<Users size={15} />} label="Clubs" value="2" />

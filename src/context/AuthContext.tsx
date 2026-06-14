@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           )
 
           if (shouldBlockVerificationAutoLogin && session?.user) {
-            const rememberedRedirect = pendingVerification?.redirectTo || getStorageItem(postLoginRedirectKey) || '/dashboard'
+            const rememberedRedirect = pendingVerification?.redirectTo || getStorageItem(postLoginRedirectKey) || '/my-court'
             
             // Clean up the hash/search from URL to avoid re-triggering
             if (typeof window !== 'undefined' && window.history?.replaceState) {
@@ -279,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase()
     const normalizedInviteToken = inviteToken?.trim().toUpperCase() || null
-    const targetRedirect = getSafeAppRedirect(postLoginRedirect || (wantsCreateClub ? '/profile?create_club=true' : '/dashboard'))
+    const targetRedirect = getSafeAppRedirect(postLoginRedirect || (wantsCreateClub ? '/profile?create_club=true' : '/my-court'))
 
     const { data: existingProfile, error: profileLookupError } = await supabase
       .from('profiles')
@@ -407,14 +407,14 @@ function getPendingVerification(): { email: string; redirectTo: string } | null 
     if (!parsed.email) return null
     return {
       email: parsed.email.toLowerCase(),
-      redirectTo: getSafeAppRedirect(parsed.redirectTo || '/dashboard'),
+      redirectTo: getSafeAppRedirect(parsed.redirectTo || '/my-court'),
     }
   } catch {
     return null
   }
 }
 
-function rememberPendingVerification(email: string, redirectTo = '/dashboard') {
+function rememberPendingVerification(email: string, redirectTo = '/my-court') {
   setStorageItem(postLoginRedirectKey, getSafeAppRedirect(redirectTo))
   setStorageItem(
     pendingVerificationKey,
@@ -442,14 +442,14 @@ function consumePostLoginRedirect(email: string, wantsCreateClub?: boolean | nul
   return wantsCreateClub ? '/profile?create_club=true' : undefined
 }
 
-function buildEmailRedirectTo(redirectTo = '/dashboard') {
+function buildEmailRedirectTo(redirectTo = '/my-court') {
   if (typeof window === 'undefined') return undefined
   const redirectUrl = `/login?verified=true&redirect=${encodeURIComponent(getSafeAppRedirect(redirectTo))}`
   return `${window.location.origin}${redirectUrl}`
 }
 
 function getSafeAppRedirect(value: string) {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/dashboard'
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/my-court'
   return value
 }
 

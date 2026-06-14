@@ -337,10 +337,11 @@ export function FriendlyShareButton({ friendly, matchups, story }: FriendlyShare
     <Button
       onClick={handleShareNative}
       variant="secondary"
-      className="gap-2 border-white/10"
+      className="h-10 w-10 p-0 sm:w-auto sm:px-4 sm:py-2 gap-2 border-white/10 flex items-center justify-center cursor-pointer"
+      title="Share friendly results"
     >
       <Share2 size={16} />
-      Share
+      <span className="hidden sm:inline">Share</span>
     </Button>
   )
 }

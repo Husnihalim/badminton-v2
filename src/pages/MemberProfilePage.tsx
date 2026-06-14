@@ -606,7 +606,7 @@ export default function MemberProfilePage() {
                   <Percent size={14} className="text-[var(--arena-accent)] shrink-0" />
                   <span className="text-xl font-extrabold text-[var(--arena-text)]">{personalStats.winRate}%</span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden max-w-[80px] mx-auto">
+                <div className="w-full bg-[var(--arena-bg)] rounded-full h-1.5 mt-1 overflow-hidden max-w-[80px] mx-auto">
                   <div className="bg-[var(--arena-accent)] h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
                 </div>
               </div>

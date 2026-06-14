@@ -194,19 +194,39 @@ export default function GameDaySharePage() {
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3">
-            <Button type="button" variant="secondary" onClick={nativeShare}>
-              <Share2 size={17} aria-hidden="true" />
-              Share
-            </Button>
-            <a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--arena-text-dim)] transition-colors hover:bg-slate-700" href={whatsappUrl} target="_blank" rel="noreferrer">
-              <MessageCircle size={17} aria-hidden="true" />
-              WhatsApp
-            </a>
-            <Button type="button" variant="secondary" onClick={copyShareLink}>
-              <Copy size={17} aria-hidden="true" />
-              Copy link
-            </Button>
+          <div className="flex items-center justify-between border-t border-[var(--arena-border)] pt-4">
+            <span className="text-xs font-semibold text-[var(--arena-text-dim)] uppercase tracking-wider">Share game day</span>
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={nativeShare}
+                className="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
+                title="Share event"
+              >
+                <Share2 size={15} aria-hidden="true" />
+              </Button>
+              <a
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-dim)] transition-colors hover:bg-slate-700 cursor-pointer"
+                href={whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="Share on WhatsApp"
+              >
+                <MessageCircle size={15} aria-hidden="true" />
+              </a>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={copyShareLink}
+                className="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
+                title="Copy event link"
+              >
+                <Copy size={15} aria-hidden="true" />
+              </Button>
+            </div>
           </div>
 
           {!user ? (

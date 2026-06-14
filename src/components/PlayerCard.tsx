@@ -358,7 +358,7 @@ export function PlayerCard({
         {!isOwner && showFullStats && stats && stats.matchesPlayed > 0 && showH2HButton && (
           <button
             type="button"
-            onClick={() => navigate(`/dashboard?rival=${displayName}`)}
+            onClick={() => navigate(`/my-court?rival=${displayName}`)}
             className="w-full rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 py-2 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-900/30"
           >
             ⚔️ Compare Head-to-Head

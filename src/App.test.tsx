@@ -86,7 +86,7 @@ describe('KelabSukan App - Core Features', () => {
       })
       
       expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /my court/i })).toBeInTheDocument()
     })
   })
 

@@ -9,9 +9,10 @@ import { Badge } from '../../../components/ui/badge'
 
 interface ClubMembersSidebarProps {
   clubId: string
+  hideRosterPreview?: boolean
 }
 
-export function ClubMembersSidebar({ clubId }: ClubMembersSidebarProps) {
+export function ClubMembersSidebar({ clubId, hideRosterPreview = false }: ClubMembersSidebarProps) {
   const { user } = useAuth()
   const { data: club } = useClub(clubId)
   const { data: members = [], isLoading: membersLoading } = useClubMembers(clubId)
@@ -149,67 +150,69 @@ export function ClubMembersSidebar({ clubId }: ClubMembersSidebarProps) {
         </Card>
       ) : null}
 
-      <Card>
-        <CardContent className="space-y-4 pt-4 sm:pt-5">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold text-[var(--arena-text)]">Members</h2>
-            <Link to={`/club/${clubId}/members`} className={`inline-flex items-center gap-1 text-sm font-semibold ${theme.text}`}>
-              View all <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-          {members.length ? (
-            <div className="space-y-2">
-              {members.slice(0, 5).map((member) => {
-                const isCurrentUser = user && user.id === member.user_id
-                return (
-                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--arena-border)] p-3 bg-[var(--arena-surface)] shadow-sm hover:border-slate-350 transition">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {member.user_id ? (
-                        <Link to={`/member/${member.user_id}`} className="shrink-0 flex items-center">
-                          {member.avatar_url ? (
-                            <img src={member.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)]" />
+      {!hideRosterPreview && (
+        <Card>
+          <CardContent className="space-y-4 pt-4 sm:pt-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-[var(--arena-text)]">Members</h2>
+              <Link to={`/club/${clubId}?tab=members`} className={`inline-flex items-center gap-1 text-sm font-semibold ${theme.text}`}>
+                View all <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </div>
+            {members.length ? (
+              <div className="space-y-2">
+                {members.slice(0, 5).map((member) => {
+                  const isCurrentUser = user && user.id === member.user_id
+                  return (
+                    <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--arena-border)] p-3 bg-[var(--arena-surface)] shadow-sm hover:border-slate-350 transition">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {member.user_id ? (
+                          <Link to={`/member/${member.user_id}`} className="shrink-0 flex items-center">
+                            {member.avatar_url ? (
+                              <img src={member.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)]" />
+                            ) : (
+                              <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)] uppercase">
+                                {(member.name || 'U').charAt(0)}
+                              </div>
+                            )}
+                          </Link>
+                        ) : (
+                          member.avatar_url ? (
+                            <img src={member.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
                           ) : (
-                            <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)] uppercase">
+                            <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)] uppercase">
                               {(member.name || 'U').charAt(0)}
                             </div>
-                          )}
+                          )
+                        )}
+                        <span className="min-w-0 truncate font-semibold text-[var(--arena-text)]">
+                          <Link to={`/member/${member.user_id}`} className={`hover:underline ${theme.text}`}>
+                            {member.name || 'Unknown member'}
+                          </Link>
+                        </span>
+                        <Badge className="text-[9px] bg-[var(--arena-surface-muted)] border-[var(--arena-border)] text-[var(--arena-text-muted)] capitalize font-medium shrink-0">{member.role}</Badge>
+                      </div>
+                      {user && !isCurrentUser && (
+                        <Link
+                          to={`/my-court?rival=${member.name}`}
+                          className={`inline-flex items-center gap-1 text-xs font-bold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0`}
+                          title={`Compare Head-to-Head with ${member.name}`}
+                        >
+                          ⚔️ Compare
                         </Link>
-                      ) : (
-                        member.avatar_url ? (
-                          <img src={member.avatar_url} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
-                        ) : (
-                          <div className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[9px] font-bold text-[var(--arena-text-muted)] border border-[var(--arena-border)] uppercase">
-                            {(member.name || 'U').charAt(0)}
-                          </div>
-                        )
                       )}
-                      <span className="min-w-0 truncate font-semibold text-[var(--arena-text)]">
-                        <Link to={`/member/${member.user_id}`} className={`hover:underline ${theme.text}`}>
-                          {member.name || 'Unknown member'}
-                        </Link>
-                      </span>
-                      <Badge className="text-[9px] bg-[var(--arena-surface-muted)] border-[var(--arena-border)] text-[var(--arena-text-muted)] capitalize font-medium shrink-0">{member.role}</Badge>
                     </div>
-                    {user && !isCurrentUser && (
-                      <Link
-                        to={`/dashboard?rival=${member.name}`}
-                        className={`inline-flex items-center gap-1 text-xs font-bold text-${accent}-700 hover:text-${accent}-800 hover:underline shrink-0`}
-                        title={`Compare Head-to-Head with ${member.name}`}
-                      >
-                        ⚔️ Compare
-                      </Link>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-slate-650">
-              {membersLoading ? 'Loading members...' : 'No members yet.'}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-slate-650">
+                {membersLoading ? 'Loading members...' : 'No members yet.'}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

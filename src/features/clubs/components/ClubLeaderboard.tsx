@@ -580,7 +580,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                               )}
                               {user && !isMe && (
                                 <Link
-                                  to={`/dashboard?rival=${player.name}`}
+                                  to={`/my-court?rival=${player.name}`}
                                   className="text-[9px] font-extrabold text-[var(--arena-accent)] hover:underline opacity-80 hover:opacity-100"
                                   title="Compare Head-to-Head"
                                 >

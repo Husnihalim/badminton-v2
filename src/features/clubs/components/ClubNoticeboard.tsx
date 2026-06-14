@@ -188,23 +188,42 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
 
       <Card>
         <CardContent className="space-y-4 pt-4 sm:pt-5">
-          <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold text-[var(--arena-text)]">Club board</h2>
-            </div>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Club board</h2>
             {isAdmin ? (
-              <div className="grid gap-2 sm:grid-cols-3">
-                <Button type="button" size="sm" variant="secondary" onClick={handleNativeBoardShare} disabled={!inviteUrl}>
-                  <Share2 size={16} aria-hidden="true" />
-                  Share
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleNativeBoardShare}
+                  disabled={!inviteUrl}
+                  className="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
+                  title="Share board"
+                >
+                  <Share2 size={15} aria-hidden="true" />
                 </Button>
-                 <a className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] px-3 py-2 text-sm font-semibold text-[var(--arena-text-muted)] transition-colors hover:bg-[var(--arena-surface-muted)] ${!inviteUrl ? 'pointer-events-none opacity-50' : ''}`} href={boardWhatsappUrl} target="_blank" rel="noreferrer">
-                  <MessageCircle size={16} aria-hidden="true" />
-                  WhatsApp
+                <a
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-muted)] transition-colors hover:bg-[var(--arena-surface-muted)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] cursor-pointer ${
+                    !inviteUrl ? 'pointer-events-none opacity-50' : ''
+                  }`}
+                  href={boardWhatsappUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Share on WhatsApp"
+                >
+                  <MessageCircle size={15} aria-hidden="true" />
                 </a>
-                <Button type="button" size="sm" variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
-                  <Copy size={16} aria-hidden="true" />
-                  Copy
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleCopyInviteLink}
+                  disabled={!inviteUrl}
+                  className="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
+                  title="Copy invite link"
+                >
+                  <Copy size={15} aria-hidden="true" />
                 </Button>
               </div>
             ) : null}

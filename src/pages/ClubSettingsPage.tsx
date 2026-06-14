@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette, UserCheck } from 'lucide-react'
+import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette, UserCheck, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, deleteClub, getClubMembers } from '../lib/api'
 import type { Club, Membership } from '../types'
@@ -308,9 +308,14 @@ export default function ClubSettingsPage() {
         title="Club settings"
         description={`Manage ${club.name} details, custom themes, noticeboard and invite link.`}
         actions={
-          <Button variant="secondary" onClick={() => navigate(`/club/${clubId}`)}>
+          <Button
+            variant="secondary"
+            onClick={() => navigate(`/club/${clubId}`)}
+            className="h-10 w-10 p-0 sm:w-auto sm:px-4 sm:py-2"
+            title="Back to club home"
+          >
             <ArrowLeft size={17} aria-hidden="true" />
-            Back
+            <span className="hidden sm:inline">Back</span>
           </Button>
         }
       />
@@ -557,13 +562,13 @@ export default function ClubSettingsPage() {
                   Share this broadly. Anyone using it will send a join request for admin approval.
                 </p>
                 <Input value={inviteUrl} readOnly className="font-mono text-sm" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <Button type="button" variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
-                    <Copy size={17} aria-hidden="true" />
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl} className="px-2 text-xs sm:text-sm">
+                    <Copy size={16} aria-hidden="true" />
                     Copy link
                   </Button>
-                  <Button type="button" variant="secondary" onClick={handleRegenerateInviteLink}>
-                    <RefreshCw size={17} aria-hidden="true" />
+                  <Button type="button" variant="secondary" onClick={handleRegenerateInviteLink} className="px-2 text-xs sm:text-sm">
+                    <RefreshCw size={16} aria-hidden="true" />
                     Refresh link
                   </Button>
                 </div>
@@ -604,11 +609,27 @@ export default function ClubSettingsPage() {
                                 {isRevoked ? 'Revoked' : isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'} · Created {new Date(invite.created_at).toLocaleDateString()}
                               </p>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <Button type="button" size="sm" variant="secondary" onClick={() => handleCopySpecificInviteLink(invite.token)} disabled={!isActiveInvite}>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleCopySpecificInviteLink(invite.token)}
+                                disabled={!isActiveInvite}
+                                className="px-2 text-xs flex items-center justify-center gap-1"
+                              >
+                                <Copy size={13} aria-hidden="true" />
                                 Copy
                               </Button>
-                              <Button type="button" size="sm" variant="secondary" onClick={() => handleRevokeSpecificInviteLink(invite.id)} disabled={!isActiveInvite}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleRevokeSpecificInviteLink(invite.id)}
+                                disabled={!isActiveInvite}
+                                className="px-2 text-xs flex items-center justify-center gap-1"
+                              >
+                                <X size={13} aria-hidden="true" />
                                 Revoke
                               </Button>
                             </div>
@@ -623,11 +644,11 @@ export default function ClubSettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:flex sm:justify-end gap-2 sm:gap-3">
-          <Button type="button" variant="secondary" onClick={() => navigate(`/club/${clubId}`)}>
+        <div className="flex gap-2 sm:gap-3 justify-end">
+          <Button type="button" variant="secondary" onClick={() => navigate(`/club/${clubId}`)} className="flex-1 sm:flex-initial">
             Cancel
           </Button>
-          <Button type="submit" disabled={isSaving}>
+          <Button type="submit" disabled={isSaving} className="flex-1 sm:flex-initial">
             <Save size={17} aria-hidden="true" />
             {isSaving ? 'Saving...' : 'Save settings'}
           </Button>

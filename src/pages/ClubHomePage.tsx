@@ -5,8 +5,10 @@ import {
   ClipboardPenLine,
   UserPlus,
   X,
-  LayoutDashboard,
+  Home,
+  Activity,
   Trophy,
+  Users,
   Megaphone,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
@@ -25,6 +27,7 @@ import { ClubEventsCalendar } from '../features/clubs/components/ClubEventsCalen
 import { ClubLeaderboard } from '../features/clubs/components/ClubLeaderboard'
 import { ClubScoresFeed } from '../features/clubs/components/ClubScoresFeed'
 import { ClubMembersSidebar } from '../features/clubs/components/ClubMembersSidebar'
+import { ClubMembersRoster } from '../features/clubs/components/ClubMembersRoster'
 import { SessionHighlightsWidget } from '../features/clubs/components/SessionHighlightsWidget'
 
 export default function ClubHomePage() {
@@ -37,9 +40,10 @@ export default function ClubHomePage() {
   const { data: members = [] } = useClubMembers(clubId)
   const { data: matches = [] } = useAllClubMatches(clubId)
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'leaderboard' | 'noticeboard'>(() => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard'>(() => {
     const tabParam = new URLSearchParams(window.location.search).get('tab')
-    return (tabParam === 'leaderboard' || tabParam === 'noticeboard') ? tabParam : 'overview'
+    const validTabs = ['overview', 'scores', 'leaderboard', 'members', 'noticeboard']
+    return (tabParam && validTabs.includes(tabParam)) ? (tabParam as any) : 'overview'
   })
   const [showCelebrationModal, setShowCelebrationModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
@@ -62,9 +66,10 @@ export default function ClubHomePage() {
   // Sync tab query parameter with activeTab state
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    if (tabParam === 'overview' || tabParam === 'leaderboard' || tabParam === 'noticeboard') {
+    const validTabs = ['overview', 'scores', 'leaderboard', 'members', 'noticeboard']
+    if (tabParam && validTabs.includes(tabParam)) {
       if (tabParam !== activeTab) {
-        setActiveTab(tabParam)
+        setActiveTab(tabParam as any)
       }
     }
   }, [searchParams, activeTab])
@@ -189,27 +194,34 @@ export default function ClubHomePage() {
 
         {/* Tab Navigation */}
         <div className="border-b border-[var(--arena-border)] flex gap-1 overflow-x-auto whitespace-nowrap">
-          {(['overview', 'leaderboard', 'noticeboard'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => {
-                setActiveTab(tab)
-                const newParams = new URLSearchParams(window.location.search)
-                newParams.set('tab', tab)
-                setSearchParams(newParams, { replace: true })
-              }}
-              className={`px-4 py-3 font-semibold text-sm border-b-2 transition-all duration-150 capitalize flex items-center gap-2 cursor-pointer ${
-                activeTab === tab
-                  ? 'border-emerald-600 text-[var(--arena-accent)] bg-[var(--arena-surface)]'
-                  : 'border-transparent text-[var(--arena-text-dim)] hover:text-slate-800 hover:border-[var(--arena-border)]'
-              }`}
-            >
-              {tab === 'overview' && <LayoutDashboard size={16} />}
-              {tab === 'leaderboard' && <Trophy size={16} />}
-              {tab === 'noticeboard' && <Megaphone size={16} />}
-              {tab === 'overview' ? 'Home' : tab === 'noticeboard' ? 'Notice Board' : tab}
-            </button>
-          ))}
+          {([
+            { id: 'overview', label: 'Home', icon: Home },
+            { id: 'scores', label: 'Scores', icon: Activity },
+            { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+            { id: 'members', label: 'Members', icon: Users },
+            { id: 'noticeboard', label: 'Notice Board', icon: Megaphone }
+          ] as const).map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  const newParams = new URLSearchParams(window.location.search)
+                  newParams.set('tab', tab.id)
+                  setSearchParams(newParams, { replace: true })
+                }}
+                className={`px-3 py-2 font-semibold text-xs sm:text-sm border-b-2 transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'border-[var(--arena-accent)] text-[var(--arena-accent)] bg-[var(--arena-surface)]'
+                    : 'border-transparent text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:border-[var(--arena-border)]'
+                }`}
+              >
+                <Icon size={14} />
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
         </div>
 
         {activeTab === 'overview' && (
@@ -246,31 +258,49 @@ export default function ClubHomePage() {
                     <ShieldCheck size={18} aria-hidden="true" />
                     <h2 className="font-bold">{isAdmin ? 'Admin controls' : 'Club quick actions'}</h2>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <Button variant="secondary" onClick={handleCreateScore}>
-                      <ClipboardPenLine size={17} aria-hidden="true" />
-                      Record score
-                    </Button>
+                  <div className={`grid gap-2 ${
+                    isAdmin ? 'grid-cols-3' : (inviteUrl ? 'grid-cols-2' : 'grid-cols-1')
+                  }`}>
+                    <button
+                      type="button"
+                      onClick={handleCreateScore}
+                      className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer"
+                    >
+                      <ClipboardPenLine size={18} className="text-blue-700" aria-hidden="true" />
+                      <span className="text-[10px] font-bold leading-tight">Record Score</span>
+                    </button>
                     {isAdmin ? (
                       <>
-                        <Button variant="secondary" onClick={handleCopyInviteLink} disabled={!inviteUrl}>
-                          <UserPlus size={17} aria-hidden="true" />
-                          Copy invite
-                        </Button>
-                        <Button variant="secondary" onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}>
-                          <UserPlus size={17} aria-hidden="true" />
-                          Requests
-                        </Button>
+                        <button
+                          type="button"
+                          onClick={handleCopyInviteLink}
+                          disabled={!inviteUrl}
+                          className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          <UserPlus size={18} className="text-blue-700" aria-hidden="true" />
+                          <span className="text-[10px] font-bold leading-tight">Copy Invite</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}
+                          className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer"
+                        >
+                          <UserPlus size={18} className="text-blue-700" aria-hidden="true" />
+                          <span className="text-[10px] font-bold leading-tight">Requests</span>
+                        </button>
                       </>
                     ) : (
                       inviteUrl && (
-                        <Button variant="secondary" onClick={handleCopyInviteLink}>
-                          <UserPlus size={17} aria-hidden="true" />
-                          Copy invite
-                        </Button>
+                        <button
+                          type="button"
+                          onClick={handleCopyInviteLink}
+                          className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer"
+                        >
+                          <UserPlus size={18} className="text-blue-700" aria-hidden="true" />
+                          <span className="text-[10px] font-bold leading-tight">Copy Invite</span>
+                        </button>
                       )
                     )}
-
                   </div>
                 </CardContent>
               </Card>
@@ -284,22 +314,18 @@ export default function ClubHomePage() {
               setSuccessMessage={setSuccessMessage}
               setActionError={setActionError}
             />
+          </div>
+        )}
 
-            {/* Scores feed vs Members sidebar */}
-            <div className="grid gap-4 lg:gap-5 lg:grid-cols-[1.15fr_0.85fr] items-start">
-              <div className="order-2 lg:order-1">
-                <ClubScoresFeed 
-                  clubId={clubId} 
-                  onEditMatch={handleEditMatch}
-                  onShareMatch={setShareMatch}
-                  setSuccessMessage={setSuccessMessage}
-                  setActionError={setActionError}
-                />
-              </div>
-              <div className="order-1 lg:order-2">
-                <ClubMembersSidebar clubId={clubId} />
-              </div>
-            </div>
+        {activeTab === 'scores' && (
+          <div className="animate-fade-in">
+            <ClubScoresFeed 
+              clubId={clubId} 
+              onEditMatch={handleEditMatch}
+              onShareMatch={setShareMatch}
+              setSuccessMessage={setSuccessMessage}
+              setActionError={setActionError}
+            />
           </div>
         )}
 
@@ -309,6 +335,24 @@ export default function ClubHomePage() {
             setSuccessMessage={setSuccessMessage} 
             setActionError={setActionError}
           />
+        )}
+
+        {activeTab === 'members' && (
+          <div className="grid gap-4 lg:gap-5 lg:grid-cols-[1.15fr_0.85fr] items-start animate-fade-in">
+            <div>
+              <ClubMembersRoster
+                clubId={clubId}
+                clubName={club.name}
+                members={members}
+                myMembership={myMembership || null}
+                setSuccessMessage={setSuccessMessage}
+                setActionError={setActionError}
+              />
+            </div>
+            <div>
+              <ClubMembersSidebar clubId={clubId} hideRosterPreview={true} />
+            </div>
+          </div>
         )}
 
         {activeTab === 'noticeboard' && (

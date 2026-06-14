@@ -112,10 +112,11 @@ export default function FriendliesListPage() {
         </div>
         <Button
           onClick={() => setIsCreateModalOpen(true)}
-          className="gap-2 bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
+          className="h-10 w-10 p-0 sm:w-auto sm:px-4 sm:py-2 gap-2 bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
+          title="Challenge a Club"
         >
           <Plus size={16} />
-          New
+          <span className="hidden sm:inline">New</span>
         </Button>
       </div>
 

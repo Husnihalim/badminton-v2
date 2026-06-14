@@ -32,9 +32,15 @@ export default function DashboardHeader({
         title={`Welcome back, ${firstName}`}
         description="Your profile, player card, stats, stories, clubs, and next actions in one place."
         actions={
-          <Button type="button" variant="secondary" onClick={() => navigate('/profile')}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate('/profile')}
+            className="h-10 w-10 p-0 sm:w-auto sm:px-4 sm:py-2"
+            title="Edit profile"
+          >
             <Edit3 size={16} aria-hidden="true" />
-            Edit profile
+            <span className="hidden sm:inline">Edit profile</span>
           </Button>
         }
       />
@@ -57,22 +63,23 @@ export default function DashboardHeader({
                 Move from your personal page into the next useful task.
               </p>
             </div>
-            <div className="grid gap-2">
-              <Button
+            <div className="grid grid-cols-3 gap-2">
+              <button
                 type="button"
                 onClick={() =>
                   navigate(
                     primaryClub ? `/club/${primaryClub.id}` : '/profile?create_club=true'
                   )
                 }
-                fullWidth
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[var(--arena-lime)] bg-[var(--arena-lime)] text-[#040d0f] p-2 text-center transition-all hover:brightness-110 active:scale-[0.98] min-h-[72px] cursor-pointer"
               >
-                <ClubIcon size={16} aria-hidden="true" />
-                {primaryClub ? 'Open club home' : 'Create first club'}
-              </Button>
-              <Button
+                <ClubIcon size={18} aria-hidden="true" />
+                <span className="text-[10px] font-bold leading-tight">
+                  {primaryClub ? 'Club Home' : 'Create Club'}
+                </span>
+              </button>
+              <button
                 type="button"
-                variant="secondary"
                 onClick={() =>
                   navigate(
                     primaryClub
@@ -80,24 +87,23 @@ export default function DashboardHeader({
                       : '/dashboard#club-discovery'
                   )
                 }
-                fullWidth
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] p-2 text-center transition-all hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] active:scale-[0.98] min-h-[72px] cursor-pointer"
               >
-                <Trophy size={16} aria-hidden="true" />
-                Club score tools
-              </Button>
-              <Button
+                <Trophy size={18} aria-hidden="true" />
+                <span className="text-[10px] font-bold leading-tight">Score Tools</span>
+              </button>
+              <button
                 type="button"
-                variant="secondary"
                 onClick={() =>
                   document
                     .getElementById('club-discovery')
                     ?.scrollIntoView({ behavior: 'smooth' })
                 }
-                fullWidth
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] p-2 text-center transition-all hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] active:scale-[0.98] min-h-[72px] cursor-pointer"
               >
-                <UserPlus size={16} aria-hidden="true" />
-                Join another club
-              </Button>
+                <UserPlus size={18} aria-hidden="true" />
+                <span className="text-[10px] font-bold leading-tight">Join Club</span>
+              </button>
             </div>
             <div className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3">
               <p className="text-xs font-semibold uppercase text-[var(--arena-text-dim)]">

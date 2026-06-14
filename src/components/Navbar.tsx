@@ -103,15 +103,15 @@ export default function Navbar() {
             <Home size={16} aria-hidden="true" />
             Home
           </Link>
-          <Link className={navClass('/dashboard')} to="/dashboard">
+          <Link className={navClass('/my-court')} to="/my-court">
             <LayoutDashboard size={16} aria-hidden="true" />
-            Dashboard
+            My Court
           </Link>
 
           {user && (
             <>
               {clubs.length === 0 ? (
-                <Link className={navClass('/dashboard')} to="/dashboard" aria-label="Find clubs">
+                <Link className={navClass('/my-court')} to="/my-court" aria-label="Find clubs">
                   <Users size={16} aria-hidden="true" />
                   Find Clubs
                 </Link>
@@ -169,7 +169,7 @@ export default function Navbar() {
                         <div className="nav-dropdown-divider" />
                         <Link
                           className="nav-dropdown-item"
-                          to="/dashboard"
+                          to="/my-court"
                           onClick={() => setIsClubsDropdownOpen(false)}
                           style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
                         >
@@ -200,8 +200,8 @@ export default function Navbar() {
                     </Link>
                   ))}
                   <Link
-                    className={`${navClass('/dashboard')} mobile-only`}
-                    to="/dashboard"
+                    className={`${navClass('/my-court')} mobile-only`}
+                    to="/my-court"
                     aria-label="Find clubs"
                     style={{ opacity: 0.8 }}
                   >
@@ -295,11 +295,11 @@ export default function Navbar() {
                     
                     <Link 
                       className="nav-dropdown-item" 
-                      to="/dashboard"
+                      to="/my-court"
                       onClick={() => setIsDropdownOpen(false)}
                     >
                       <LayoutDashboard size={15} aria-hidden="true" />
-                      My Dashboard
+                      My Court
                     </Link>
                     
                     <Link 
