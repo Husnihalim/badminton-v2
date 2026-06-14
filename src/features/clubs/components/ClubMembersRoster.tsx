@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Shield, Trash2, UserRound, X } from 'lucide-react'
+import { Search, Shield, Trash2, UserRound } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { updateMemberRole, removeMember } from '../../../lib/api'
 import { useQueryClient } from '@tanstack/react-query'
