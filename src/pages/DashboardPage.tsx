@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { Page } from '../components/ui/page'
+import { Page, PageHeader } from '../components/ui/page'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import RivalryShareModal from '../components/RivalryShareModal'
 import { generateStoryMoments } from '../lib/storyMoments'
+import { calculatePlayerInsights, getSignatureMoment } from '../lib/insights'
 
 // Hooks
 import {
@@ -17,15 +18,16 @@ import {
 } from '../features/dashboard/hooks/useDashboardQueries'
 
 // Components
-import DashboardHeader from '../features/dashboard/components/DashboardHeader'
-import PlayerPerformanceStats from '../features/dashboard/components/PlayerPerformanceStats'
+import { PlayerCard } from '../components/PlayerCard'
 import SportsStoryFeed from '../features/dashboard/components/SportsStoryFeed'
 import DashboardAchievements from '../features/dashboard/components/DashboardAchievements'
-import RivalryTool from '../features/dashboard/components/RivalryTool'
 import JoinedClubsList from '../features/dashboard/components/JoinedClubsList'
 import ClubDiscoveryPanel from '../features/dashboard/components/ClubDiscoveryPanel'
 import DashboardUpcomingGameDays from '../features/dashboard/components/DashboardUpcomingGameDays'
 import DashboardRecentMatches from '../features/dashboard/components/DashboardRecentMatches'
+
+// Icons
+import { User as UserIcon, Activity, Users, Edit3, Share2 } from 'lucide-react'
 
 import type { Club, MatchWithDetails, MatchParticipant, ScoreSet } from '../types'
 
@@ -38,7 +40,6 @@ export default function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [shareMatch, setShareMatch] = useState<DashboardMatch | null>(null)
-  const [selectedRival, setSelectedRival] = useState<string>('')
   const [shareRivalMatch, setShareRivalMatch] = useState<{
     rivalName: string
     wins: number
@@ -47,6 +48,7 @@ export default function DashboardPage() {
     mode: 'rival' | 'partner'
   } | null>(null)
   const [isBannerDismissed, setIsBannerDismissed] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
 
   // React Query Queries
   const { data: dashboardData, isLoading: dashboardLoading } = usePlayerDashboard(user?.id)
@@ -84,32 +86,42 @@ export default function DashboardPage() {
     )
   }, [matchesQueries, clubs, user])
 
-  // Aggregate and filter unique members for head-to-head comparison
-  const clubMembers = useMemo(() => {
-    if (!user) return []
-    const rivalsSet = new Set<string>()
-    const rivalsList: { id?: string; name: string }[] = []
-
+  // Build the profiles mapping for calculating user details and avatars
+  const memberProfilesMap = useMemo(() => {
+    const profilesMap: Record<string, { userId: string; avatarUrl: string | null }> = {}
     membersQueries.forEach((q) => {
       if (q.data) {
         q.data.forEach((m) => {
           const mName = m.name || 'Unknown'
-          const normalizedName = mName.trim().toLowerCase()
-          if (
-            m.user_id !== user.id &&
-            normalizedName !== user.name.toLowerCase() &&
-            (!user.display_name || normalizedName !== user.display_name.toLowerCase()) &&
-            !rivalsSet.has(normalizedName)
-          ) {
-            rivalsSet.add(normalizedName)
-            rivalsList.push({ id: m.user_id, name: mName })
+          if (m.user_id) {
+            profilesMap[mName.toLowerCase()] = {
+              userId: m.user_id,
+              avatarUrl: m.avatar_url ?? null,
+            }
           }
         })
       }
     })
+    return profilesMap
+  }, [membersQueries])
 
-    return rivalsList.sort((a, b) => a.name.localeCompare(b.name))
-  }, [membersQueries, user])
+  // Calculate top partner, top rival and ELO insights client-side
+  const playerInsights = useMemo(() => {
+    if (!user) return null
+    return calculatePlayerInsights(
+      allUserMatches,
+      user.id,
+      user.name,
+      user.display_name,
+      memberProfilesMap
+    )
+  }, [allUserMatches, user, memberProfilesMap])
+
+  // Extract signature moment dynamically from match history
+  const signatureMoment = useMemo(() => {
+    if (!user) return null
+    return getSignatureMoment(allUserMatches, user.id)
+  }, [allUserMatches, user])
 
   // Filter out discoverable clubs
   const discoverableClubs = useMemo(() => {
@@ -117,26 +129,22 @@ export default function DashboardPage() {
     return allClubs.filter((c: Club) => !joinedClubIds.has(c.id))
   }, [allClubs, clubs])
 
-  // Deep-linking effect for ?rival=Name
-  useEffect(() => {
-    const rivalParam = searchParams.get('rival')
-    if (rivalParam && clubMembers.length > 0) {
-      const matched = clubMembers.find(
-        (m) => m.name.toLowerCase() === rivalParam.toLowerCase()
-      )
-      if (matched) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSelectedRival(matched.name)
-        setTimeout(() => {
-          const el = document.getElementById('rival-select')
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          }
-        }, 300)
-      }
-      setSearchParams({}, { replace: true })
+  // Tab State syncing with search params
+  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'clubs'>(() => {
+    const tabParam = searchParams.get('tab')
+    if (['overview', 'matches', 'clubs'].includes(tabParam || '')) {
+      return tabParam as 'overview' | 'matches' | 'clubs'
     }
-  }, [searchParams, clubMembers, setSearchParams])
+    return 'overview'
+  })
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && ['overview', 'matches', 'clubs'].includes(tabParam) && tabParam !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab(tabParam as 'overview' | 'matches' | 'clubs')
+    }
+  }, [searchParams, activeTab])
 
   // Player Card Stats formatting
   const playerCardStats = useMemo(() => {
@@ -208,6 +216,19 @@ export default function DashboardPage() {
     return missing
   }, [user])
 
+  const handleShare = () => {
+    if (!user) return
+    const shareUrl = `${window.location.origin}/member/${user.id}`
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setToastMessage('Link copied to clipboard!')
+        setTimeout(() => setToastMessage(''), 2000)
+      })
+      .catch((err) => {
+        console.error('Failed to copy link:', err)
+      })
+  }
+
   if (authLoading || (user && dashboardLoading)) {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
@@ -244,34 +265,65 @@ export default function DashboardPage() {
   const primaryClub = clubs[0]
   const primaryRank = primaryClub ? primaryClub.rank : null
   const primaryElo = primaryClub ? primaryClub.elo_rating : null
-  const totalMatchesCount = dashboardData?.stats?.matchesPlayed || 0
-  const upcomingEventsCount = dashboardData?.upcoming_events?.length || 0
+  const displayName = user.display_name || user.name
+  const firstName = displayName.split(' ')[0] || displayName
 
   return (
     <Page>
-      <DashboardHeader
-        user={user}
-        playerCardStats={playerCardStats}
-        primaryClub={primaryClub}
-        primaryRank={primaryRank}
-        primaryElo={primaryElo}
+      {/* Toast feedback */}
+      {toastMessage && (
+        <div className="modal-toast animate-fade-in z-50">
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Page Header */}
+      <PageHeader
+        eyebrow="Personal home"
+        title={`Welcome back, ${firstName}`}
+        description="Your profile, player card, stats, stories, clubs, and next actions in one place."
+        actions={
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={() => navigate('/profile')}
+              className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg"
+              title="Edit Card"
+            >
+              <Edit3 size={14} aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={handleShare}
+              className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg"
+              title="Share Link"
+            >
+              <Share2 size={14} aria-hidden="true" />
+            </Button>
+          </>
+        }
       />
 
+      {/* completeness banner */}
       {!isBannerDismissed && profileCompleteness < 100 && (
-        <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 backdrop-blur-sm dark:border-amber-400/15 dark:bg-amber-400/[0.02]">
+        <div className="mb-4 rounded-xl border border-[var(--arena-accent)]/20 bg-[var(--arena-surface-elevated)]/30 p-4 backdrop-blur-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                <span>⚡ Complete Your Player Card</span>
-                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-amber-800 dark:bg-amber-400/10 dark:text-amber-300">
+              <h3 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-1.5">
+                <span className="text-[var(--arena-accent)]">⚡ Complete Your Player Card</span>
+                <span className="rounded bg-[var(--arena-accent-soft)] px-1.5 py-0.5 text-[10px] font-black uppercase text-[var(--arena-accent)] border border-[var(--arena-accent)]/20">
                   {profileCompleteness}% Complete
                 </span>
               </h3>
-              <p className="text-xs text-amber-900/85 dark:text-amber-400/80">
+              <p className="text-xs text-[var(--arena-text-muted)]">
                 Completing your player card makes it public and lets other members search for your play style, hand preferences, and racket specs.
               </p>
               {missingFields.length > 0 && (
-                <p className="text-[11px] font-semibold text-amber-900/65 dark:text-amber-400/60">
+                <p className="text-[11px] font-semibold text-[var(--arena-text-dim)]">
                   Remaining: {missingFields.join(', ')}
                 </p>
               )}
@@ -281,7 +333,7 @@ export default function DashboardPage() {
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="border-amber-500/20 hover:bg-amber-500/10 text-amber-900 dark:text-amber-300 dark:border-amber-400/20 dark:hover:bg-amber-400/10 cursor-pointer"
+                className="h-8 text-xs cursor-pointer border-[var(--arena-accent)]/25 text-[var(--arena-accent)] hover:bg-[var(--arena-accent-soft)]"
                 onClick={() => navigate('/profile')}
               >
                 Setup Now
@@ -289,71 +341,112 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsBannerDismissed(true)}
-                className="text-xs text-amber-900/60 hover:text-amber-900 dark:text-amber-400/50 dark:hover:text-amber-300 px-2 py-1 cursor-pointer"
+                className="text-xs text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] px-2 py-1 cursor-pointer"
               >
                 Dismiss
               </button>
             </div>
           </div>
-          <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          <div className="mt-3 h-1.5 w-full rounded-full bg-slate-900 overflow-hidden border border-white/5">
             <div
-              className="h-full bg-amber-500 transition-all duration-500"
+              className="h-full bg-[var(--arena-accent)] transition-all duration-500 shadow-[0_0_8px_rgba(204,255,0,0.4)]"
               style={{ width: `${profileCompleteness}%` }}
             />
           </div>
         </div>
       )}
 
-      <PlayerPerformanceStats
-        clubCount={clubs.length}
-        upcomingEvents={upcomingEventsCount}
-        totalMatches={totalMatchesCount}
-        personalStats={
-          dashboardData?.stats || {
-            matchesPlayed: 0,
-            wins: 0,
-            losses: 0,
-            winRate: 0,
-            streak: 0,
-            streakType: null,
-          }
-        }
-      />
+      {/* Tab Navigation */}
+      <div className="border-b border-[var(--arena-border)] flex gap-1 overflow-x-auto whitespace-nowrap">
+        {([
+          { id: 'overview', label: 'Player Card', icon: UserIcon },
+          { id: 'matches', label: 'Matches', icon: Activity },
+          { id: 'clubs', label: 'Clubs', icon: Users }
+        ] as const).map((tab) => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id)
+                const newParams = new URLSearchParams(window.location.search)
+                newParams.set('tab', tab.id)
+                setSearchParams(newParams, { replace: true })
+              }}
+              className={`px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
+                activeTab === tab.id
+                  ? 'border-[var(--arena-accent)] text-[var(--arena-accent)] bg-[var(--arena-surface)]'
+                  : 'border-transparent text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:border-[var(--arena-border)]'
+              }`}
+            >
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          )
+        })}
+      </div>
 
-      <SportsStoryFeed storyMoments={storyMoments} />
+      {/* Tab Contents */}
+      {activeTab === 'overview' && (
+        <div className="space-y-5">
+          {/* Core Player Card Component Redesigned */}
+          <PlayerCard
+            profile={user}
+            stats={playerCardStats}
+            rank={primaryRank}
+            elo={primaryElo}
+            isOwner={true}
+            primaryClubName={primaryClub?.name}
+            bestPartner={playerInsights?.bestPartner}
+            topRival={playerInsights?.topRival}
+            signatureMoment={signatureMoment}
+            onShare={handleShare}
+            onTabChange={(tab) => {
+              setActiveTab(tab)
+              const newParams = new URLSearchParams(window.location.search)
+              newParams.set('tab', tab)
+              setSearchParams(newParams, { replace: true })
+            }}
+          />
 
-      <DashboardAchievements
-        achievements={
-          dashboardData?.achievements || {
-            onFire: false,
-            giantSlayer: false,
-            cleanSweep: false,
-            ironMan: false,
-            dynamicDuo: false,
-          }
-        }
-      />
+          {/* Achievements */}
+          <DashboardAchievements
+            achievements={
+              dashboardData?.achievements || {
+                onFire: false,
+                giantSlayer: false,
+                cleanSweep: false,
+                ironMan: false,
+                dynamicDuo: false,
+              }
+            }
+          />
 
-      <RivalryTool
-        user={user}
-        clubMembers={clubMembers}
-        allUserMatches={allUserMatches}
-        selectedRival={selectedRival}
-        onSelectedRivalChange={setSelectedRival}
-        onShareRivalry={setShareRivalMatch}
-      />
+          {/* Sports Stories Feed */}
+          <SportsStoryFeed storyMoments={storyMoments} />
+        </div>
+      )}
 
-      <JoinedClubsList clubs={clubs} />
+      {activeTab === 'matches' && (
+        <div className="space-y-6">
+          <DashboardUpcomingGameDays events={dashboardData?.upcoming_events || []} />
+          
+          <DashboardRecentMatches
+            matches={dashboardData?.recent_matches || []}
+            onShareMatch={setShareMatch}
+          />
+        </div>
+      )}
 
-      <ClubDiscoveryPanel discoverableClubs={discoverableClubs} />
+      {activeTab === 'clubs' && (
+        <div className="space-y-6">
+          <JoinedClubsList clubs={clubs} />
+          
+          <ClubDiscoveryPanel discoverableClubs={discoverableClubs} />
+        </div>
+      )}
 
-      <DashboardUpcomingGameDays events={dashboardData?.upcoming_events || []} />
-
-      <DashboardRecentMatches
-        matches={dashboardData?.recent_matches || []}
-        onShareMatch={setShareMatch}
-      />
-
+      {/* Modals */}
       {shareMatch ? (
         <ScorecardShareModal
           match={shareMatch}

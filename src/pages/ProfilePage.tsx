@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, UserRound, Users, X } from 'lucide-react'
+import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { createClub, getMyClubs, updateProfile, uploadProfilePhoto } from '../lib/api'
@@ -14,6 +14,8 @@ import { Page, PageHeader } from '../components/ui/page'
 import { PasswordInput } from '../components/ui/password-input'
 import { Select } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
+import { cn } from '../lib/utils'
+import { DEFAULT_AVATARS, getDefaultAvatar } from '../lib/defaultAvatars'
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
@@ -243,38 +245,84 @@ export default function ProfilePage() {
 
       <Card>
         <CardContent className="space-y-5 pt-4 sm:pt-5">
-          <div className="flex items-start gap-4">
-            <div className="relative h-16 w-16 shrink-0">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
-              ) : (
-                <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
-                  <UserRound size={24} aria-hidden="true" />
-                </span>
-              )}
-              <label className="absolute -bottom-2 -right-2 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[var(--arena-border)] bg-white text-[var(--arena-text-muted)] shadow-sm">
-                <Camera size={16} aria-hidden="true" />
-                <span className="sr-only">Change profile photo</span>
-                <input
-                  className="sr-only"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleProfilePhotoChange}
-                  disabled={isUploadingPhoto}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between border-b border-[var(--arena-border)] pb-5">
+            <div className="flex items-start gap-4">
+              <div className="relative h-16 w-16 shrink-0">
+                <img
+                  src={avatarUrl || (user ? getDefaultAvatar(user.id) : '')}
+                  alt=""
+                  className="h-16 w-16 rounded-lg object-cover bg-slate-900 border border-[var(--arena-border)]"
                 />
-              </label>
+                <label className="absolute -bottom-2 -right-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--arena-border)] bg-white text-[var(--arena-text-muted)] shadow-sm hover:bg-slate-50 transition-colors">
+                  <Camera size={14} aria-hidden="true" />
+                  <span className="sr-only">Change profile photo</span>
+                  <input
+                    className="sr-only"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleProfilePhotoChange}
+                    disabled={isUploadingPhoto}
+                  />
+                </label>
+              </div>
+              <div className="min-w-0 space-y-1.5">
+                <h2 className="text-lg font-bold text-[var(--arena-text)] leading-tight">{user?.display_name || user?.name}</h2>
+                <p className="break-words text-sm text-[var(--arena-text-muted)]">{user?.email}</p>
+                {isUploadingPhoto ? <p className="text-xs font-semibold text-[var(--arena-accent)]">Uploading photo...</p> : null}
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {user?.role ? <Badge>{user.role}</Badge> : null}
+                  <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)] text-[10px]">
+                    <Lock size={11} aria-hidden="true" />
+                    Locked fields
+                  </Badge>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0 space-y-2">
-              <h2 className="text-lg font-bold text-[var(--arena-text)]">{user?.display_name || user?.name}</h2>
-              <p className="break-words text-sm text-[var(--arena-text-muted)]">{user?.email}</p>
-              {isUploadingPhoto ? <p className="text-sm font-semibold text-[var(--arena-accent)]">Uploading photo...</p> : null}
+
+            {/* Pick a Cartoon Avatar Selection */}
+            <div className="space-y-2 pt-2 sm:pt-0">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Pick a Cartoon Avatar</h3>
               <div className="flex flex-wrap gap-2">
-                {user?.role ? <Badge>{user.role}</Badge> : null}
-                <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]">
-                  <Lock size={13} aria-hidden="true" />
-                  Username and email locked
-                </Badge>
+                {DEFAULT_AVATARS.map((avatar) => {
+                  const isSelected = avatarUrl === avatar.url
+                  return (
+                    <button
+                      key={avatar.id}
+                      type="button"
+                      onClick={async () => {
+                        if (!user) return
+                        try {
+                          setIsSavingProfile(true)
+                          setProfileError('')
+                          await updateProfile(user.id, { avatar_url: avatar.url })
+                          setAvatarUrl(avatar.url)
+                          await refreshUser()
+                          setProfileMessage('Profile picture updated to cartoon avatar.')
+                          setTimeout(() => setProfileMessage(''), 3000)
+                        } catch (err) {
+                          setProfileError(getErrorMessage(err, 'Failed to update avatar'))
+                        } finally {
+                          setIsSavingProfile(false)
+                        }
+                      }}
+                      className={cn(
+                        "relative h-9 w-9 rounded-lg border-2 bg-slate-900 overflow-hidden flex items-center justify-center p-0.5 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer",
+                        isSelected
+                          ? "border-[var(--arena-accent)] ring-2 ring-[var(--arena-accent-soft)]"
+                          : "border-[var(--arena-border)] hover:border-slate-350 dark:hover:border-white/20"
+                      )}
+                      title={avatar.label}
+                    >
+                      <img src={avatar.url} alt={avatar.label} className="h-full w-full object-contain" />
+                      {isSelected && (
+                        <div className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-[var(--arena-accent)] text-white text-[7px] font-black">
+                          ✓
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>

@@ -15,13 +15,25 @@ export function Page({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 
 export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
   return (
-    <div className="space-y-4 sm:flex sm:items-start sm:justify-between sm:gap-6 sm:space-y-0">
-      <div className="min-w-0 space-y-2">
-        {eyebrow ? <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">{eyebrow}</p> : null}
-        <h1 className="text-2xl font-extrabold leading-tight text-[var(--arena-text)] sm:text-[1.9rem]">{title}</h1>
-        {description ? <p className="max-w-2xl text-sm leading-6 text-[var(--arena-text-muted)] sm:text-base">{description}</p> : null}
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          {eyebrow ? (
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-accent)]">
+              {eyebrow}
+            </p>
+          ) : null}
+          <h1 className="text-xl font-extrabold leading-tight text-[var(--arena-text)] sm:text-[1.8rem]">
+            {title}
+          </h1>
+        </div>
+        {actions ? <div className="flex shrink-0 gap-1.5">{actions}</div> : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
+      {description ? (
+        <p className="max-w-2xl text-xs sm:text-sm leading-relaxed text-[var(--arena-text-muted)]">
+          {description}
+        </p>
+      ) : null}
     </div>
   )
 }

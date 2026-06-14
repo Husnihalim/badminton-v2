@@ -1,7 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, act, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from './AuthContext'
 import { supabase } from '../lib/supabase'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+})
 
 // Mock Supabase client
 vi.mock('../lib/supabase', () => {
@@ -41,8 +50,17 @@ function TestComponent() {
 }
 
 describe('AuthContext - Security & Role Assignment', () => {
+  let queryClient: QueryClient
+
   beforeEach(() => {
     vi.clearAllMocks()
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    })
   })
 
   it('assigns superadmin role when returned from the profiles table', async () => {
@@ -78,9 +96,11 @@ describe('AuthContext - Security & Role Assignment', () => {
     } as never)
 
     render(
-      <AuthProvider>
-        <TestComponent />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TestComponent />
+        </AuthProvider>
+      </QueryClientProvider>
     )
 
     // Initially no user logged in
@@ -130,9 +150,11 @@ describe('AuthContext - Security & Role Assignment', () => {
     } as never)
 
     render(
-      <AuthProvider>
-        <TestComponent />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TestComponent />
+        </AuthProvider>
+      </QueryClientProvider>
     )
 
     // Click login

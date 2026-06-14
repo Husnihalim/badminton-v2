@@ -43,7 +43,7 @@ export default function ClubHomePage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard'>(() => {
     const tabParam = new URLSearchParams(window.location.search).get('tab')
     const validTabs = ['overview', 'scores', 'leaderboard', 'members', 'noticeboard']
-    return (tabParam && validTabs.includes(tabParam)) ? (tabParam as any) : 'overview'
+    return (tabParam && validTabs.includes(tabParam)) ? (tabParam as 'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard') : 'overview'
   })
   const [showCelebrationModal, setShowCelebrationModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
@@ -69,7 +69,8 @@ export default function ClubHomePage() {
     const validTabs = ['overview', 'scores', 'leaderboard', 'members', 'noticeboard']
     if (tabParam && validTabs.includes(tabParam)) {
       if (tabParam !== activeTab) {
-        setActiveTab(tabParam as any)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab(tabParam as 'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard')
       }
     }
   }, [searchParams, activeTab])

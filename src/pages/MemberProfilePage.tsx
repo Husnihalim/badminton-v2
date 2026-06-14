@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Activity, Flame, Percent, Shield, Trophy, ChevronLeft } from 'lucide-react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { Activity, Shield, Trophy, ChevronLeft, Users, User as UserIcon, Share2, Edit3 } from 'lucide-react'
 import { getProfile, getClubMatches, getClubLeaderboard, getClubMembers } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { Club, MatchWithDetails, User } from '../types'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
-import { Page } from '../components/ui/page'
+import { Page, PageHeader } from '../components/ui/page'
 import { cn } from '../lib/utils'
 import { MatchScoreboard } from '../components/MatchScoreboard'
 import ScorecardShareModal from '../components/ScorecardShareModal'
-import { PlayerIdentityCard } from '../components/sports'
+import { PlayerCard } from '../components/PlayerCard'
+import { calculatePlayerInsights, getSignatureMoment } from '../lib/insights'
+import { Badge } from '../components/ui/badge'
 
 type MemberEloHistoryRow = {
   id: string
@@ -33,9 +35,10 @@ export default function MemberProfilePage() {
   const { userId } = useParams<{ userId: string }>()
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [profile, setProfile] = useState<User | null>(null)
-  const [clubs, setClubs] = useState<Club[]>([])
+  const [clubs, setClubs] = useState<(Club & { elo_rating?: number | null })[]>([])
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -44,6 +47,7 @@ export default function MemberProfilePage() {
   const [allUserMatches, setAllUserMatches] = useState<MatchWithDetails[]>([])
   const [clubRanks, setClubRanks] = useState<Record<string, { rank: number; total: number }>>({})
   const [memberProfilesMap, setMemberProfilesMap] = useState<Record<string, { userId: string; avatarUrl: string | null }>>({})
+  const [toastMessage, setToastMessage] = useState('')
 
   const [personalStats, setPersonalStats] = useState({
     matchesPlayed: 0,
@@ -61,6 +65,23 @@ export default function MemberProfilePage() {
     ironMan: false,
     dynamicDuo: false,
   })
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'clubs'>(() => {
+    const tabParam = searchParams.get('tab')
+    if (['overview', 'matches', 'clubs'].includes(tabParam || '')) {
+      return tabParam as 'overview' | 'matches' | 'clubs'
+    }
+    return 'overview'
+  })
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && ['overview', 'matches', 'clubs'].includes(tabParam) && tabParam !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab(tabParam as 'overview' | 'matches' | 'clubs')
+    }
+  }, [searchParams, activeTab])
 
   const isOwner = currentUser?.id === userId
   const showFullProfile = !profile?.is_private || isOwner
@@ -93,8 +114,14 @@ export default function MemberProfilePage() {
       }
 
       const userClubs = (membershipData as unknown as Array<{ club_id: string; elo_rating: number | null; clubs: Club }> || [])
-        .map((m) => m.clubs)
-        .filter(Boolean)
+        .map((m) => {
+          if (!m.clubs) return null
+          return {
+            ...m.clubs,
+            elo_rating: m.elo_rating
+          }
+        })
+        .filter((c): c is Club & { elo_rating: number | null } => c !== null)
       setClubs(userClubs)
 
       // 3. Fetch Matches if profile is public
@@ -140,13 +167,13 @@ export default function MemberProfilePage() {
               allMatches.push(...clubMatches)
 
               // Build leaderboard map and capture this user's rank based on Elo ranking
-              const normalize = (value?: string | null) => (value || '').trim().toLowerCase()
-              const viewedName = normalize(userProfile.display_name) || normalize(userProfile.name)
+              const normalizeName = (value?: string | null) => (value || '').trim().toLowerCase()
+              const viewedName = normalizeName(userProfile.display_name) || normalizeName(userProfile.name)
 
               // Only rank members who have played at least one match
               const activeMembersWithMatches = members.filter(m =>
                 leaderboardRows.some(row =>
-                  normalize(row.name) === normalize(m.name)
+                  normalizeName(row.name) === normalizeName(m.name)
                 )
               )
 
@@ -159,20 +186,16 @@ export default function MemberProfilePage() {
               })
 
               const index = sortedMembers.findIndex(
-                m => normalize(m.name) === viewedName || m.user_id === userProfile.id
+                m => normalizeName(m.name) === viewedName || m.user_id === userProfile.id
               )
 
               if (index !== -1) {
                 ranks[club.id] = { rank: index + 1, total: sortedMembers.length }
-                setClubRanks(prev => ({
-                  ...prev,
-                  [club.id]: { rank: index + 1, total: sortedMembers.length }
-                }))
               }
 
               const lbMap: Record<string, number> = {}
               sortedMembers.forEach((m, sIdx) => {
-                lbMap[normalize(m.name)] = sIdx + 1
+                lbMap[normalizeName(m.name)] = sIdx + 1
               })
               clubLeaderboards[club.id] = lbMap
 
@@ -199,154 +222,145 @@ export default function MemberProfilePage() {
           m.participants.some((p) => p.user_id === userId)
         )
 
-        // Sort user matches chronologically descending
-        userMatches.sort((a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime())
-        setMatches(userMatches.slice(0, 5))
-        setAllUserMatches(userMatches)
+        // De-duplicate matches
+        const uniqueMatchesMap = new Map<string, MatchWithDetails>()
+        userMatches.forEach((m) => {
+          if (m.id) uniqueMatchesMap.set(m.id, m)
+        })
+        const sortedUniqueMatches = Array.from(uniqueMatchesMap.values()).sort(
+          (a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime()
+        )
 
-        // Calculate personal stats
-        let wins = 0
-        let losses = 0
-        let streakCount = 0
+        setMatches(sortedUniqueMatches.slice(0, 10))
+        setAllUserMatches(sortedUniqueMatches)
+
+        // Calculate stats
+        let winsCount = 0
+        let lossesCount = 0
+        sortedUniqueMatches.forEach((m) => {
+          const part = m.participants.find((p) => p.user_id === userId)
+          if (!part) return
+
+          const scoreSets = m.score_sets || []
+          if (scoreSets.length === 0) return
+
+          const t1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
+          const t2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
+          if (t1Sets === t2Sets) return
+
+          const winningTeam = t1Sets > t2Sets ? 1 : 2
+          if (part.team === winningTeam) winsCount++
+          else lossesCount++
+        })
+
+        const totalPlayed = winsCount + lossesCount
+        const winRateVal = totalPlayed > 0 ? Math.round((winsCount / totalPlayed) * 100) : 0
+
+        // Calculate Streak
+        let activeStreak = 0
         let activeStreakType: 'win' | 'loss' | null = null
-        let isStreakBroken = false
 
-        for (let i = 0; i < userMatches.length; i++) {
-          const m = userMatches[i]
-          const userPart = m.participants.find((p) => p.user_id === userId)
-          if (!userPart) continue
+        for (const m of sortedUniqueMatches) {
+          const part = m.participants.find((p) => p.user_id === userId)
+          if (!part) continue
 
           const scoreSets = m.score_sets || []
           if (scoreSets.length === 0) continue
 
-          const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
-          const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-          if (team1Sets === team2Sets) continue // skip draw
+          const t1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
+          const t2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
+          if (t1Sets === t2Sets) continue
 
-          const winningTeam = team1Sets > team2Sets ? 1 : 2
-          const isWin = userPart.team === winningTeam
+          const winningTeam = t1Sets > t2Sets ? 1 : 2
+          const won = part.team === winningTeam
+          const matchType: 'win' | 'loss' = won ? 'win' : 'loss'
 
-          if (isWin) {
-            wins++
+          if (activeStreakType === null) {
+            activeStreakType = matchType
+            activeStreak = 1
+          } else if (activeStreakType === matchType) {
+            activeStreak++
           } else {
-            losses++
-          }
-
-          // Calculate streak
-          if (!isStreakBroken) {
-            if (activeStreakType === null) {
-              activeStreakType = isWin ? 'win' : 'loss'
-              streakCount = 1
-            } else if (activeStreakType === 'win' && isWin) {
-              streakCount++
-            } else if (activeStreakType === 'loss' && !isWin) {
-              streakCount++
-            } else {
-              isStreakBroken = true
-            }
+            break
           }
         }
 
         setPersonalStats({
-          matchesPlayed: userMatches.length,
-          wins,
-          losses,
-          winRate: userMatches.length > 0 ? Math.round((wins / (wins + losses || 1)) * 100) : 0,
-          streak: activeStreakType === null ? 0 : streakCount,
+          matchesPlayed: totalPlayed,
+          wins: winsCount,
+          losses: lossesCount,
+          winRate: winRateVal,
+          streak: activeStreak,
           streakType: activeStreakType,
         })
 
         // Calculate Achievements
-        // 1. On Fire (🔥)
-        const onFire = activeStreakType === 'win' && streakCount >= 3
-
-        // 2. Clean Sweep (🎯)
-        let cleanSweep = false
-        for (const m of userMatches) {
-          const userPart = m.participants.find((p) => p.user_id === userId)
-          if (!userPart) continue
-          const scoreSets = m.score_sets || []
-          for (const set of scoreSets) {
-            const diff = userPart.team === 1 
-              ? set.team1_score - set.team2_score 
-              : set.team2_score - set.team1_score
-            if (diff >= 10) {
-              cleanSweep = true
-              break
-            }
-          }
-          if (cleanSweep) break
-        }
-
-        // 3. Iron Man (🚀)
-        const matchesByDate: Record<string, number> = {}
-        userMatches.forEach((m) => {
-          const dateStr = new Date(m.match_date || m.created_at).toISOString().split('T')[0]
-          matchesByDate[dateStr] = (matchesByDate[dateStr] || 0) + 1
-        })
-        const ironMan = Object.values(matchesByDate).some((count) => count >= 3)
-
-        // 4. Dynamic Duo (🤝)
-        const partnerStreaks: Record<string, number> = {}
-        let dynamicDuo = false
-        const chronoMatches = [...userMatches].reverse()
-        for (const m of chronoMatches) {
-          const userPart = m.participants.find((p) => p.user_id === userId)
-          if (!userPart) continue
-          if (m.match_type !== 'doubles') continue
-
-          const partnerPart = m.participants.find((p) => p.team === userPart.team && p.user_id !== userId)
-          if (!partnerPart) continue
-          const partnerKey = partnerPart.user_id || partnerPart.name || partnerPart.guest_name || 'partner'
-
-          const scoreSets = m.score_sets || []
-          if (scoreSets.length === 0) continue
-          const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
-          const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-          if (team1Sets === team2Sets) continue
-
-          const winningTeam = team1Sets > team2Sets ? 1 : 2
-          const isWin = userPart.team === winningTeam
-
-          if (isWin) {
-            partnerStreaks[partnerKey] = (partnerStreaks[partnerKey] || 0) + 1
-            if (partnerStreaks[partnerKey] >= 3) {
-              dynamicDuo = true
-            }
-          } else {
-            partnerStreaks[partnerKey] = 0
-          }
-        }
-
-        // 5. Giant Slayer (🛡️)
+        const onFire = activeStreakType === 'win' && activeStreak >= 3
         let giantSlayer = false
-        for (const m of userMatches) {
-          const userPart = m.participants.find((p) => p.user_id === userId)
-          if (!userPart) continue
-          const lbMap = clubLeaderboards[m.club_id]
-          if (!lbMap) continue
+        let cleanSweep = false
+        let ironMan = false
+        let dynamicDuo = false
 
-          const userRank = lbMap[userProfile.name.toLowerCase()]
-          if (!userRank) continue
+        // Iron Man Check (3 matches in 1 day)
+        const dateCounts: Record<string, number> = {}
+        sortedUniqueMatches.forEach((m) => {
+          const d = new Date(m.match_date || m.created_at).toDateString()
+          dateCounts[d] = (dateCounts[d] || 0) + 1
+          if (dateCounts[d] >= 3) ironMan = true
+        })
 
+        // Dynamic Duo Check (3 doubles win streak)
+        let doublesWinStreak = 0
+        for (const m of sortedUniqueMatches) {
+          if (m.match_type !== 'doubles') continue
+          const part = m.participants.find((p) => p.user_id === userId)
+          if (!part) continue
           const scoreSets = m.score_sets || []
           if (scoreSets.length === 0) continue
-          const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
-          const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-          if (team1Sets === team2Sets) continue
 
-          const winningTeam = team1Sets > team2Sets ? 1 : 2
-          const isWin = userPart.team === winningTeam
+          const t1 = scoreSets.filter((s) => s.team1_score > s.team2_score).length
+          const t2 = scoreSets.filter((s) => s.team2_score > s.team1_score).length
+          if (t1 === t2) continue
 
-          if (isWin) {
-            const opponentTeam = userPart.team === 1 ? 2 : 1
-            const opponents = m.participants.filter((p) => p.team === opponentTeam)
-            for (const opp of opponents) {
-              const oppName = opp.name || opp.guest_name || ''
-              const oppRank = lbMap[oppName.toLowerCase()]
-              if (oppRank && oppRank < userRank) {
-                giantSlayer = true
-                break
+          const won = part.team === (t1 > t2 ? 1 : 2)
+          if (won) {
+            doublesWinStreak++
+            if (doublesWinStreak >= 3) dynamicDuo = true
+          } else {
+            break
+          }
+        }
+
+        // Giant slayer & Clean Sweep check
+        for (const m of sortedUniqueMatches) {
+          const part = m.participants.find((p) => p.user_id === userId)
+          if (!part) continue
+          const scoreSets = m.score_sets || []
+          
+          // Clean Sweep Check
+          const hasCleanSweepSet = scoreSets.some(s => Math.abs(s.team1_score - s.team2_score) >= 10)
+          if (hasCleanSweepSet) cleanSweep = true
+
+          // Giant Slayer Check (Opponent has Elo > 100 ELO points more than this user rating before match)
+          const ELO_DIFF_GIANT_SLAYER = 100
+          const myRating = membershipData?.find(mShip => mShip.club_id === m.club_id)?.elo_rating || 1200
+          if (part.team === (scoreSets.filter(s => s.team1_score > s.team2_score).length > scoreSets.filter(s => s.team2_score > s.team1_score).length ? 1 : 2)) {
+            const oppTeam = part.team === 1 ? 2 : 1
+            const opponentsList = m.participants.filter(p => p.team === oppTeam)
+            for (const opp of opponentsList) {
+              if (opp.user_id) {
+                // Fetch opponent's elo at that time or current
+                const { data: oppMembership } = await supabase
+                  .from('memberships')
+                  .select('elo_rating')
+                  .eq('user_id', opp.user_id)
+                  .eq('club_id', m.club_id)
+                  .single()
+                
+                if (oppMembership && oppMembership.elo_rating && (oppMembership.elo_rating - myRating) >= ELO_DIFF_GIANT_SLAYER) {
+                  giantSlayer = true
+                  break
+                }
               }
             }
           }
@@ -363,129 +377,67 @@ export default function MemberProfilePage() {
     }
   }, [userId, currentUser, setMemberProfilesMap])
 
-  const recommendedInsights = useMemo(() => {
+  // Calculate dynamic insights client-side
+  const playerInsights = useMemo(() => {
     if (!profile || allUserMatches.length === 0) return null
-
-    const partners = new Map<string, { wins: number; matches: number }>()
-    const rivals = new Map<string, { wins: number; matches: number }>()
-
-    allUserMatches.forEach((m) => {
-      const userPart = m.participants.find((p) => p.user_id === profile.id)
-      if (!userPart) return
-
-      const scoreSets = m.score_sets || []
-      if (scoreSets.length === 0) return
-
-      const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
-      const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-      if (team1Sets === team2Sets) return
-
-      const winningTeam = team1Sets > team2Sets ? 1 : 2
-      const isWin = userPart.team === winningTeam
-
-      m.participants.forEach((p) => {
-        const pName = p.name || p.guest_name
-        if (!pName) return
-
-        if (p.user_id === profile.id) return
-        if (pName.toLowerCase() === profile.name.toLowerCase()) return
-        if (profile.display_name && pName.toLowerCase() === profile.display_name.toLowerCase()) return
-
-        if (userPart.team === p.team) {
-          if (m.match_type === 'doubles') {
-            const stats = partners.get(pName) ?? { wins: 0, matches: 0 }
-            stats.matches++
-            if (isWin) stats.wins++
-            partners.set(pName, stats)
-          }
-        } else {
-          const stats = rivals.get(pName) ?? { wins: 0, matches: 0 }
-          stats.matches++
-          if (isWin) stats.wins++
-          rivals.set(pName, stats)
-        }
-      })
-    })
-
-    const partnersList = Array.from(partners.entries()).map(([name, stats]) => ({
-      name,
-      ...stats,
-      winRate: (stats.wins / stats.matches) * 100,
-    }))
-
-    let bestPartner = null
-    const partnerCandidates = partnersList.filter((p) => p.matches >= 2)
-    const targetPartners = partnerCandidates.length > 0 ? partnerCandidates : partnersList
-    if (targetPartners.length > 0) {
-      bestPartner = [...targetPartners].sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.matches - a.matches)[0]
-    }
-
-    const rivalsList = Array.from(rivals.entries()).map(([name, stats]) => ({
-      name,
-      ...stats,
-      winRate: (stats.wins / stats.matches) * 100,
-    }))
-
-    let topRival = null
-    const rivalCandidates = rivalsList.filter((r) => r.matches >= 2)
-    const targetRivals = rivalCandidates.length > 0 ? rivalCandidates : rivalsList
-    if (targetRivals.length > 0) {
-      topRival = [...targetRivals].sort((a, b) => b.matches - a.matches || Math.abs(50 - a.winRate) - Math.abs(50 - b.winRate))[0]
-    }
-
-    let nemesis = null
-    const nemesisList = rivalsList.filter((r) => r.matches - r.wins > 0)
-    if (nemesisList.length > 0) {
-      const nemesisCandidates = nemesisList.filter((r) => r.matches >= 2)
-      const targetNemesis = nemesisCandidates.length > 0 ? nemesisCandidates : nemesisList
-      nemesis = [...targetNemesis].sort(
-        (a, b) => a.winRate - b.winRate || b.matches - a.matches || (b.matches - b.wins) - (a.matches - a.wins)
-      )[0]
-    }
-
-    const toughestProfile = nemesis ? memberProfilesMap[nemesis.name.toLowerCase()] : null
-    const toughestOpponent = nemesis ? {
-      name: nemesis.name,
-      wins: nemesis.wins,
-      losses: nemesis.matches - nemesis.wins,
-      matches: nemesis.matches,
-      winRate: nemesis.winRate,
-      userId: toughestProfile?.userId || null,
-      avatarUrl: toughestProfile?.avatarUrl || null,
-    } : null
-
-    let mostDefeated = null
-    const defeatList = rivalsList.filter((r) => r.wins > 0)
-    if (defeatList.length > 0) {
-      mostDefeated = [...defeatList].sort(
-        (a, b) => b.wins - a.wins || b.winRate - a.winRate || b.matches - a.matches
-      )[0]
-    }
-
-    const defeatProfile = mostDefeated ? memberProfilesMap[mostDefeated.name.toLowerCase()] : null
-    const mostDefeatedOpponent = mostDefeated ? {
-      name: mostDefeated.name,
-      wins: mostDefeated.wins,
-      losses: mostDefeated.matches - mostDefeated.wins,
-      matches: mostDefeated.matches,
-      winRate: mostDefeated.winRate,
-      userId: defeatProfile?.userId || null,
-      avatarUrl: defeatProfile?.avatarUrl || null,
-    } : null
-
-    return {
-      bestPartner,
-      topRival,
-      nemesis,
-      toughestOpponent,
-      mostDefeatedOpponent
-    }
+    return calculatePlayerInsights(
+      allUserMatches,
+      profile.id,
+      profile.name,
+      profile.display_name,
+      memberProfilesMap
+    )
   }, [allUserMatches, profile, memberProfilesMap])
+
+  // Extract signature moment dynamically from match history
+  const signatureMoment = useMemo(() => {
+    if (!profile) return null
+    return getSignatureMoment(allUserMatches, profile.id)
+  }, [allUserMatches, profile])
+
+  // Format stats for PlayerCard
+  const playerCardStats = useMemo(() => {
+    if (!profile) return undefined
+    const form = matches.slice(0, 5).map((m) => {
+      const userPart = m.participants?.find((p) => p.user_id === profile.id)
+      if (!userPart || !m.score_sets?.length) return { won: false, setScores: 'Unknown' }
+      const t1Sets = m.score_sets.filter((s) => s.team1_score > s.team2_score).length
+      const t2Sets = m.score_sets.filter((s) => s.team2_score > s.team1_score).length
+      const won =
+        (t1Sets > t2Sets && userPart.team === 1) || (t2Sets > t1Sets && userPart.team === 2)
+      const scoreText = m.score_sets
+        .map((s) => `${s.team1_score}-${s.team2_score}`)
+        .join(', ')
+      return { won, setScores: scoreText }
+    })
+    return {
+      matchesPlayed: personalStats.matchesPlayed,
+      wins: personalStats.wins,
+      losses: personalStats.losses,
+      winRate: personalStats.winRate,
+      streak: personalStats.streak,
+      streakType: personalStats.streakType,
+      form,
+    }
+  }, [personalStats, matches, profile])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProfileData()
   }, [loadProfileData])
+
+  const handleShare = () => {
+    if (!userId) return
+    const shareUrl = `${window.location.origin}/member/${userId}`
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setToastMessage('Link copied to clipboard!')
+        setTimeout(() => setToastMessage(''), 2000)
+      })
+      .catch((err) => {
+        console.error('Failed to copy link:', err)
+      })
+  }
 
   if (loading) {
     return (
@@ -506,264 +458,300 @@ export default function MemberProfilePage() {
     )
   }
 
-
+  const primaryClub = clubs[0]
+  const primaryRank = primaryClub && clubRanks[primaryClub.id] ? clubRanks[primaryClub.id] : null
 
   return (
     <Page>
-      <div className="mb-4">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="modal-toast animate-fade-in z-50">
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Back button */}
+      <div className="mb-2">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 text-[var(--arena-text-muted)] hover:text-slate-900 pl-0">
           <ChevronLeft size={16} />
           Back
         </Button>
       </div>
 
-      {/* Profile Header Card */}
-      <PlayerIdentityCard
-        name={displayName}
-        sport={profile.preferred_sport || 'badminton'}
-        clubName={clubs[0]?.name}
-        city={profile.city || undefined}
-        avatarUrl={profile.avatar_url}
-        isPrivate={Boolean(profile.is_private)}
-        bio={profile.bio}
-        socialHandles={[
-          profile.social_links?.instagram,
-          profile.social_links?.tiktok,
-          profile.social_links?.facebook,
-          profile.social_links?.youtube,
-        ].filter((handle): handle is string => Boolean(handle))}
-        metrics={[
-          { label: 'Record', value: `${personalStats.wins}W-${personalStats.losses}L` },
-          { label: 'Signature', value: personalStats.matchesPlayed ? `${personalStats.winRate}% win rate` : `${clubs.length} ${clubs.length === 1 ? 'club' : 'clubs'} joined` },
-          { label: 'Form', value: personalStats.streakType ? `${personalStats.streak} ${personalStats.streakType === 'win' ? 'win' : 'loss'}` : 'No streak' },
-          { label: 'Rank', value: clubs[0] && clubRanks[clubs[0].id] ? `#${clubRanks[clubs[0].id].rank} / ${clubRanks[clubs[0].id].total}` : 'Unranked' },
-        ]}
-        details={[
-          { label: 'Primary club', value: clubs[0]?.name || 'No clubs joined' },
-          { label: 'Best partner', value: recommendedInsights?.bestPartner?.name || 'Needs doubles data' },
-          { label: 'Top rival', value: recommendedInsights?.topRival?.name || 'Needs match history' },
-          { label: 'Clubs', value: clubs.map(c => c.name).join(', ') || 'None' },
-        ]}
-        gear={profile.gear}
-        rankings={clubs.map((c) => {
-          const r = clubRanks[c.id]
-          if (!r) return null
-          return {
-            clubId: c.id,
-            clubName: c.name,
-            rank: r.rank,
-            total: r.total
-          }
-        }).filter((r): r is { clubId: string; clubName: string; rank: number; total: number } => r !== null)}
-        toughestOpponent={recommendedInsights?.toughestOpponent}
-        mostDefeatedOpponent={recommendedInsights?.mostDefeatedOpponent}
+      {/* Header Info */}
+      <PageHeader
+        eyebrow="Member Profile"
+        title={displayName}
+        description={`Athlete overview and badminton rankings for ${displayName}`}
+        actions={
+          <>
+            {isOwner && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={() => navigate('/profile')}
+                className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg"
+                title="Edit profile"
+              >
+                <Edit3 size={14} aria-hidden="true" stroke="currentColor" />
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={handleShare}
+              className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg"
+              title="Share Link"
+            >
+              <Share2 size={14} aria-hidden="true" stroke="currentColor" />
+            </Button>
+          </>
+        }
       />
 
-      {!isOwner && showFullProfile && personalStats.matchesPlayed > 0 && (
-        <div className="flex justify-end mt-4">
-          <Button
-            type="button"
-            onClick={() => navigate(`/dashboard?rival=${displayName}`)}
-            className="bg-emerald-700 hover:bg-emerald-800 font-bold border-none"
-          >
-            ⚔️ Compare Head-to-Head
-          </Button>
-        </div>
-      )}
+      {/* Tab Navigation */}
+      <div className="border-b border-[var(--arena-border)] flex gap-1 overflow-x-auto whitespace-nowrap pt-2">
+        {([
+          { id: 'overview', label: 'Player Card', icon: UserIcon },
+          { id: 'matches', label: 'Matches', icon: Activity },
+          { id: 'clubs', label: 'Clubs', icon: Users }
+        ] as const).map((tab) => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id)
+                const newParams = new URLSearchParams(window.location.search)
+                newParams.set('tab', tab.id)
+                setSearchParams(newParams, { replace: true })
+              }}
+              className={`px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
+                activeTab === tab.id
+                  ? 'border-[var(--arena-accent)] text-[var(--arena-accent)] bg-[var(--arena-surface)]'
+                  : 'border-transparent text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] hover:border-[var(--arena-border)]'
+              }`}
+            >
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          )
+        })}
+      </div>
 
-      {showFullProfile ? (
-        <div className="space-y-6">
-          {/* Stats Summary Grid */}
-          <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
-            <div>
-              <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
-                <Activity size={18} className="text-[var(--arena-accent)] shrink-0" />
-                Performance Metrics
-              </h2>
-              <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Calculated across all registered club matches.</p>
-            </div>
+      {/* Tab Contents */}
+      {activeTab === 'overview' && (
+        <div className="space-y-5">
+          {/* Core player card */}
+          <PlayerCard
+            profile={profile}
+            stats={playerCardStats}
+            rank={primaryRank}
+            elo={primaryClub?.elo_rating ?? 1200}
+            isOwner={isOwner}
+            primaryClubName={primaryClub?.name}
+            bestPartner={playerInsights?.bestPartner}
+            topRival={playerInsights?.topRival}
+            signatureMoment={signatureMoment}
+            onShare={handleShare}
+            onTabChange={(tab) => {
+              setActiveTab(tab)
+              const newParams = new URLSearchParams(window.location.search)
+              newParams.set('tab', tab)
+              setSearchParams(newParams, { replace: true })
+            }}
+          />
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Played</span>
-                <p className="text-xl font-extrabold text-[var(--arena-text)]">{personalStats.matchesPlayed}</p>
-                <span className="text-[10px] text-[var(--arena-text-dim)]">Total Matches</span>
-              </div>
-
-              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Win / Loss</span>
-                <p className="text-xl font-extrabold text-[var(--arena-text)]">
-                  <span className="text-[var(--arena-accent)]">{personalStats.wins}W</span>
-                  <span className="text-[var(--arena-text-dim)] mx-1">-</span>
-                  <span className="text-red-600">{personalStats.losses}L</span>
-                </p>
-                <span className="text-[10px] text-[var(--arena-text-dim)]">Record</span>
-              </div>
-
-              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Win Rate</span>
-                <div className="flex items-center justify-center gap-1">
-                  <Percent size={14} className="text-[var(--arena-accent)] shrink-0" />
-                  <span className="text-xl font-extrabold text-[var(--arena-text)]">{personalStats.winRate}%</span>
-                </div>
-                <div className="w-full bg-[var(--arena-bg)] rounded-full h-1.5 mt-1 overflow-hidden max-w-[80px] mx-auto">
-                  <div className="bg-[var(--arena-accent)] h-1.5 rounded-full" style={{ width: `${personalStats.winRate}%` }}></div>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-slate-100 bg-[var(--arena-surface-muted)] p-3 text-center space-y-1">
-                <span className="text-xs font-semibold text-[var(--arena-text-dim)]">Streak</span>
-                <div className="flex items-center justify-center gap-1">
-                  {personalStats.streakType === 'win' ? (
-                    <>
-                      <Flame size={16} className="text-amber-500 animate-pulse" />
-                      <span className="text-xl font-extrabold text-amber-600">{personalStats.streak} Win</span>
-                    </>
-                  ) : personalStats.streakType === 'loss' ? (
-                    <span className="text-xl font-extrabold text-[var(--arena-text-muted)]">-{personalStats.streak} Loss</span>
-                  ) : (
-                    <span className="text-xl font-extrabold text-[var(--arena-text-dim)]">0</span>
-                  )}
-                </div>
-                <span className="text-[10px] text-[var(--arena-text-dim)]">Active Run</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Elo History Card */}
-          {eloHistory.length > 0 && (
+          {/* Unlocked Achievements */}
+          {showFullProfile && (
             <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
               <div>
-                <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
-                  <Activity size={18} className="text-[var(--arena-accent)] shrink-0" />
-                  Elo Rating Progression
+                <h2 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-2">
+                  <Trophy size={16} className="text-amber-500 shrink-0" />
+                  Unlocked Achievements
                 </h2>
-                <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Recent rating changes from club matches.</p>
+                <p className="text-[11px] text-[var(--arena-text-dim)] mt-0.5">Badges earned by this player from club gameplay.</p>
               </div>
 
-              <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
-                {eloHistory.map((item) => {
-                  const ratingDiff = item.rating_after - item.rating_before
-                  const isGain = ratingDiff >= 0
-                  const clubName = item.memberships?.clubs?.name || 'Club'
-                  const matchTitle = item.matches?.title || 'Match'
-                  const dateStr = new Date(item.matches?.match_date || item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-                  
-                  return (
-                    <div key={item.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
-                      <div className="min-w-0">
-                        <span className="font-bold text-slate-900 truncate block">
-                          {matchTitle}
-                        </span>
-                        <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold block">
-                          {clubName} · {dateStr}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <span className="font-mono text-[var(--arena-text-dim)]">
-                          {item.rating_before} → <span className="font-extrabold text-slate-900">{item.rating_after}</span>
-                        </span>
-                        <span className={cn(
-                          "inline-flex items-center justify-center font-extrabold px-1.5 py-0.5 rounded text-[10px] w-12 text-center",
-                          isGain 
-                            ? "bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-emerald-100" 
-                            : "bg-red-50 text-red-700 border border-red-100"
-                        )}>
-                          {isGain ? `+${ratingDiff}` : ratingDiff}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <AchievementBadge
+                  unlocked={achievements.onFire}
+                  title="On Fire"
+                  description="3+ Win Streak"
+                  icon="🔥"
+                  glowClass="shadow-orange-500/10 border-orange-200 bg-orange-50/50 text-orange-600"
+                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                />
+                <AchievementBadge
+                  unlocked={achievements.giantSlayer}
+                  title="Giant Slayer"
+                  description="Beat a higher ELO player"
+                  icon="🛡️"
+                  glowClass="shadow-blue-500/10 border-blue-200 bg-blue-50/50 text-blue-600"
+                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                />
+                <AchievementBadge
+                  unlocked={achievements.cleanSweep}
+                  title="Clean Sweep"
+                  description="Win set by 10+ pts"
+                  icon="🎯"
+                  glowClass="shadow-emerald-500/10 border-emerald-200 bg-[var(--arena-accent-soft)]/50 text-[var(--arena-accent)]"
+                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                />
+                <AchievementBadge
+                  unlocked={achievements.ironMan}
+                  title="Iron Man"
+                  description="Play 3+ matches in 1 day"
+                  icon="🚀"
+                  glowClass="shadow-purple-500/10 border-purple-200 bg-purple-50/50 text-purple-600"
+                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                />
+                <AchievementBadge
+                  unlocked={achievements.dynamicDuo}
+                  title="Dynamic Duo"
+                  description="3+ doubles wins streak"
+                  icon="🤝"
+                  glowClass="shadow-amber-500/10 border-amber-200 bg-amber-50/50 text-amber-600"
+                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                />
               </div>
             </section>
           )}
 
-          {/* Achievements Medals Grid */}
-          <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
-            <div>
-              <h2 className="text-lg font-bold text-[var(--arena-text)] flex items-center gap-2">
-                <Trophy size={18} className="text-amber-500 shrink-0" />
-                Unlocked Achievements
-              </h2>
-              <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Badges earned by this player from club gameplay.</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-              <AchievementBadge
-                unlocked={achievements.onFire}
-                title="On Fire"
-                description="3+ Win Streak"
-                icon="🔥"
-                glowClass="shadow-orange-500/10 border-orange-200 bg-orange-50/50 text-orange-600"
-                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
-              />
-              <AchievementBadge
-                unlocked={achievements.giantSlayer}
-                title="Giant Slayer"
-                description="Beat a higher rank"
-                icon="🛡️"
-                glowClass="shadow-blue-500/10 border-blue-200 bg-blue-50/50 text-blue-600"
-                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
-              />
-              <AchievementBadge
-                unlocked={achievements.cleanSweep}
-                title="Clean Sweep"
-                description="Win set by 10+ pts"
-                icon="🎯"
-                glowClass="shadow-emerald-500/10 border-emerald-200 bg-[var(--arena-accent-soft)]/50 text-[var(--arena-accent)]"
-                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
-              />
-              <AchievementBadge
-                unlocked={achievements.ironMan}
-                title="Iron Man"
-                description="Play 3+ matches in 1 day"
-                icon="🚀"
-                glowClass="shadow-purple-500/10 border-purple-200 bg-purple-50/50 text-purple-600"
-                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
-              />
-              <AchievementBadge
-                unlocked={achievements.dynamicDuo}
-                title="Dynamic Duo"
-                description="3+ doubles streak"
-                icon="🤝"
-                glowClass="shadow-amber-500/10 border-amber-200 bg-amber-50/50 text-amber-600"
-                lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
-              />
-            </div>
-          </section>
-
-          {/* Recent Match Log */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-bold text-[var(--arena-text)]">Recent Matches</h2>
-            {matches.length ? (
-              <div className="grid gap-3">
-                {matches.map((match) => (
-                  <MatchScoreboard
-                    key={match.id}
-                    match={match}
-                    onShare={setShareMatch}
-                    showClubName={true}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-dim)]">
-                No matches recorded yet.
+          {!showFullProfile && (
+            <div className="rounded-xl border border-dashed border-[var(--arena-border)] p-8 text-center bg-[var(--arena-surface-muted)] mt-4 space-y-3">
+              <Shield size={36} className="text-[var(--arena-text-dim)] mx-auto" />
+              <h2 className="text-base font-bold text-slate-800">Stats are private</h2>
+              <p className="text-sm text-[var(--arena-text-dim)] max-w-sm mx-auto">
+                This member has set their profile to private. Their stats, milestones, and match logs are hidden.
               </p>
-            )}
-          </section>
-        </div>
-      ) : (
-        /* Private Profile Notice */
-        <div className="rounded-xl border border-dashed border-[var(--arena-border)] p-8 text-center bg-[var(--arena-surface-muted)] mt-6 space-y-3">
-          <Shield size={36} className="text-[var(--arena-text-dim)] mx-auto" />
-          <h2 className="text-base font-bold text-slate-800">Stats are private</h2>
-          <p className="text-sm text-[var(--arena-text-dim)] max-w-sm mx-auto">
-            This member has set their profile to private. Their stats, milestones, and match logs are hidden.
-          </p>
+            </div>
+          )}
         </div>
       )}
+
+      {activeTab === 'matches' && (
+        <div className="space-y-6">
+          {showFullProfile ? (
+            <>
+              {/* Elo History Card */}
+              {eloHistory.length > 0 && (
+                <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
+                  <div>
+                    <h2 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-2">
+                      <Activity size={16} className="text-[var(--arena-accent)] shrink-0" />
+                      Elo Rating Progression
+                    </h2>
+                    <p className="text-[11px] text-[var(--arena-text-dim)] mt-0.5">Recent rating changes from club matches.</p>
+                  </div>
+
+                  <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
+                    {eloHistory.map((item) => {
+                      const ratingDiff = item.rating_after - item.rating_before
+                      const isGain = ratingDiff >= 0
+                      const clubName = item.memberships?.clubs?.name || 'Club'
+                      const matchTitle = item.matches?.title || 'Match'
+                      const dateStr = new Date(item.matches?.match_date || item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                      
+                      return (
+                        <div key={item.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 truncate block">
+                              {matchTitle}
+                            </span>
+                            <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold block">
+                              {clubName} · {dateStr}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            <span className="font-mono text-[var(--arena-text-dim)]">
+                              {item.rating_before} → <span className="font-extrabold text-slate-900">{item.rating_after}</span>
+                            </span>
+                            <span className={cn(
+                              "inline-flex items-center justify-center font-extrabold px-1.5 py-0.5 rounded text-[10px] w-12 text-center",
+                              isGain 
+                                ? "bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-emerald-100" 
+                                : "bg-red-50 text-red-700 border border-red-100"
+                            )}>
+                              {isGain ? `+${ratingDiff}` : ratingDiff}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* Match Logs */}
+              <section className="space-y-4">
+                <h2 className="text-sm font-bold text-[var(--arena-text)]">Recent Matches</h2>
+                {matches.length ? (
+                  <div className="grid gap-3">
+                    {matches.map((match) => (
+                      <MatchScoreboard
+                        key={match.id}
+                        match={match}
+                        onShare={setShareMatch}
+                        showClubName={true}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-dim)]">
+                    No matches recorded yet.
+                  </p>
+                )}
+              </section>
+            </>
+          ) : (
+            <div className="rounded-xl border border-dashed border-[var(--arena-border)] p-8 text-center bg-[var(--arena-surface-muted)] space-y-3">
+              <Shield size={36} className="text-[var(--arena-text-dim)] mx-auto" />
+              <h2 className="text-base font-bold text-slate-800">Match log is private</h2>
+              <p className="text-sm text-[var(--arena-text-dim)] max-w-sm mx-auto">
+                Matches and Elo history logs are hidden for private profiles.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'clubs' && (
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold text-[var(--arena-text)]">Clubs List</h2>
+          {clubs.length ? (
+            <div className="grid gap-3">
+              {clubs.map((club) => (
+                <Card 
+                  key={club.id} 
+                  className="hover:border-[var(--arena-accent)]/30 transition-all duration-150 cursor-pointer"
+                  onClick={() => navigate(`/club/${club.id}`)}
+                >
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-sm text-white">{club.name}</h3>
+                      <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">{club.city || 'No Location'}</p>
+                    </div>
+                    {clubRanks[club.id] && (
+                      <Badge className="bg-[var(--arena-accent-soft)] border border-[var(--arena-accent)]/20 text-[var(--arena-accent)]">
+                        Rank #{clubRanks[club.id].rank}
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-[var(--arena-border)] p-6 text-center text-sm text-[var(--arena-text-dim)]">
+              No joined clubs.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
       {shareMatch ? (
         <ScorecardShareModal
           match={shareMatch}

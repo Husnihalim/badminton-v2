@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { User } from '../types'
 import { supabase } from '../lib/supabase'
 import { ensureCurrentUserProfile, logPlatformEvent } from '../lib/api'
@@ -19,6 +20,7 @@ type AuthContextType = {
       preferred_sport?: string
       gear?: User['gear']
       city?: string
+      avatar_url?: string | null
     }
   ) => Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }>
   refreshUser: () => Promise<User | null>
@@ -60,6 +62,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const manualLoginInProgressRef = useRef(false)
+  const queryClient = useQueryClient()
+  const prevUserId = useRef<string | null>(null)
+  const isInitialMount = useRef(true)
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      prevUserId.current = user?.id || null
+      return
+    }
+
+    const currentUserId = user?.id || null
+    if (prevUserId.current !== currentUserId) {
+      queryClient.clear()
+      prevUserId.current = currentUserId
+    }
+  }, [user?.id, queryClient])
 
   const fetchUserProfile = useCallback(async (
     userId: string,
@@ -275,6 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       preferred_sport?: string
       gear?: User['gear']
       city?: string
+      avatar_url?: string | null
     }
   ): Promise<{ success: boolean; error?: string; emailVerificationRequired?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase()
@@ -322,6 +342,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           preferred_sport: additionalMetadata?.preferred_sport || 'badminton',
           gear: additionalMetadata?.gear || {},
           city: additionalMetadata?.city || null,
+          avatar_url: additionalMetadata?.avatar_url || null,
         },
       },
     })
@@ -363,7 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: 'member',
       wants_create_club: wantsCreateClub,
       display_name: name,
-      avatar_url: null,
+      avatar_url: additionalMetadata?.avatar_url || null,
       preferred_sport: additionalMetadata?.preferred_sport || 'badminton',
       gear: additionalMetadata?.gear || {},
       city: additionalMetadata?.city || null,

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '../../../context/AuthContext'
 import { 
   getClub, 
   getClubEvents, 
@@ -37,11 +38,14 @@ export const useClubLeaderboard = (clubId?: string, limit = 100) => useQuery({
   enabled: !!clubId,
 })
 
-export const useMyMembership = (clubId?: string, isUserAuthenticated = false) => useQuery({
-  queryKey: ['clubs', clubId, 'membership'],
-  queryFn: () => getMyMembership(clubId!),
-  enabled: !!clubId && isUserAuthenticated,
-})
+export const useMyMembership = (clubId?: string, isUserAuthenticated = false) => {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['clubs', clubId, 'membership', user?.id],
+    queryFn: () => getMyMembership(clubId!),
+    enabled: !!clubId && isUserAuthenticated && !!user,
+  })
+}
 
 export const useSpecificInviteLinks = (clubId?: string, isAuthorized = false) => useQuery({
   queryKey: ['clubs', clubId, 'specific-invites'],
@@ -61,11 +65,14 @@ export const useClubMessages = (clubId?: string) => useQuery({
   enabled: !!clubId,
 })
 
-export const useMyRsvps = (isUserAuthenticated = false) => useQuery({
-  queryKey: ['rsvps', 'my'],
-  queryFn: () => getMyEventRsvps(),
-  enabled: isUserAuthenticated,
-})
+export const useMyRsvps = (isUserAuthenticated = false) => {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['rsvps', 'my', user?.id],
+    queryFn: () => getMyEventRsvps(),
+    enabled: isUserAuthenticated && !!user,
+  })
+}
 
 export const useEventRsvps = (eventId?: string) => useQuery({
   queryKey: ['rsvps', 'event', eventId],

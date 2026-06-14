@@ -1,6 +1,6 @@
 import React from 'react'
-import { MapPin, UserRound } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { MapPin, UserRound, Share2 } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
 import { Badge } from './ui/badge'
 import { cn } from '../lib/utils'
 import type { User } from '../types'
@@ -22,6 +22,15 @@ export interface PlayerCardProps {
   showH2HButton?: boolean
   isSimplified?: boolean
   className?: string
+  // Redesign Spec Props
+  primaryClubName?: string
+  bestPartner?: { name: string; wins: number; matches: number; winRate: number; userId: string | null; avatarUrl: string | null } | null
+  topRival?: { name: string; wins: number; matches: number; winRate: number; userId: string | null; avatarUrl: string | null } | null
+  signatureMoment?: { title: string; description: string; date: string; score: string } | null
+  isFollowing?: boolean
+  onFollowToggle?: () => void
+  onShare?: () => void
+  onTabChange?: (tab: 'overview' | 'matches' | 'clubs') => void
 }
 
 export function PlayerCard({
@@ -30,12 +39,20 @@ export function PlayerCard({
   rank,
   elo,
   isOwner = false,
-  showH2HButton = false,
   isSimplified = false,
   className,
+  primaryClubName,
+  bestPartner,
+  topRival,
+  signatureMoment,
+  isFollowing = false,
+  onFollowToggle,
+  onShare,
+  onTabChange,
 }: PlayerCardProps) {
   const navigate = useNavigate()
   const displayName = profile.display_name || profile.name || 'Anonymous'
+  const firstName = displayName.split(' ')[0] || displayName
   const isPrivate = profile.is_private ?? false
   const showFullStats = !isPrivate || isOwner
 
@@ -139,231 +156,375 @@ export function PlayerCard({
     )
   }
 
-  // Full arena-style profile card
+  // Full Column 2 Specs Redesigned Card
   return (
     <div
       className={cn(
-        "rounded-xl overflow-hidden border border-white/10 bg-slate-900 relative shadow-2xl text-white",
+        "rounded-xl border border-white/10 bg-slate-900 relative shadow-2xl text-white p-5",
         className
       )}
     >
       {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#ccff00]/5 via-transparent to-blue-900/10" />
 
-      <div className="relative p-5 sm:p-6">
-        {/* Status chips row */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <span className="inline-flex items-center gap-1 rounded-full border border-[#ccff00]/30 bg-[#ccff00]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#ccff00]">
-            🎴 Player Card
-          </span>
-          {isPrivate ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">
-              🔒 Private
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-400">
-              🌐 Public Profile
-            </span>
-          )}
-          {g.play_style && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-              ✦ {g.play_style.replace(/_/g, ' ')}
-            </span>
-          )}
-          {isOwner && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-              You
-            </span>
-          )}
-        </div>
-
-        {/* Avatar + Identity */}
-        <div className="flex flex-col items-center text-center space-y-4 sm:flex-row sm:items-start sm:text-left sm:space-y-0 sm:space-x-6">
-          <div className="avatar-gradient-outline shrink-0">
-            <div className="avatar-gradient-outline-inner h-24 w-24 flex items-center justify-center">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <UserRound size={48} className="text-[#ccff00]" />
-              )}
-            </div>
-          </div>
-          <div className="space-y-1.5 min-w-0 flex-1">
-            <h1 className="text-4xl font-extrabold tracking-tight text-white truncate sm:text-5xl">{displayName}</h1>
-            <p className="text-sm text-[var(--arena-text-muted)]">@{profile.name}</p>
-            {profile.city && (
-              <p className="text-sm text-slate-300 flex items-center justify-center sm:justify-start gap-1">
-                <MapPin size={14} className="text-[var(--arena-text-muted)]" />
-                {profile.city}
-              </p>
+      <div className="relative space-y-4">
+        {/* Top Eyebrow/Rank Header Row */}
+        <div className="flex items-center justify-between z-20 relative">
+          <div className="min-w-0">
+            {rank ? (
+              <div className="text-left leading-none">
+                <span className="text-2xl font-black text-[var(--arena-lime)]">#{rank.rank}</span>
+                <span className="block text-[8px] font-extrabold text-[var(--arena-text-muted)] uppercase tracking-wider mt-0.5">Singles Rank</span>
+              </div>
+            ) : (
+              <div className="text-left leading-none">
+                <span className="text-xs font-black text-[var(--arena-lime)] uppercase tracking-wider">Player Profile</span>
+              </div>
             )}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
-              <Badge className="bg-emerald-900 hover:bg-emerald-900 border-none capitalize text-white">
-                {profile.preferred_sport || 'badminton'}
-              </Badge>
-              {g.dominant_hand && (
-                <Badge className="bg-slate-800 border-slate-700 text-slate-300 capitalize">
-                  {g.dominant_hand}-handed
-                </Badge>
-              )}
-              {g.player_type && (
-                <Badge className="bg-slate-800 border-slate-700 text-slate-300 capitalize">
-                  {g.player_type.replace(/_/g, ' ')}
-                </Badge>
-              )}
-              {rank && (
-                <Badge className="bg-[var(--arena-accent-soft)] border border-[var(--arena-accent)]/25 text-[var(--arena-accent)] capitalize">
-                  #{rank.rank} Rank
-                </Badge>
-              )}
-            </div>
+          </div>
+          <div className="flex gap-2">
+            {isPrivate && (
+              <span className="inline-flex items-center gap-1 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">
+                🔒 Private
+              </span>
+            )}
+            <button 
+              type="button" 
+              onClick={onShare}
+              className="h-6 w-6 rounded bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white cursor-pointer"
+            >
+              <Share2 size={12} />
+            </button>
           </div>
         </div>
 
-        {/* Bio */}
-        {profile.bio ? (
-          <p className="mt-4 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">{profile.bio}</p>
-        ) : (
-          <p className="mt-4 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">
-            Add a short playing bio, social handles, and gear to make this card feel complete.
-          </p>
-        )}
+        {/* Vertical Portrait Container */}
+        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-slate-950 border border-white/10 shadow-2xl">
+          {/* Dark gradient overlay at bottom */}
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-slate-950 to-transparent z-10 pointer-events-none" />
+          
+          {/* Radial glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(204,255,0,0.15),transparent_45%)] z-10 pointer-events-none" />
+          
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt={displayName} className="h-full w-full object-cover relative z-0" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-slate-800 bg-slate-900 relative z-0">
+              <UserRound size={80} className="text-slate-650" />
+            </div>
+          )}
 
-        {/* Social handles */}
-        {profile.social_links && Object.values(profile.social_links).some(Boolean) && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {Object.entries(profile.social_links)
-              .filter(([, v]) => Boolean(v))
-              .map(([platform, handle]) => (
-                <span
-                  key={platform}
-                  className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-surface/5 px-2.5 py-0.5 text-xs text-slate-300"
-                >
-                  {platform === 'instagram' ? '📸' : platform === 'tiktok' ? '🎵' : platform === 'youtube' ? '▶️' : platform === 'facebook' ? '👤' : '🔗'} {handle}
-                </span>
-              ))}
+          {/* Primary Club Badge overlaid on top right of the photo */}
+          {primaryClubName && (
+            <div className="absolute top-3 right-3 z-20 flex items-center justify-center h-10 w-10 rounded-full bg-slate-950/85 backdrop-blur border border-[var(--arena-lime)]/40 shadow-lg text-[var(--arena-lime)] font-black text-[10px] uppercase tracking-tighter" title={primaryClubName}>
+              {primaryClubName.split(' ').map(w => w[0]).join('').slice(0, 3)}
+            </div>
+          )}
+        </div>
+
+        {/* Identity Details */}
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <h2 className="text-3xl font-black uppercase tracking-tight text-white leading-none truncate">
+              {displayName}
+            </h2>
+            {profile.name && (
+              <span className="text-sm text-[var(--arena-text-muted)] font-bold">
+                @{profile.name}
+              </span>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Stat tiles */}
-      {showFullStats && stats && stats.matchesPlayed > 0 && (
-        <div className="grid grid-cols-2 gap-2 border-t border-white/10 px-5 py-4 sm:grid-cols-4 sm:px-6 bg-slate-950/30">
-          <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Record</p>
-            <p className="mt-1 text-lg font-extrabold text-white">
-              <span className="text-emerald-400">{stats.wins}W</span>
-              <span className="text-[var(--arena-text-muted)] mx-0.5">-</span>
-              <span className="text-red-400">{stats.losses}L</span>
+          {primaryClubName && (
+            <p className="text-xs text-[var(--arena-text-dim)] font-medium">
+              {primaryClubName}
             </p>
+          )}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--arena-text-muted)] pt-0.5">
+            <span className="capitalize">{profile.preferred_sport || 'badminton'}</span>
+            {profile.city && (
+              <>
+                <span className="text-white/25 select-none">•</span>
+                <span className="flex items-center gap-0.5">
+                  <MapPin size={12} className="text-[var(--arena-text-muted)]" />
+                  {profile.city}
+                </span>
+              </>
+            )}
+            {g.dominant_hand && (
+              <>
+                <span className="text-white/25 select-none">•</span>
+                <span className="capitalize">{g.dominant_hand}-handed</span>
+              </>
+            )}
+            {g.player_type && (
+              <>
+                <span className="text-white/25 select-none">•</span>
+                <span className="capitalize">{g.player_type.replace(/_/g, ' ')}</span>
+              </>
+            )}
           </div>
-          <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Win Rate</p>
-            <p className="mt-1 text-lg font-extrabold text-[#ccff00]">{stats.winRate}%</p>
+        </div>
+
+        {/* Stats Strip - 3 columns */}
+        {showFullStats && (
+          <div className="grid grid-cols-3 gap-2 border border-white/10 rounded-xl bg-slate-950/40 p-3">
+            <div className="text-center">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Matches</p>
+              <p className="text-lg font-black text-white mt-0.5">{stats?.matchesPlayed || 0}</p>
+            </div>
+            <div className="text-center border-x border-white/5">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Win Rate</p>
+              <p className="text-lg font-black text-[#ccff00] mt-0.5">{stats?.winRate || 0}%</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">ELO Rating</p>
+              <p className="text-lg font-black text-white mt-0.5 flex items-center justify-center gap-0.5">
+                <span className="text-[#ccff00]">⚡</span> {elo != null ? elo : 1200}
+              </p>
+            </div>
           </div>
-          <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Form</p>
-            <div className="mt-1.5 flex items-center justify-center gap-1">
+        )}
+
+        {/* Streak & Form */}
+        {showFullStats && stats && stats.matchesPlayed > 0 && (
+          <div 
+            onClick={() => onTabChange?.('matches')}
+            className="flex items-center justify-between border border-white/10 rounded-xl bg-slate-950/40 p-3 cursor-pointer hover:border-[var(--arena-lime)]/30 transition-all group"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Current Streak</span>
+              <span className={cn(
+                "text-[10px] font-black px-1.5 py-0.5 rounded uppercase",
+                stats.streakType === 'win' ? 'text-emerald-400 bg-emerald-950/40' : stats.streakType === 'loss' ? 'text-red-400 bg-red-950/40' : 'text-slate-400 bg-slate-800'
+              )}>
+                {stats.streakType === 'win' ? `${stats.streak} Wins` : stats.streakType === 'loss' ? `${stats.streak} Loss` : 'No run'}
+              </span>
+            </div>
+            <div className="flex gap-1">
               {stats.form.slice(0, 5).map((m, i) => (
                 <span
                   key={i}
                   className={cn(
-                    "inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-extrabold text-white",
-                    m.won ? 'bg-[#84cc16]' : 'bg-red-500'
+                    "flex h-5 w-5 items-center justify-center rounded text-[9px] font-black border",
+                    m.won 
+                      ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400' 
+                      : 'bg-red-950/60 border-red-500/40 text-red-400'
                   )}
                   title={m.setScores}
                 >
                   {m.won ? 'W' : 'L'}
                 </span>
               ))}
-              {stats.form.length === 0 && <span className="text-xs text-[var(--arena-text-muted)]">—</span>}
             </div>
           </div>
-          <div className="rounded-lg border border-white/5 bg-surface/[0.03] p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Rank</p>
-            <p className="mt-1 text-lg font-extrabold text-white">
-              {rank ? `#${rank.rank}/${rank.total}` : 'Unranked'}
-            </p>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Gear section — 3 tiles */}
-      {profile.gear && Object.values(profile.gear).some(Boolean) && (() => {
-        if (!hasRacket && !hasStrings && !hasShoes && !hasPlay) return null
-        return (
-          <div className="border-t border-white/10 px-5 py-4 sm:px-6 bg-slate-950/20">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)] mb-3">Player Bag &amp; Specs</p>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {/* Racket tile */}
-              {hasRacket && (
-                <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Racket</p>
-                  <p className="text-sm font-bold text-slate-100">{g.racket || 'Unspecified'}</p>
-                  <p className="text-xs text-[var(--arena-text-muted)]">
-                    {[g.racket_weight && `Weight: ${g.racket_weight}`, g.racket_balance && `Balance: ${g.racket_balance.replace(/_/g, ' ')}`, g.racket_stiffness && `Flex: ${g.racket_stiffness}`].filter(Boolean).join(' • ') || 'No specs listed'}
-                  </p>
-                </div>
-              )}
-              {/* Strings & Tension tile */}
-              {hasStrings && (
-                <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Strings &amp; Tension</p>
-                  <p className="text-sm font-bold text-slate-100">{g.strings || 'Unspecified'}</p>
-                  <p className="text-xs">
-                    {g.tension && <span className="font-bold text-[#ccff00]">Tension: {g.tension}</span>}
-                    {g.tension && (g.grip_type || g.grip) && <span className="text-[var(--arena-text-muted)]"> • </span>}
-                    {(g.grip_type || g.grip) && <span className="text-[var(--arena-text-muted)]">Grip: {g.grip_type ? g.grip_type.replace(/_/g, ' ') : g.grip}</span>}
-                  </p>
-                </div>
-              )}
-              {/* Shoes + Play Profile tile */}
-              {(hasShoes || hasPlay) && (
-                <div className="rounded-lg border border-white/5 bg-surface/[0.02] p-3 space-y-1">
-                  {hasShoes && (
+        {/* Top Rival & Best Partner Grid */}
+        {showFullStats && (bestPartner || topRival) && (
+          <div className="grid grid-cols-2 gap-3">
+            {/* Top Rival */}
+            <div className="border border-white/10 rounded-xl bg-slate-950/30 p-3 min-w-0">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Main Rival</p>
+              {topRival ? (
+                <div className="mt-2 flex items-center gap-2 min-w-0">
+                  {topRival.userId ? (
+                    <Link 
+                      to={`/member/${topRival.userId}`}
+                      className="flex items-center gap-2 min-w-0 hover:text-[var(--arena-lime)] transition-colors group/rival"
+                    >
+                      {topRival.avatarUrl ? (
+                        <img src={topRival.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover border border-white/20 shrink-0" />
+                      ) : (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-[var(--arena-lime)] border border-white/10 shrink-0">
+                          {topRival.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-black truncate group-hover/rival:underline">{topRival.name}</p>
+                        <p className="text-[8px] text-[var(--arena-text-dim)] mt-0.5">H2H: {topRival.wins}W-{topRival.matches - topRival.wins}L</p>
+                      </div>
+                    </Link>
+                  ) : (
                     <>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-muted)]">Court Shoes</p>
-                      <p className="text-sm font-bold text-slate-100">{g.shoes}</p>
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-[var(--arena-lime)] border border-white/10 shrink-0">
+                        {topRival.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black truncate">{topRival.name}</p>
+                        <p className="text-[8px] text-[var(--arena-text-dim)] mt-0.5">H2H: {topRival.wins}W-{topRival.matches - topRival.wins}L</p>
+                      </div>
                     </>
                   )}
-                  {hasPlay && (
-                    <p className="text-xs text-[var(--arena-text-muted)] pt-1">
-                      {[g.play_style && g.play_style.replace(/_/g, ' '), g.dominant_hand && `${g.dominant_hand}-handed`, g.player_type && g.player_type.replace(/_/g, ' ')].filter(Boolean).join(' • ')}
-                    </p>
+                </div>
+              ) : (
+                <p className="text-[10px] text-[var(--arena-text-dim)] italic mt-2">No rival yet</p>
+              )}
+            </div>
+
+            {/* Best Partner */}
+            <div className="border border-white/10 rounded-xl bg-slate-950/30 p-3 min-w-0">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Best Partner</p>
+              {bestPartner ? (
+                <div className="mt-2 flex items-center gap-2 min-w-0">
+                  {bestPartner.userId ? (
+                    <Link 
+                      to={`/member/${bestPartner.userId}`}
+                      className="flex items-center gap-2 min-w-0 hover:text-[var(--arena-lime)] transition-colors group/partner"
+                    >
+                      {bestPartner.avatarUrl ? (
+                        <img src={bestPartner.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover border border-white/20 shrink-0" />
+                      ) : (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-[var(--arena-lime)] border border-white/10 shrink-0">
+                          {bestPartner.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-black truncate group-hover/partner:underline">{bestPartner.name}</p>
+                        <p className="text-[8px] text-[var(--arena-text-dim)] mt-0.5">{Math.round(bestPartner.winRate)}% WR ({bestPartner.matches}m)</p>
+                      </div>
+                    </Link>
+                  ) : (
+                    <>
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-[var(--arena-lime)] border border-white/10 shrink-0">
+                        {bestPartner.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black truncate">{bestPartner.name}</p>
+                        <p className="text-[8px] text-[var(--arena-text-dim)] mt-0.5">{Math.round(bestPartner.winRate)}% WR ({bestPartner.matches}m)</p>
+                      </div>
+                    </>
                   )}
                 </div>
+              ) : (
+                <p className="text-[10px] text-[var(--arena-text-dim)] italic mt-2">No partner yet</p>
               )}
             </div>
           </div>
-        )
-      })()}
-
-      <div className="border-t border-white/10 px-5 py-3 sm:px-6 bg-slate-950/10">
-          <div className="grid gap-y-1 gap-x-4 sm:grid-cols-3 text-xs mb-3">
-            <p className="text-slate-350">
-              Streak: <span className={cn(
-                "font-bold",
-                stats?.streakType === 'win' ? 'text-amber-400' : stats?.streakType === 'loss' ? 'text-red-400' : 'text-white'
-              )}>
-                {stats?.streakType === 'win' ? `🔥 ${stats.streak}W` : stats?.streakType === 'loss' ? `-${stats.streak}L` : '—'}
-              </span>
-            </p>
-            <p className="text-slate-355">Sport: <span className="font-bold text-white capitalize">{profile.preferred_sport || 'Badminton'}</span></p>
-            {elo != null && (
-              <p className="text-slate-355">Rating: <span className="font-extrabold text-[#ccff00]">⚡ {elo}</span></p>
-            )}
-          </div>
-
-        {/* Compare H2H button */}
-        {!isOwner && showFullStats && stats && stats.matchesPlayed > 0 && showH2HButton && (
-          <button
-            type="button"
-            onClick={() => navigate(`/my-court?rival=${displayName}`)}
-            className="w-full rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 py-2 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-900/30"
-          >
-            ⚔️ Compare Head-to-Head
-          </button>
         )}
+
+        {/* Signature Moment Box */}
+        {showFullStats && signatureMoment && (
+          <div className="border border-white/10 rounded-xl bg-slate-950/40 p-3.5">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Signature Moment</p>
+              <span className="text-[9px] text-[var(--arena-text-dim)]">{signatureMoment.date}</span>
+            </div>
+            <h4 className="text-xs font-black uppercase text-[var(--arena-lime)] mt-1.5 tracking-tight">{signatureMoment.title}</h4>
+            <p className="text-[11px] text-slate-300 mt-0.5 leading-normal">{signatureMoment.description}</p>
+            <div className="mt-2 text-right">
+              <span className="text-[10px] font-mono font-bold bg-slate-900 border border-white/10 px-2 py-0.5 rounded text-white">
+                {signatureMoment.score}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* About Player Specs */}
+        <div className="border border-white/10 rounded-xl bg-slate-950/30 p-3.5">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)] mb-2">About {firstName}</p>
+          {profile.bio && (
+            <p className="text-xs text-slate-300 leading-relaxed mb-3">{profile.bio}</p>
+          )}
+          <ul className="space-y-1 text-xs text-slate-350">
+            {g.play_style && (
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--arena-lime)] select-none">•</span>
+                <span>Play Style: <span className="font-bold text-white capitalize">{g.play_style.replace(/_/g, ' ')}</span></span>
+              </li>
+            )}
+            {g.dominant_hand && (
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--arena-lime)] select-none">•</span>
+                <span>Dominant Hand: <span className="font-bold text-white capitalize">{g.dominant_hand}-handed</span></span>
+              </li>
+            )}
+            {g.player_type && (
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--arena-lime)] select-none">•</span>
+                <span>Preferred Format: <span className="font-bold text-white capitalize">{g.player_type.replace(/_/g, ' ').replace('both', 'Singles & Doubles')}</span></span>
+              </li>
+            )}
+          </ul>
+        </div>
+
+        {/* Gears & Equipment Box */}
+        <div className="border border-white/10 rounded-xl bg-slate-950/40 p-3.5 space-y-2">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Gears & Specs</p>
+          <div className="grid gap-2 grid-cols-2">
+            {/* Racket Setup */}
+            <div className="rounded-lg border border-white/5 bg-slate-900/30 p-2.5 space-y-1">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight">Racket Setup</p>
+              {g.racket ? (
+                <>
+                  <p className="text-xs font-bold text-white truncate">{g.racket}</p>
+                  <p className="text-[9px] text-slate-400">
+                    {[
+                      g.racket_weight ? `${g.racket_weight}` : null,
+                      g.racket_balance ? `${g.racket_balance.replace(/_/g, ' ')}` : null,
+                      g.racket_stiffness ? `${g.racket_stiffness}` : null
+                    ].filter(Boolean).join(' • ') || 'No specs'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs font-medium text-slate-500 italic">
+                  {isOwner ? 'Add Racket...' : 'Not specified'}
+                </p>
+              )}
+              {(g.strings || g.tension) ? (
+                <p className="text-[9px] text-[var(--arena-lime)] font-semibold mt-1">
+                  <span>Strings: <span className="font-bold text-white">{g.strings || 'Unspecified'}</span>{g.tension && ` @ ${g.tension}`}</span>
+                </p>
+              ) : (
+                isOwner && g.racket && (
+                  <p className="text-[9px] text-[var(--arena-lime)]/50 font-semibold mt-1">
+                    Add strings & tension...
+                  </p>
+                )
+              )}
+            </div>
+
+            {/* Shoes Setup */}
+            <div className="rounded-lg border border-white/5 bg-slate-900/30 p-2.5 space-y-1">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight">Court Footwear</p>
+              {g.shoes ? (
+                <>
+                  <p className="text-xs font-bold text-white truncate">{g.shoes}</p>
+                  <p className="text-[9px] text-slate-400">Court Shoes</p>
+                </>
+              ) : (
+                <p className="text-xs font-medium text-slate-500 italic">
+                  {isOwner ? 'Add Shoes...' : 'Not specified'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Row Buttons */}
+        <div className="flex gap-2 pt-2 z-20 relative">
+          {isOwner ? (
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="flex-1 rounded-xl bg-[var(--arena-lime)] text-[#040d0f] font-black uppercase text-xs py-3 tracking-wider hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer text-center"
+            >
+              Edit Profile
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onFollowToggle}
+              className={cn(
+                "flex-1 rounded-xl font-black uppercase text-xs py-3 tracking-wider active:scale-[0.98] transition-all cursor-pointer text-center",
+                isFollowing 
+                  ? 'bg-slate-800 border border-white/10 text-white hover:bg-slate-700' 
+                  : 'bg-[var(--arena-lime)] text-[#040d0f] hover:brightness-110'
+              )}
+            >
+              {isFollowing ? 'Following' : 'Follow'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

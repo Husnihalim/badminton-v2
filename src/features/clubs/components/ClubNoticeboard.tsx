@@ -76,6 +76,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
     setShowAnnouncementModal(true)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const openEditMessageModal = (message: ClubMessage) => {
     setEditingMessage(message)
     setAnnouncementTitle(message.title)

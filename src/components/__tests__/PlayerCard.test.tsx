@@ -67,15 +67,15 @@ describe('PlayerCard', () => {
     expect(screen.getByText('Professional badminton enthusiast.')).toBeInTheDocument();
 
     // Verify stats
-    expect(screen.getByText('7W')).toBeInTheDocument();
-    expect(screen.getByText('3L')).toBeInTheDocument();
-    expect(screen.getByText('70%')).toBeInTheDocument();
-    expect(screen.getByText('#5/100')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument(); // Matches Played
+    expect(screen.getByText(/70\s*%/)).toBeInTheDocument(); // Win Rate
+    expect(screen.getByText(/1350/)).toBeInTheDocument(); // ELO
+    expect(screen.getByText('#5')).toBeInTheDocument(); // Rank
 
     // Verify gear & specs
     expect(screen.getByText('Yonex Astrox 88D')).toBeInTheDocument();
     expect(screen.getByText('BG80')).toBeInTheDocument();
-    expect(screen.getByText('Tension: 26 lbs')).toBeInTheDocument();
+    expect(screen.getByText(/26 lbs/)).toBeInTheDocument();
     expect(screen.getByText('Yonex Power Cushion')).toBeInTheDocument();
   });
 

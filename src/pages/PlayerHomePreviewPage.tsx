@@ -1,4 +1,4 @@
-import { Activity, CalendarDays, Club, Edit3, Plus, Search, Share2, Trophy, Users } from 'lucide-react'
+import { Activity, CalendarDays, Edit3, Search, Share2, Users } from 'lucide-react'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -113,31 +113,8 @@ export default function PlayerHomePreviewPage() {
         <Card>
           <CardContent className="space-y-4 p-4 sm:p-5">
             <div>
-              <h2 className="text-lg font-bold text-slate-950">Quick actions</h2>
-              <p className="text-sm leading-6 text-slate-600">Move from personal identity into club activity.</p>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[var(--arena-lime)] bg-[var(--arena-lime)] text-[#040d0f] p-2 text-center transition-all hover:brightness-110 active:scale-[0.98] min-h-[72px] cursor-pointer"
-              >
-                <Club size={18} aria-hidden="true" />
-                <span className="text-[10px] font-bold leading-tight">Club Home</span>
-              </button>
-              <button
-                type="button"
-                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 p-2 text-center transition-all hover:bg-slate-50 active:scale-[0.98] min-h-[72px] cursor-pointer"
-              >
-                <Trophy size={18} aria-hidden="true" />
-                <span className="text-[10px] font-bold leading-tight">Score Tools</span>
-              </button>
-              <button
-                type="button"
-                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-900 p-2 text-center transition-all hover:bg-slate-50 active:scale-[0.98] min-h-[72px] cursor-pointer"
-              >
-                <Plus size={18} aria-hidden="true" />
-                <span className="text-[10px] font-bold leading-tight">Join Club</span>
-              </button>
+              <h2 className="text-lg font-bold text-slate-950">Activity summary</h2>
+              <p className="text-sm leading-6 text-slate-600">Overview of your club stats.</p>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <MiniCount icon={<Users size={15} />} label="Clubs" value="2" />

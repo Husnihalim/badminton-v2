@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
 import { PasswordInput } from '../../components/ui/password-input'
+import { cn } from '../../lib/utils'
+import { DEFAULT_AVATARS } from '../../lib/defaultAvatars'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -17,6 +19,7 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wantCreateClub, setWantCreateClub] = useState(false)
+  const [selectedAvatarId, setSelectedAvatarId] = useState(() => DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)].id)
   
   // Optional player card fields
   const [preferredSport, setPreferredSport] = useState('badminton')
@@ -75,6 +78,8 @@ export default function RegisterPage() {
         play_style: playStyle || null,
       }
 
+      const selectedAvatarUrl = DEFAULT_AVATARS.find(a => a.id === selectedAvatarId)?.url || null
+
       const result = await register(
         email,
         name,
@@ -86,6 +91,7 @@ export default function RegisterPage() {
           preferred_sport: preferredSport,
           city: city.trim() || undefined,
           gear,
+          avatar_url: selectedAvatarUrl,
         }
       )
       if (!result.success) {
@@ -182,6 +188,34 @@ export default function RegisterPage() {
                 placeholder="Re-enter your password"
                 disabled={!isSupabaseConfigured || isSubmitting}
               />
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Choose your Cartoon Avatar <span className="text-xs font-normal text-slate-500">(Pre-selected for you)</span>
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {DEFAULT_AVATARS.map((avatar) => (
+                  <button
+                    key={avatar.id}
+                    type="button"
+                    onClick={() => setSelectedAvatarId(avatar.id)}
+                    className={cn(
+                      "relative aspect-square rounded-xl border-2 bg-slate-900 overflow-hidden flex items-center justify-center p-1 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer",
+                      selectedAvatarId === avatar.id
+                        ? "border-emerald-600 ring-2 ring-emerald-600/20 shadow-lg"
+                        : "border-slate-250 dark:border-white/10 hover:border-slate-350 dark:hover:border-white/20"
+                    )}
+                  >
+                    <img src={avatar.url} alt={avatar.label} className="h-full w-full object-contain" />
+                    {selectedAvatarId === avatar.id && (
+                      <div className="absolute right-1 top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-md">
+                        ✓
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="pt-2">
