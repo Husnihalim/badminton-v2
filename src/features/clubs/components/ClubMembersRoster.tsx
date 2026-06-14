@@ -37,10 +37,15 @@ export function ClubMembersRoster({
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isOwner = myMembership?.role === 'owner' || user?.role === 'superadmin'
+  const isViewerMember = myMembership?.status === 'active' || user?.role === 'superadmin'
 
   const filteredMembers = members.filter((member) => {
     const query = searchQuery.toLowerCase().trim()
     if (!query) return true
+    // If the viewer is not a member, do not search by email since they can't see emails anyway
+    if (!isViewerMember) {
+      return (member.name || '').toLowerCase().includes(query)
+    }
     return (
       (member.name || '').toLowerCase().includes(query) ||
       (member.email || '').toLowerCase().includes(query)
@@ -157,8 +162,12 @@ export function ClubMembersRoster({
                         {member.user_id === user?.id ? <span className="text-[10px] font-semibold text-[var(--arena-text-dim)]">You</span> : null}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--arena-text-muted)]">
-                        <span className="truncate max-w-[150px] sm:max-w-[240px] md:max-w-none">{member.email}</span>
-                        <span className="text-[10px] text-[var(--arena-text-dim)]">•</span>
+                        {isViewerMember && member.email ? (
+                          <>
+                            <span className="truncate max-w-[150px] sm:max-w-[240px] md:max-w-none">{member.email}</span>
+                            <span className="text-[10px] text-[var(--arena-text-dim)]">•</span>
+                          </>
+                        ) : null}
                         <span>Joined {new Date(member.joined_at).toLocaleDateString()}</span>
                       </div>
                     </div>
