@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ShieldCheck,
@@ -10,14 +10,17 @@ import {
   Trophy,
   Users,
   Megaphone,
+  Share2,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import CelebrationConfetti from '../components/CelebrationConfetti'
 import { useAuth } from '../context/AuthContext'
-import { useClub, useMyMembership, useClubMembers, useAllClubMatches } from '../features/clubs/hooks/useClubQueries'
+import { useClub, useMyMembership, useClubMembers, useAllClubMatches, useClubEvents } from '../features/clubs/hooks/useClubQueries'
 import { getClubJoinRequests, approveJoinRequest, rejectJoinRequest, buildInviteUrl } from '../lib/api'
 import type { ClubEvent, JoinRequest, MatchWithDetails } from '../types'
+import { generateStoryMoments } from '../lib/storyMoments'
+import type { StoryMoment } from '../lib/storyMoments'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Page } from '../components/ui/page'
@@ -30,6 +33,164 @@ import { ClubMembersSidebar } from '../features/clubs/components/ClubMembersSide
 import { ClubMembersRoster } from '../features/clubs/components/ClubMembersRoster'
 import { SessionHighlightsWidget } from '../features/clubs/components/SessionHighlightsWidget'
 
+function calculateSessionHighlights(eventMatches: MatchWithDetails[]) {
+  const playerStats = new Map<string, {
+    games: number
+    wins: number
+    losses: number
+    pointsFor: number
+    pointsAgainst: number
+    matchResults: boolean[]
+  }>()
+
+  const chronMatches = [...eventMatches].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+
+  for (const match of chronMatches) {
+    const scoreSets = match.score_sets || []
+    if (scoreSets.length === 0) continue
+
+    const team1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+    const team2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+    if (team1Sets === team2Sets) continue // Draw
+
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    let team1Points = 0
+    let team2Points = 0
+    for (const set of scoreSets) {
+      team1Points += set.team1_score
+      team2Points += set.team2_score
+    }
+
+    for (const p of match.participants) {
+      const name = p.name || p.guest_name || 'Guest'
+      const isWin = p.team === winningTeam
+
+      let stats = playerStats.get(name)
+      if (!stats) {
+        stats = { games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, matchResults: [] }
+        playerStats.set(name, stats)
+      }
+
+      stats.games++
+      if (isWin) stats.wins++
+      else stats.losses++
+
+      if (p.team === 1) {
+        stats.pointsFor += team1Points
+        stats.pointsAgainst += team2Points
+      } else {
+        stats.pointsFor += team2Points
+        stats.pointsAgainst += team1Points
+      }
+      stats.matchResults.push(isWin)
+    }
+  }
+
+  const playersList = Array.from(playerStats.entries()).map(([name, stats]) => {
+    const winRate = stats.games > 0 ? (stats.wins / stats.games) * 100 : 0
+    const pointDiff = stats.pointsFor - stats.pointsAgainst
+    
+    let longestStreak = 0
+    let currentStreak = 0
+    for (const res of stats.matchResults) {
+      if (res) {
+        currentStreak++
+        if (currentStreak > longestStreak) {
+          longestStreak = currentStreak
+        }
+      } else {
+        currentStreak = 0
+      }
+    }
+
+    return {
+      name,
+      ...stats,
+      winRate,
+      pointDiff,
+      longestStreak,
+    }
+  })
+
+  const mvpCandidates = playersList.filter(p => p.games >= 2)
+  let mvp = null
+  if (mvpCandidates.length > 0) {
+    mvp = [...mvpCandidates].sort((a, b) => b.winRate - a.winRate || b.pointDiff - a.pointDiff)[0]
+  } else if (playersList.length > 0) {
+    mvp = [...playersList].sort((a, b) => b.winRate - a.winRate || b.pointDiff - a.pointDiff)[0]
+  }
+
+  const streakCandidates = playersList.filter(p => p.longestStreak >= 2)
+  let streakStar = null
+  if (streakCandidates.length > 0) {
+    streakStar = [...streakCandidates].sort((a, b) => b.longestStreak - a.longestStreak || b.wins - a.wins)[0]
+  }
+
+  const resilienceCandidates = playersList.filter(p => p.games >= 2)
+  let resilience = null
+  if (resilienceCandidates.length > 0) {
+    resilience = [...resilienceCandidates].sort((a, b) => a.winRate - b.winRate || b.games - a.games)[0]
+    if (resilience.winRate >= 50) {
+      resilience = null
+    }
+  }
+
+  const duos = new Map<string, { wins: number; matches: number }>()
+  for (const match of chronMatches) {
+    if (match.match_type !== 'doubles') continue
+    const scoreSets = match.score_sets || []
+    if (scoreSets.length === 0) continue
+
+    const team1Sets = scoreSets.filter(s => s.team1_score > s.team2_score).length
+    const team2Sets = scoreSets.filter(s => s.team2_score > s.team1_score).length
+    if (team1Sets === team2Sets) continue // Draw
+
+    const winningTeam = team1Sets > team2Sets ? 1 : 2
+
+    const team1P = match.participants.filter(p => p.team === 1).map(p => p.name || p.guest_name || 'Guest')
+    const team2P = match.participants.filter(p => p.team === 2).map(p => p.name || p.guest_name || 'Guest')
+
+    if (team1P.length === 2) {
+      team1P.sort()
+      const key = team1P.join(' & ')
+      const stats = duos.get(key) ?? { wins: 0, matches: 0 }
+      stats.matches++
+      if (winningTeam === 1) stats.wins++
+      duos.set(key, stats)
+    }
+    if (team2P.length === 2) {
+      team2P.sort()
+      const key = team2P.join(' & ')
+      const stats = duos.get(key) ?? { wins: 0, matches: 0 }
+      stats.matches++
+      if (winningTeam === 2) stats.wins++
+      duos.set(key, stats)
+    }
+  }
+
+  const duoList = Array.from(duos.entries()).map(([names, stats]) => {
+    const winRate = stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0
+    return { names, ...stats, winRate }
+  })
+
+  const powerDuoCandidates = duoList.filter(d => d.matches >= 2)
+  let powerDuo = null
+  if (powerDuoCandidates.length > 0) {
+    powerDuo = [...powerDuoCandidates].sort((a, b) => b.winRate - a.winRate || b.matches - a.matches)[0]
+  }
+
+  return {
+    playersList,
+    mvp,
+    streakStar,
+    resilience,
+    powerDuo,
+  }
+}
+
 export default function ClubHomePage() {
   const { clubId } = useParams()
   const { user, isLoading: authLoading } = useAuth()
@@ -39,6 +200,128 @@ export default function ClubHomePage() {
   const { data: myMembership, isLoading: membershipLoading } = useMyMembership(clubId, !!user)
   const { data: members = [] } = useClubMembers(clubId)
   const { data: matches = [] } = useAllClubMatches(clubId)
+  const { data: events = [] } = useClubEvents(clubId)
+
+  // Latest Completed Session Highlights
+  const latestSessionInfo = useMemo(() => {
+    if (matches.length === 0) return null
+
+    // 1. Try to find the latest event that has recorded matches
+    let latestEvent: typeof events[number] | null = null
+    for (const event of events) {
+      const eventMatches = matches.filter(m => m.event_id === event.id)
+      if (eventMatches.length > 0) {
+        if (!latestEvent || (event.event_date || '').localeCompare(latestEvent.event_date || '') > 0) {
+          latestEvent = event
+        }
+      }
+    }
+
+    if (latestEvent) {
+      return {
+        title: latestEvent.title,
+        date: latestEvent.event_date,
+        matches: matches.filter(m => m.event_id === latestEvent!.id),
+      }
+    }
+
+    // 2. Fallback: Group matches by date and find the latest date
+    const matchesByDate: Record<string, typeof matches> = {}
+    matches.forEach(m => {
+      const dStr = m.match_date || (m.created_at || '').split('T')[0] || ''
+      if (dStr) {
+        if (!matchesByDate[dStr]) matchesByDate[dStr] = []
+        matchesByDate[dStr].push(m)
+      }
+    })
+
+    let latestDate = ''
+    Object.keys(matchesByDate).forEach(dStr => {
+      if (!latestDate || dStr.localeCompare(latestDate) > 0) {
+        latestDate = dStr
+      }
+    })
+
+    if (latestDate) {
+      return {
+        title: `Weekly Session`,
+        date: latestDate,
+        matches: matchesByDate[latestDate],
+      }
+    }
+
+    return null
+  }, [events, matches])
+
+  const latestHighlights = useMemo(() => {
+    if (!latestSessionInfo) return null
+    return calculateSessionHighlights(latestSessionInfo.matches)
+  }, [latestSessionInfo])
+
+  const [pinnedStoryIds, setPinnedStoryIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`pinned_stories_${clubId}`) || '[]')
+    } catch {
+      return []
+    }
+  })
+  const [showStorySelectorModal, setShowStorySelectorModal] = useState(false)
+
+  const handleTogglePinStory = (storyId: string) => {
+    const next = pinnedStoryIds.includes(storyId)
+      ? pinnedStoryIds.filter(id => id !== storyId)
+      : [...pinnedStoryIds, storyId]
+    setPinnedStoryIds(next)
+    localStorage.setItem(`pinned_stories_${clubId}`, JSON.stringify(next))
+    setSuccessMessage(pinnedStoryIds.includes(storyId) ? 'Removed from featured stories.' : 'Pinned to homepage.')
+    setTimeout(() => setSuccessMessage(''), 2500)
+  }
+
+  // All computed stories for members in the club
+  const allClubStories = useMemo(() => {
+    const allStories: (StoryMoment & { playerName: string })[] = []
+    const usedTemplates = new Set<string>()
+    
+    members.forEach(member => {
+      if (!member.user_id) return
+      const memberMatches = matches.filter(m => 
+        m.participants.some(p => p.user_id === member.user_id)
+      )
+      if (memberMatches.length === 0) return
+      
+      const moments = generateStoryMoments({
+        user: {
+          id: member.user_id,
+          name: member.name || 'Member',
+          display_name: member.name || 'Member',
+        },
+        matches: memberMatches,
+        limit: 3,
+        excludeTemplates: usedTemplates,
+      })
+      
+      moments.forEach(m => {
+        allStories.push({
+          ...m,
+          playerName: member.name || 'Member',
+        })
+      })
+    })
+
+    return allStories.sort((a, b) => b.priority - a.priority || (b.matchDate || '').localeCompare(a.matchDate || ''))
+  }, [members, matches])
+
+  // Featured stories actually displayed on the homepage
+  const featuredStories = useMemo(() => {
+    if (pinnedStoryIds.length > 0) {
+      const pinned = allClubStories.filter((s: StoryMoment & { playerName: string }) => pinnedStoryIds.includes(s.id))
+      if (pinned.length > 0) return pinned
+    }
+
+    const exciting = allClubStories.filter((s: StoryMoment & { playerName: string }) => s.type !== 'latest_result')
+    const fallbackList = exciting.length > 0 ? exciting : allClubStories
+    return fallbackList.slice(0, 4)
+  }, [allClubStories, pinnedStoryIds])
 
   const [activeTab, setActiveTab] = useState<'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard'>(() => {
     const tabParam = new URLSearchParams(window.location.search).get('tab')
@@ -307,6 +590,159 @@ export default function ClubHomePage() {
               </Card>
             ) : null}
 
+            {/* Latest Session Summary Inline */}
+            {latestSessionInfo && latestHighlights && (
+              <div className="rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] p-4 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Trophy size={16} className="text-[var(--arena-accent)]" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Latest Session Highlights</h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-[var(--arena-text-dim)]">
+                    {new Date(latestSessionInfo.date).toLocaleDateString(undefined, {
+                      month: 'short', day: 'numeric', year: 'numeric'
+                    })}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[var(--arena-border)]/50 pb-3">
+                  <span className="text-[10px] font-mono text-[var(--arena-accent)] bg-[var(--arena-accent-soft)] px-2 py-0.5 rounded border border-[var(--arena-accent)]/20 uppercase tracking-wider">
+                    🏸 {latestSessionInfo.title}
+                  </span>
+                  <span className="text-[9px] font-mono text-[var(--arena-text-dim)]">
+                    {latestSessionInfo.matches.length} Matches Scored
+                  </span>
+                </div>
+
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+                  {/* MVP (King of the Court) */}
+                  {latestHighlights.mvp && (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 relative hover:bg-amber-500/10 transition-colors duration-150">
+                      <span className="absolute top-2 right-2 text-sm">👑</span>
+                      <p className="text-[8px] font-black text-amber-400 uppercase tracking-widest leading-none">MVP (King of Court)</p>
+                      <p className="text-sm font-black text-white truncate mt-2">{latestHighlights.mvp.name}</p>
+                      <p className="text-[10px] text-amber-300 font-semibold mt-1 flex items-center gap-1">
+                        <span>🏆</span>
+                        <span>{Math.round(latestHighlights.mvp.winRate)}% Win Rate ({latestHighlights.mvp.wins}W-{latestHighlights.mvp.losses}L)</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Hot Streak */}
+                  {latestHighlights.streakStar && (
+                    <div className="rounded-lg border border-[var(--arena-accent)]/25 bg-[var(--arena-accent-soft)]/20 p-3 relative hover:bg-[var(--arena-accent-soft)]/30 transition-colors duration-150">
+                      <span className="absolute top-2 right-2 text-sm">🔥</span>
+                      <p className="text-[8px] font-black text-[var(--arena-accent)] uppercase tracking-widest leading-none">Streak Star</p>
+                      <p className="text-sm font-black text-white truncate mt-2">{latestHighlights.streakStar.name}</p>
+                      <p className="text-[10px] text-[var(--arena-accent)] font-semibold mt-1 flex items-center gap-1">
+                        <span>📈</span>
+                        <span>{latestHighlights.streakStar.longestStreak} Match Win Streak</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Resilience Award */}
+                  {latestHighlights.resilience && (
+                    <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-3 relative hover:bg-sky-500/10 transition-colors duration-150">
+                      <span className="absolute top-2 right-2 text-sm">💪</span>
+                      <p className="text-[8px] font-black text-sky-400 uppercase tracking-widest leading-none">Resilience Award</p>
+                      <p className="text-sm font-black text-white truncate mt-2">{latestHighlights.resilience.name}</p>
+                      <p className="text-[10px] text-sky-300 font-semibold mt-1 flex items-center gap-1">
+                        <span>🏸</span>
+                        <span>Played {latestHighlights.resilience.games} Matches</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Featured Club Stories */}
+            {featuredStories.length > 0 && (
+              <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-1.5 text-white">
+                    <Activity size={16} className="text-[var(--arena-lime)]" />
+                    <h3 className="text-sm font-black uppercase tracking-tight text-slate-100 flex items-center gap-2">
+                      Featured Player Stories
+                      {pinnedStoryIds.length === 0 && (
+                        <span className="text-[9px] lowercase font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded">
+                          (auto-selected)
+                        </span>
+                      )}
+                    </h3>
+                  </div>
+                  {isAdmin && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setShowStorySelectorModal(true)}
+                      className="text-[10px] font-black uppercase h-7 px-2 border-slate-800 bg-slate-900/50 hover:bg-slate-900 hover:text-white flex items-center gap-1 cursor-pointer"
+                    >
+                      Manage Features
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {featuredStories.map((story: StoryMoment & { playerName: string }) => (
+                    <div key={story.id} className="rounded-lg border border-slate-800/80 bg-slate-900/50 p-3 flex flex-col justify-between hover:border-slate-700 transition-all duration-150">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[8px] font-bold text-[var(--arena-lime)] uppercase tracking-wider bg-[var(--arena-lime)]/10 border border-[var(--arena-lime)]/20 px-1.5 py-0.5 rounded">
+                            {story.title}
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono">
+                            {story.matchDate ? new Date(story.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-200 leading-relaxed mt-2 font-medium">
+                          {story.body}
+                        </p>
+                      </div>
+                      
+                      <div className="border-t border-slate-800 mt-3 pt-2.5 flex items-center justify-between gap-2">
+                        <span className="text-[9px] font-mono text-slate-400 truncate">
+                          {story.proofLabel}
+                        </span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePinStory(story.id)}
+                              className={`text-[9px] font-black uppercase flex items-center gap-0.5 cursor-pointer hover:underline ${
+                                pinnedStoryIds.includes(story.id)
+                                  ? 'text-yellow-400'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                              title={pinnedStoryIds.includes(story.id) ? "Unfeature Story" : "Feature Story"}
+                            >
+                              ★ {pinnedStoryIds.includes(story.id) ? 'Featured' : 'Feature'}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                `🔥 *${story.title}*\n${story.body}\n\n${story.proofLabel}\n📍 ${club.name}`
+                              )
+                              setSuccessMessage('Story copied to clipboard!')
+                              setTimeout(() => setSuccessMessage(''), 2000)
+                            }}
+                            className="text-[9px] font-black uppercase text-[var(--arena-lime)] hover:underline flex items-center gap-0.5 shrink-0 cursor-pointer"
+                          >
+                            <Share2 size={10} />
+                            Share
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Upcoming events calendar */}
             <ClubEventsCalendar 
               clubId={clubId} 
@@ -403,6 +839,72 @@ export default function ClubHomePage() {
           </Card>
         </div>
       ) : null}
+
+      {showStorySelectorModal && isAdmin && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setShowStorySelectorModal(false)}>
+          <Card className="max-h-[85vh] w-full overflow-hidden flex flex-col rounded-xl sm:max-w-xl border-[var(--arena-border)] bg-[var(--arena-surface)] shadow-2xl animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-[var(--arena-border)] flex items-center justify-between shrink-0 bg-slate-950/40">
+              <div>
+                <h3 className="text-base font-black uppercase text-white tracking-tight">Feature Player Stories</h3>
+                <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Select which exciting moments to display on the club homepage.</p>
+              </div>
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg text-slate-400 hover:text-white" onClick={() => setShowStorySelectorModal(false)} aria-label="Close">
+                <X size={16} aria-hidden="true" />
+              </Button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {allClubStories.length === 0 ? (
+                <p className="text-xs text-[var(--arena-text-dim)] text-center py-8">No player stories generated yet. Record some matches to create stories!</p>
+              ) : (
+                allClubStories.map((story: StoryMoment & { playerName: string }) => {
+                  const isPinned = pinnedStoryIds.includes(story.id)
+                  return (
+                    <div
+                      key={story.id}
+                      onClick={() => handleTogglePinStory(story.id)}
+                      className={`p-3 rounded-lg border transition-all duration-150 cursor-pointer flex gap-3 items-start select-none ${
+                        isPinned
+                          ? 'border-[var(--arena-accent)]/40 bg-[var(--arena-accent-soft)] text-white'
+                          : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900 text-slate-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isPinned}
+                        onChange={() => {}} // handled by parent click
+                        className="mt-1 accent-[var(--arena-accent)] shrink-0 pointer-events-none"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--arena-lime)]">
+                            {story.playerName} • {story.title}
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono shrink-0">
+                            {story.matchDate ? new Date(story.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-200 mt-1 leading-relaxed line-clamp-2">{story.body}</p>
+                        <p className="text-[9px] font-mono text-slate-500 mt-1">{story.proofLabel}</p>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-[var(--arena-border)] flex justify-end shrink-0 bg-slate-950/40">
+              <Button
+                type="button"
+                onClick={() => setShowStorySelectorModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
+              >
+                Done
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       <ScoreRecordingModal
         isOpen={showScoreModal}

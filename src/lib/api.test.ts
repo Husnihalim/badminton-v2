@@ -75,14 +75,19 @@ describe('api.ts - Critical Database Methods', () => {
 
       // Setup the supabase chain mock
       const mockEq = vi.fn().mockReturnThis()
-      const mockOrder = vi.fn().mockImplementation(() => Promise.resolve({ data: mockMatches, error: null }))
+      const mockOrder = vi.fn().mockReturnThis()
       
-      const mockFrom = vi.mocked(supabase.from)
-      mockFrom.mockReturnValue({
+      const mockChain = {
         select: vi.fn().mockReturnThis(),
         eq: mockEq,
         order: mockOrder,
-      } as never)
+        then: vi.fn().mockImplementation((onfulfilled) => {
+          return Promise.resolve({ data: mockMatches, error: null }).then(onfulfilled)
+        })
+      }
+      
+      const mockFrom = vi.mocked(supabase.from)
+      mockFrom.mockReturnValue(mockChain as never)
 
       const result = await getClubMatches('club-1')
 

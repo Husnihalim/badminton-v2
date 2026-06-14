@@ -8,6 +8,9 @@ import ScorecardShareModal from '../components/ScorecardShareModal'
 import RivalryShareModal from '../components/RivalryShareModal'
 import { generateStoryMoments } from '../lib/storyMoments'
 import { calculatePlayerInsights, getSignatureMoment } from '../lib/insights'
+import { getPendingRosterInvites, respondToRosterInvite } from '../lib/api/competitions'
+import type { RosterInvite } from '../types/competition'
+
 
 // Hooks
 import {
@@ -49,6 +52,33 @@ export default function DashboardPage() {
   } | null>(null)
   const [isBannerDismissed, setIsBannerDismissed] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [pendingInvites, setPendingInvites] = useState<RosterInvite[]>([])
+
+  useEffect(() => {
+    if (!user) return
+    const userId = user.id
+    async function loadInvites() {
+      const { invites, error } = await getPendingRosterInvites(userId)
+      if (!error && invites) {
+        setPendingInvites(invites)
+      }
+    }
+    loadInvites()
+  }, [user])
+
+  const handleRespondToInvite = async (inviteId: string, accept: boolean) => {
+    if (!user) return
+    const { error } = await respondToRosterInvite(inviteId, user.id, accept)
+    if (!error) {
+      setToastMessage(accept ? 'Invitation accepted!' : 'Invitation declined')
+      setPendingInvites(prev => prev.filter(inv => inv.id !== inviteId))
+      setTimeout(() => setToastMessage(''), 2000)
+    } else {
+      setToastMessage('Failed to update invitation status')
+      setTimeout(() => setToastMessage(''), 2000)
+    }
+  }
+
 
   // React Query Queries
   const { data: dashboardData, isLoading: dashboardLoading } = usePlayerDashboard(user?.id)
@@ -355,6 +385,48 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Roster Invites Banner */}
+      {pendingInvites.map((invite) => {
+        const invitingClubName = invite.competition?.club?.name || 'Admin'
+        return (
+          <div key={invite.id} className="mb-4 rounded-xl border border-[var(--arena-blue)]/20 bg-[var(--arena-surface-elevated)]/30 p-4 backdrop-blur-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-1.5">
+                  <span className="text-[var(--arena-blue)]">🏸 Roster Invitation</span>
+                  <span className="rounded bg-[rgba(56,189,248,0.1)] px-1.5 py-0.5 text-[10px] font-black uppercase text-[var(--arena-blue)] border border-[rgba(56,189,248,0.2)]">
+                    Pending
+                  </span>
+                </h3>
+                <p className="text-xs text-[var(--arena-text-muted)]">
+                  <strong>{invitingClubName}</strong> invited you to play in their roster for <strong>"{invite.competition?.title}"</strong>.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 text-xs cursor-pointer bg-[var(--arena-lime)] text-black font-bold border-none"
+                  onClick={() => handleRespondToInvite(invite.id, true)}
+                >
+                  Accept
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 text-xs cursor-pointer border-red-500/25 text-red-400 hover:bg-red-950/20"
+                  onClick={() => handleRespondToInvite(invite.id, false)}
+                >
+                  Decline
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+
 
       {/* Tab Navigation */}
       <div className="border-b border-[var(--arena-border)] flex gap-1 overflow-x-auto whitespace-nowrap">

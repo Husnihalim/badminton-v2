@@ -58,10 +58,10 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run racket clubs, sessions, scores, and members/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /The Grassroots/i })).toBeInTheDocument()
       })
       
-      expect(screen.getAllByRole('link', { name: /get started/i }).length).toBeGreaterThan(0)
+      expect(screen.getAllByRole('link', { name: /Start Your Club free/i }).length).toBeGreaterThan(0)
       expect(screen.queryByText(/mobile-first club operations/i)).not.toBeInTheDocument()
     })
 
@@ -69,11 +69,11 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByText(/club-ready/i)).toBeInTheDocument()
+        expect(screen.getByText(/Fast Scoring & Elo/i)).toBeInTheDocument()
       })
       
-      expect(screen.getAllByText(/fast scoring/i).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/phone-first/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/Auto-Generated Stories/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/WhatsApp Sharing/i).length).toBeGreaterThan(0)
     })
   })
 
@@ -85,7 +85,7 @@ describe('KelabSukan App - Core Features', () => {
         expect(screen.getByText('kelabsukan.com')).toBeInTheDocument()
       })
       
-      expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /^home$/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /my court/i })).toBeInTheDocument()
     })
   })
@@ -143,7 +143,7 @@ describe('KelabSukan App - Core Features', () => {
       renderApp('/')
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /run racket clubs, sessions, scores, and members/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /The Grassroots/i })).toBeInTheDocument()
       })
 
       const loginLinks = screen.getAllByRole('link', { name: /log in/i })

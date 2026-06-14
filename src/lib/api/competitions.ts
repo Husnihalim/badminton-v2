@@ -7,7 +7,8 @@ import type {
   CreateCompetitionInput,
   Friendly,
   FriendlyPair,
-  FriendlyMatchup
+  FriendlyMatchup,
+  RosterInvite
 } from '../../types/competition'
 
 // Mapping helpers for legacy Friendly compatibility
@@ -457,6 +458,245 @@ export async function cancelCompetition(competitionId: string): Promise<{ error:
     .eq('id', competitionId)
 
   return { error }
+}
+
+// Invite a member to join a competition roster
+export async function inviteMemberToRoster(
+  competitionId: string,
+  clubId: string | null,
+  userId: string,
+  partnerId: string | null = null
+): Promise<{ participant: CompetitionParticipant | null; error: Error | null }> {
+  try {
+    // 1. Get user profiles for name formatting
+    const { data: userProfile, error: profile1Error } = await supabase
+      .from('profiles')
+      .select('id, name, display_name')
+      .eq('id', userId)
+      .single()
+
+    if (profile1Error) throw profile1Error
+
+    let partnerProfile = null
+    if (partnerId) {
+      const { data: partProf, error: profile2Error } = await supabase
+        .from('profiles')
+        .select('id, name, display_name')
+        .eq('id', partnerId)
+        .single()
+      if (profile2Error) throw profile2Error
+      partnerProfile = partProf
+    }
+
+    const name = partnerProfile 
+      ? `${userProfile.display_name || userProfile.name} / ${partnerProfile.display_name || partnerProfile.name}`
+      : `${userProfile.display_name || userProfile.name}`
+
+    // 2. Fetch competition title & inviting club details
+    const { data: comp, error: compError } = await supabase
+      .from('competitions')
+      .select('title, club:clubs!club_id(name)')
+      .eq('id', competitionId)
+      .single()
+
+    if (compError) throw compError
+
+    // 3. Insert into competition_participants
+    const { data: participant, error: partError } = await supabase
+      .from('competition_participants')
+      .insert({
+        competition_id: competitionId,
+        club_id: clubId,
+        name,
+        user_1_id: userId,
+        user_2_id: partnerId || null,
+        user_1_status: 'pending',
+        user_2_status: partnerId ? 'pending' : 'accepted'
+      })
+      .select(`
+        *,
+        player_1:profiles!user_1_id(id, name, display_name, avatar_url),
+        player_2:profiles!user_2_id(id, name, display_name, avatar_url)
+      `)
+      .single()
+
+    if (partError) throw partError
+
+    // 4. Send Notifications
+    const clubObj = Array.isArray(comp.club) ? comp.club[0] : comp.club
+    const clubName = (clubObj as unknown as { name: string } | null)?.name || 'Admin'
+    const inviteMessage = `${clubName} invited you to play in their roster for "${comp.title}"`
+
+    // Notification for Player 1
+    const { error: notiError1 } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: 'roster_invite',
+        title: 'Roster Invitation',
+        message: inviteMessage,
+        data: { competition_id: competitionId, participant_id: participant.id }
+      })
+
+    if (notiError1) console.error('Error creating notification 1:', notiError1)
+
+    // Notification for Player 2 (if exists)
+    if (partnerId) {
+      const { error: notiError2 } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: partnerId,
+          type: 'roster_invite',
+          title: 'Roster Invitation',
+          message: inviteMessage,
+          data: { competition_id: competitionId, participant_id: participant.id }
+        })
+      if (notiError2) console.error('Error creating notification 2:', notiError2)
+    }
+
+    return { participant: participant as CompetitionParticipant, error: null }
+  } catch (err) {
+    console.error('Error in inviteMemberToRoster:', err)
+    return { participant: null, error: err as Error }
+  }
+}
+
+// Respond to a pending roster invite
+export async function respondToRosterInvite(
+  participantId: string,
+  userId: string,
+  accept: boolean
+): Promise<{ error: Error | null }> {
+  try {
+    // 1. Get participant details to determine user 1 or user 2
+    const { data: part, error: fetchError } = await supabase
+      .from('competition_participants')
+      .select('*, competition:competitions(*)')
+      .eq('id', participantId)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    const isUser1 = part.user_1_id === userId
+    const isUser2 = part.user_2_id === userId
+
+    if (!isUser1 && !isUser2) {
+      throw new Error('User is not a member of this participant pair')
+    }
+
+    const nextStatus = accept ? 'accepted' : 'declined'
+    const updatePayload: Record<string, string> = {}
+    if (isUser1) updatePayload.user_1_status = nextStatus
+    if (isUser2) updatePayload.user_2_status = nextStatus
+
+    // 2. Update status in db
+    const { error: updateError } = await supabase
+      .from('competition_participants')
+      .update(updatePayload)
+      .eq('id', participantId)
+
+    if (updateError) throw updateError
+
+    // 3. Mark the notification as read
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('type', 'roster_invite')
+      .eq('data->>participant_id', participantId)
+
+    // 4. Send response notification to competition creator
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name, display_name')
+      .eq('id', userId)
+      .single()
+
+    const playerName = profile?.display_name || profile?.name || 'A player'
+    const compTitle = (part.competition as { title: string } | null)?.title || 'competition'
+    const creatorId = (part.competition as { created_by?: string } | null)?.created_by
+
+    if (creatorId) {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: creatorId,
+          type: 'announcement',
+          title: accept ? 'Invitation Accepted' : 'Invitation Declined',
+          message: `${playerName} has ${accept ? 'accepted' : 'declined'} the invite to play in "${compTitle}"`,
+          data: { competition_id: part.competition_id }
+        })
+    }
+
+    // 5. If declined, delete the participant row to free up slot
+    if (!accept) {
+      await supabase.from('competition_participants').delete().eq('id', participantId)
+    }
+
+    return { error: null }
+  } catch (err) {
+    console.error('Error in respondToRosterInvite:', err)
+    return { error: err as Error }
+  }
+}
+
+// Get pending roster invites for a user
+export async function getPendingRosterInvites(
+  userId: string
+): Promise<{ invites: RosterInvite[]; error: Error | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('competition_participants')
+      .select(`
+        id,
+        competition_id,
+        club_id,
+        name,
+        user_1_id,
+        user_2_id,
+        user_1_status,
+        user_2_status,
+        competition:competitions(
+          title,
+          start_date,
+          club:clubs!club_id(name)
+        )
+      `)
+      .or(`and(user_1_id.eq.${userId},user_1_status.eq.pending),and(user_2_id.eq.${userId},user_2_status.eq.pending)`)
+
+    if (error) throw error
+
+    const mapped: RosterInvite[] = (data || []).map(item => {
+      const compRaw = Array.isArray(item.competition)
+        ? item.competition[0]
+        : (item.competition as unknown as { title: string; start_date: string; club: { name: string }[] | { name: string } | null })
+      
+      const clubRaw = compRaw && Array.isArray(compRaw.club)
+        ? compRaw.club[0]
+        : (compRaw?.club as unknown as { name: string } | null)
+
+      return {
+        id: item.id,
+        competition_id: item.competition_id,
+        club_id: item.club_id,
+        name: item.name,
+        user_1_id: item.user_1_id,
+        user_2_id: item.user_2_id,
+        user_1_status: item.user_1_status as 'pending' | 'accepted' | 'declined',
+        user_2_status: item.user_2_status as 'pending' | 'accepted' | 'declined',
+        competition: compRaw ? {
+          title: compRaw.title,
+          start_date: compRaw.start_date,
+          club: clubRaw ? { name: clubRaw.name } : null
+        } : null
+      }
+    })
+
+    return { invites: mapped, error: null }
+  } catch (err) {
+    console.error('Error in getPendingRosterInvites:', err)
+    return { invites: [], error: err as Error }
+  }
 }
 
 // Get competition statistics for a club (only filters formats of 'team_friendly')

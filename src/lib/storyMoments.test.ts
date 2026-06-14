@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { buildStoryMomentShareText, generateStoryMoments } from './storyMoments'
+import {
+  buildStoryMomentShareText,
+  generateStoryMoments,
+  winStreakTemplates,
+  responseNeededTemplates,
+  comebackWinTemplates,
+  cleanSweepTemplates,
+  closeMatchTemplates,
+  rivalryWatchTemplates,
+  bestPartnerTemplates,
+  latestResultWinTemplates,
+  latestResultLossTemplates,
+} from './storyMoments'
 import type { MatchWithDetails, User } from '../types'
 
 const user: Pick<User, 'id' | 'name' | 'display_name'> = {
@@ -89,5 +101,58 @@ describe('generateStoryMoments', () => {
 
     expect(buildStoryMomentShareText(moment, 'Amir')).toContain(moment.proofLabel)
     expect(buildStoryMomentShareText(moment, 'Amir')).toContain('Amir on KelabSukan')
+  })
+
+  it('contains at least 20 unique template options for each player story type', () => {
+    const listSizes = [
+      winStreakTemplates.length,
+      responseNeededTemplates.length,
+      comebackWinTemplates.length,
+      cleanSweepTemplates.length,
+      closeMatchTemplates.length,
+      rivalryWatchTemplates.length,
+      bestPartnerTemplates.length,
+      latestResultWinTemplates.length,
+      latestResultLossTemplates.length,
+    ]
+    listSizes.forEach((size) => {
+      expect(size).toBeGreaterThanOrEqual(20)
+    })
+  })
+
+  it('correctly uses the excludeTemplates parameter to avoid duplicate templates', () => {
+    const usedTemplates = new Set<string>()
+
+    // Generate win streak story for two players who both have a 3-match win streak
+    const matchesList = [
+      match({ id: 'm-latest', match_date: '2026-06-05T12:00:00Z', created_at: '2026-06-05T12:00:00Z' }),
+      match({ id: 'm-prev', match_date: '2026-06-04T12:00:00Z', created_at: '2026-06-04T12:00:00Z' }),
+      match({ id: 'm-prev2', match_date: '2026-06-03T12:00:00Z', created_at: '2026-06-03T12:00:00Z' }),
+    ]
+
+    const player1Moments = generateStoryMoments({
+      user: { id: 'user-1', name: 'Amir', display_name: 'Amir' },
+      matches: matchesList,
+      excludeTemplates: usedTemplates,
+    })
+
+    const player2Moments = generateStoryMoments({
+      user: { id: 'user-2', name: 'Ben', display_name: 'Ben' },
+      matches: matchesList.map((m) => ({
+        ...m,
+        participants: [
+          { id: 'p1_b', match_id: m.id, user_id: 'user-2', team: 1, is_guest: false, guest_name: null, name: 'Ben' },
+          { id: 'p2_b', match_id: m.id, user_id: 'user-3', team: 2, is_guest: false, guest_name: null, name: 'Chong' },
+        ],
+      })),
+      excludeTemplates: usedTemplates,
+    })
+
+    const p1Streak = player1Moments.find((m) => m.type === 'win_streak')
+    const p2Streak = player2Moments.find((m) => m.type === 'win_streak')
+
+    expect(p1Streak).toBeDefined()
+    expect(p2Streak).toBeDefined()
+    expect(usedTemplates.size).toBeGreaterThanOrEqual(2)
   })
 })

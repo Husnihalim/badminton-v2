@@ -67,7 +67,9 @@ export interface CompetitionParticipant {
   club_id: string | null
   name: string
   user_1_id: string | null
-  user_2_id: string | null
+  user_2_id: string | null // Null for singles
+  user_1_status?: 'pending' | 'accepted' | 'declined'
+  user_2_status?: 'pending' | 'accepted' | 'declined'
   seed: number | null
   created_at: string
   
@@ -160,6 +162,8 @@ export interface FriendlyPair extends CompetitionParticipant {
   pair_name: string
   player_1_id: string
   player_2_id: string | null
+  user_1_status?: 'pending' | 'accepted' | 'declined'
+  user_2_status?: 'pending' | 'accepted' | 'declined'
   order_index: number
   player_1?: {
     id: string
@@ -209,4 +213,23 @@ export interface RecordMatchInput {
   participants: { user_id: string; team: number }[];
   score_sets: { set_number: number; team1_score: number; team2_score: number }[];
 }
+
+export interface RosterInvite {
+  id: string
+  competition_id: string
+  club_id: string | null
+  name: string
+  user_1_id: string | null
+  user_2_id: string | null
+  user_1_status?: 'pending' | 'accepted' | 'declined'
+  user_2_status?: 'pending' | 'accepted' | 'declined'
+  competition: {
+    title: string
+    start_date: string
+    club: {
+      name: string
+    } | null
+  } | null
+}
+
 

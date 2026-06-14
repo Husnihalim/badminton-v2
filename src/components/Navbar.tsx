@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield, Sun, Moon, Users, ChevronDown } from 'lucide-react'
+import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield, Sun, Moon, Users, ChevronDown, Trophy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import NotificationsPanel from './NotificationsPanel'
@@ -106,6 +106,10 @@ export default function Navbar() {
           <Link className={navClass('/my-court')} to="/my-court">
             <LayoutDashboard size={16} aria-hidden="true" />
             My Court
+          </Link>
+          <Link className={navClass('/competitions')} to="/competitions">
+            <Trophy size={16} aria-hidden="true" />
+            Competitions
           </Link>
 
           {user && (

@@ -29,6 +29,9 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const FriendliesListPage = lazy(() => import('./pages/FriendliesListPage'))
 const FriendlyPage = lazy(() => import('./pages/FriendlyPage'))
 const FriendlyLandingPage = lazy(() => import('./pages/FriendlyLandingPage'))
+const CompetitionDetailsPage = lazy(() => import('./pages/CompetitionDetailsPage'))
+const PublicCompetitionPage = lazy(() => import('./pages/PublicCompetitionPage'))
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +74,9 @@ function App() {
                       <Route path="/friendlies" element={<FriendliesListPage />} />
                       <Route path="/friendly/:friendlyId" element={<FriendlyPage />} />
                       <Route path="/f/:inviteCode" element={<FriendlyLandingPage />} />
+                      <Route path="/competitions" element={<FriendliesListPage />} />
+                      <Route path="/competition/:competitionId" element={<CompetitionDetailsPage />} />
+                      <Route path="/c/:inviteCode" element={<PublicCompetitionPage />} />
                       <Route path="/not-found" element={<NotFoundPage />} />
                       <Route path="*" element={<NotFoundPage />} />
                     </Routes>
