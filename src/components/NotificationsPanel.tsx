@@ -40,7 +40,7 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
     const clubId = notification.data?.clubId
     if (typeof clubId === 'string') {
       const isApproved = notification.type === 'join_approved'
-      navigate(`/club/${clubId}${isApproved ? '?celebrate=true' : ''}`)
+      navigate(`/club/${clubId}?tab=noticeboard${isApproved ? '&celebrate=true' : ''}`)
     }
     onClose()
   }
@@ -153,49 +153,50 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
               <p>No notifications yet</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
                   style={{
-                    padding: '16px',
-                    borderRadius: '12px',
-                    backgroundColor: notification.read ? 'var(--surface)' : 'rgba(59, 130, 246, 0.08)',
-                    border: `1px solid ${notification.read ? 'var(--border)' : 'rgba(59, 130, 246, 0.25)'}`,
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: notification.read ? 'var(--surface)' : 'rgba(59, 130, 246, 0.06)',
+                    border: `1px solid ${notification.read ? 'var(--border)' : 'rgba(59, 130, 246, 0.2)'}`,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = notification.read ? 'var(--surface-muted)' : 'rgba(59, 130, 246, 0.15)'
+                    e.currentTarget.style.backgroundColor = notification.read ? 'var(--surface-muted)' : 'rgba(59, 130, 246, 0.12)'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = notification.read ? 'var(--surface)' : 'rgba(59, 130, 246, 0.08)'
+                    e.currentTarget.style.backgroundColor = notification.read ? 'var(--surface)' : 'rgba(59, 130, 246, 0.06)'
                   }}
                 >
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ fontSize: '24px' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <div style={{ fontSize: '18px', lineHeight: 1, marginTop: '2px' }}>
                       {getNotificationIcon(notification.type)}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <strong style={{ fontSize: '14px' }}>{notification.title}</strong>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                        <strong style={{ fontSize: '13px', fontWeight: '600' }}>{notification.title}</strong>
                         {!notification.read && (
                           <span
                             style={{
-                              width: '8px',
-                              height: '8px',
+                              width: '6px',
+                              height: '6px',
                               borderRadius: '50%',
                               backgroundColor: '#3b82f6',
                               flexShrink: 0,
+                              marginTop: '5px',
                             }}
                           />
                         )}
                       </div>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'var(--text-muted)' }}>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                         {notification.message}
                       </p>
-                      <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: 'var(--text-muted)', opacity: 0.8 }}>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '10.5px', color: 'var(--text-muted)', opacity: 0.75 }}>
                         {new Date(notification.created_at).toLocaleString()}
                       </p>
                     </div>

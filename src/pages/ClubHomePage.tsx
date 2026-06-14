@@ -37,7 +37,10 @@ export default function ClubHomePage() {
   const { data: members = [] } = useClubMembers(clubId)
   const { data: matches = [] } = useAllClubMatches(clubId)
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'leaderboard' | 'noticeboard'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'leaderboard' | 'noticeboard'>(() => {
+    const tabParam = new URLSearchParams(window.location.search).get('tab')
+    return (tabParam === 'leaderboard' || tabParam === 'noticeboard') ? tabParam : 'overview'
+  })
   const [showCelebrationModal, setShowCelebrationModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [actionError, setActionError] = useState('')
@@ -55,6 +58,16 @@ export default function ClubHomePage() {
 
   const [showHighlightsEvent, setShowHighlightsEvent] = useState<ClubEvent | null>(null)
   const [shareMatch, setShareMatch] = useState<MatchWithDetails | null>(null)
+
+  // Sync tab query parameter with activeTab state
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'overview' || tabParam === 'leaderboard' || tabParam === 'noticeboard') {
+      if (tabParam !== activeTab) {
+        setActiveTab(tabParam)
+      }
+    }
+  }, [searchParams, activeTab])
 
   useEffect(() => {
     if (searchParams.get('celebrate') === 'true') {
@@ -179,7 +192,12 @@ export default function ClubHomePage() {
           {(['overview', 'leaderboard', 'noticeboard'] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab)
+                const newParams = new URLSearchParams(window.location.search)
+                newParams.set('tab', tab)
+                setSearchParams(newParams, { replace: true })
+              }}
               className={`px-4 py-3 font-semibold text-sm border-b-2 transition-all duration-150 capitalize flex items-center gap-2 cursor-pointer ${
                 activeTab === tab
                   ? 'border-emerald-600 text-[var(--arena-accent)] bg-[var(--arena-surface)]'

@@ -50,6 +50,14 @@
   --arena-panel: rgba(255, 255, 255, 0.04);
   --arena-admin: rgba(255, 255, 255, 0.03);
   --arena-muted: rgba(255, 255, 255, 0.4);
+
+  --surface: var(--arena-surface);
+  --surface-muted: var(--arena-surface-muted);
+  --surface-elevated: var(--arena-surface-elevated);
+  --text: var(--arena-text);
+  --text-muted: var(--arena-text-muted);
+  --border: var(--arena-border);
+  --primary: var(--arena-accent);
 }
 
 @media (min-width: 768px) {
