@@ -566,14 +566,14 @@ export default function ScoreRecordingModal({
   return (
     <>
       <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={onClose}>
-        <Card className="max-h-[94vh] w-full overflow-auto rounded-b-none sm:max-w-2xl sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
+        <Card className="max-h-[94svh] w-full overflow-auto rounded-b-none sm:max-w-2xl sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
           <CardContent className="space-y-4 pt-4 sm:pt-5">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
+              <div className="min-w-0 flex items-start gap-3">
                 <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
                   <ClipboardPenLine size={18} aria-hidden="true" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-xl font-bold text-[var(--arena-text)]">{isEditing ? 'Edit match score' : 'Record match score'}</h2>
                   <p className="text-sm text-[var(--arena-text-muted)]">
                     {isEditing ? 'Update the score and refresh the leaderboard for this match.' : 'Add singles or doubles results for this club.'}
@@ -654,8 +654,8 @@ export default function ScoreRecordingModal({
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Team 1 Card */}
                 <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] p-4 shadow-sm">
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[var(--arena-accent-soft)]0" />
-                  <div className="mb-3 flex items-center justify-between pl-2">
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[var(--arena-accent-soft)]" />
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 pl-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-[var(--arena-accent)]">Team 1</span>
                     {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-[var(--arena-text-dim)]">Doubles Pair</span>}
                   </div>
@@ -680,7 +680,7 @@ export default function ScoreRecordingModal({
                 {/* Team 2 Card */}
                 <div className="relative overflow-hidden rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] p-4 shadow-sm">
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500" />
-                  <div className="mb-3 flex items-center justify-between pl-2">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 pl-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">Team 2</span>
                     {matchType === 'doubles' && <span className="text-[10px] uppercase font-bold text-[var(--arena-text-dim)]">Doubles Pair</span>}
                   </div>
@@ -706,14 +706,14 @@ export default function ScoreRecordingModal({
               {errors.duplicate ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errors.duplicate}</p> : null}
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Score sets</p>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:flex">
                     <Button
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="border border-emerald-600/30 text-[var(--arena-accent)] dark:text-emerald-450 hover:bg-[var(--arena-accent-soft)] dark:hover:bg-emerald-950/20"
+                      className="border border-emerald-600/30 text-[var(--arena-accent)] hover:bg-[var(--arena-accent-soft)] dark:text-emerald-450 dark:hover:bg-emerald-950/20"
                       onClick={openPointByPointScorekeeper}
                     >
                       📱 Point-by-Point Scorekeeper
@@ -726,7 +726,7 @@ export default function ScoreRecordingModal({
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)] shadow-sm">
-                  <table className="w-full border-collapse text-left text-sm">
+                  <table className="w-full min-w-[360px] border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-xs font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">
                         <th className="px-4 py-3 font-semibold">Team / Players</th>
@@ -872,7 +872,7 @@ export default function ScoreRecordingModal({
           <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 px-4 py-3">
             <div>
               <h3 className="text-lg font-black text-white flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--arena-accent-soft)]0/20 text-[var(--arena-accent)] text-xs">
+                <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] text-xs">
                   Ref
                 </span>
                 Point-by-Point Scorekeeper
@@ -907,7 +907,7 @@ export default function ScoreRecordingModal({
                   key={idx}
                   className={`flex flex-col items-center rounded-lg px-4 py-1.5 transition-all ${
                     isActive
-                      ? 'bg-[var(--arena-accent-soft)]0/15 border border-emerald-500/35 text-[var(--arena-accent)] font-bold scale-105 shadow shadow-emerald-500/5'
+                      ? 'bg-[var(--arena-accent-soft)] border border-emerald-500/35 text-[var(--arena-accent)] font-bold scale-105 shadow shadow-emerald-500/5'
                       : isFuture
                         ? 'border border-transparent text-[var(--arena-text-muted)] font-medium'
                         : 'bg-slate-900 border border-slate-800 text-[var(--arena-text-dim)]'
@@ -964,7 +964,7 @@ export default function ScoreRecordingModal({
           {/* Winner announcement / Match controls */}
           {isMatchFinished && (
             <div className="bg-emerald-950/25 border-y border-emerald-800/40 p-4 text-center animate-in slide-in-from-bottom duration-300">
-              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--arena-accent-soft)]0/10 text-xl mb-2">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--arena-accent-soft)] text-xl mb-2">
                 👑
               </div>
               <h4 className="text-md font-extrabold text-[var(--arena-accent)]">

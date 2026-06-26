@@ -315,7 +315,7 @@ export async function recordCompetitionMatch(
   // First create the match linked to the competition (if we can resolve tournament_id)
   const { data: matchupDetails } = await supabase
     .from('competition_matchups')
-    .select('competition_id, pool_id')
+    .select('competition_id, pool_id, bracket_round, bracket_position')
     .eq('id', matchupId)
     .single()
 
@@ -378,6 +378,34 @@ export async function recordCompetitionMatch(
       winner_participant_id: winnerParticipantId,
     })
     .eq('id', matchupId)
+
+  // Progress winner to the next bracket round if applicable
+  if (
+    matchupDetails?.bracket_round !== null &&
+    matchupDetails?.bracket_round !== undefined &&
+    matchupDetails?.bracket_position !== null &&
+    matchupDetails?.bracket_position !== undefined
+  ) {
+    const nextRound = matchupDetails.bracket_round + 1
+    const nextPosition = Math.floor(matchupDetails.bracket_position / 2)
+    const isA = matchupDetails.bracket_position % 2 === 0
+
+    // Find the next round matchup in DB
+    const { data: nextMatchup } = await supabase
+      .from('competition_matchups')
+      .select('id')
+      .eq('competition_id', matchupDetails.competition_id)
+      .eq('bracket_round', nextRound)
+      .eq('bracket_position', nextPosition)
+      .single()
+
+    if (nextMatchup) {
+      await supabase
+        .from('competition_matchups')
+        .update(isA ? { participant_a_id: winnerParticipantId } : { participant_b_id: winnerParticipantId })
+        .eq('id', nextMatchup.id)
+    }
+  }
 
   return { match: { id: match.id }, error: null }
 }
@@ -781,6 +809,105 @@ export async function createFriendly(
   return { friendly: result.friendly, error: result.error }
 }
 
+// Create a playoff bracket with round 1 pairings and recursive placeholders for subsequent rounds
+export async function createPlayoffBracket(
+  competitionId: string,
+  pairings: { aId: string; bId: string }[]
+): Promise<{ error: Error | null }> {
+  try {
+    const K = pairings.length
+    if (K !== 2 && K !== 4 && K !== 8) {
+      throw new Error('Playoffs support Quarterfinals (4 matches), Semifinals (2 matches), or Finals (1 match)')
+    }
+
+    // 1. Insert Round 1 Matchups
+    const round1Inserts = pairings.map((p, index) => ({
+      competition_id: competitionId,
+      participant_a_id: p.aId,
+      participant_b_id: p.bId,
+      bracket_round: 1,
+      bracket_position: index,
+      order_index: index,
+      status: 'pending'
+    }))
+
+    const { error: r1Error } = await supabase
+      .from('competition_matchups')
+      .insert(round1Inserts)
+
+    if (r1Error) throw r1Error
+
+    // 2. Recursively generate placeholder rounds
+    let currentRoundMatches = K
+    let currentRoundNumber = 1
+
+    while (currentRoundMatches > 1) {
+      const nextRoundMatches = currentRoundMatches / 2
+      const nextRoundNumber = currentRoundNumber + 1
+
+      const nextRoundMatchups = []
+
+      for (let j = 0; j < nextRoundMatches; j++) {
+        // Insert placeholder participant A
+        const { data: placeholderA, error: errA } = await supabase
+          .from('competition_participants')
+          .insert({
+            competition_id: competitionId,
+            name: `Winner R${currentRoundNumber} M${2 * j + 1}`,
+            seed: 999
+          })
+          .select('id')
+          .single()
+
+        if (errA) throw errA
+
+        // Insert placeholder participant B
+        const { data: placeholderB, error: errB } = await supabase
+          .from('competition_participants')
+          .insert({
+            competition_id: competitionId,
+            name: `Winner R${currentRoundNumber} M${2 * j + 2}`,
+            seed: 999
+          })
+          .select('id')
+          .single()
+
+        if (errB) throw errB
+
+        nextRoundMatchups.push({
+          competition_id: competitionId,
+          participant_a_id: placeholderA.id,
+          participant_b_id: placeholderB.id,
+          bracket_round: nextRoundNumber,
+          bracket_position: j,
+          order_index: 100 * nextRoundNumber + j,
+          status: 'pending'
+        })
+      }
+
+      const { error: rNError } = await supabase
+        .from('competition_matchups')
+        .insert(nextRoundMatchups)
+
+      if (rNError) throw rNError
+
+      currentRoundMatches = nextRoundMatches
+      currentRoundNumber = nextRoundNumber
+    }
+
+    // 3. Update competition status to live if it was registration
+    await supabase
+      .from('competitions')
+      .update({ status: 'live' })
+      .eq('id', competitionId)
+
+    return { error: null }
+  } catch (err) {
+    console.error('Error creating playoff bracket:', err)
+    return { error: err as Error }
+  }
+}
+
 export {
   acceptCompetitionInvitation as acceptFriendly,
   getCompetition as getFriendly,
@@ -798,4 +925,3 @@ export {
   subscribeToCompetition as subscribeToFriendly,
   subscribeToCompetitionMatchups as subscribeToMatchups
 }
-

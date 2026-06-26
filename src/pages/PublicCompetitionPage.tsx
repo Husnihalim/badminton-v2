@@ -2,10 +2,10 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '../components/ui/card'
-import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
+import BwfMatchupCard from '../components/competition/BwfMatchupCard'
 import { 
   getCompetitionByInviteCode,
   getCompetitionParticipants, 
@@ -201,16 +201,16 @@ export default function PublicCompetitionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#040d0f] text-white p-4 pb-20">
+    <div className="min-h-screen bg-[#040d0f] p-3 pb-20 text-white sm:p-4">
       {/* Brand Header */}
       <div className="mx-auto max-w-2xl text-center pt-4 mb-6">
         <span className="text-xs font-black tracking-wider uppercase text-[var(--arena-lime)]">
           🏸 Grassroots Sports Broadcast
         </span>
-        <h1 className="text-3xl font-black uppercase tracking-tight text-white mt-1 leading-none">
+        <h1 className="mt-1 break-words text-2xl font-black uppercase tracking-tight text-white leading-tight sm:text-3xl">
           {competition.title}
         </h1>
-        <p className="text-xs text-[var(--arena-text-muted)] mt-1.5 uppercase tracking-wider">
+        <p className="mt-1.5 break-words text-xs uppercase tracking-wider text-[var(--arena-text-muted)]">
           Hosted by: {competition.club?.name}
         </p>
       </div>
@@ -242,50 +242,16 @@ export default function PublicCompetitionPage() {
         {/* Matches Scoreboard */}
         {activeTab === 'matches' && (
           <div className="space-y-3">
-            {matchups.map((m, index) => (
-              <Card key={m.id} className="border-white/10 bg-[#0a0f0e]">
-                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Match {index + 1} • Court {m.order_index + 1}</p>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <span className={cn(
-                        "font-black text-base transition-colors",
-                        m.winner_participant_id === m.participant_a_id ? 'text-[var(--arena-lime)]' : 'text-white'
-                      )}>
-                        {m.participant_a?.name}
-                      </span>
-                      <span className="text-slate-500 text-xs font-mono">vs</span>
-                      <span className={cn(
-                        "font-black text-base transition-colors",
-                        m.winner_participant_id === m.participant_b_id ? 'text-[var(--arena-lime)]' : 'text-white'
-                      )}>
-                        {m.participant_b?.name}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 flex items-center justify-end">
-                    {m.status === 'completed' && m.match?.score_sets ? (
-                      <div className="flex gap-2">
-                        {m.match.score_sets.map((set, sIdx) => (
-                          <div key={sIdx} className="bg-slate-950 border border-white/5 px-2.5 py-1 rounded text-sm font-mono font-bold">
-                            <span className={set.team1_score > set.team2_score ? 'text-[var(--arena-lime)]' : 'text-white'}>
-                              {set.team1_score}
-                            </span>
-                            <span className="text-slate-650 mx-1">-</span>
-                            <span className={set.team2_score > set.team1_score ? 'text-[var(--arena-lime)]' : 'text-white'}>
-                              {set.team2_score}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <Badge variant="live">LIVE</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+            {matchups.map((m) => (
+              <BwfMatchupCard
+                key={m.id}
+                matchup={m}
+                isAdmin={false}
+              />
             ))}
+            {matchups.length === 0 && (
+              <p className="text-slate-500 italic text-sm py-4 text-center">No matches scheduled.</p>
+            )}
           </div>
         )}
 
@@ -299,32 +265,34 @@ export default function PublicCompetitionPage() {
                   <h3 className="text-sm font-bold text-[var(--arena-lime)] uppercase tracking-wider">
                     {pool.name}
                   </h3>
-                  <Card className="border-white/10 bg-[#0a0f0e] overflow-hidden">
+                  <Card className="overflow-hidden border-white/10 bg-[#0a0f0e]">
                     <CardContent className="p-0">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-white/10 bg-slate-950/40 text-[var(--arena-text-muted)] font-black uppercase">
-                            <th className="py-3 px-4">Rank</th>
-                            <th className="py-3 px-4">Player / Pair</th>
-                            <th className="py-3 px-4 text-center">Played</th>
-                            <th className="py-3 px-4 text-center">Wins</th>
-                            <th className="py-3 px-4 text-center">Sets (W/L)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {standingList.map((st, sIdx) => (
-                            <tr key={st.participantId} className="border-b border-white/5 hover:bg-white/[0.02]">
-                              <td className="py-3 px-4 font-extrabold text-[var(--arena-lime)]">#{sIdx + 1}</td>
-                              <td className="py-3 px-4 font-bold text-white">{st.name}</td>
-                              <td className="py-3 px-4 text-center font-semibold">{st.played}</td>
-                              <td className="py-3 px-4 text-center font-extrabold text-emerald-400">{st.wins}</td>
-                              <td className="py-3 px-4 text-center font-mono text-slate-400">
-                                {st.setsWon} - {st.setsLost}
-                              </td>
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[520px] text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-white/10 bg-slate-950/40 text-[var(--arena-text-muted)] font-black uppercase">
+                              <th className="py-3 px-4">Rank</th>
+                              <th className="py-3 px-4">Player / Pair</th>
+                              <th className="py-3 px-4 text-center">Played</th>
+                              <th className="py-3 px-4 text-center">Wins</th>
+                              <th className="py-3 px-4 text-center">Sets (W/L)</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {standingList.map((st, sIdx) => (
+                              <tr key={st.participantId} className="border-b border-white/5 hover:bg-white/[0.02]">
+                                <td className="py-3 px-4 font-extrabold text-[var(--arena-lime)]">#{sIdx + 1}</td>
+                                <td className="py-3 px-4 font-bold text-white">{st.name}</td>
+                                <td className="py-3 px-4 text-center font-semibold">{st.played}</td>
+                                <td className="py-3 px-4 text-center font-extrabold text-emerald-400">{st.wins}</td>
+                                <td className="py-3 px-4 text-center font-mono text-slate-400">
+                                  {st.setsWon} - {st.setsLost}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -339,7 +307,7 @@ export default function PublicCompetitionPage() {
             {participants.map(p => (
               <Card key={p.id} className="border-white/10 bg-[#0a0f0e]">
                 <CardContent className="p-4">
-                  <h4 className="font-extrabold text-white text-base leading-tight">{p.name}</h4>
+                  <h4 className="break-words text-base font-extrabold leading-tight text-white">{p.name}</h4>
                   <p className="text-[10px] text-slate-500 font-mono mt-1">Rostered Pair</p>
                 </CardContent>
               </Card>
@@ -352,7 +320,7 @@ export default function PublicCompetitionPage() {
           <Card className="border-[var(--arena-lime)]/30 bg-[#0a0f0e] shadow-[var(--arena-glow)] mt-8">
             <CardContent className="p-6 text-center space-y-4">
               <div className="space-y-1">
-                <h3 className="text-lg font-black uppercase tracking-tight text-white flex items-center justify-center gap-1.5">
+                <h3 className="flex items-center justify-center gap-1.5 text-lg font-black uppercase tracking-tight text-white">
                   ⚡ Join the Live Sports Network
                 </h3>
                 <p className="text-xs text-[var(--arena-text-muted)] leading-relaxed">

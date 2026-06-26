@@ -8,7 +8,7 @@ import { THEME_MAP } from '../constants'
 import { Card, CardContent } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
-import { Modal } from '../../../components/ui/Modal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog'
 import { Input } from '../../../components/ui/input'
 import { EventRsvpManagementDrawer } from './EventRsvpManagementDrawer'
 import { 
@@ -642,18 +642,12 @@ export function ClubEventsCalendar({
         </CardContent>
       </Card>
 
-      {/* Modal for Creating/Editing Event */}
-      <Modal isOpen={showEventModal && isAdmin} onClose={() => { setShowEventModal(false); setEditingEvent(null) }} title={editingEvent ? 'Edit event' : 'Create new event'}>
-        <div className="space-y-4 pt-4 sm:pt-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-[var(--arena-text)]">{editingEvent ? 'Edit event' : 'Create new event'}</h2>
-              <p className="text-sm text-[var(--arena-text-muted)]">{editingEvent ? 'Update the session details members see.' : 'Add the next game day for members.'}</p>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={() => { setShowEventModal(false); setEditingEvent(null) }} aria-label="Close">
-              <X size={18} aria-hidden="true" />
-            </Button>
-          </div>
+      <Dialog open={showEventModal && isAdmin} onOpenChange={(open) => { if (!open) { setShowEventModal(false); setEditingEvent(null) } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingEvent ? 'Edit event' : 'Create new event'}</DialogTitle>
+            <DialogDescription>{editingEvent ? 'Update the session details members see.' : 'Add the next game day for members.'}</DialogDescription>
+          </DialogHeader>
           <form className="space-y-4" onSubmit={handleCreateEventSubmit}>
             <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
               <span>Event title *</span>
@@ -684,8 +678,8 @@ export function ClubEventsCalendar({
               </Button>
             </div>
           </form>
-        </div>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

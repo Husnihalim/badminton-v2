@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { Membership } from '../../../types'
 import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
-import { Modal } from '../../../components/ui/Modal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog'
 import { Input } from '../../../components/ui/input'
 import { Select } from '../../../components/ui/select'
 import { Card, CardContent } from '../../../components/ui/card'
@@ -89,8 +89,8 @@ export function ClubMembersRoster({
   }
 
   const roleBadgeClass = (role: Membership['role']) => {
-    if (role === 'owner') return 'border-amber-250 bg-amber-500/10 text-amber-500 font-bold border'
-    if (role === 'admin') return 'border-blue-250 bg-blue-500/10 text-blue-400 font-bold border'
+    if (role === 'owner') return 'border-[var(--arena-accent)]/25 bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] font-bold border'
+    if (role === 'admin') return 'border-[var(--arena-blue)]/25 bg-[var(--arena-blue)]/10 text-[var(--arena-blue)] font-bold border'
     return 'border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] border'
   }
 
@@ -208,33 +208,31 @@ export function ClubMembersRoster({
         </CardContent>
       </Card>
 
-      {memberToRemove ? (
-        <Modal isOpen={true} onClose={() => !isRemoving && setMemberToRemove(null)} title="Remove member">
-          <div className="space-y-4 pt-4 sm:pt-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
-                  <Shield size={18} aria-hidden="true" />
-                </span>
-                <div>
-                  <h2 className="text-xl font-bold text-[var(--arena-text)]">Remove member</h2>
-                  <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
-                    Remove <strong>{memberToRemove.name}</strong> from <strong>{clubName}</strong>. This action cannot be undone.
-                  </p>
-                </div>
+      <Dialog open={!!memberToRemove} onOpenChange={(open) => { if (!open && !isRemoving) setMemberToRemove(null) }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
+                <Shield size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <DialogTitle>Remove member</DialogTitle>
+                <DialogDescription>
+                  Remove <strong>{memberToRemove?.name}</strong> from <strong>{clubName}</strong>. This action cannot be undone.
+                </DialogDescription>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button type="button" variant="secondary" onClick={() => setMemberToRemove(null)} disabled={isRemoving}>
-                Cancel
-              </Button>
-              <Button type="button" variant="danger" onClick={handleRemoveMember} disabled={isRemoving}>
-                {isRemoving ? 'Removing...' : 'Remove'}
-              </Button>
-            </div>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button type="button" variant="secondary" onClick={() => setMemberToRemove(null)} disabled={isRemoving}>
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={handleRemoveMember} disabled={isRemoving}>
+              {isRemoving ? 'Removing...' : 'Remove'}
+            </Button>
           </div>
-        </Modal>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

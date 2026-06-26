@@ -11,6 +11,7 @@ const buttonVariants = cva(
         live: 'border border-[var(--arena-lime)] bg-[var(--arena-lime)] text-slate-950 shadow-[0_0_24px_rgba(204,255,0,0.22)] hover:bg-[#ddff33]',
         panel: 'border border-white/10 bg-white/[0.06] text-slate-100 shadow-sm hover:bg-white/[0.1]',
         secondary: 'border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] shadow-sm hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)]',
+        outline: 'border border-[var(--arena-border)] bg-transparent text-[var(--arena-text)] hover:bg-[var(--arena-surface-muted)]',
         ghost: 'text-[var(--arena-text-muted)] hover:bg-[var(--arena-surface-muted)] hover:text-[var(--arena-text)]',
         danger: 'border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-500/60',
       },
@@ -19,6 +20,7 @@ const buttonVariants = cva(
         md: 'min-h-10 px-4 text-sm',
         lg: 'min-h-11 px-5 text-base',
         icon: 'h-10 w-10 px-0',
+        'icon-sm': 'h-8 w-8 px-0',
       },
       fullWidth: {
         true: 'w-full',

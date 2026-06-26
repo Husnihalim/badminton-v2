@@ -11,6 +11,7 @@ interface FriendlyCreateModalProps {
   isOpen: boolean
   onClose: () => void
   clubId: string
+  clubName: string
   nearbyClubs?: Club[]
   onCreated?: (inviteCode: string) => void
 }
@@ -19,6 +20,7 @@ export function FriendlyCreateModal({
   isOpen,
   onClose,
   clubId,
+  clubName,
   nearbyClubs = [],
   onCreated,
 }: FriendlyCreateModalProps) {
@@ -71,22 +73,22 @@ export function FriendlyCreateModal({
   }
 
   const handleShareWhatsApp = () => {
-    const message = `🏸 *Friendly Challenge*\n\nWe challenge you to a Friendly match on KelabSukan!\n\n${pairCount} pairs • 1 set each\nWinner takes the bragging rights\n\nTap to accept:\n${window.location.origin}/f/${inviteCode}`
+    const message = `🏸 *Friendly Challenge*\n\nWe challenge you to a Friendly match on KelabSukan!\n\n${pairCount} pairs • 1 set each\nWinner takes the bragging rights\n\nTap to accept:\n${window.location.origin}/c/${inviteCode}`
     
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
   }
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/f/${inviteCode}`)
+    navigator.clipboard.writeText(`${window.location.origin}/c/${inviteCode}`)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <Card className="w-full max-w-lg border-white/10 bg-[var(--arena-surface)]">
-        <CardContent className="p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4">
+      <Card className="max-h-[92svh] w-full overflow-y-auto rounded-b-none rounded-t-xl border-white/10 bg-[var(--arena-surface)] sm:max-w-lg sm:rounded-xl">
+        <CardContent className="p-4 sm:p-6">
           {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="arena-heading text-xl">
+          <div className="mb-6 flex items-start justify-between gap-3">
+            <h2 className="arena-heading min-w-0 break-words text-lg sm:text-xl">
               {step === 'select' && 'Challenge Club to Friendly'}
               {step === 'confirm' && 'Confirm Challenge'}
               {step === 'invite' && 'Share Challenge'}
@@ -124,11 +126,11 @@ export function FriendlyCreateModal({
                         onClick={() => handleSelectClub(club)}
                         className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-left transition-colors hover:border-[var(--arena-lime)] hover:bg-white/10"
                       >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-lg">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 text-lg">
                           🏸
                         </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-white">{club.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words font-bold text-white">{club.name}</p>
                           <p className="text-xs text-slate-400">
                             {club.city} • {club.membersCount || 0} members
                           </p>
@@ -157,7 +159,7 @@ export function FriendlyCreateModal({
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800">
                   <MessageCircle size={20} className="text-[var(--arena-lime)]" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold text-white">Club not on KelabSukan?</p>
                   <p className="text-xs text-slate-400">Invite them to join and play</p>
                 </div>
@@ -175,11 +177,11 @@ export function FriendlyCreateModal({
                 </p>
                 {selectedClub ? (
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-2xl">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-800 text-2xl">
                       🏸
                     </div>
-                    <div>
-                      <p className="text-lg font-bold text-white">{selectedClub.name}</p>
+                    <div className="min-w-0">
+                      <p className="break-words text-lg font-bold text-white">{selectedClub.name}</p>
                       <p className="text-sm text-slate-400">{selectedClub.city}</p>
                     </div>
                   </div>
@@ -238,7 +240,7 @@ export function FriendlyCreateModal({
               )}
 
               {/* Actions */}
-              <div className="flex gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="ghost"
@@ -263,12 +265,12 @@ export function FriendlyCreateModal({
           {step === 'invite' && (
             <div className="space-y-6">
               {/* Preview */}
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="mb-3 flex items-center gap-2">
                   <Badge variant="live">Challenge</Badge>
                 </div>
                 <p className="mb-2 text-lg font-bold text-white">
-                  🏸 {nearbyClubs.find(c => c.id === clubId)?.name || 'Your Club'}
+                  🏸 {clubName}
                 </p>
                 <p className="mb-4 text-slate-300">
                   We challenge you to a Friendly match on KelabSukan!
@@ -277,8 +279,8 @@ export function FriendlyCreateModal({
                   <p>• {pairCount} pairs • 1 set each</p>
                   <p>• Winner takes the bragging rights</p>
                 </div>
-                <div className="mt-4 rounded bg-slate-900 p-2 text-center text-sm text-slate-400">
-                  {window.location.origin}/f/{inviteCode}
+                <div className="mt-4 break-all rounded bg-slate-900 p-2 text-center text-sm text-slate-400">
+                  {window.location.origin}/c/{inviteCode}
                 </div>
               </div>
 

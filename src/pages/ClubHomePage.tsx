@@ -10,12 +10,12 @@ import {
   Trophy,
   Users,
   Megaphone,
-  Share2,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import CelebrationConfetti from '../components/CelebrationConfetti'
 import { useAuth } from '../context/AuthContext'
+import { StoryShareGroup } from '../components/StoryShareGroup'
 import { useClub, useMyMembership, useClubMembers, useAllClubMatches, useClubEvents } from '../features/clubs/hooks/useClubQueries'
 import { getClubJoinRequests, approveJoinRequest, rejectJoinRequest, buildInviteUrl } from '../lib/api'
 import type { ClubEvent, JoinRequest, MatchWithDetails } from '../types'
@@ -512,21 +512,21 @@ export default function ClubHomePage() {
           <div className="space-y-4 sm:space-y-6">
             {/* Pinned noticeboard announcements */}
             {club.announcement ? (
-              <div className="rounded-xl border border-amber-250 bg-amber-50/60 p-3 shadow-sm sm:rounded-2xl sm:p-4 animate-fade-in">
+              <div className="animate-fade-in rounded-xl border border-[var(--arena-accent)]/20 bg-[var(--arena-accent-soft)] p-3 shadow-sm sm:p-4">
                 <div className="flex gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-amber-700 shadow-sm border border-amber-200">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm">
                     <Megaphone size={18} aria-hidden="true" />
                   </span>
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <h3 className="text-sm font-bold text-amber-900">Pinned Announcement</h3>
+                      <h3 className="text-sm font-bold text-[var(--arena-text)]">Pinned Announcement</h3>
                       {club.announcement_updated_at ? (
-                        <span className="text-xs text-amber-600">
+                        <span className="text-xs text-[var(--arena-text-dim)]">
                           Updated {new Date(club.announcement_updated_at).toLocaleDateString()}
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-2 text-sm text-amber-850 leading-relaxed whitespace-pre-wrap">
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--arena-text-muted)]">
                       {club.announcement}
                     </p>
                   </div>
@@ -536,11 +536,11 @@ export default function ClubHomePage() {
 
             {/* Club actions quick access */}
             {isMember ? (
-              <Card className="border-blue-200 bg-blue-50/60">
+              <Card className="border-[var(--arena-border)] bg-[var(--arena-surface)]">
                 <CardContent className="space-y-3 pt-4 sm:pt-5">
-                  <div className="flex items-center gap-2 text-blue-800">
+                  <div className="flex items-center gap-2 text-[var(--arena-accent)]">
                     <ShieldCheck size={18} aria-hidden="true" />
-                    <h2 className="font-bold">{isAdmin ? 'Admin controls' : 'Club quick actions'}</h2>
+                    <h2 className="font-bold text-[var(--arena-text)]">{isAdmin ? 'Admin controls' : 'Club quick actions'}</h2>
                   </div>
                   <div className={`grid gap-2 ${
                     isAdmin ? 'grid-cols-3' : (inviteUrl ? 'grid-cols-2' : 'grid-cols-1')
@@ -548,9 +548,9 @@ export default function ClubHomePage() {
                     <button
                       type="button"
                       onClick={handleCreateScore}
-                      className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer"
+                      className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-center text-[var(--arena-text)] transition-all hover:bg-[var(--arena-accent-soft)] active:scale-[0.98]"
                     >
-                      <ClipboardPenLine size={18} className="text-blue-700" aria-hidden="true" />
+                      <ClipboardPenLine size={18} className="text-[var(--arena-accent)]" aria-hidden="true" />
                       <span className="text-[10px] font-bold leading-tight">Record Score</span>
                     </button>
                     {isAdmin ? (
@@ -559,17 +559,17 @@ export default function ClubHomePage() {
                           type="button"
                           onClick={handleCopyInviteLink}
                           disabled={!inviteUrl}
-                          className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                          className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-center text-[var(--arena-text)] transition-all hover:bg-[var(--arena-accent-soft)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
                         >
-                          <UserPlus size={18} className="text-blue-700" aria-hidden="true" />
+                          <UserPlus size={18} className="text-[var(--arena-accent)]" aria-hidden="true" />
                           <span className="text-[10px] font-bold leading-tight">Copy Invite</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}
-                          className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer"
+                          className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-center text-[var(--arena-text)] transition-all hover:bg-[var(--arena-accent-soft)] active:scale-[0.98]"
                         >
-                          <UserPlus size={18} className="text-blue-700" aria-hidden="true" />
+                          <UserPlus size={18} className="text-[var(--arena-accent)]" aria-hidden="true" />
                           <span className="text-[10px] font-bold leading-tight">Requests</span>
                         </button>
                       </>
@@ -578,9 +578,9 @@ export default function ClubHomePage() {
                         <button
                           type="button"
                           onClick={handleCopyInviteLink}
-                          className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-blue-900 p-2 text-center transition-all hover:bg-blue-50 active:scale-[0.98] min-h-[68px] cursor-pointer"
+                          className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-center text-[var(--arena-text)] transition-all hover:bg-[var(--arena-accent-soft)] active:scale-[0.98]"
                         >
-                          <UserPlus size={18} className="text-blue-700" aria-hidden="true" />
+                          <UserPlus size={18} className="text-[var(--arena-accent)]" aria-hidden="true" />
                           <span className="text-[10px] font-bold leading-tight">Copy Invite</span>
                         </button>
                       )
@@ -660,13 +660,13 @@ export default function ClubHomePage() {
             {/* Featured Club Stories */}
             {featuredStories.length > 0 && (
               <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4 space-y-3 shadow-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-1.5 text-white">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-1.5 text-white sm:items-center">
                     <Activity size={16} className="text-[var(--arena-lime)]" />
-                    <h3 className="text-sm font-black uppercase tracking-tight text-slate-100 flex items-center gap-2">
-                      Featured Player Stories
+                    <h3 className="flex min-w-0 flex-col gap-1 text-sm font-black uppercase tracking-tight text-slate-100 sm:flex-row sm:items-center sm:gap-2">
+                      <span>Featured Player Stories</span>
                       {pinnedStoryIds.length === 0 && (
-                        <span className="text-[9px] lowercase font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded">
+                        <span className="w-fit text-[9px] lowercase font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded">
                           (auto-selected)
                         </span>
                       )}
@@ -678,7 +678,7 @@ export default function ClubHomePage() {
                       variant="secondary"
                       size="sm"
                       onClick={() => setShowStorySelectorModal(true)}
-                      className="text-[10px] font-black uppercase h-7 px-2 border-slate-800 bg-slate-900/50 hover:bg-slate-900 hover:text-white flex items-center gap-1 cursor-pointer"
+                      className="h-8 w-full cursor-pointer items-center gap-1 border-slate-800 bg-slate-900/50 px-2 text-[10px] font-black uppercase hover:bg-slate-900 hover:text-white sm:w-auto"
                     >
                       Manage Features
                     </Button>
@@ -686,32 +686,32 @@ export default function ClubHomePage() {
                 </div>
                 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {featuredStories.map((story: StoryMoment & { playerName: string }) => (
-                    <div key={story.id} className="rounded-lg border border-slate-800/80 bg-slate-900/50 p-3 flex flex-col justify-between hover:border-slate-700 transition-all duration-150">
+                  {featuredStories.map((story: StoryMoment & { playerName: string }, index) => (
+                    <div key={`${story.id}-${story.playerName}-${index}`} className="min-w-0 rounded-lg border border-slate-800/80 bg-slate-900/50 p-3 flex flex-col justify-between hover:border-slate-700 transition-all duration-150">
                       <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[8px] font-bold text-[var(--arena-lime)] uppercase tracking-wider bg-[var(--arena-lime)]/10 border border-[var(--arena-lime)]/20 px-1.5 py-0.5 rounded">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="min-w-0 max-w-full break-words text-[8px] font-bold text-[var(--arena-lime)] uppercase tracking-wider bg-[var(--arena-lime)]/10 border border-[var(--arena-lime)]/20 px-1.5 py-0.5 rounded">
                             {story.title}
                           </span>
                           <span className="text-[9px] text-slate-400 font-mono">
                             {story.matchDate ? new Date(story.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-200 leading-relaxed mt-2 font-medium">
+                        <p className="mt-2 break-words text-xs font-medium leading-relaxed text-slate-200">
                           {story.body}
                         </p>
                       </div>
                       
-                      <div className="border-t border-slate-800 mt-3 pt-2.5 flex items-center justify-between gap-2">
-                        <span className="text-[9px] font-mono text-slate-400 truncate">
+                      <div className="mt-3 flex flex-col gap-2.5 border-t border-slate-800 pt-2.5 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="min-w-0 truncate text-[9px] font-mono text-slate-400 sm:flex-1">
                           {story.proofLabel}
                         </span>
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 sm:justify-end">
                           {isAdmin && (
                             <button
                               type="button"
                               onClick={() => handleTogglePinStory(story.id)}
-                              className={`text-[9px] font-black uppercase flex items-center gap-0.5 cursor-pointer hover:underline ${
+                              className={`min-h-7 shrink-0 text-[9px] font-black uppercase flex items-center gap-0.5 cursor-pointer hover:underline ${
                                 pinnedStoryIds.includes(story.id)
                                   ? 'text-yellow-400'
                                   : 'text-slate-400 hover:text-white'
@@ -721,20 +721,14 @@ export default function ClubHomePage() {
                               ★ {pinnedStoryIds.includes(story.id) ? 'Featured' : 'Feature'}
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(
-                                `🔥 *${story.title}*\n${story.body}\n\n${story.proofLabel}\n📍 ${club.name}`
-                              )
-                              setSuccessMessage('Story copied to clipboard!')
-                              setTimeout(() => setSuccessMessage(''), 2000)
-                            }}
-                            className="text-[9px] font-black uppercase text-[var(--arena-lime)] hover:underline flex items-center gap-0.5 shrink-0 cursor-pointer"
-                          >
-                            <Share2 size={10} />
-                            Share
-                          </button>
+                          <StoryShareGroup
+                            title={story.title}
+                            body={story.body}
+                            proofLabel={story.proofLabel}
+                            clubName={club.name}
+                            url={window.location.href}
+                            size="sm"
+                          />
                         </div>
                       </div>
                     </div>
@@ -841,10 +835,10 @@ export default function ClubHomePage() {
       ) : null}
 
       {showStorySelectorModal && isAdmin && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setShowStorySelectorModal(false)}>
-          <Card className="max-h-[85vh] w-full overflow-hidden flex flex-col rounded-xl sm:max-w-xl border-[var(--arena-border)] bg-[var(--arena-surface)] shadow-2xl animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b border-[var(--arena-border)] flex items-center justify-between shrink-0 bg-slate-950/40">
-              <div>
+        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/60 p-0 backdrop-blur-sm sm:place-items-center sm:p-4" onClick={() => setShowStorySelectorModal(false)}>
+          <Card className="animate-fade-in flex max-h-[92svh] w-full flex-col overflow-hidden rounded-b-none rounded-t-xl border-[var(--arena-border)] bg-[var(--arena-surface)] shadow-2xl sm:max-h-[85vh] sm:max-w-xl sm:rounded-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--arena-border)] bg-slate-950/40 p-4">
+              <div className="min-w-0">
                 <h3 className="text-base font-black uppercase text-white tracking-tight">Feature Player Stories</h3>
                 <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Select which exciting moments to display on the club homepage.</p>
               </div>
@@ -857,13 +851,13 @@ export default function ClubHomePage() {
               {allClubStories.length === 0 ? (
                 <p className="text-xs text-[var(--arena-text-dim)] text-center py-8">No player stories generated yet. Record some matches to create stories!</p>
               ) : (
-                allClubStories.map((story: StoryMoment & { playerName: string }) => {
+                allClubStories.map((story: StoryMoment & { playerName: string }, index) => {
                   const isPinned = pinnedStoryIds.includes(story.id)
                   return (
                     <div
-                      key={story.id}
+                      key={`${story.id}-${story.playerName}-${index}`}
                       onClick={() => handleTogglePinStory(story.id)}
-                      className={`p-3 rounded-lg border transition-all duration-150 cursor-pointer flex gap-3 items-start select-none ${
+                      className={`flex min-w-0 cursor-pointer select-none items-start gap-3 rounded-lg border p-3 transition-all duration-150 ${
                         isPinned
                           ? 'border-[var(--arena-accent)]/40 bg-[var(--arena-accent-soft)] text-white'
                           : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900 text-slate-300'
@@ -876,8 +870,8 @@ export default function ClubHomePage() {
                         className="mt-1 accent-[var(--arena-accent)] shrink-0 pointer-events-none"
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--arena-lime)]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="min-w-0 break-words text-[10px] font-black uppercase tracking-wider text-[var(--arena-lime)]">
                             {story.playerName} • {story.title}
                           </span>
                           <span className="text-[9px] text-slate-400 font-mono shrink-0">

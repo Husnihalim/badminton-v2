@@ -17,7 +17,7 @@ Keep this file plain and operational. It is not the product vision. Product visi
 
 ## Current Snapshot
 
-Last updated: 2026-06-07
+Last updated: 2026-06-16
 
 Current strategic focus:
 
@@ -51,6 +51,7 @@ Current local caution:
 | UI/UX Phase 2: Preview Lab | Started | Safe review surface for components before production routes | `/ui-preview` local route | Review and refine |
 | Player Card | Implemented Locally | Make player identity the atomic media asset | Reusable `PlayerIdentityCard` exists in preview and dashboard; lint/test/build passed | Owner visual review on real dashboard |
 | Player Home / Dashboard | Started | Make signed-in home personal and status-driven | Dashboard now uses the shared player identity card; existing dirty local work still exists | Review player card integration before broader dashboard changes |
+| Competitions System (Weeks 1-3) | In Progress | Unified competitions schema, BWF broadcast-style scoreboards, pool standings, and SVG playoff bracket trees | Database migrations & competitions API complete; detail pages & bracket view in progress | Complete Week 2 & 3 UI implementation |
 | Club Homepage | Planned | Make clubs feel like sports channels | Not started in new framework | Wait for foundation |
 | Game Day Live | Planned | Make sessions feel live and usable beside court | Not started in new framework | Wait for foundation |
 | Story / Share Cards | Planned | Turn stats into shareable stories | Requirements documented | Wait for core surfaces |
@@ -88,6 +89,7 @@ Current local caution:
 | 2026-06-07 | Main Codex thread | UI/UX Phase 1 | Draft design system foundation spec | `KELABSUKAN_UIUX_PHASE_1_DESIGN_SYSTEM_SPEC.md`, `KELABSUKAN_PHASE_CONTROL.md` | Markdown review only | Phase 1 spec ready for review |
 | 2026-06-07 | Main Codex thread | UI/UX Phase 1 | Implement design tokens, primitive variants, sports/admin components, and `/ui-preview` | `src/index.css`, `src/App.css`, `src/components/ui/*`, `src/components/sports.tsx`, `src/components/admin/AdminPrimitives.tsx`, `src/pages/UiPreviewPage.tsx`, `src/App.tsx` | lint/test/build passed; local mobile/desktop overflow check passed | Review local `/ui-preview` before any production route changes |
 | 2026-06-07 | Main Codex thread | Player Card | Extract player identity card into a reusable component and wire it into the signed-in dashboard | `src/components/sports.tsx`, `src/pages/DashboardPage.tsx`, `src/pages/UiPreviewPage.tsx` | lint/test/build passed | Review dashboard player card before expanding the rest of player home |
+| 2026-06-16 | Main Codex thread | Competitions System Review | Review current friendly-to-competition migration and fix invite preview host-club name | `src/components/friendly/FriendlyCreateModal.tsx`, `src/pages/FriendliesListPage.tsx` | lint/test/build passed | Keep legacy friendly aliases until competition migration is fully settled |
 
 ## Verification Log
 
@@ -98,6 +100,7 @@ Current local caution:
 | 2026-06-07 | Phase 1 design system spec | Not run; docs only | Not required | Not required | No app code changed |
 | 2026-06-07 | Phase 1 design system foundation | `npm run lint`, `npm run test`, `npm run build` passed | Local `/ui-preview` checked at 390px and 1440px; no horizontal overflow; no console errors | Not deployed | Existing bundle-size warning remains; no production deploy |
 | 2026-06-07 | Player card first integration | `npm run lint`, `npm run test`, `npm run build` passed | Not checked visually after integration | Not deployed | Dashboard now consumes shared `PlayerIdentityCard`; existing bundle-size warning remains |
+| 2026-06-16 | Codebase review/refactor | `npm run lint`, `npm run test` passed: 43 tests; `npm run build` passed | Not checked visually in browser | Not deployed | Build still reports existing large main bundle and ineffective dynamic import warning |
 
 ## Production Release Checklist
 

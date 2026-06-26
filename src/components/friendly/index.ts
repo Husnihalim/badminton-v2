@@ -1,7 +1,1 @@
 export { FriendlyCreateModal } from './FriendlyCreateModal'
-export { FriendlyScoreboard } from './FriendlyScoreboard'
-export { MatchmakingGrid } from './MatchmakingGrid'
-export { PairRegistrationForm } from './PairRegistrationForm'
-export { FriendlyStoryCard, FriendlyStoryList } from './FriendlyStoryCard'
-export { FriendlyShareCard, FriendlyShareButton } from './FriendlyShareCard'
-export { FriendlySection } from './FriendlySection'

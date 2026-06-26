@@ -9,6 +9,8 @@ import { Badge } from '../components/ui/badge'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
+import BwfMatchupCard from '../components/competition/BwfMatchupCard'
+import PlayoffBracket from '../components/competition/PlayoffBracket'
 import { 
   getCompetition, 
   getCompetitionParticipants, 
@@ -63,6 +65,40 @@ export default function CompetitionDetailsPage() {
     const myClubMembership = myClubs.find(c => c.id === competition.club_id || c.id === competition.opponent_club_id)
     return !!myClubMembership
   }, [user, competition, myClubs])
+
+  // Calculate series score for team friendlies
+  const seriesStats = useMemo(() => {
+    if (!competition || competition.format !== 'team_friendly') return null
+
+    let hostWins = 0
+    let opponentWins = 0
+    let totalCompleted = 0
+
+    matchups.forEach(m => {
+      if (m.status === 'completed' && m.winner_participant_id) {
+        totalCompleted++
+        const winnerPart = participants.find(p => p.id === m.winner_participant_id)
+        if (winnerPart?.club_id === competition.club_id) {
+          hostWins++
+        } else if (winnerPart?.club_id === competition.opponent_club_id) {
+          opponentWins++
+        }
+      }
+    })
+
+    const totalMatchups = matchups.length || 5
+    const hostPct = totalCompleted > 0 ? (hostWins / totalMatchups) * 100 : 50
+    const opponentPct = totalCompleted > 0 ? (opponentWins / totalMatchups) * 100 : 50
+
+    return {
+      hostWins,
+      opponentWins,
+      hostPct,
+      opponentPct,
+      hostName: competition.club?.name || 'Host',
+      opponentName: competition.opponent_club_name || competition.opponent_club?.name || 'Opponent'
+    }
+  }, [competition, matchups, participants])
 
   async function loadData() {
     setIsLoading(true)
@@ -294,9 +330,9 @@ export default function CompetitionDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#040d0f] text-white p-4">
+    <div className="min-h-screen bg-[#040d0f] p-3 text-white sm:p-4">
       {/* Top action header */}
-      <div className="mx-auto max-w-4xl flex items-center justify-between mb-6">
+      <div className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-between gap-3">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-slate-400 hover:text-white cursor-pointer"
@@ -311,13 +347,35 @@ export default function CompetitionDetailsPage() {
 
       {/* Main Title Banner */}
       <div className="mx-auto max-w-4xl mb-6 text-center">
-        <h1 className="text-3xl font-black uppercase tracking-tight text-white leading-tight">
+        <h1 className="break-words text-2xl font-black uppercase tracking-tight text-white leading-tight sm:text-3xl">
           {competition.title}
         </h1>
-        <p className="text-xs text-[var(--arena-text-muted)] mt-1.5 uppercase tracking-wider">
+        <p className="mt-1.5 break-words text-xs uppercase tracking-wider text-[var(--arena-text-muted)]">
           🏆 Format: {competition.format.replace(/_/g, ' ')} • Sport: {competition.sport}
         </p>
       </div>
+
+      {/* Series History Bar for team friendlies */}
+      {seriesStats && (
+        <div className="mx-auto max-w-4xl mb-6">
+          <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-2.5">
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Series</span>
+            <div className="flex h-1.5 min-w-[120px] flex-1 overflow-hidden rounded-full bg-slate-800">
+              <div
+                className="bg-[var(--arena-lime)] h-full transition-all duration-500"
+                style={{ width: `${seriesStats.hostWins === 0 && seriesStats.opponentWins === 0 ? 50 : (seriesStats.hostWins / (seriesStats.hostWins + seriesStats.opponentWins || 1)) * 100}%` }}
+              />
+              <div
+                className="bg-slate-700 h-full transition-all duration-500"
+                style={{ width: `${seriesStats.hostWins === 0 && seriesStats.opponentWins === 0 ? 50 : (seriesStats.opponentWins / (seriesStats.hostWins + seriesStats.opponentWins || 1)) * 100}%` }}
+              />
+            </div>
+            <span className="min-w-0 break-words text-xs font-bold text-slate-400">
+              <strong className="text-[var(--arena-lime)]">{seriesStats.hostName} {seriesStats.hostWins}</strong> - {seriesStats.opponentWins} {seriesStats.opponentName}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Level 1 Navigation Tabs */}
       <div className="mx-auto max-w-4xl border-b border-white/10 flex gap-2 overflow-x-auto whitespace-nowrap mb-6">
@@ -325,7 +383,8 @@ export default function CompetitionDetailsPage() {
           { id: 'details', label: 'Details' },
           { id: 'roster', label: 'Roster' },
           { id: 'matches', label: 'Matches' },
-          { id: 'standings', label: 'Standings' }
+          { id: 'standings', label: 'Standings' },
+          { id: 'playoffs', label: 'Playoffs' }
         ] as const).map(tab => (
           <button
             key={tab.id}
@@ -378,7 +437,7 @@ export default function CompetitionDetailsPage() {
         {/* Tab 2: Roster */}
         {activeTab === 'roster' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-black uppercase tracking-tight">Roster List</h2>
               {isAdmin && (
                 <Button 
@@ -386,7 +445,7 @@ export default function CompetitionDetailsPage() {
                     setInviteClubId(competition.club_id)
                     setShowInviteModal(true)
                   }}
-                  className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 gap-1"
+                  className="h-9 px-3 text-xs gap-1 bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 sm:h-10 sm:text-sm"
                 >
                   <UserPlus size={15} />
                   Invite Player
@@ -400,10 +459,10 @@ export default function CompetitionDetailsPage() {
                 const isUser2Pending = p.user_2_status === 'pending'
                 return (
                   <Card key={p.id} className="border-white/10 bg-[#0a0f0e]">
-                    <CardContent className="p-4 flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-extrabold text-white text-base leading-tight">{p.name}</h4>
-                        <div className="flex items-center gap-2 mt-1.5">
+                    <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <h4 className="break-words text-base font-extrabold leading-tight text-white">{p.name}</h4>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
                           <span className="text-[10px] text-slate-500 font-mono">
                             User 1: {isUser1Pending ? '⏳ Invited' : '✅ Active'}
                           </span>
@@ -431,7 +490,7 @@ export default function CompetitionDetailsPage() {
         {/* Tab 3: Matches */}
         {activeTab === 'matches' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-black uppercase tracking-tight">Match Schedule</h2>
               {/* Pool filter */}
               {pools.length > 0 && (
@@ -440,7 +499,7 @@ export default function CompetitionDetailsPage() {
                   <select
                     value={selectedPoolId}
                     onChange={(e) => setSelectedPoolId(e.target.value)}
-                    className="bg-slate-950 border border-white/10 rounded-lg p-1.5 text-xs text-white cursor-pointer"
+                    className="max-w-[170px] cursor-pointer rounded-lg border border-white/10 bg-slate-950 p-1.5 text-xs text-white"
                   >
                     <option value="all">All Pools</option>
                     {pools.map(p => (
@@ -453,64 +512,19 @@ export default function CompetitionDetailsPage() {
 
             <div className="space-y-3">
               {matchups
+                .filter(m => m.bracket_round === null || m.bracket_round === undefined)
                 .filter(m => selectedPoolId === 'all' || m.pool_id === selectedPoolId)
-                .map((m, index) => {
-                  return (
-                    <Card key={m.id} className="border-white/10 bg-[#0a0f0e]">
-                      <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Match {index + 1} • Court {m.order_index + 1}</p>
-                          <div className="flex items-center gap-3 mt-1.5">
-                            <span className={cn(
-                              "font-black text-base transition-colors",
-                              m.winner_participant_id === m.participant_a_id ? 'text-[var(--arena-lime)]' : 'text-white'
-                            )}>
-                              {m.participant_a?.name}
-                            </span>
-                            <span className="text-slate-500 text-xs font-mono">vs</span>
-                            <span className={cn(
-                              "font-black text-base transition-colors",
-                              m.winner_participant_id === m.participant_b_id ? 'text-[var(--arena-lime)]' : 'text-white'
-                            )}>
-                              {m.participant_b?.name}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Scores set or action */}
-                        <div className="flex items-center gap-4 shrink-0 justify-between md:justify-end">
-                          {m.status === 'completed' && m.match?.score_sets ? (
-                            <div className="flex gap-2">
-                              {m.match.score_sets.map((set, sIdx) => (
-                                <div key={sIdx} className="bg-slate-950 border border-white/5 px-2.5 py-1 rounded text-sm font-mono font-bold">
-                                  <span className={set.team1_score > set.team2_score ? 'text-[var(--arena-lime)]' : 'text-white'}>
-                                    {set.team1_score}
-                                  </span>
-                                  <span className="text-slate-650 mx-1">-</span>
-                                  <span className={set.team2_score > set.team1_score ? 'text-[var(--arena-lime)]' : 'text-white'}>
-                                    {set.team2_score}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <Badge variant="live">LIVE</Badge>
-                          )}
-
-                          {m.status !== 'completed' && isAdmin && (
-                            <Button
-                              onClick={() => handleRecordMatch(m)}
-                              size="sm"
-                              className="bg-slate-800 text-white border border-white/10 hover:bg-slate-700"
-                            >
-                              Record Score
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                .map((m) => (
+                  <BwfMatchupCard
+                    key={m.id}
+                    matchup={m}
+                    isAdmin={isAdmin}
+                    onRecordScore={handleRecordMatch}
+                  />
+                ))}
+              {matchups.filter(m => m.bracket_round === null || m.bracket_round === undefined).length === 0 && (
+                <p className="text-slate-500 italic text-sm py-4">No group stage matches scheduled.</p>
+              )}
             </div>
           </div>
         )}
@@ -571,13 +585,25 @@ export default function CompetitionDetailsPage() {
             })}
           </div>
         )}
+
+        {/* Tab 5: Playoffs */}
+        {activeTab === 'playoffs' && (
+          <PlayoffBracket
+            competitionId={competition.id}
+            matchups={matchups}
+            participants={participants}
+            isAdmin={isAdmin}
+            onRecordScore={handleRecordMatch}
+            onRefresh={loadData}
+          />
+        )}
       </div>
 
       {/* Roster Invitation Modal Form */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <Card className="w-full max-w-md border-white/10 bg-[#0a0f0e] text-white">
-            <CardContent className="p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <Card className="max-h-[92svh] w-full overflow-y-auto rounded-b-none rounded-t-xl border-white/10 bg-[#0a0f0e] text-white sm:max-w-md sm:rounded-xl">
+            <CardContent className="space-y-4 p-4 sm:p-6">
               <h3 className="text-lg font-black uppercase tracking-tight">Roster Invitation</h3>
               <form onSubmit={handleSendInvite} className="space-y-4">
                 <div>
@@ -625,7 +651,7 @@ export default function CompetitionDetailsPage() {
                   </select>
                 </div>
 
-                <div className="flex gap-2 justify-end pt-4">
+                <div className="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2">
                   <Button
                     type="button"
                     variant="secondary"

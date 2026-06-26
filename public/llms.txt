@@ -1,0 +1,27 @@
+# KelabSukan
+
+KelabSukan is a web app for grassroots racket sport communities in Malaysia.
+It helps badminton, tennis, and pickleball clubs manage members, schedule game days, record scores, track Elo leaderboards, run competitions, and generate shareable sports stories.
+
+Primary URL: https://kelabsukan.com/
+
+## Main use cases
+
+- Racket club management
+- Member lists and player profiles
+- Game day scheduling and RSVP
+- Match score capture
+- Club leaderboards and Elo ratings
+- Friendly competitions
+- WhatsApp-ready match stories and player moments
+
+## Audience
+
+KelabSukan is for social sports clubs, community organizers, racket sport players, and amateur competition hosts.
+
+## Public pages
+
+- Home: https://kelabsukan.com/
+- Register: https://kelabsukan.com/register
+- Login: https://kelabsukan.com/login
+- Competitions: https://kelabsukan.com/competitions

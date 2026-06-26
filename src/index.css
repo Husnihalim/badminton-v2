@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --font-sans: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -25,7 +29,7 @@
 :root[data-theme='dark'] {
   font-family: var(--font-sans);
   line-height: 1.5;
-  font-size: 14px; /* Default for mobile/smaller viewports */
+  font-size: 14px;
   color-scheme: dark;
 
   --arena-bg: #040d0f;
@@ -58,6 +62,41 @@
   --text-muted: var(--arena-text-muted);
   --border: var(--arena-border);
   --primary: var(--arena-accent);
+
+  /* shadcn/ui CSS variables mapped to arena tokens */
+  --background: var(--arena-bg);
+  --foreground: var(--arena-text);
+  --card: var(--arena-surface-elevated);
+  --card-foreground: var(--arena-text);
+  --popover: var(--arena-surface-elevated);
+  --popover-foreground: var(--arena-text);
+  --primary: var(--arena-accent);
+  --primary-foreground: var(--arena-accent-text);
+  --secondary: var(--arena-surface-muted);
+  --secondary-foreground: var(--arena-text);
+  --muted: var(--arena-surface-muted);
+  --muted-foreground: var(--arena-text-muted);
+  --accent: var(--arena-accent-soft);
+  --accent-foreground: var(--arena-accent);
+  --destructive: #ef4444;
+  --destructive-foreground: #f8fafc;
+  --border: var(--arena-border);
+  --input: var(--arena-border);
+  --ring: var(--arena-accent);
+  --radius: 0.625rem;
+  --chart-1: var(--arena-accent);
+  --chart-2: var(--arena-blue);
+  --chart-3: var(--arena-text-muted);
+  --chart-4: var(--arena-surface-muted);
+  --chart-5: var(--arena-lime);
+  --sidebar: var(--arena-surface);
+  --sidebar-foreground: var(--arena-text);
+  --sidebar-primary: var(--arena-accent);
+  --sidebar-primary-foreground: var(--arena-accent-text);
+  --sidebar-accent: var(--arena-accent-soft);
+  --sidebar-accent-foreground: var(--arena-accent);
+  --sidebar-border: var(--arena-border);
+  --sidebar-ring: var(--arena-accent);
 }
 
 @media (min-width: 768px) {
@@ -71,6 +110,7 @@
 html {
   scroll-behavior: smooth;
   background-color: var(--arena-bg);
+  overflow-x: clip;
 }
 
 body {
@@ -80,6 +120,7 @@ body {
   color: var(--arena-text);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 
 a { color: inherit; }
@@ -90,7 +131,7 @@ button:disabled { cursor: not-allowed; }
 
 main {
   flex: 1;
-  width: min(1180px, 100% - 24px);
+  width: min(1180px, 100% - 20px);
   margin: 0 auto;
   padding: 16px 0 80px;
 }
@@ -104,3 +145,58 @@ main {
 
 .bg-surface { background-color: var(--arena-surface); }
 .bg-surface-muted { background-color: var(--arena-surface-muted); }
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

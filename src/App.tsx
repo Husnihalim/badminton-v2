@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -8,6 +8,17 @@ import { NotificationsProvider } from './context/NotificationsContext'
 import { ThemeProvider } from './context/ThemeContext';
 
 import './App.css'
+
+const FriendlyRedirect = () => {
+  const { competitionId } = useParams();
+  return <Navigate to={`/competition/${competitionId}`} replace />;
+};
+
+const InviteRedirect = () => {
+  const { inviteCode } = useParams();
+  return <Navigate to={`/c/${inviteCode}`} replace />;
+};
+
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
@@ -27,8 +38,6 @@ const UiPreviewPage = lazy(() => import('./pages/UiPreviewPage'))
 const SuperAdminAnalyticsPage = lazy(() => import('./pages/SuperAdminAnalyticsPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const FriendliesListPage = lazy(() => import('./pages/FriendliesListPage'))
-const FriendlyPage = lazy(() => import('./pages/FriendlyPage'))
-const FriendlyLandingPage = lazy(() => import('./pages/FriendlyLandingPage'))
 const CompetitionDetailsPage = lazy(() => import('./pages/CompetitionDetailsPage'))
 const PublicCompetitionPage = lazy(() => import('./pages/PublicCompetitionPage'))
 
@@ -71,9 +80,9 @@ function App() {
                       <Route path="/club/:clubId/settings" element={<ClubSettingsPage />} />
                       <Route path="/club/:clubId/members" element={<ClubMembersPage />} />
                       <Route path="/superadmin/analytics" element={<SuperAdminAnalyticsPage />} />
-                      <Route path="/friendlies" element={<FriendliesListPage />} />
-                      <Route path="/friendly/:friendlyId" element={<FriendlyPage />} />
-                      <Route path="/f/:inviteCode" element={<FriendlyLandingPage />} />
+                      <Route path="/friendlies" element={<Navigate to="/competitions" replace />} />
+                      <Route path="/friendly/:competitionId" element={<FriendlyRedirect />} />
+                      <Route path="/f/:inviteCode" element={<InviteRedirect />} />
                       <Route path="/competitions" element={<FriendliesListPage />} />
                       <Route path="/competition/:competitionId" element={<CompetitionDetailsPage />} />
                       <Route path="/c/:inviteCode" element={<PublicCompetitionPage />} />

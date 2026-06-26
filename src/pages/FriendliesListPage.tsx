@@ -89,7 +89,7 @@ export default function FriendliesListPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="arena-heading text-2xl">Friendlies</h1>
+          <h1 className="arena-heading text-2xl">Competitions</h1>
           {myClubs.length > 1 && (
             <select
               value={currentClub?.id || ''}
@@ -131,7 +131,7 @@ export default function FriendliesListPage() {
               key={friendly.id}
               friendly={friendly}
               currentClubId={currentClub?.id}
-              onClick={() => navigate(`/friendly/${friendly.id}`)}
+              onClick={() => navigate(`/competition/${friendly.id}`)}
             />
           ))}
         </div>
@@ -148,7 +148,7 @@ export default function FriendliesListPage() {
               key={friendly.id}
               friendly={friendly}
               currentClubId={currentClub?.id}
-              onClick={() => navigate(`/friendly/${friendly.id}`)}
+              onClick={() => navigate(`/competition/${friendly.id}`)}
             />
           ))}
         </div>
@@ -182,6 +182,7 @@ export default function FriendliesListPage() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           clubId={currentClub.id}
+          clubName={currentClub.name}
           nearbyClubs={discoverClubs}
           onCreated={() => {
             loadFriendlies(currentClub.id)

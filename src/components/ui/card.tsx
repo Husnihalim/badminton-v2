@@ -1,40 +1,113 @@
-import { cva, type VariantProps } from 'class-variance-authority'
-import type { HTMLAttributes } from 'react'
-import { cn } from '../../lib/utils'
+import * as React from "react"
 
-const cardVariants = cva(
-  'rounded-xl border shadow-lg transition-colors duration-150',
-  {
-    variants: {
-      variant: {
-        default: 'border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text)]',
-        arena: 'arena-panel',
-        live: 'arena-panel arena-court-lines',
-        admin: 'arena-admin-panel',
-        score: 'border-[var(--arena-line)] bg-[rgba(4,13,15,0.9)] text-[var(--arena-text)] shadow-[0_12px_32px_rgba(0,0,0,0.26)]',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-)
+import { cn } from "@/lib/utils"
 
-type CardProps = HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardVariants>
+const cardVariants: Record<string, string> = {
+  default: "bg-card text-card-foreground ring-1 ring-foreground/10",
+  arena: "bg-[var(--arena-surface)] border-[var(--arena-border)]",
+  live: "border-[var(--arena-lime)] ring-[var(--arena-lime)]/20",
+  admin: "bg-[rgba(255,255,255,0.03)] border-[var(--arena-border)]",
+  score: "bg-[rgba(4,13,15,0.9)] border-[var(--arena-line)] shadow-[0_12px_32px_rgba(0,0,0,0.26)]",
+}
 
-export function Card({ className, variant, ...props }: CardProps) {
+function Card({
+  className,
+  variant,
+  size = "default",
+  ...props
+}: React.ComponentProps<"div"> & { variant?: string; size?: "default" | "sm" }) {
   return (
     <div
-      className={cn(cardVariants({ variant }), className)}
+      data-slot="card"
+      data-size={size}
+      className={cn(
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl border py-(--card-spacing) text-sm shadow-lg [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        variant ? cardVariants[variant] ?? cardVariants.default : cardVariants.default,
+        className
+      )}
       {...props}
     />
   )
 }
 
-export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('space-y-1.5 p-3 pb-2 sm:p-5 sm:pb-3', className)} {...props} />
+function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-header"
+      className={cn(
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
+        className
+      )}
+      {...props}
+    />
+  )
 }
 
-export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-3 sm:p-5 [&:not(:first-child)]:pt-0', className)} {...props} />
+function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-title"
+      className={cn(
+        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-description"
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+function CardAction({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-action"
+      className={cn(
+        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-content"
+      className={cn("px-(--card-spacing)", className)}
+      {...props}
+    />
+  )
+}
+
+function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-footer"
+      className={cn(
+        "flex items-center rounded-b-xl border-t bg-muted/50 p-(--card-spacing)",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
 }

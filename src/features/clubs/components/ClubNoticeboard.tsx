@@ -7,7 +7,7 @@ import { THEME_MAP } from '../constants'
 import { Card, CardContent } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
-import { Modal } from '../../../components/ui/Modal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog'
 import { Input } from '../../../components/ui/input'
 import { Textarea } from '../../../components/ui/textarea'
 import { buildInviteUrl } from '../../../lib/api'
@@ -165,21 +165,21 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
     <div className="space-y-4">
       {/* Pinned Noticeboard Announcement */}
       {club.announcement ? (
-        <div className="rounded-xl border border-amber-250 bg-amber-50/60 p-3 shadow-sm sm:rounded-2xl sm:p-4">
+        <div className="rounded-xl border border-[var(--arena-accent)]/20 bg-[var(--arena-accent-soft)] p-3 shadow-sm sm:p-4">
           <div className="flex gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface)] text-amber-700 shadow-sm border border-amber-200">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm">
               <Megaphone size={18} aria-hidden="true" />
             </span>
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-4 flex-wrap">
-                <h3 className="text-sm font-bold text-amber-900">Pinned Announcement</h3>
+                <h3 className="text-sm font-bold text-[var(--arena-text)]">Pinned Announcement</h3>
                 {club.announcement_updated_at ? (
-                  <span className="text-xs text-amber-600">
+                  <span className="text-xs text-[var(--arena-text-dim)]">
                     Updated {new Date(club.announcement_updated_at).toLocaleDateString()}
                   </span>
                 ) : null}
               </div>
-              <p className="mt-2 text-sm text-amber-850 leading-relaxed whitespace-pre-wrap">
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--arena-text-muted)]">
                 {club.announcement}
               </p>
             </div>
@@ -189,7 +189,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
 
       <Card>
         <CardContent className="space-y-4 pt-4 sm:pt-5">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-[var(--arena-text)]">Club board</h2>
             {isAdmin ? (
               <div className="flex items-center gap-1.5">
@@ -274,14 +274,14 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                           <p className="mt-0.5 text-[10px] text-[var(--arena-text-dim)]">{new Date(item.createdAt).toLocaleString()}</p>
                           <div className="mt-1 space-y-1">
                             <div className="flex items-center gap-1.5">
-                              <p className="font-bold text-xs text-[var(--arena-text)]">{item.title}</p>
+                              <p className="break-words font-bold text-xs text-[var(--arena-text)]">{item.title}</p>
                               <span className="text-[var(--arena-text-dim)]">
                                 <ChevronRight className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} size={14} />
                               </span>
                             </div>
                             
                             {isExpanded && (
-                              <p className="mt-1.5 text-xs leading-relaxed text-[var(--arena-text-muted)] bg-[var(--arena-surface)]/75 rounded p-2 border border-[var(--arena-border)]/50 whitespace-pre-wrap">
+                              <p className="mt-1.5 whitespace-pre-wrap break-words rounded border border-[var(--arena-border)]/50 bg-[var(--arena-surface)]/75 p-2 text-xs leading-relaxed text-[var(--arena-text-muted)]">
                                 {item.body}
                               </p>
                             )}
@@ -317,17 +317,12 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
         </CardContent>
       </Card>
 
-      <Modal isOpen={showAnnouncementModal && isAdmin} onClose={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} title={editingMessage ? 'Edit message' : 'Notify members'}>
-        <div className="space-y-4 pt-4 sm:pt-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-[var(--arena-text)]">{editingMessage ? 'Edit message' : 'Notify members'}</h2>
-              <p className="text-sm text-[var(--arena-text-muted)]">{editingMessage ? 'Update the message and member notifications.' : 'Send news or updates to all active club members.'}</p>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={() => { setShowAnnouncementModal(false); setEditingMessage(null) }} aria-label="Close">
-              <X size={18} aria-hidden="true" />
-            </Button>
-          </div>
+      <Dialog open={showAnnouncementModal && isAdmin} onOpenChange={(open) => { if (!open) { setShowAnnouncementModal(false); setEditingMessage(null) } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingMessage ? 'Edit message' : 'Notify members'}</DialogTitle>
+            <DialogDescription>{editingMessage ? 'Update the message and member notifications.' : 'Send news or updates to all active club members.'}</DialogDescription>
+          </DialogHeader>
           <form className="space-y-4" onSubmit={editingMessage ? handleUpdateMessage : handleSendAnnouncement}>
             <label className="block space-y-1.5 text-sm font-semibold text-[var(--arena-text-muted)]">
               <span>Title *</span>
@@ -344,8 +339,8 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
               </Button>
             </div>
           </form>
-        </div>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

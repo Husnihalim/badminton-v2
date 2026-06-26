@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '../components/ui/button';
-import { Modal } from '../components/ui/Modal';
-import { X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 
 interface DeleteClubModalProps {
   isOpen: boolean;
@@ -18,38 +17,38 @@ interface DeleteClubModalProps {
  */
 export default function DeleteClubModal({ isOpen, onClose, onConfirm, isDeleting = false, clubName, error }: DeleteClubModalProps) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Delete Club"
-      className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 max-w-md"
-    >
-      <p className="text-sm text-gray-300 mb-4">
-        This action cannot be undone. All club data, members and events will be permanently removed.
-        {clubName && <span> ({clubName})</span>}
-      </p>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete Club</DialogTitle>
+          <DialogDescription>
+            This action cannot be undone. All club data, members and events will be permanently removed.
+            {clubName && <span> ({clubName})</span>}
+          </DialogDescription>
+        </DialogHeader>
 
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-950/50 p-3 text-sm text-red-200">
-          {error}
+        {error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-950/50 p-3 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={isDeleting} fullWidth className="sm:w-auto">
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            fullWidth
+            className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white sm:w-auto"
+          >
+            {isDeleting ? 'Deleting…' : 'Delete Forever'}
+          </Button>
         </div>
-      )}
-
-      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-4">
-        <Button variant="secondary" onClick={onClose} disabled={isDeleting} fullWidth className="sm:w-auto">
-          <X size={16} className="mr-2" /> Cancel
-        </Button>
-        <Button
-          variant="danger"
-          onClick={onConfirm}
-          disabled={isDeleting}
-          fullWidth
-          className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white sm:w-auto"
-        >
-          {isDeleting ? 'Deleting…' : 'Delete Forever'}
-        </Button>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 

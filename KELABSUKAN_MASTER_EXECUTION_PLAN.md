@@ -215,20 +215,20 @@ spec → preview → review → real route → checks → preview deploy → app
 
 **Files affected:** `src/lib/friendlyApi.ts` (delete), `src/lib/friendlyStoryMoments.ts` (delete), `src/lib/storyMoments.ts` (merge into), `src/lib/api/competitions.ts` (new), `supabase/migrations/` (migrations)
 
-- [ ] **1.1** Audit friendlyApi functions and write migration to create unified tables: `competitions`, `competition_pools`, `competition_participants`, `competition_matchups` (respecting RLS & Realtime).
-- [ ] **1.2** Port friendly matchups logic to match the new unified table structure.
-- [ ] **1.3** Merge `friendlyStoryMoments.ts` unique story types into `storyMoments.ts` (ensuring no story format is lost).
-- [ ] **1.4** Build the **Competitions API** (`src/lib/api/competitions.ts`):
+- [x] **1.1** Audit friendlyApi functions and write migration to create unified tables: `competitions`, `competition_pools`, `competition_participants`, `competition_matchups` (respecting RLS & Realtime).
+- [x] **1.2** Port friendly matchups logic to match the new unified table structure.
+- [x] **1.3** Merge `friendlyStoryMoments.ts` unique story types into `storyMoments.ts` (ensuring no story format is lost).
+- [x] **1.4** Build the **Competitions API** (`src/lib/api/competitions.ts`):
   - `createCompetition()`: Create friendly or tournament draft.
   - `registerParticipant()`: Roster players/pairs.
   - `generatePoolMatches()`: Setup pool groups and schedule matchups.
-- [ ] **1.5** Clean up and update all callers of friendlyApi to import from the new unified module.
-- [ ] **1.6** Delete `friendlyApi.ts` and `friendlyStoryMoments.ts`.
+- [x] **1.5** Clean up and update all callers of friendlyApi to import from the new unified module.
+- [x] **1.6** Delete `friendlyApi.ts` and `friendlyStoryMoments.ts`.
 
 **Verify:**
-- [ ] `npm run lint` — 0 errors
-- [ ] `npm run test` — pass
-- [ ] Database migrations execute successfully against local/remote DB
+- [x] `npm run lint` — 0 errors
+- [x] `npm run test` — pass
+- [x] Database migrations execute successfully against local/remote DB
 
 ---
 
@@ -240,15 +240,15 @@ spec → preview → review → real route → checks → preview deploy → app
 
 **Files affected:** `src/pages/CompetitionDetailsPage.tsx` (new), `src/components/competition/CompetitionScoreboard.tsx` (new), `src/components/PlayerIdentityCard.tsx` (new)
 
-- [ ] **2.1** Build `PlayerIdentityCard.tsx` as a reusable component (circular avatar with rank badge overlay, location, record, win rate %, form arrow).
-- [ ] **2.2** Rebuild the event details page to support the dual-level navigation hierarchy:
+- [/] **2.1** Build `PlayerIdentityCard.tsx` as a reusable component (circular avatar with rank badge overlay, location, record, win rate %, form arrow).
+- [/] **2.2** Rebuild the event details page to support the dual-level navigation hierarchy:
   - Level 1: *Details*, *Roster*, *Matches*, *Standings*, *Playoffs*.
   - Level 2 (Matches): *Format*, *List*, *Standings*.
   - Level 3: *All*, *Pending*, *Completed*.
-- [ ] **2.3** Render **BWF Matchup cards**: court number, scheduled time, player cards side-by-side, scoresets with winner highlighted in electric lime.
-- [ ] **2.4** Implement collapsible **Pool dropdowns** to filter matches by pool.
-- [ ] **2.5** Implement the **Standings view**: real-time calculation of points, matches, and set records.
-- [ ] **2.6** Build `PublicCompetitionPage.tsx` for shared WhatsApp previews showing branding and scoreboard stats (non-auth viewable).
+- [/] **2.3** Render **BWF Matchup cards**: court number, scheduled time, player cards side-by-side, scoresets with winner highlighted in electric lime.
+- [/] **2.4** Implement collapsible **Pool dropdowns** to filter matches by pool.
+- [/] **2.5** Implement the **Standings view**: real-time calculation of points, matches, and set records.
+- [x] **2.6** Build `PublicCompetitionPage.tsx` for shared WhatsApp previews showing branding and scoreboard stats (non-auth viewable).
 
 **Verify:**
 - [ ] `npm run lint` — 0 errors
@@ -262,10 +262,10 @@ spec → preview → review → real route → checks → preview deploy → app
 
 **Files affected:** `src/components/competition/PlayoffBracket.tsx` (new), `src/lib/api/competitions.ts`
 
-- [ ] **3.1** Build the playoff bracket generator API: auto-qualify top players/pairs from pools and seed them into elimination bracket slots.
-- [ ] **3.2** Design the SVG/CSS **Playoff Bracket Tree** component: responsive nodes displaying pair names, scores, and lines connecting winners to the next round.
-- [ ] **3.3** Add glowing connector lines: highlights path green/blue when matches are completed or live.
-- [ ] **3.4** Integrate the Playoff bracket view into the "Playoffs" tab of the unified Competitions page.
+- [/] **3.1** Build the playoff bracket generator API: auto-qualify top players/pairs from pools and seed them into elimination bracket slots.
+- [/] **3.2** Design the SVG/CSS **Playoff Bracket Tree** component: responsive nodes displaying pair names, scores, and lines connecting winners to the next round.
+- [/] **3.3** Add glowing connector lines: highlights path green/blue when matches are completed or live.
+- [/] **3.4** Integrate the Playoff bracket view into the "Playoffs" tab of the unified Competitions page.
 
 **Verify:**
 - [ ] Bracket tree renders correctly on mobile without overflow

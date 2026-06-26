@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { StoryShareGroup } from '../components/StoryShareGroup'
 import { 
   Flame, 
   Trophy, 
-  Share2, 
   Users, 
   ChevronRight, 
   Copy, 
@@ -35,8 +35,7 @@ export default function LandingPage() {
   // Leaderboard toggle (LEP BC vs Smashers PJ)
   const [leaderboardClubId, setLeaderboardClubId] = useState<'mock-lep-bc' | 'mock-smashers-pj'>('mock-lep-bc')
 
-  // WhatsApp share toast state
-  const [copiedStoryId, setCopiedStoryId] = useState<string | null>(null)
+
 
   // Try Club Setup Widget State
   const [clubName, setClubName] = useState('')
@@ -78,34 +77,7 @@ export default function LandingPage() {
     loadRealClubs()
   }, [loadRealClubs])
 
-  // Copy/Share WhatsApp stories
-  const handleShareStory = async (storyId: string, headline: string, body: string, proof: string, clubName: string) => {
-    const text = `🔥 *${headline}*\n🏆 ${body}\n\n📊 *The Proof:* ${proof}\n📍 ${clubName} | ${new Date().toLocaleDateString()}\n\nRead match reports on KelabSukan:\n🔗 ${window.location.origin}/club/mock-lep-bc`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: headline,
-          text: text,
-          url: `${window.location.origin}/club/mock-lep-bc`
-        })
-        return
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return
-        }
-        // Fallback to clipboard if sharing fails
-      }
-    }
 
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedStoryId(storyId)
-      setTimeout(() => setCopiedStoryId(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy text: ', err)
-    }
-  }
 
   // Record Performance Playground Handler
   const handleRecordPerformance = (e: React.FormEvent) => {
@@ -290,17 +262,13 @@ export default function LandingPage() {
                     </div>
                     <div className="mt-4 pt-3 border-t border-[var(--arena-border)] flex items-center justify-between">
                       <span className="text-[10px] font-mono text-[var(--arena-accent)] font-bold">{story.proofLabel}</span>
-                      <button
-                        onClick={() => handleShareStory(story.id, story.title, story.body, story.proofLabel, story.clubName || 'LEP BC')}
-                        className="p-2 rounded-lg bg-[var(--arena-surface-muted)] hover:bg-[var(--arena-accent)] text-[var(--arena-text-muted)] hover:text-[var(--arena-bg)] transition-colors flex items-center justify-center cursor-pointer shrink-0"
-                        title={copiedStoryId === story.id ? "Copied Hype text" : "Share story"}
-                      >
-                        {copiedStoryId === story.id ? (
-                          <Check size={14} />
-                        ) : (
-                          <Share2 size={14} />
-                        )}
-                      </button>
+                      <StoryShareGroup
+                        title={story.title}
+                        body={story.body}
+                        proofLabel={story.proofLabel}
+                        clubName={story.clubName || 'LEP BC'}
+                        url={`${window.location.origin}/club/mock-lep-bc`}
+                      />
                     </div>
                   </div>
                 ))}

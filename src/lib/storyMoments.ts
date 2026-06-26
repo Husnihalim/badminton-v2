@@ -679,11 +679,15 @@ export function generateStoryMoments({ user, matches, limit = 4, excludeTemplate
 export function buildStoryMomentShareText(moment: StoryMoment, playerName: string) {
   return [
     `${playerName} on KelabSukan`,
-    moment.title,
-    moment.body,
-    moment.proofLabel,
-    moment.clubName ? `Club: ${moment.clubName}` : null,
-  ].filter(Boolean).join('\n')
+    `🔥 *${moment.title}*`,
+    `🏆 ${moment.body}`,
+    "",
+    `📊 *${moment.proofLabel}*`,
+    moment.clubName ? `📍 ${moment.clubName}` : null,
+    "",
+    "Read the full match report & view stats:",
+    `🔗 https://kelabsukan.com/stories/${moment.id}`
+  ].filter((line) => line !== null).join('\n')
 }
 
 // ============================================
@@ -1078,7 +1082,7 @@ export function buildCompetitionShareText(
     text += `\n\n${story.title}: ${story.body}`
   }
 
-  text += `\n\nLink: ${window.location.origin}/competitions/${competition.id}`
+  text += `\n\nLink: ${window.location.origin}/competition/${competition.id}`
 
   return text
 }
@@ -1165,6 +1169,6 @@ export function buildFriendlyShareText(
   }
 
   const text = buildCompetitionShareText(friendly, matchups, compStory)
-  return text.replace(`/competitions/${friendly.id}`, `/friendly/${friendly.id}`)
+  return text
 }
 

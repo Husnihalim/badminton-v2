@@ -1,48 +1,13 @@
 import { Newspaper } from 'lucide-react'
 import { Badge } from '../../../components/ui/badge'
 import { MomentCard } from '../../../components/MomentCard'
-import { buildStoryMomentShareText, type StoryMoment } from '../../../lib/storyMoments'
-import { useNotifications } from '../../../context/NotificationsContext'
-import { useAuth } from '../../../context/AuthContext'
+import { type StoryMoment } from '../../../lib/storyMoments'
 
 interface SportsStoryFeedProps {
   storyMoments: StoryMoment[]
 }
 
 export default function SportsStoryFeed({ storyMoments }: SportsStoryFeedProps) {
-  const { user } = useAuth()
-  const { showToast } = useNotifications()
-
-  const handleShareStoryMoment = async (moment: StoryMoment) => {
-    if (!user) return
-    const userName = user.display_name || user.name
-    const shareText = buildStoryMomentShareText(moment, userName)
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: moment.title,
-          text: shareText,
-          url: window.location.origin
-        })
-        return
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return
-        }
-        // Fallback to clipboard if sharing fails
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareText)
-      showToast('Story copied with proof.', 'success')
-    } catch (err) {
-      console.error('Failed to copy story: ', err)
-      showToast('Failed to copy story.', 'error')
-    }
-  }
-
   return (
     <section className="app-section space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -64,8 +29,8 @@ export default function SportsStoryFeed({ storyMoments }: SportsStoryFeedProps) 
 
       {storyMoments.length ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {storyMoments.map((moment) => (
-            <MomentCard key={moment.id} moment={moment} onShare={handleCopyStoryMoment} />
+          {storyMoments.map((moment, index) => (
+            <MomentCard key={`${moment.id}-${index}`} moment={moment} />
           ))}
         </div>
       ) : (
