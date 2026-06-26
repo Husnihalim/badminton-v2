@@ -26,6 +26,7 @@ import {
   getPlatformLogs,
   getCrashReports,
   getUserFeedback,
+  logPlatformEvent,
   type SuperadminDashboardStats,
   type SuperadminUserRow,
   type SuperadminClubRow,
@@ -33,6 +34,9 @@ import {
   type CrashReport,
   type UserFeedback
 } from '../lib/api'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog'
+import { Input } from '../components/ui/input'
+import { Button } from '../components/ui/button'
 
 type TabType = 'overview' | 'users' | 'clubs' | 'feedback' | 'security'
 
@@ -61,6 +65,8 @@ export default function SuperAdminAnalyticsPage() {
   const [feedbackTypeFilter, setFeedbackTypeFilter] = useState('all')
   const [expandedCrashId, setExpandedCrashId] = useState<string | null>(null)
   const [clubToDelete, setClubToDelete] = useState<SuperadminClubRow | null>(null)
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: string; newRole: 'superadmin' | 'member'; email: string } | null>(null)
+  const [confirmText, setConfirmText] = useState('')
 
   // Chart hover state
   const [hoveredRegIndex, setHoveredRegIndex] = useState<number | null>(null)
@@ -112,9 +118,22 @@ export default function SuperAdminAnalyticsPage() {
 
   // Handle user promotion/demotion
   const handleRoleChange = async (targetUserId: string, newRole: 'superadmin' | 'member', userEmail: string) => {
+    setPendingRoleChange({ userId: targetUserId, newRole, email: userEmail })
+  }
+
+  const executeRoleChange = async () => {
+    if (!pendingRoleChange) return
+    const { userId, newRole, email } = pendingRoleChange
     try {
-      await superadminUpdateUserRole(targetUserId, newRole)
-      showToast(`Successfully updated role for ${userEmail} to ${newRole === 'superadmin' ? 'Super Admin' : 'Member'}.`)
+      await superadminUpdateUserRole(userId, newRole)
+      await logPlatformEvent(
+        'superadmin_role_change',
+        `Role updated for ${email} to ${newRole}`,
+        'info',
+        { target_user_id: userId, new_role: newRole }
+      )
+      showToast(`Successfully updated role for ${email} to ${newRole === 'superadmin' ? 'Super Admin' : 'Member'}.`)
+      setPendingRoleChange(null)
       void loadAllData(true)
     } catch (err: unknown) {
       console.error('Role update error:', err)
@@ -126,10 +145,18 @@ export default function SuperAdminAnalyticsPage() {
   // Handle club deletion
   const handleDeleteClubConfirm = async () => {
     if (!clubToDelete) return
+    if (confirmText !== 'DELETE') return
     try {
       await deleteClub(clubToDelete.id)
+      await logPlatformEvent(
+        'superadmin_club_deleted',
+        `Club "${clubToDelete.name}" deleted`,
+        'warning',
+        { club_id: clubToDelete.id, club_name: clubToDelete.name }
+      )
       showToast(`Club "${clubToDelete.name}" deleted successfully.`)
       setClubToDelete(null)
+      setConfirmText('')
       void loadAllData(true)
     } catch (err: unknown) {
       console.error('Club delete error:', err)
@@ -987,31 +1014,63 @@ export default function SuperAdminAnalyticsPage() {
 
       </div>
 
-      {/* Confirmation Modal for Deleting Clubs */}
-      {clubToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-[var(--arena-surface)] rounded-xl max-w-sm w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-[var(--arena-text)] mb-2">Delete Club?</h3>
-            <p className="text-[var(--arena-text-muted)] text-sm mb-6">
-              Are you sure you want to delete <strong>"{clubToDelete.name}"</strong>? This will permanently delete all club members, match histories, score sets, events, and RSVP records. This action is irreversible.
-            </p>
+      {/* Delete Club Confirmation Dialog */}
+      <Dialog open={!!clubToDelete} onOpenChange={(open) => { if (!open) { setClubToDelete(null); setConfirmText('') } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Club?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>"{clubToDelete?.name}"</strong>? This will permanently delete all club members, match histories, score sets, events, and RSVP records. This action is irreversible.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-[var(--arena-text-muted)]">Type <strong>DELETE</strong> to confirm:</p>
+            <Input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="Type DELETE"
+              className="border-red-500/30 focus-visible:border-red-500"
+            />
             <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setClubToDelete(null)}
-                className="px-4 py-2 text-[var(--arena-text-muted)] border border-[var(--arena-border)] rounded-lg hover:bg-[var(--arena-surface-muted)] text-sm font-bold cursor-pointer"
-              >
+              <Button variant="secondary" onClick={() => { setClubToDelete(null); setConfirmText('') }}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 onClick={handleDeleteClubConfirm}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold cursor-pointer"
+                disabled={confirmText !== 'DELETE'}
               >
                 Delete Permanently
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Change Confirmation Dialog */}
+      <Dialog open={!!pendingRoleChange} onOpenChange={(open) => { if (!open) setPendingRoleChange(null) }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm Role Change</DialogTitle>
+            <DialogDescription>
+              {pendingRoleChange?.newRole === 'superadmin'
+                ? `Are you sure you want to promote ${pendingRoleChange?.email} to Super Admin? They will gain full platform access.`
+                : `Are you sure you want to demote ${pendingRoleChange?.email} to Member? They will lose all superadmin access.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setPendingRoleChange(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant={pendingRoleChange?.newRole === 'superadmin' ? 'primary' : 'danger'}
+              onClick={executeRoleChange}
+            >
+              {pendingRoleChange?.newRole === 'superadmin' ? 'Promote' : 'Demote'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
