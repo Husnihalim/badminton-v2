@@ -63,6 +63,7 @@ export default function CompetitionDetailsPage() {
 
   const [showScoreModal, setShowScoreModal] = useState(false)
   const [recordingMatchup, setRecordingMatchup] = useState<CompetitionMatchup | null>(null)
+  const [pairDrafts, setPairDrafts] = useState<Record<string, { player1Id: string; player2Id: string }>>({})
 
   // My club's role in this competition
   const myClub = useMemo(() => {
@@ -149,18 +150,18 @@ export default function CompetitionDetailsPage() {
     const clubBWins = completedMatchups.filter(m => m.winner_club_id === opponentClub?.id).length
 
     return { clubAWins, clubBWins, total: matchups.length }
-  }, [competition, matchups, participants, compClubs])
+  }, [competition, matchups, compClubs])
 
-  const handleInvitePlayer = async (clubId: string, userId: string, partnerId?: string) => {
+  const handleInvitePlayer = async (clubId: string, userId: string, partnerId?: string, rank?: number) => {
     if (!competition) return
-    const { participant, error } = await inviteMemberToRoster(competition.id, clubId, userId, partnerId || null)
+    const { participant, error } = await inviteMemberToRoster(competition.id, clubId, userId, partnerId || null, rank || null)
     if (error) {
       showToast(error.message, 'error')
       return
     }
     if (participant) {
       setParticipants(prev => [...prev, participant])
-      showToast('Invitation sent!', 'success')
+      showToast(partnerId ? 'Pair invitation sent!' : 'Invitation sent!', 'success')
     }
   }
 
@@ -516,11 +517,16 @@ export default function CompetitionDetailsPage() {
 
                   <div className="space-y-2">
                     {Array.from({ length: competition.pairs_count || 5 }).map((_, idx) => {
-                      const part = clubParts.find(p => p.rank === idx + 1)
+                      const rank = idx + 1
+                      const part = clubParts.find(p => p.rank === rank)
+                      const draftKey = `${cc.club_id}-${rank}`
+                      const draft = pairDrafts[draftKey] || { player1Id: '', player2Id: '' }
+                      const player1Options = availableMembers.filter(member => member.user_id !== draft.player2Id)
+                      const player2Options = availableMembers.filter(member => member.user_id !== draft.player1Id)
                       return (
-                        <div key={idx} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
+                        <div key={idx} className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 sm:flex-row sm:items-center">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-400">
-                            {idx + 1}
+                            {rank}
                           </div>
                           {part ? (
                             <div className="flex-1 min-w-0">
@@ -530,26 +536,65 @@ export default function CompetitionDetailsPage() {
                                 {part.player_2 ? ` + ${part.player_2.name}` : ''}
                               </p>
                             </div>
-                          ) : (
-                            <div className="flex-1">
-                              {isMyClub && !isConfirmed ? (
-                                <div className="flex flex-wrap gap-1">
-                                  <select
-                                    onChange={async (e) => {
-                                      if (!e.target.value) return
-                                      await handleInvitePlayer(cc.club_id, e.target.value)
-                                      e.target.value = ''
-                                    }}
-                                    className="flex-1 min-w-[120px] rounded border border-white/10 bg-slate-900 p-1.5 text-xs text-white"
-                                  >
-                                    <option value="">Add player...</option>
-                                    {availableMembers.map(m => (
-                                      <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                              ) : (
-                                <p className="text-xs text-slate-600 italic">Waiting for pair</p>
+	                          ) : (
+	                            <div className="flex-1">
+	                              {isMyClub && !isConfirmed ? (
+	                                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+	                                  <select
+	                                    value={draft.player1Id}
+	                                    onChange={(e) => {
+	                                      const player1Id = e.target.value
+	                                      setPairDrafts(prev => ({
+	                                        ...prev,
+	                                        [draftKey]: {
+	                                          player1Id,
+	                                          player2Id: prev[draftKey]?.player2Id === player1Id ? '' : prev[draftKey]?.player2Id || '',
+	                                        },
+	                                      }))
+	                                    }}
+	                                    className="flex-1 min-w-[120px] rounded border border-white/10 bg-slate-900 p-1.5 text-xs text-white"
+	                                  >
+	                                    <option value="">Player 1...</option>
+	                                    {player1Options.map(m => (
+	                                      <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
+	                                    ))}
+	                                  </select>
+                                    <select
+                                      value={draft.player2Id}
+                                      onChange={(e) => {
+                                        const player2Id = e.target.value
+                                        setPairDrafts(prev => ({
+                                          ...prev,
+                                          [draftKey]: {
+                                            player1Id: prev[draftKey]?.player1Id === player2Id ? '' : prev[draftKey]?.player1Id || '',
+                                            player2Id,
+                                          },
+                                        }))
+                                      }}
+                                      className="flex-1 min-w-[120px] rounded border border-white/10 bg-slate-900 p-1.5 text-xs text-white"
+                                    >
+                                      <option value="">Player 2...</option>
+                                      {player2Options.map(m => (
+                                        <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
+                                      ))}
+                                    </select>
+                                    <Button
+                                      type="button"
+                                      disabled={!draft.player1Id || !draft.player2Id}
+                                      onClick={async () => {
+                                        await handleInvitePlayer(cc.club_id, draft.player1Id, draft.player2Id, rank)
+                                        setPairDrafts(prev => ({
+                                          ...prev,
+                                          [draftKey]: { player1Id: '', player2Id: '' },
+                                        }))
+                                      }}
+                                      className="h-8 bg-[var(--arena-lime)] px-3 text-xs text-black hover:bg-[var(--arena-lime)]/90 disabled:opacity-50"
+                                    >
+                                      Add pair
+                                    </Button>
+	                                </div>
+	                              ) : (
+	                                <p className="text-xs text-slate-600 italic">Waiting for pair</p>
                               )}
                             </div>
                           )}

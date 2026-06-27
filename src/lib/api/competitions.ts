@@ -7,6 +7,13 @@ import type {
   CreateCompetitionInput,
   RosterInvite
 } from '../../types/competition'
+
+type ProfileSummary = {
+  id: string
+  name: string
+  display_name: string | null
+  avatar_url: string | null
+}
 // ============================================
 // HELPERS
 // ============================================
@@ -21,6 +28,48 @@ async function getCurrentUserId(): Promise<string | null> {
 function normalizeClubData(data: unknown) {
   if (!data) return null
   return Array.isArray(data) ? data[0] : data
+}
+
+async function hydrateCompetitionParticipants(
+  participants: CompetitionParticipant[]
+): Promise<CompetitionParticipant[]> {
+  const profileIds = Array.from(new Set(
+    participants
+      .flatMap(participant => [participant.user_1_id, participant.user_2_id])
+      .filter((id): id is string => Boolean(id))
+  ))
+
+  if (profileIds.length === 0) return participants
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, name, display_name, avatar_url')
+    .in('id', profileIds)
+
+  const profileMap = new Map((profiles || []).map(profile => [profile.id, profile as ProfileSummary]))
+
+  return participants.map(participant => ({
+    ...participant,
+    player_1: participant.user_1_id ? profileMap.get(participant.user_1_id) || null : null,
+    player_2: participant.user_2_id ? profileMap.get(participant.user_2_id) || null : null,
+  }))
+}
+
+async function hydrateCompetitionMatchups(
+  matchups: CompetitionMatchup[]
+): Promise<CompetitionMatchup[]> {
+  const participants = matchups
+    .flatMap(matchup => [matchup.participant_a, matchup.participant_b])
+    .filter((participant): participant is CompetitionParticipant => Boolean(participant))
+
+  const hydratedParticipants = await hydrateCompetitionParticipants(participants)
+  const participantMap = new Map(hydratedParticipants.map(participant => [participant.id, participant]))
+
+  return matchups.map(matchup => ({
+    ...matchup,
+    participant_a: matchup.participant_a ? participantMap.get(matchup.participant_a.id) || matchup.participant_a : matchup.participant_a,
+    participant_b: matchup.participant_b ? participantMap.get(matchup.participant_b.id) || matchup.participant_b : matchup.participant_b,
+  }))
 }
 
 // ============================================
@@ -193,13 +242,10 @@ export async function registerCompetitionParticipants(
   const { data, error } = await supabase
     .from('competition_participants')
     .insert(inserts)
-    .select(`
-      *,
-      player_1:profiles!user_1_id(id, name, display_name, avatar_url),
-      player_2:profiles!user_2_id(id, name, display_name, avatar_url)
-    `)
+    .select('*')
 
-  return { participants: (data as CompetitionParticipant[]) || [], error }
+  const hydrated = await hydrateCompetitionParticipants((data as CompetitionParticipant[]) || [])
+  return { participants: hydrated, error }
 }
 
 export async function getCompetitionParticipants(
@@ -207,15 +253,12 @@ export async function getCompetitionParticipants(
 ): Promise<{ participants: CompetitionParticipant[]; error: Error | null }> {
   const { data, error } = await supabase
     .from('competition_participants')
-    .select(`
-      *,
-      player_1:profiles!user_1_id(id, name, display_name, avatar_url),
-      player_2:profiles!user_2_id(id, name, display_name, avatar_url)
-    `)
+    .select('*')
     .eq('competition_id', competitionId)
     .order('rank', { nullsFirst: false })
 
-  return { participants: (data as CompetitionParticipant[]) || [], error }
+  const hydrated = await hydrateCompetitionParticipants((data as CompetitionParticipant[]) || [])
+  return { participants: hydrated, error }
 }
 
 export async function removeParticipant(
@@ -237,7 +280,8 @@ export async function inviteMemberToRoster(
   competitionId: string,
   clubId: string,
   userId: string,
-  partnerId: string | null = null
+  partnerId: string | null = null,
+  rank: number | null = null
 ): Promise<{ participant: CompetitionParticipant | null; error: Error | null }> {
   try {
     const { data: userProfile } = await supabase
@@ -278,17 +322,15 @@ export async function inviteMemberToRoster(
         name,
         user_1_id: userId,
         user_2_id: partnerId || null,
+        rank,
         user_1_status: 'pending',
         user_2_status: partnerId ? 'pending' : 'accepted',
       })
-      .select(`
-        *,
-        player_1:profiles!user_1_id(id, name, display_name, avatar_url),
-        player_2:profiles!user_2_id(id, name, display_name, avatar_url)
-      `)
+      .select('*')
       .single()
 
     if (partError) throw partError
+    const [hydratedParticipant] = await hydrateCompetitionParticipants([participant as CompetitionParticipant])
 
     const clubName = normalizeClubData(comp.club)?.name || 'Admin'
     const inviteMessage = `${clubName} invited you to play in "${comp.title}"`
@@ -313,7 +355,7 @@ export async function inviteMemberToRoster(
       })
     }
 
-    return { participant: participant as CompetitionParticipant, error: null }
+    return { participant: hydratedParticipant, error: null }
   } catch (err) {
     return { participant: null, error: err as Error }
   }
@@ -565,11 +607,12 @@ export async function generateMatchups(
     .insert(allMatchups)
     .select(`
       *,
-      participant_a:competition_participants!participant_a_id(*, player_1:profiles!user_1_id(id, name, display_name, avatar_url), player_2:profiles!user_2_id(id, name, display_name, avatar_url)),
-      participant_b:competition_participants!participant_b_id(*, player_1:profiles!user_1_id(id, name, display_name, avatar_url), player_2:profiles!user_2_id(id, name, display_name, avatar_url))
+      participant_a:competition_participants!participant_a_id(*),
+      participant_b:competition_participants!participant_b_id(*)
     `)
 
-  return { matchups: (data as CompetitionMatchup[]) || [], error }
+  const hydrated = await hydrateCompetitionMatchups((data as CompetitionMatchup[]) || [])
+  return { matchups: hydrated, error }
 }
 
 export async function swapMatchupParticipants(
@@ -615,14 +658,15 @@ export async function getCompetitionMatchups(
     .from('competition_matchups')
     .select(`
       *,
-      participant_a:competition_participants!participant_a_id(*, player_1:profiles!user_1_id(id, name, display_name, avatar_url), player_2:profiles!user_2_id(id, name, display_name, avatar_url)),
-      participant_b:competition_participants!participant_b_id(*, player_1:profiles!user_1_id(id, name, display_name, avatar_url), player_2:profiles!user_2_id(id, name, display_name, avatar_url)),
+      participant_a:competition_participants!participant_a_id(*),
+      participant_b:competition_participants!participant_b_id(*),
       match:matches(id, score_sets(team1_score, team2_score))
     `)
     .eq('competition_id', competitionId)
     .order('order_index')
 
-  return { matchups: (data as CompetitionMatchup[]) || [], error }
+  const hydrated = await hydrateCompetitionMatchups((data as CompetitionMatchup[]) || [])
+  return { matchups: hydrated, error }
 }
 
 // ============================================
