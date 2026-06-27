@@ -76,11 +76,13 @@ describe('api.ts - Critical Database Methods', () => {
       // Setup the supabase chain mock
       const mockEq = vi.fn().mockReturnThis()
       const mockOrder = vi.fn().mockReturnThis()
+      const mockLimit = vi.fn().mockReturnThis()
       
       const mockChain = {
         select: vi.fn().mockReturnThis(),
         eq: mockEq,
         order: mockOrder,
+        limit: mockLimit,
         then: vi.fn().mockImplementation((onfulfilled) => {
           return Promise.resolve({ data: mockMatches, error: null }).then(onfulfilled)
         })
