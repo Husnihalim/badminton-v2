@@ -595,7 +595,7 @@ export async function startCompetition(
   // Lock all matchups and set competition to live
   const { error: lockError } = await supabase
     .from('competition_matchups')
-    .update({ locked: true })
+    .update({ locked: true, status: 'live' })
     .eq('competition_id', competitionId)
 
   if (lockError) return { error: lockError }
@@ -682,6 +682,7 @@ export async function recordCompetitionMatch(
   if (!matchup) return { match, error: null }
 
   const winnerParticipantId = winningTeam === 1 ? matchup.participant_a_id : matchup.participant_b_id
+  const winnerClubId = winningTeam === 1 ? matchup.club_a_id : matchup.club_b_id
 
   await supabase
     .from('competition_matchups')
@@ -689,6 +690,7 @@ export async function recordCompetitionMatch(
       match_id: match.id,
       status: 'completed',
       winner_participant_id: winnerParticipantId,
+      winner_club_id: winnerClubId,
     })
     .eq('id', matchupId)
 
@@ -767,7 +769,7 @@ export async function completeCompetition(
 ): Promise<{ competition: Competition | null; error: Error | null }> {
   const { data: matchups } = await supabase
     .from('competition_matchups')
-    .select('winner_participant_id, participant_a_id, participant_b_id, winner_club_id, club_a_id, club_b_id')
+    .select('winner_club_id, club_a_id, club_b_id')
     .eq('competition_id', competitionId)
     .eq('status', 'completed')
 
@@ -782,21 +784,10 @@ export async function completeCompetition(
   let winningClubId: string | null = null
 
   if (compDetails.format === 'friendly') {
-    // Count club wins across all matchups
+    // Count matchup wins per club for friendly (2 clubs only)
     const clubWins: Record<string, number> = {}
     for (const m of matchups || []) {
-      const { data: a } = await supabase
-        .from('competition_participants')
-        .select('club_id')
-        .eq('id', m.participant_a_id)
-        .single()
-      const { data: b } = await supabase
-        .from('competition_participants')
-        .select('club_id')
-        .eq('id', m.participant_b_id)
-        .single()
-      const winnerClub = m.winner_participant_id === m.participant_a_id ? a?.club_id : b?.club_id
-      if (winnerClub) clubWins[winnerClub] = (clubWins[winnerClub] || 0) + 1
+      if (m.winner_club_id) clubWins[m.winner_club_id] = (clubWins[m.winner_club_id] || 0) + 1
     }
     winningClubId = Object.entries(clubWins).sort((a, b) => b[1] - a[1])[0]?.[0] || null
 
@@ -812,7 +803,7 @@ export async function completeCompetition(
       const isWinner = club.club_id === winningClubId
       await supabase.from('club_messages').insert({
         club_id: club.club_id,
-        title: isWinner ? '🏆 Competition Won!' : 'Competition Completed',
+        title: isWinner ? 'Competition Won!' : 'Competition Completed',
         message: isWinner
           ? `Your club won the friendly!`
           : `${winningClubName || 'The other club'} won the friendly. Well played!`,
@@ -820,23 +811,31 @@ export async function completeCompetition(
       })
     }
   } else {
-    // League: count club-level wins across all round-robin ties
-    const clubWins: Record<string, number> = {}
+    // League: count TIE wins (which club won more rubbers in each club-vs-club pairing)
+    const tieWins: Record<string, number> = {}
+    const clubIds = new Set<string>()
     for (const m of matchups || []) {
-      const { data: a } = await supabase
-        .from('competition_participants')
-        .select('club_id')
-        .eq('id', m.participant_a_id)
-        .single()
-      const { data: b } = await supabase
-        .from('competition_participants')
-        .select('club_id')
-        .eq('id', m.participant_b_id)
-        .single()
-      const winnerClub = m.winner_participant_id === m.participant_a_id ? a?.club_id : b?.club_id
-      if (winnerClub) clubWins[winnerClub] = (clubWins[winnerClub] || 0) + 1
+      if (m.club_a_id) clubIds.add(m.club_a_id)
+      if (m.club_b_id) clubIds.add(m.club_b_id)
     }
-    winningClubId = Object.entries(clubWins).sort((a, b) => b[1] - a[1])[0]?.[0] || null
+    // Group matchups by club pair (a-b sorted)
+    const ties = new Map<string, { clubA: string; clubB: string; aWins: number; bWins: number }>()
+    for (const m of matchups || []) {
+      if (!m.club_a_id || !m.club_b_id) continue
+      const key = [m.club_a_id, m.club_b_id].sort().join('-')
+      if (!ties.has(key)) {
+        ties.set(key, { clubA: m.club_a_id, clubB: m.club_b_id, aWins: 0, bWins: 0 })
+      }
+      const t = ties.get(key)!
+      if (m.winner_club_id === m.club_a_id) t.aWins++
+      else if (m.winner_club_id === m.club_b_id) t.bWins++
+    }
+    // Count tie wins for each club
+    for (const t of ties.values()) {
+      if (t.aWins > t.bWins) tieWins[t.clubA] = (tieWins[t.clubA] || 0) + 1
+      else if (t.bWins > t.aWins) tieWins[t.clubB] = (tieWins[t.clubB] || 0) + 1
+    }
+    winningClubId = Object.entries(tieWins).sort((a, b) => b[1] - a[1])[0]?.[0] || null
   }
 
   const { data, error } = await supabase
@@ -913,14 +912,55 @@ export async function getLeagueStandings(
       }
     }
 
+    // Count tie-level wins: which club won more rubbers against each opponent
+    const tieWinsByOpponent = new Map<string, { tiesWon: number; tiesLost: number }>()
+    for (const m of clubMatches) {
+      const opponentClubId = m.club_a_id === cc.id ? m.club_b_id : m.club_a_id
+      if (!opponentClubId) continue
+
+      if (!tieWinsByOpponent.has(opponentClubId)) {
+        tieWinsByOpponent.set(opponentClubId, { tiesWon: 0, tiesLost: 0 })
+      }
+    }
+
+    // For each opponent, count club's rubber wins vs that opponent
+    for (const [opponentId] of tieWinsByOpponent) {
+      const vsMatches = clubMatches.filter(m => {
+        const opp = m.club_a_id === cc.id ? m.club_b_id : m.club_a_id
+        return opp === opponentId
+      })
+      const clubRubberWins = vsMatches.filter(m => {
+        const aClubId = participantClubMap.get(m.participant_a_id)
+        const bClubId = participantClubMap.get(m.participant_b_id)
+        const aWon = m.winner_participant_id === m.participant_a_id
+        const clubIsA = aClubId === cc.club_id
+        const clubIsB = bClubId === cc.club_id
+        return (clubIsA && aWon) || (clubIsB && !aWon)
+      }).length
+      const clubRubberLosses = vsMatches.length - clubRubberWins
+
+      if (clubRubberWins > clubRubberLosses) {
+        tieWinsByOpponent.get(opponentId)!.tiesWon++
+      } else if (clubRubberLosses > clubRubberWins) {
+        tieWinsByOpponent.get(opponentId)!.tiesLost++
+      }
+    }
+
+    let won = 0
+    let lost = 0
+    for (const { tiesWon, tiesLost } of tieWinsByOpponent.values()) {
+      won += tiesWon
+      lost += tiesLost
+    }
+
     const clubName = normalizeClubData(cc.club)?.name || 'Unknown'
 
     return {
       clubId: cc.club_id,
       clubName,
-      played: Math.ceil(rubbersWon + rubbersLost),
-      won: 0,
-      lost: 0,
+      played: tieWinsByOpponent.size,
+      won,
+      lost,
       rubbersWon,
       rubbersLost,
     }

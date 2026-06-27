@@ -142,14 +142,11 @@ export default function CompetitionDetailsPage() {
     const completedMatchups = matchups.filter(m => m.status === 'completed')
     if (compClubs.length < 2) return null
 
-    const clubAWins = completedMatchups.filter(m => {
-      const winner = participants.find(p => p.id === m.winner_participant_id)
-      return winner && compClubs[0] && winner.club_id === compClubs[0].club_id
-    }).length
-    const clubBWins = completedMatchups.filter(m => {
-      const winner = participants.find(p => p.id === m.winner_participant_id)
-      return winner && compClubs[1] && winner.club_id === compClubs[1].club_id
-    }).length
+    const hostClub = compClubs.find(cc => cc.club_id === competition.club_id)
+    const opponentClub = compClubs.find(cc => cc.club_id !== competition.club_id)
+
+    const clubAWins = completedMatchups.filter(m => m.winner_club_id === hostClub?.id).length
+    const clubBWins = completedMatchups.filter(m => m.winner_club_id === opponentClub?.id).length
 
     return { clubAWins, clubBWins, total: matchups.length }
   }, [competition, matchups, participants, compClubs])
@@ -244,9 +241,10 @@ export default function CompetitionDetailsPage() {
     score_sets: { set_number: number; team1_score: number; team2_score: number }[]
   }) => {
     if (!recordingMatchup || !competition) return
+    const recordingClubId = myClub?.club_id || competition.club_id
     const { error } = await recordCompetitionMatch(recordingMatchup.id, {
       ...matchData,
-      club_id: competition.club_id,
+      club_id: recordingClubId,
     })
     if (error) {
       showToast(error.message, 'error')
