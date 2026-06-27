@@ -171,7 +171,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const tabParam = searchParams.get('tab')
     if (tabParam && ['overview', 'matches', 'clubs'].includes(tabParam)) {
-      setActiveTab(prev => prev !== tabParam ? tabParam as 'overview' | 'matches' | 'clubs' : prev)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab(tabParam as 'overview' | 'matches' | 'clubs')
     }
   }, [searchParams])
 

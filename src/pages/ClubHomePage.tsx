@@ -354,7 +354,8 @@ export default function ClubHomePage() {
   useEffect(() => {
     const tabParam = searchParams.get('tab')
     if (tabParam && clubHomeTabs.includes(tabParam as ClubHomeTab)) {
-      setActiveTab(prev => prev !== tabParam ? tabParam as ClubHomeTab : prev)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab(tabParam as ClubHomeTab)
     }
   }, [searchParams])
 
