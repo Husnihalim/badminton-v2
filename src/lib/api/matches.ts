@@ -529,6 +529,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
     .eq('club_id', clubId)
     .order('match_date', { ascending: false })
     .order('created_at', { ascending: false })
+    .limit(20)
 
   if (error) {
     console.error('Error fetching club matches:', error)

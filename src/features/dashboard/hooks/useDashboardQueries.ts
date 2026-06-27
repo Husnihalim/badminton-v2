@@ -18,6 +18,7 @@ export const useClubsMatches = (clubIds: string[] = []) => useQueries({
     queryKey: ['clubs', clubId, 'matches', 'all'],
     queryFn: () => getClubMatches(clubId),
     enabled: !!clubId,
+    staleTime: 30_000,
   })),
 })
 
@@ -26,6 +27,7 @@ export const useClubsMembers = (clubIds: string[] = []) => useQueries({
     queryKey: ['clubs', clubId, 'members'],
     queryFn: () => getClubMembers(clubId),
     enabled: !!clubId,
+    staleTime: 30_000,
   })),
 })
 

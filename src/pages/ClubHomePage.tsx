@@ -354,12 +354,9 @@ export default function ClubHomePage() {
   useEffect(() => {
     const tabParam = searchParams.get('tab')
     if (tabParam && clubHomeTabs.includes(tabParam as ClubHomeTab)) {
-      if (tabParam !== activeTab) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveTab(tabParam as ClubHomeTab)
-      }
+      setActiveTab(prev => prev !== tabParam ? tabParam as ClubHomeTab : prev)
     }
-  }, [searchParams, activeTab])
+  }, [searchParams])
 
   useEffect(() => {
     if (searchParams.get('celebrate') === 'true') {

@@ -63,6 +63,7 @@ export function CreateCompetitionModal({ isOpen, onClose, myClubId, myClubName, 
     try {
       const result = await createCompetition({
         clubId: myClubId,
+        myClubName,
         title: `${myClubName} vs ${selectedClubs.map(c => c.name).join(', ')}`,
         sport: 'badminton',
         format: format || 'friendly',

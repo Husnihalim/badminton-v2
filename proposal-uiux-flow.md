@@ -1,0 +1,345 @@
+# Tournament Flow: Admin vs Player UI/UX
+
+## Overview
+
+Three tournament styles, each with distinct flows across 5 lifecycle stages.
+For each stage, I describe what the **Admin** sees vs what the **Player** sees.
+
+---
+
+## Stage 1: Creation — Admin Only
+
+### Entry point
+Admin clicks "New Competition" on `/competitions` page. The
+`CreateCompetitionModal` opens.
+
+### Step 1: Choose Type
+
+```
+┌──────────────────────────────────────┐
+│  🤝 Friendly     Club vs 1 club      │  ← existing
+│  🏆 League       3+ clubs RR         │  ← existing
+│  🎯 Tournament   Individual / Pairs  │  ← new
+│     ↳ Format:    ○ Round Robin       │
+│                  ○ Knockout          │
+│                  ○ Pool + Playoffs   │
+│     ↳ Level:     B / C / D          │
+│     ↳ Event:     MD / WD / XD / MS  │
+│     ↳ Capacity:  [  64  ]           │
+│     ↳ Mode:      Open / Admin Only  │
+└──────────────────────────────────────┘
+```
+
+### What admin sees after creation
+Navigated to `/competition/:id` with tabs matching the chosen format:
+
+```
+Knockout:       Overview | Rosters | Playoffs | Live | Results
+Round Robin:    Overview | Rosters | Matchups | Standings | Live | Results
+Pool+Playoffs:  Overview | Rosters | Pools | Playoffs | Live | Results
+```
+
+---
+
+## Stage 2: Registration
+
+### Admin view — Rosters tab
+
+```
+┌──────────────────────────────────────────────┐
+│  Rosters                         32 / 64 ██░░ │
+│                                              │
+│  Registered Players:                         │
+│  ┌─────────────────────────────────────────┐ │
+│  │ 1. Ahmad / Tan          MD  ✅          │ │
+│  │ 2. Siti / Rina          WD  ✅          │ │
+│  │ 3. Kok Leong            MS  ✅          │ │
+│  │ 4. (slot available)                     │ │
+│  │ ...                                      │ │
+│  └─────────────────────────────────────────┘ │
+│                                              │
+│  When enough players:                        │
+│  [ Close Registration ] ← admin locks it     │
+└──────────────────────────────────────────────┘
+```
+
+Key states:
+- **Open**: shows `32/64 ██░░░` capacity bar, players can join freely
+- **Locked**: admin clicks "Close Registration", status → `matchmaking`
+- **Full**: auto-closes when capacity reached
+
+### Player view — same page, logged in
+
+If `roster_mode = 'open'` and user is not registered:
+
+```
+┌──────────────────────────────────────────────┐
+│  You are not registered for this tournament  │
+│                                              │
+│  Event: Men's Doubles    Level: C - Social   │
+│  Capacity: 32 / 64 slots filled              │
+│           █████░░░░░░░░░░░░░░░  50% full     │
+│                                              │
+│  Partner:  [select member...]  (optional)    │
+│                                              │
+│  [ Register Now ]                            │
+└──────────────────────────────────────────────┘
+```
+
+If already registered:
+
+```
+┌──────────────────────────────────────────────┐
+│  ✅ You're registered!                       │
+│  Pair: Ahmad / Tan                           │
+│  Status: Confirmed                           │
+│  [ Unregister ]                              │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## Stage 3: Pre-Tournament Setup — Admin Only
+
+### Knockout: Playoffs tab
+
+```
+┌──────────────────────────────────────────────┐
+│  Playoff Bracket Setup                       │
+│                                              │
+│  Bracket Size: [8 players] [16 players]      │
+│                                              │
+│  Seeding (drag to reorder):                  │
+│  ┌──────┐ ┌──────┐                          │
+│  │#1 Seeded│ │#8 Seeded│                    │
+│  │  Ahmad  │ │  Lim    │                    │
+│  └──────┘ └──────┘                          │
+│  ┌──────┐ ┌──────┐                          │
+│  │#4 Siti │ │#5 Rina │                     │
+│  └──────┘ └──────┘                          │
+│  ...                                         │
+│                                              │
+│  [ Generate Bracket ]                        │
+└──────────────────────────────────────────────┘
+```
+
+After generation, the bracket tree renders:
+
+```
+┌──────────┐
+│Quarter 1 │──┐
+│Ahmad v Lim│  │
+└──────────┘  ├──┐
+┌──────────┐  │  │
+│Quarter 2 │──┘  │
+│Siti v Rina│    ├──┐
+└──────────┘     │  │
+┌──────────┐     │  │
+│Semifinal │─────┘  │
+│(winner 1)│        │
+│(winner 2)│        ├──── 🏆 Champion
+└──────────┘        │
+┌──────────┐        │
+│Semifinal │─────┐  │
+│(winner 3)│     │  │
+│(winner 4)│     ├──┘
+└──────────┘     │
+                │
+          ┌──────────┐
+          │  Final   │──┘
+          │          │
+          └──────────┘
+```
+
+### Round Robin: Admin generates matchups
+
+```
+┌──────────────────────────────────────────────┐
+│  Matchups — Round Robin (6 players = 15 mtch) │
+│                                              │
+│  Round 1:                                    │
+│  Ahmad vs Lim    [Score] [Live]              │
+│  Siti vs Rina    [Score] [Live]              │
+│  Kok vs Mei      [Score] [Live]              │
+│                                              │
+│  Round 2:                                    │
+│  Ahmad vs Siti   [Score] [Live]              │
+│  ...                                          │
+│                                              │
+│  [ Generate Matchups ]  [ Start Competition ]│
+└──────────────────────────────────────────────┘
+```
+
+### Pool + Playoffs: Admin manages pools
+
+```
+┌──────────────────────────────────────────────┐
+│  Pools Tab                                    │
+│                                              │
+│  16 players → 4 pools of 4                   │
+│                                              │
+│  Pool A (snake seed):                        │
+│  1. Ahmad (seed 1)   4. Lim (seed 8)        │
+│  2. Siti (seed 4)    3. Rina (seed 5)       │
+│                                              │
+│  Pool B:                                     │
+│  ...                                         │
+│                                              │
+│  [ Generate Pool Matches ]                   │
+│                                              │
+│  After all pool matches complete:            │
+│  Top 2 from each pool → Knockout:            │
+│  A1 vs B2 │ A2 vs B1 │ C1 vs D2 │ C2 vs D1  │
+│  [ Advance to Bracket ]                      │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## Stage 4: Live Tournament
+
+### Player view — Live tab
+
+```
+┌──────────────────────────────────────────────┐
+│  Live Scores — Court 1                       │
+│                                              │
+│  🟢 LIVE                                     │
+│  ┌─────────────────────────────────────────┐ │
+│  │  🏸 Ahmad   21   18    —  H2H: 0-0     │ │
+│  │  🏸 Lim     19   21    —               │ │
+│  │  G1: 21-19  G2: 18-21  G3: pending     │ │
+│  └─────────────────────────────────────────┘ │
+│                                              │
+│  Your match: Round 1, Court 1                │
+│  Status: IN PROGRESS                          │
+│                                              │
+│  Upcoming matches:                            │
+│  Next: Siti vs Rina — Court 2                │
+└──────────────────────────────────────────────┘
+```
+
+### Player view — My Matches (dashboard)
+
+```
+┌──────────────────────────────────────────────┐
+│  My Tournaments                              │
+│                                              │
+│  🏸 LSBA Tournament 1.0                      │
+│  Level: B — Bakat Baru  |  MD               │
+│  Next match: Court 1, 2:00 PM               │
+│  vs Lim / Tan                                │
+│  [ View Bracket ] [ Live Scores ]            │
+└──────────────────────────────────────────────┘
+```
+
+### Admin view — Live tab
+
+Same as player but with record buttons:
+
+```
+┌──────────────────────────────────────────────┐
+│  Admin Controls                               │
+│                                              │
+│  Court 1 — Ahmad vs Lim                      │
+│  Status: ⏳ Pending                          │
+│  [ Start Match ] [ Record Score ]             │
+│                                              │
+│  Court 2 — Siti vs Rina                      │
+│  Status: 🟢 Live                             │
+│  Sets: 21-19, 15-21, 10-8                    │
+│  [ Edit Score ] [ Complete Match ]            │
+│                                              │
+│  (Knockout only)                              │
+│  After all Round 1 matches complete:          │
+│  [ Generate Next Round → ]                    │
+└──────────────────────────────────────────────┘
+```
+
+### Public view — public scoreboard (`/c/:code`)
+
+```
+┌──────────────────────────────────────────────┐
+│  🏸 LSBA Tournament 1.0  (Live)              │
+│                                              │
+│  ┌─────────────────────────────────────────┐ │
+│  │  Ahmad   21   18    —  ✅ WINNER         │ │
+│  │  Lim     19   21    —                   │ │
+│  └─────────────────────────────────────────┘ │
+│                                              │
+│  Updates in real-time — no page refresh       │
+│                                              │
+│  Standings:                                   │
+│  1. Ahmad  2-0  +42 pts                      │
+│  2. Siti   2-0  +36 pts                      │
+│  3. Lim    0-2  -42 pts                      │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## Stage 5: Results
+
+### Admin view — Results tab
+
+**Knockout results:**
+
+```
+┌──────────────────────────────────────────────┐
+│  🏆 Tournament Complete                       │
+│                                              │
+│  Champion: Ahmad / Tan (MD)                  │
+│  Runner-up: Lim / Chong                      │
+│  Semifinalists: Siti/Rina, Kok/Mei           │
+│                                              │
+│  [ Final Bracket ]  [ Share Results ]        │
+│  [ Generate Certificates ]                    │
+└──────────────────────────────────────────────┘
+```
+
+**Round Robin results:**
+
+```
+┌──────────────────────────────────────────────┐
+│  Final Standings                              │
+│  Rank │ Player  │ Pld │ Won │ Lost │ Rubbers │
+│  1    │ Ahmad   │ 5   │ 5   │ 0    │ +84     │
+│  2    │ Siti    │ 5   │ 4   │ 1    │ +52     │
+│  3    │ Lim     │ 5   │ 3   │ 2    │ +18     │
+│  4    │ Rina    │ 5   │ 2   │ 3    │ -12     │
+│  5    │ Kok     │ 5   │ 1   │ 4    │ -48     │
+│  6    │ Mei     │ 5   │ 0   │ 5    │ -94     │
+└──────────────────────────────────────────────┘
+```
+
+### Player view — Results tab
+
+```
+┌──────────────────────────────────────────────┐
+│  Your Tournament Summary                      │
+│                                              │
+│  🥇 You finished 1st of 6!                   │
+│                                              │
+│  Your matches:                                │
+│  ✅ Ahmad 21-19, 21-15 Lim                   │
+│  ✅ Ahmad 21-12, 18-21, 21-17 Siti           │
+│  ✅ Ahmad 21-8, 21-10 Kok                    │
+│  ...                                          │
+│                                              │
+│  [ Share to WhatsApp ] [ View Certificate ]   │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## Summary: What Each Role Sees at Each Stage
+
+| Stage | Admin | Player | Public |
+|-------|-------|--------|--------|
+| **Creation** | Format wizard | Nothing | Nothing |
+| **Registration** | Capacity bar + player list | Register button | Tournament info |
+| **Setup** | Bracket seeding / pool management / generate matchups | "Waiting for admin" | Nothing |
+| **Live** | Score buttons + bracket | My match status + scores | Real-time scoreboard |
+| **Results** | Winner + bracket + certificates | Personal summary + share | Final standings |
+
+The three tournament styles only differ in **Stage 3 (Setup)** and **Stage 5 (Results display)**. All other stages are identical.

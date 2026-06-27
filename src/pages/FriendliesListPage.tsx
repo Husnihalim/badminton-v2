@@ -69,6 +69,9 @@ export default function FriendliesListPage() {
   }
 
   const getStatusBadge = (c: Competition) => {
+    if (c.invitationStatus === 'invited') {
+      return <Badge variant="muted"><Clock size={12} className="mr-1" /> Pending Invitation</Badge>
+    }
     switch (c.status) {
       case 'registration':
         return <Badge variant="muted"><Clock size={12} className="mr-1" /> Setting Up</Badge>

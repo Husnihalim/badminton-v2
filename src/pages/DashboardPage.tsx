@@ -170,11 +170,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    if (tabParam && ['overview', 'matches', 'clubs'].includes(tabParam) && tabParam !== activeTab) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab(tabParam as 'overview' | 'matches' | 'clubs')
+    if (tabParam && ['overview', 'matches', 'clubs'].includes(tabParam)) {
+      setActiveTab(prev => prev !== tabParam ? tabParam as 'overview' | 'matches' | 'clubs' : prev)
     }
-  }, [searchParams, activeTab])
+  }, [searchParams])
 
   // Player Card Stats formatting
   const playerCardStats = useMemo(() => {

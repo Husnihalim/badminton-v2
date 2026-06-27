@@ -129,6 +129,32 @@ export async function createCompetition(
     return { competition: null, error: clubsError }
   }
 
+  // Notify admins/owners of opponent clubs about the invitation
+  const hostName = input.myClubName || input.title.split(' vs ')[0] || 'A club'
+  for (const clubId of input.opponentClubIds || []) {
+    const { data: admins } = await supabase
+      .from('memberships')
+      .select('user_id')
+      .eq('club_id', clubId)
+      .eq('status', 'active')
+      .in('role', ['owner', 'admin'])
+
+    if (admins && admins.length > 0) {
+      const notifications = admins.map(a => ({
+        user_id: a.user_id,
+        type: 'competition_invite',
+        title: 'New Competition Invitation',
+        message: `${hostName} has challenged your club to a ${input.format}!`,
+        data: {
+          competitionId: competition.id,
+          clubId: input.clubId,
+          clubName: hostName,
+        },
+      }))
+      await supabase.from('notifications').insert(notifications)
+    }
+  }
+
   return { competition, error: null }
 }
 
@@ -159,17 +185,28 @@ export async function getCompetitionByInviteCode(
 export async function listClubCompetitions(
   clubId: string
 ): Promise<{ competitions: Competition[]; error: Error | null }> {
+  const { data: clubEntries } = await supabase
+    .from('competition_clubs')
+    .select('competition_id, status')
+    .eq('club_id', clubId)
+
+  const ids = clubEntries?.map(c => c.competition_id) || []
+  if (ids.length === 0) return { competitions: [], error: null }
+
+  const statusMap = new Map(clubEntries!.map(c => [c.competition_id, c.status]))
+
   const { data, error } = await supabase
     .from('competitions')
     .select('*, club:clubs!club_id(id, name, city, logo_url)')
-    .in('id', (await supabase
-      .from('competition_clubs')
-      .select('competition_id')
-      .eq('club_id', clubId)
-    ).data?.map(c => c.competition_id) || [])
+    .in('id', ids)
     .order('created_at', { ascending: false })
 
-  return { competitions: (data as Competition[]) || [], error }
+  const competitions = ((data as Competition[]) || []).map(c => ({
+    ...c,
+    invitationStatus: statusMap.get(c.id) || 'confirmed',
+  }))
+
+  return { competitions, error }
 }
 
 export async function cancelCompetition(

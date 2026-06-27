@@ -241,13 +241,11 @@ async function main() {
     .from('competitions')
     .insert({
       club_id: clubLep.id,
-      opponent_club_id: clubSmashers.id,
-      opponent_club_name: clubSmashers.name,
       title: 'LEP BC vs Smashers PJ Challenge',
       sport: 'badminton',
-      format: 'team_friendly',
+      format: 'friendly',
       status: 'completed',
-      pair_count: 5,
+      pairs_count: 5,
       winning_club_id: clubLep.id,
       created_by: lepAuthUsers[0].id,
       invite_code: 'LEPSMASH',
@@ -257,6 +255,30 @@ async function main() {
 
   if (compError) throw compError
   console.log(`Competition created: ${comp.title} (ID: ${comp.id})`)
+
+  // 5b. Create competition_clubs entries
+  console.log('Creating competition clubs entries...')
+  const { data: compClubLep, error: cclError } = await supabase
+    .from('competition_clubs')
+    .insert({
+      competition_id: comp.id,
+      club_id: clubLep.id,
+      status: 'confirmed',
+    })
+    .select()
+    .single()
+  if (cclError) throw cclError
+
+  const { data: compClubSmashers, error: ccsError } = await supabase
+    .from('competition_clubs')
+    .insert({
+      competition_id: comp.id,
+      club_id: clubSmashers.id,
+      status: 'confirmed',
+    })
+    .select()
+    .single()
+  if (ccsError) throw ccsError
 
   // 6. Register Participants (Pairs)
   console.log('Registering participants...')
@@ -364,6 +386,9 @@ async function main() {
         competition_id: comp.id,
         participant_a_id: config.lepPart.id,
         participant_b_id: config.smashersPart.id,
+        club_a_id: compClubLep.id,
+        club_b_id: compClubSmashers.id,
+        winner_club_id: config.winner === 'lep' ? compClubLep.id : compClubSmashers.id,
         order_index: i + 1,
         status: 'completed',
         winner_participant_id: config.winner === 'lep' ? config.lepPart.id : config.smashersPart.id,

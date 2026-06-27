@@ -34,6 +34,7 @@ export interface Competition {
   created_at: string
   updated_at: string
   invite_code: string
+  invitationStatus?: string
 
   // Joined fields
   club?: {
@@ -138,6 +139,7 @@ export interface CompetitionWithDetails extends Competition {
 
 export interface CreateCompetitionInput {
   clubId: string
+  myClubName?: string
   title: string
   sport: string
   format: CompetitionFormat

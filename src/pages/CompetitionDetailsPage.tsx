@@ -23,6 +23,7 @@ import {
   recordCompetitionMatch,
   getLeagueStandings,
   cancelCompetition,
+  respondToCompetitionInvite,
 } from '../lib/api/competitions'
 import { getClubMembers, getMyClubs } from '../lib/api'
 import type {
@@ -227,6 +228,30 @@ export default function CompetitionDetailsPage() {
       return
     }
     showToast('Competition cancelled', 'info')
+    loadData()
+  }
+
+  const myInvitedClub = useMemo(() => {
+    if (!user || !compClubs.length || !myClubs.length) return null
+    return compClubs.find(cc =>
+      cc.status === 'invited' &&
+      myClubs.some(mc => mc.id === cc.club_id)
+    ) || null
+  }, [user, compClubs, myClubs])
+
+  const canAcceptInvite = useMemo(() => {
+    if (!myInvitedClub || !myClubMembership) return false
+    return myClubMembership.role === 'owner' || myClubMembership.role === 'admin'
+  }, [myInvitedClub, myClubMembership])
+
+  const handleAcceptInvite = async () => {
+    if (!competition || !myInvitedClub) return
+    const { error } = await respondToCompetitionInvite(competition.invite_code, myInvitedClub.club_id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    showToast('Invitation accepted!', 'success')
     loadData()
   }
 
@@ -456,18 +481,29 @@ export default function CompetitionDetailsPage() {
               <div className="border-t border-white/10 pt-4">
                 <p className="mb-2 text-xs font-bold text-slate-500 uppercase">Participating Clubs</p>
                 <div className="space-y-2">
-                  {compClubs.filter(cc => cc.status !== 'declined').map(cc => (
-                    <div key={cc.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-sm">🏸</div>
-                        <div>
-                          <p className="font-bold text-white">{cc.club?.name || 'Unknown Club'}</p>
-                          <p className="text-xs text-slate-500">{cc.lineup_confirmed ? '✅ Lineup confirmed' : '⏳ Setting lineup'}</p>
+                  {compClubs.filter(cc => cc.status !== 'declined').map(cc => {
+                    const isMyInvitedClub = cc.status === 'invited' && myClubs.some(mc => mc.id === cc.club_id)
+                    return (
+                      <div key={cc.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-sm">🏸</div>
+                          <div>
+                            <p className="font-bold text-white">{cc.club?.name || 'Unknown Club'}</p>
+                            <p className="text-xs text-slate-500">{cc.lineup_confirmed ? '✅ Lineup confirmed' : '⏳ Setting lineup'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {cc.status === 'invited' && <Badge variant="muted">invited</Badge>}
+                          {cc.status === 'confirmed' && <Badge variant="blue">confirmed</Badge>}
+                          {isMyInvitedClub && canAcceptInvite && (
+                            <Button onClick={handleAcceptInvite} size="sm" className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 text-xs h-7 px-3">
+                              Accept
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <Badge variant={cc.status === 'confirmed' ? 'blue' : 'muted'}>{cc.status}</Badge>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
