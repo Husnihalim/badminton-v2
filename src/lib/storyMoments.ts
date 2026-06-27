@@ -1,6 +1,11 @@
 import type { MatchParticipant, MatchWithDetails, User } from '../types'
 import type { Competition, CompetitionMatchup } from '../types/competition'
 
+function getOpponentName(competition: Competition): string {
+  const parts = competition.title.split(' vs ')
+  return parts.length > 1 ? parts.slice(1).join(' vs ') : 'Opponent'
+}
+
 export type CompetitionStoryType =
   | 'competition_invited'
   | 'competition_accepted'
@@ -768,13 +773,13 @@ export function generateCompetitionInvitedStory(competition: Competition): Story
   const templates = competitionStoryTemplates.competition_invited
   const template = templates[Math.floor(Math.random() * templates.length)]
   const hostName = competition.club?.name || 'Host Club'
-  const oppName = competition.opponent_club?.name || competition.opponent_club_name || 'Opponent'
+  const oppName = getOpponentName(competition)
 
   return {
     id: `invited-${competition.id}`,
     type: 'competition_invited',
-    title: competition.format === 'team_friendly' ? 'Challenge Thrown' : 'Competition Created',
-    body: competition.format === 'team_friendly'
+    title: competition.format === 'friendly' ? 'Challenge Thrown' : 'Competition Created',
+    body: competition.format === 'friendly'
       ? template.replace('{inviting_club}', hostName).replace('{opponent_club}', oppName)
       : `Registration is officially open for '${competition.title}'!`,
     proofLabel: `Format: ${competition.format.replace('_', ' ')}`,
@@ -789,13 +794,13 @@ export function generateCompetitionInvitedStory(competition: Competition): Story
 export function generateCompetitionAcceptedStory(competition: Competition): StoryMoment {
   const templates = competitionStoryTemplates.competition_accepted
   const template = templates[Math.floor(Math.random() * templates.length)]
-  const oppName = competition.opponent_club?.name || competition.opponent_club_name || 'Opponent'
+  const oppName = getOpponentName(competition)
 
   return {
     id: `accepted-${competition.id}`,
     type: 'competition_accepted',
-    title: competition.format === 'team_friendly' ? 'Challenge Accepted' : 'Signups Complete',
-    body: competition.format === 'team_friendly'
+    title: competition.format === 'friendly' ? 'Challenge Accepted' : 'Signups Complete',
+    body: competition.format === 'friendly'
       ? template.replace('{opponent_club}', oppName)
       : `Roster locked. Matchmaking is now in progress for '${competition.title}'.`,
     proofLabel: `Status: ${competition.status}`,
@@ -910,7 +915,7 @@ export function generateCompetitionComebackStory(
 
   const comebackClub = currentLeader === 'A'
     ? competition.club?.name
-    : competition.opponent_club?.name || competition.opponent_club_name || 'Opponent'
+    : getOpponentName(competition)
 
   const maxDeficit = Math.max(...scoreHistory.map(s => 
     currentLeader === 'A' ? s.scoreB - s.scoreA : s.scoreA - s.scoreB
@@ -944,7 +949,7 @@ export function generateCompetitionCompletedStory(
   ).length
 
   const hostName = competition.club?.name || 'Host'
-  const oppName = competition.opponent_club?.name || competition.opponent_club_name || 'Opponent'
+  const oppName = getOpponentName(competition)
 
   const winningClub = hostWins > oppWins ? hostName : oppName
   const losingClub = hostWins > oppWins ? oppName : hostName
@@ -993,7 +998,7 @@ export function generateCompetitionStories(
   stories.push(generateCompetitionInvitedStory(competition))
 
   // 2. Acceptance / Registration complete
-  if (competition.status !== 'pending' && competition.status !== 'declined' && competition.status !== 'cancelled') {
+  if (competition.status !== 'draft' && competition.status !== 'cancelled') {
     stories.push(generateCompetitionAcceptedStory(competition))
   }
 
@@ -1052,14 +1057,14 @@ export function buildCompetitionShareText(
   ).length
 
   const hostName = competition.club?.name || 'Host'
-  const oppName = competition.opponent_club?.name || competition.opponent_club_name || 'Opponent'
+  const oppName = getOpponentName(competition)
 
   const isComplete = competition.status === 'completed'
   const isLive = competition.status === 'live'
 
   let text: string
 
-  if (competition.format === 'team_friendly') {
+  if (competition.format === 'friendly') {
     if (isComplete) {
       const winner = hostWins > oppWins ? hostName : oppName
       text = `${hostName} ${hostWins}-${oppWins} ${oppName}\n\n${winner} wins the friendly!`

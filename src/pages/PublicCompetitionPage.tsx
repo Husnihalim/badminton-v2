@@ -10,13 +10,13 @@ import {
   getCompetitionByInviteCode,
   getCompetitionParticipants, 
   getCompetitionMatchups,
-  getCompetitionPools
+  getCompetitionClubs
 } from '../lib/api/competitions'
 import type { 
   Competition, 
+  CompetitionClub,
   CompetitionParticipant, 
   CompetitionMatchup,
-  CompetitionPool 
 } from '../types/competition'
 import { cn } from '../lib/utils'
 
@@ -30,7 +30,7 @@ export default function PublicCompetitionPage() {
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [participants, setParticipants] = useState<CompetitionParticipant[]>([])
   const [matchups, setMatchups] = useState<CompetitionMatchup[]>([])
-  const [pools, setPools] = useState<CompetitionPool[]>([])
+  const [compClubs, setCompClubs] = useState<CompetitionClub[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'matches' | 'standings' | 'roster'>('matches')
 
@@ -49,16 +49,16 @@ export default function PublicCompetitionPage() {
       const [
         { participants: partsData },
         { matchups: matchData },
-        { pools: poolData }
+        { clubs: clubsData }
       ] = await Promise.all([
         getCompetitionParticipants(compData.id),
         getCompetitionMatchups(compData.id),
-        getCompetitionPools(compData.id)
+        getCompetitionClubs(compData.id)
       ])
 
       setParticipants(partsData || [])
       setMatchups(matchData || [])
-      setPools(poolData || [])
+      setCompClubs(clubsData || [])
     } catch (err) {
       console.error('Failed to load public competition details:', err)
     } finally {
@@ -72,11 +72,12 @@ export default function PublicCompetitionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inviteCode])
 
-  // Standings computation
-  const poolStandings = useMemo(() => {
+  // Standings computation (grouped by club)
+  const clubStandings = useMemo(() => {
     const standingsMap: Record<string, {
       participantId: string
       name: string
+      clubId: string | null
       played: number
       wins: number
       losses: number
@@ -90,6 +91,7 @@ export default function PublicCompetitionPage() {
       standingsMap[p.id] = {
         participantId: p.id,
         name: p.name,
+        clubId: p.club_id,
         played: 0,
         wins: 0,
         losses: 0,
@@ -111,10 +113,7 @@ export default function PublicCompetitionPage() {
       pA.played += 1
       pB.played += 1
 
-      let setsWonA = 0
-      let setsWonB = 0
-      let ptsWonA = 0
-      let ptsWonB = 0
+      let setsWonA = 0, setsWonB = 0, ptsWonA = 0, ptsWonB = 0
 
       m.match.score_sets.forEach(set => {
         ptsWonA += set.team1_score
@@ -123,47 +122,34 @@ export default function PublicCompetitionPage() {
         else if (set.team2_score > set.team1_score) setsWonB += 1
       })
 
-      pA.setsWon += setsWonA
-      pA.setsLost += setsWonB
-      pA.pointsWon += ptsWonA
-      pA.pointsLost += ptsWonB
+      pA.setsWon += setsWonA; pA.setsLost += setsWonB
+      pA.pointsWon += ptsWonA; pA.pointsLost += ptsWonB
 
-      pB.setsWon += setsWonB
-      pB.setsLost += setsWonA
-      pB.pointsWon += ptsWonB
-      pB.pointsLost += ptsWonA
+      pB.setsWon += setsWonB; pB.setsLost += setsWonA
+      pB.pointsWon += ptsWonB; pB.pointsLost += ptsWonA
 
       if (m.winner_participant_id === m.participant_a_id) {
-        pA.wins += 1
-        pB.losses += 1
+        pA.wins += 1; pB.losses += 1
       } else {
-        pB.wins += 1
-        pA.losses += 1
+        pB.wins += 1; pA.losses += 1
       }
     })
 
-    type Standing = typeof standingsMap[string]
-    const grouped: Record<string, Standing[]> = {}
-    participants.forEach(p => {
-      const poolId = p.pool_id || 'unassigned'
-      if (!grouped[poolId]) grouped[poolId] = []
-      
-      const stats: Standing = standingsMap[p.id] || {
-        participantId: p.id,
-        name: p.name,
-        played: 0,
-        wins: 0,
-        losses: 0,
-        setsWon: 0,
-        setsLost: 0,
-        pointsWon: 0,
-        pointsLost: 0
+    // Group by club
+    const grouped: Record<string, typeof standingsMap[string][]> = {}
+    for (const p of participants) {
+      const clubId = p.club_id || 'unassigned'
+      if (!grouped[clubId]) grouped[clubId] = []
+      const stats = standingsMap[p.id] || {
+        participantId: p.id, name: p.name, clubId: p.club_id,
+        played: 0, wins: 0, losses: 0,
+        setsWon: 0, setsLost: 0, pointsWon: 0, pointsLost: 0,
       }
-      grouped[poolId].push(stats)
-    })
+      grouped[clubId].push(stats)
+    }
 
-    Object.keys(grouped).forEach(poolId => {
-      grouped[poolId].sort((a, b) => {
+    for (const clubId of Object.keys(grouped)) {
+      grouped[clubId].sort((a, b) => {
         if (b.wins !== a.wins) return b.wins - a.wins
         const setDiffA = a.setsWon - a.setsLost
         const setDiffB = b.setsWon - b.setsLost
@@ -172,10 +158,18 @@ export default function PublicCompetitionPage() {
         const ptsDiffB = b.pointsWon - b.pointsLost
         return ptsDiffB - ptsDiffA
       })
-    })
+    }
 
     return grouped
   }, [participants, matchups])
+
+  const clubNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const cc of compClubs) {
+      map.set(cc.club_id, cc.club?.name || 'Unknown Club')
+    }
+    return map
+  }, [compClubs])
 
   if (isLoading) {
     return (
@@ -258,12 +252,12 @@ export default function PublicCompetitionPage() {
         {/* Standings */}
         {activeTab === 'standings' && (
           <div className="space-y-6">
-            {(pools.length > 0 ? pools : [{ id: 'unassigned', name: 'General Standings' }]).map(pool => {
-              const standingList = poolStandings[pool.id] || []
+            {Object.entries(clubStandings).map(([clubId, standingList]) => {
+              const clubLabel = clubNameMap.get(clubId) || 'General Standings'
               return (
-                <div key={pool.id} className="space-y-3">
+                <div key={clubId} className="space-y-3">
                   <h3 className="text-sm font-bold text-[var(--arena-lime)] uppercase tracking-wider">
-                    {pool.name}
+                    {clubLabel}
                   </h3>
                   <Card className="overflow-hidden border-white/10 bg-[#0a0f0e]">
                     <CardContent className="p-0">

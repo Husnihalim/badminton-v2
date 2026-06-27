@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { useNotifications } from '../../context/NotificationsContext'
-import { createPlayoffBracket } from '../../lib/api/competitions'
+
 import type { CompetitionMatchup, CompetitionParticipant } from '../../types/competition'
 import { cn } from '../../lib/utils'
 
@@ -105,13 +105,7 @@ export default function PlayoffBracket({
     }
 
     setIsSubmitting(true)
-    const { error } = await createPlayoffBracket(competitionId, pairings)
-    if (!error) {
-      showToast('Playoff bracket created successfully!', 'success')
-      if (onRefresh) onRefresh()
-    } else {
-      showToast(error.message || 'Failed to generate bracket', 'error')
-    }
+    showToast('Playoff brackets are not available in the current version', 'error')
     setIsSubmitting(false)
   }
 

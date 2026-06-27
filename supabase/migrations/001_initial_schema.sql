@@ -70,21 +70,6 @@ ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Clubs are viewable by everyone" 
     ON clubs FOR SELECT USING (true);
 
-CREATE POLICY "Clubs can be created by authenticated users" 
-    ON clubs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Clubs can be updated by owner or superadmin" 
-    ON clubs FOR UPDATE USING (
-        auth.uid() = owner_id 
-        OR auth.uid() IN (
-            SELECT user_id FROM memberships 
-            WHERE club_id = clubs.id AND role = 'superadmin'
-        )
-    );
-
-CREATE POLICY "Clubs can be deleted by owner" 
-    ON clubs FOR DELETE USING (auth.uid() = owner_id);
-
 -- ============================================
 -- MEMBERSHIPS TABLE
 -- ============================================
@@ -129,6 +114,22 @@ CREATE POLICY "Memberships can be updated by club admins"
             WHERE club_id = memberships.club_id AND role IN ('owner', 'admin')
         )
     );
+
+-- Club policies that reference memberships (defined after memberships table exists)
+CREATE POLICY "Clubs can be created by authenticated users" 
+    ON clubs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Clubs can be updated by owner or superadmin" 
+    ON clubs FOR UPDATE USING (
+        auth.uid() = owner_id 
+        OR auth.uid() IN (
+            SELECT user_id FROM memberships 
+            WHERE club_id = clubs.id AND role = 'superadmin'
+        )
+    );
+
+CREATE POLICY "Clubs can be deleted by owner" 
+    ON clubs FOR DELETE USING (auth.uid() = owner_id);
 
 -- ============================================
 -- JOIN REQUESTS TABLE

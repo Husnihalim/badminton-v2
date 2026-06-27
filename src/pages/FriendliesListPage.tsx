@@ -4,11 +4,11 @@ import { Plus, Trophy, Clock, Users } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
-import { listClubFriendlies } from '../lib/api/competitions'
+import { listClubCompetitions } from '../lib/api/competitions'
 import { getMyClubs, getClub, getClubs } from '../lib/api'
-import type { Friendly } from '../types/competition'
+import { CreateCompetitionModal } from '../components/competition/CreateCompetitionModal'
+import type { Competition } from '../types/competition'
 import type { Club } from '../types'
-import { FriendlyCreateModal } from '../components/friendly'
 
 export default function FriendliesListPage() {
   const navigate = useNavigate()
@@ -17,64 +17,73 @@ export default function FriendliesListPage() {
 
   const [currentClub, setCurrentClub] = useState<Club | null>(null)
   const [myClubs, setMyClubs] = useState<(Club & { role: string })[]>([])
-  const [discoverClubs, setDiscoverClubs] = useState<Club[]>([])
-  const [friendlies, setFriendlies] = useState<Friendly[]>([])
+  const [allClubs, setAllClubs] = useState<Club[]>([])
+  const [competitions, setCompetitions] = useState<Competition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  async function loadFriendlies(clubId: string) {
+  async function loadCompetitions(clubId: string) {
     setIsLoading(true)
-    const { friendlies: data, error } = await listClubFriendlies(clubId)
-    if (!error && data) {
-      setFriendlies(data)
-    }
+    const { competitions: data } = await listClubCompetitions(clubId)
+    if (data) setCompetitions(data)
     setIsLoading(false)
   }
 
   useEffect(() => {
-    async function loadClubs() {
+    async function load() {
       try {
         const clubsData = await getMyClubs()
         setMyClubs(clubsData)
-        
+
         let activeClub: Club | null = null
         if (urlClubId) {
           const matched = clubsData.find(c => c.id === urlClubId)
-          if (matched) {
-            activeClub = matched
-          } else {
-            const club = await getClub(urlClubId)
-            if (club) activeClub = club
-          }
+          activeClub = matched || await getClub(urlClubId)
         } else if (clubsData.length > 0) {
           activeClub = clubsData[0]
         }
-        
+
         setCurrentClub(activeClub)
-        if (activeClub) {
-          await loadFriendlies(activeClub.id)
-        } else {
-          setIsLoading(false)
-        }
-      } catch (err) {
-        console.error(err)
+        if (activeClub) await loadCompetitions(activeClub.id)
+        else setIsLoading(false)
+
+        const clubs = await getClubs()
+        setAllClubs(clubs)
+      } catch {
         setIsLoading(false)
       }
     }
-    loadClubs()
+    load()
   }, [urlClubId])
 
-  useEffect(() => {
-    if (!currentClub) return
-    getClubs()
-      .then((clubs) => {
-        setDiscoverClubs(clubs.filter((c) => c.id !== currentClub.id))
-      })
-      .catch(console.error)
-  }, [currentClub])
+  const active = competitions.filter(c => ['registration', 'matchmaking', 'live'].includes(c.status))
+  const completed = competitions.filter(c => c.status === 'completed')
 
-  const activeFriendlies = friendlies.filter((f) => ['pending', 'accepted', 'matchmaking', 'live'].includes(f.status))
-  const completedFriendlies = friendlies.filter((f) => f.status === 'completed')
+  const displayName = (c: Competition) => {
+    // Extract opponent club names from the title
+    const prefix = `${currentClub?.name} vs `
+    if (c.title.startsWith(prefix)) {
+      return c.title.slice(prefix.length)
+    }
+    return c.title
+  }
+
+  const getStatusBadge = (c: Competition) => {
+    switch (c.status) {
+      case 'registration':
+        return <Badge variant="muted"><Clock size={12} className="mr-1" /> Setting Up</Badge>
+      case 'matchmaking':
+        return <Badge variant="blue"><Users size={12} className="mr-1" /> Matchmaking</Badge>
+      case 'live':
+        return <Badge variant="live">● Live</Badge>
+      case 'completed': {
+        const won = c.winning_club_id === currentClub?.id
+        return <Badge variant={won ? 'live' : 'muted'}>{won ? '✓ Won' : '✗ Lost'}</Badge>
+      }
+      default:
+        return <Badge variant="muted">{c.status}</Badge>
+    }
+  }
 
   if (isLoading) {
     return (
@@ -86,7 +95,6 @@ export default function FriendliesListPage() {
 
   return (
     <div className="min-h-screen bg-[var(--arena-bg)] p-4">
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h1 className="arena-heading text-2xl">Competitions</h1>
@@ -97,15 +105,13 @@ export default function FriendliesListPage() {
                 const matched = myClubs.find(c => c.id === e.target.value)
                 if (matched) {
                   setCurrentClub(matched)
-                  loadFriendlies(matched.id)
+                  loadCompetitions(matched.id)
                 }
               }}
               className="rounded-md border border-white/10 bg-white/5 p-1 text-sm text-white focus:border-[var(--arena-lime)]"
             >
               {myClubs.map(c => (
-                <option key={c.id} value={c.id} className="bg-[var(--arena-surface)]">
-                  {c.name}
-                </option>
+                <option key={c.id} value={c.id} className="bg-[var(--arena-surface)]">{c.name}</option>
               ))}
             </select>
           )}
@@ -113,49 +119,67 @@ export default function FriendliesListPage() {
         <Button
           onClick={() => setIsCreateModalOpen(true)}
           className="h-10 w-10 p-0 sm:w-auto sm:px-4 sm:py-2 gap-2 bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
-          title="Challenge a Club"
+          title="New Competition"
         >
           <Plus size={16} />
           <span className="hidden sm:inline">New</span>
         </Button>
       </div>
 
-      {/* Active Friendlies */}
-      {activeFriendlies.length > 0 && (
+      {active.length > 0 && (
         <div className="mb-8 space-y-3">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Active ({activeFriendlies.length})
+            Active ({active.length})
           </p>
-          {activeFriendlies.map((friendly) => (
-            <FriendlyCard
-              key={friendly.id}
-              friendly={friendly}
-              currentClubId={currentClub?.id}
-              onClick={() => navigate(`/competition/${friendly.id}`)}
-            />
+          {active.map(c => (
+            <Card key={c.id} className="cursor-pointer border-white/10 bg-[var(--arena-surface)] transition-colors hover:border-white/20"
+              onClick={() => navigate(`/competition/${c.id}`)}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="mb-1">{getStatusBadge(c)}</div>
+                    <p className="font-bold text-white">vs {displayName(c)}</p>
+                    <p className="text-xs text-slate-400">
+                      {c.format === 'league' ? 'League' : 'Friendly'} • {c.pairs_count} pairs • {new Date(c.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* Completed Friendlies */}
-      {completedFriendlies.length > 0 && (
+      {completed.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            History ({completedFriendlies.length})
+            History ({completed.length})
           </p>
-          {completedFriendlies.map((friendly) => (
-            <FriendlyCard
-              key={friendly.id}
-              friendly={friendly}
-              currentClubId={currentClub?.id}
-              onClick={() => navigate(`/competition/${friendly.id}`)}
-            />
+          {completed.map(c => (
+            <Card key={c.id} className="cursor-pointer border-white/10 bg-[var(--arena-surface)] transition-colors hover:border-white/20"
+              onClick={() => navigate(`/competition/${c.id}`)}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="mb-1">{getStatusBadge(c)}</div>
+                    <p className="font-bold text-white">vs {displayName(c)}</p>
+                    <p className="text-xs text-slate-400">
+                      {c.format === 'league' ? 'League' : 'Friendly'} • {c.pairs_count} pairs
+                    </p>
+                  </div>
+                  {c.winning_club_id && (
+                    <div className={`text-2xl font-bold ${c.winning_club_id === currentClub?.id ? 'text-[var(--arena-lime)]' : 'text-slate-500'}`}>
+                      {c.winning_club_id === currentClub?.id ? 'W' : 'L'}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* Empty State */}
-      {friendlies.length === 0 && (
+      {competitions.length === 0 && (
         <Card className="border-white/10 bg-[var(--arena-surface)]">
           <CardContent className="p-8 text-center">
             <div className="mb-4 flex justify-center">
@@ -163,94 +187,29 @@ export default function FriendliesListPage() {
                 <Trophy size={32} className="text-slate-600" />
               </div>
             </div>
-            <h2 className="mb-2 text-xl font-bold text-white">No Friendlies Yet</h2>
-            <p className="mb-4 text-slate-400">
-              Challenge another club to a friendly match and build your rivalry history
-            </p>
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
-            >
-              Challenge a Club
+            <h2 className="mb-2 text-xl font-bold text-white">No Competitions Yet</h2>
+            <p className="mb-4 text-slate-400">Challenge another club or start a league</p>
+            <Button onClick={() => setIsCreateModalOpen(true)}
+              className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90">
+              New Competition
             </Button>
           </CardContent>
         </Card>
       )}
 
       {currentClub && (
-        <FriendlyCreateModal
+        <CreateCompetitionModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          clubId={currentClub.id}
-          clubName={currentClub.name}
-          nearbyClubs={discoverClubs}
-          onCreated={() => {
-            loadFriendlies(currentClub.id)
+          myClubId={currentClub.id}
+          myClubName={currentClub.name}
+          allClubs={allClubs}
+          onCreated={(id) => {
+            loadCompetitions(currentClub.id)
+            navigate(`/competition/${id}`)
           }}
         />
       )}
     </div>
-  )
-}
-
-interface FriendlyCardProps {
-  friendly: Friendly
-  currentClubId?: string
-  onClick: () => void
-}
-
-function FriendlyCard({ friendly, currentClubId, onClick }: FriendlyCardProps) {
-  const isInviting = currentClubId === friendly.inviting_club_id
-  const opponentName = isInviting
-    ? (friendly.invited_club?.name || friendly.invited_club_name)
-    : (friendly.inviting_club?.name || '')
-
-  const getStatusBadge = () => {
-    switch (friendly.status) {
-      case 'pending':
-        return <Badge variant="muted"><Clock size={12} className="mr-1" /> Pending</Badge>
-      case 'accepted':
-        return <Badge variant="blue"><Users size={12} className="mr-1" /> Setting Up</Badge>
-      case 'matchmaking':
-        return <Badge variant="heat">Matchmaking</Badge>
-      case 'live':
-        return <Badge variant="live">● Live</Badge>
-      case 'completed': {
-        const won = friendly.winning_club_id === currentClubId
-        return <Badge variant={won ? 'live' : 'muted'}>{won ? '✓ Won' : '✗ Lost'}</Badge>
-      }
-      default:
-        return <Badge variant="muted">{friendly.status}</Badge>
-    }
-  }
-
-  return (
-    <Card
-      className="cursor-pointer border-white/10 bg-[var(--arena-surface)] transition-colors hover:border-white/20"
-      onClick={onClick}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="mb-1 flex items-center gap-2">
-              {getStatusBadge()}
-            </div>
-            <p className="font-bold text-white">
-              vs {opponentName}
-            </p>
-            <p className="text-xs text-slate-400">
-              {friendly.pair_count} pairs • {new Date(friendly.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          <div className="text-right">
-            {friendly.status === 'completed' && friendly.winning_club_id && (
-              <div className={`text-2xl font-bold ${friendly.winning_club_id === currentClubId ? 'text-[var(--arena-lime)]' : 'text-slate-500'}`}>
-                {friendly.winning_club_id === currentClubId ? 'W' : 'L'}
-              </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

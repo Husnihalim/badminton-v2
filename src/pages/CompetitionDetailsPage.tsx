@@ -1,8 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { 
-  ArrowLeft, UserPlus, Info, Calendar
-} from 'lucide-react'
+import { ArrowLeft, Info, Calendar, MapPin, Sparkles } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -10,25 +8,33 @@ import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import BwfMatchupCard from '../components/competition/BwfMatchupCard'
-import PlayoffBracket from '../components/competition/PlayoffBracket'
-import { 
-  getCompetition, 
-  getCompetitionParticipants, 
+import { supabase } from '../lib/supabase'
+import {
+  getCompetition,
+  getCompetitionClubs,
+  getCompetitionParticipants,
   getCompetitionMatchups,
-  getCompetitionPools,
   inviteMemberToRoster,
+  removeParticipant,
+  confirmLineup,
+  generateMatchups,
+  swapMatchupParticipants,
+  startCompetition,
   recordCompetitionMatch,
-  completeCompetition
+  getLeagueStandings,
+  cancelCompetition,
 } from '../lib/api/competitions'
 import { getClubMembers, getMyClubs } from '../lib/api'
-import type { 
-  Competition, 
-  CompetitionParticipant, 
+import type {
+  Competition,
+  CompetitionClub,
+  CompetitionParticipant,
   CompetitionMatchup,
-  CompetitionPool 
 } from '../types/competition'
 import type { Club, Membership } from '../types'
 import { cn } from '../lib/utils'
+
+type Tab = 'overview' | 'rosters' | 'matchups' | 'live' | 'results'
 
 export default function CompetitionDetailsPage() {
   const { competitionId } = useParams<{ competitionId: string }>()
@@ -36,108 +42,86 @@ export default function CompetitionDetailsPage() {
   const { user } = useAuth()
   const { showToast } = useNotifications()
 
-  // State
   const [competition, setCompetition] = useState<Competition | null>(null)
+  const [compClubs, setCompClubs] = useState<CompetitionClub[]>([])
   const [participants, setParticipants] = useState<CompetitionParticipant[]>([])
   const [matchups, setMatchups] = useState<CompetitionMatchup[]>([])
-  const [pools, setPools] = useState<CompetitionPool[]>([])
+  const [myClubs, setMyClubs] = useState<(Club & { role: string })[]>([])
   const [clubMembers, setClubMembers] = useState<Membership[]>([])
-  const [opponentMembers, setOpponentMembers] = useState<Membership[]>([])
-  const [myClubs, setMyClubs] = useState<Club[]>([])
+  const [standings, setStandings] = useState<{
+    clubId: string
+    clubName: string
+    played: number
+    won: number
+    lost: number
+    rubbersWon: number
+    rubbersLost: number
+  }[]>([])
 
   const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [activeTab, setActiveTab] = useState<'details' | 'roster' | 'matches' | 'standings' | 'playoffs'>('details')
-  const [selectedPoolId, setSelectedPoolId] = useState<string>('all')
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
 
-  // Modals
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  const [inviteUserId, setInviteUserId] = useState('')
-  const [invitePartnerId, setInvitePartnerId] = useState('')
-  const [inviteClubId, setInviteClubId] = useState<string | null>(null)
-  
-  const [recordingMatchup, setRecordingMatchup] = useState<CompetitionMatchup | null>(null)
   const [showScoreModal, setShowScoreModal] = useState(false)
+  const [recordingMatchup, setRecordingMatchup] = useState<CompetitionMatchup | null>(null)
 
-  // Auth checking: Is user admin or owner of hosting/opponent club?
-  const isAdmin = useMemo(() => {
-    if (!user || !competition) return false
-    const myClubMembership = myClubs.find(c => c.id === competition.club_id || c.id === competition.opponent_club_id)
-    return !!myClubMembership
-  }, [user, competition, myClubs])
+  // My club's role in this competition
+  const myClub = useMemo(() => {
+    if (!user || !compClubs.length) return null
+    return compClubs.find(cc => myClubs.some(mc => mc.id === cc.club_id)) || null
+  }, [user, compClubs, myClubs])
 
-  // Calculate series score for team friendlies
-  const seriesStats = useMemo(() => {
-    if (!competition || competition.format !== 'team_friendly') return null
+  const myClubMembership = useMemo(() => {
+    if (!myClub) return null
+    return myClubs.find(c => c.id === myClub.club_id) || null
+  }, [myClub, myClubs])
 
-    let hostWins = 0
-    let opponentWins = 0
-    let totalCompleted = 0
+  const isAdmin = !!myClubMembership
 
-    matchups.forEach(m => {
-      if (m.status === 'completed' && m.winner_participant_id) {
-        totalCompleted++
-        const winnerPart = participants.find(p => p.id === m.winner_participant_id)
-        if (winnerPart?.club_id === competition.club_id) {
-          hostWins++
-        } else if (winnerPart?.club_id === competition.opponent_club_id) {
-          opponentWins++
-        }
-      }
-    })
-
-    const totalMatchups = matchups.length || 5
-    const hostPct = totalCompleted > 0 ? (hostWins / totalMatchups) * 100 : 50
-    const opponentPct = totalCompleted > 0 ? (opponentWins / totalMatchups) * 100 : 50
-
-    return {
-      hostWins,
-      opponentWins,
-      hostPct,
-      opponentPct,
-      hostName: competition.club?.name || 'Host',
-      opponentName: competition.opponent_club_name || competition.opponent_club?.name || 'Opponent'
-    }
-  }, [competition, matchups, participants])
+  const opponentParticipants = useMemo(() => {
+    if (!myClub) return participants
+    return participants.filter(p => p.club_id !== myClub.club_id)
+  }, [myClub, participants])
 
   async function loadData() {
     setIsLoading(true)
     try {
       const [
-        { competition: compData },
-        { participants: partsData },
+        { competition: comp },
+        { clubs: clubsData },
+        { participants: parts },
         { matchups: matchData },
-        { pools: poolData },
-        myClubsData
+        myClubsData,
       ] = await Promise.all([
         getCompetition(competitionId!),
+        getCompetitionClubs(competitionId!),
         getCompetitionParticipants(competitionId!),
         getCompetitionMatchups(competitionId!),
-        getCompetitionPools(competitionId!),
-        getMyClubs()
+        getMyClubs(),
       ])
 
+      setCompetition(comp)
+      setCompClubs(clubsData)
+      setParticipants(parts || [])
+      setMatchups(matchData || [])
       setMyClubs(myClubsData)
 
-      if (compData) {
-        setCompetition(compData)
-        setParticipants(partsData || [])
-        setMatchups(matchData || [])
-        setPools(poolData || [])
-
-        // Load host club members for invitation
-        const hostMembers = await getClubMembers(compData.club_id)
-        setClubMembers(hostMembers || [])
-
-        // Load opponent club members if opponent club exists
-        if (compData.opponent_club_id) {
-          const oppMembers = await getClubMembers(compData.opponent_club_id)
-          setOpponentMembers(oppMembers || [])
+      if (comp && clubsData.length > 0) {
+        // Load members for all clubs in the competition
+        const allMembers: Membership[] = []
+        for (const cc of clubsData) {
+          const members = await getClubMembers(cc.club_id)
+          allMembers.push(...(members || []))
         }
+        setClubMembers(allMembers)
+      }
+
+      if (comp?.status === 'completed') {
+        const { standings: s } = await getLeagueStandings(competitionId!)
+        setStandings(s || [])
       }
     } catch (err) {
-      console.error('Failed to load competition details:', err)
-      showToast('Error loading page details', 'error')
+      console.error(err)
+      showToast('Failed to load competition', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -145,38 +129,109 @@ export default function CompetitionDetailsPage() {
 
   useEffect(() => {
     if (competitionId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      loadData()
+      ;(async () => {
+        await loadData()
+      })()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId])
 
-  // Handle Roster Invitation Form Submit
-  const handleSendInvite = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!competition || !inviteUserId) return
+  // Series progress (for friendly)
+  const seriesStats = useMemo(() => {
+    if (!competition || competition.format !== 'friendly') return null
+    const completedMatchups = matchups.filter(m => m.status === 'completed')
+    if (compClubs.length < 2) return null
 
-    setIsSubmitting(true)
-    const { participant, error } = await inviteMemberToRoster(
-      competition.id,
-      inviteClubId || competition.club_id,
-      inviteUserId,
-      invitePartnerId || null
-    )
+    const clubAWins = completedMatchups.filter(m => {
+      const winner = participants.find(p => p.id === m.winner_participant_id)
+      return winner && compClubs[0] && winner.club_id === compClubs[0].club_id
+    }).length
+    const clubBWins = completedMatchups.filter(m => {
+      const winner = participants.find(p => p.id === m.winner_participant_id)
+      return winner && compClubs[1] && winner.club_id === compClubs[1].club_id
+    }).length
 
-    if (!error && participant) {
-      setParticipants(prev => [...prev, participant])
-      showToast('Invitation sent successfully!', 'success')
-      setShowInviteModal(false)
-      setInviteUserId('')
-      setInvitePartnerId('')
-    } else {
-      showToast(error?.message || 'Failed to send invite', 'error')
+    return { clubAWins, clubBWins, total: matchups.length }
+  }, [competition, matchups, participants, compClubs])
+
+  const handleInvitePlayer = async (clubId: string, userId: string, partnerId?: string) => {
+    if (!competition) return
+    const { participant, error } = await inviteMemberToRoster(competition.id, clubId, userId, partnerId || null)
+    if (error) {
+      showToast(error.message, 'error')
+      return
     }
-    setIsSubmitting(false)
+    if (participant) {
+      setParticipants(prev => [...prev, participant])
+      showToast('Invitation sent!', 'success')
+    }
   }
 
-  // Handle Match Score Recording
+  const handleRemovePlayer = async (participantId: string) => {
+    const { error } = await removeParticipant(participantId)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    setParticipants(prev => prev.filter(p => p.id !== participantId))
+    showToast('Player removed', 'success')
+  }
+
+  const handleConfirmLineup = async () => {
+    if (!competition || !myClub) return
+    const { error } = await confirmLineup(competition.id, myClub.club_id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    showToast('Lineup confirmed!', 'success')
+    loadData()
+  }
+
+  const handleGenerateMatchups = async () => {
+    if (!competition) return
+    const { matchups: newMatchups, error } = await generateMatchups(competition.id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    setMatchups(newMatchups || [])
+    showToast('Matchups generated!', 'success')
+    loadData()
+  }
+
+  const handleSwapPairing = async (matchupId: string, newParticipantAId: string, newParticipantBId: string) => {
+    const { error } = await swapMatchupParticipants(matchupId, newParticipantAId, newParticipantBId)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    showToast('Pairing updated', 'success')
+    loadData()
+  }
+
+  const handleStartCompetition = async () => {
+    if (!competition) return
+    const { error } = await startCompetition(competition.id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    showToast('Competition is live!', 'success')
+    loadData()
+  }
+
+  const handleCancelCompetition = async () => {
+    if (!competition) return
+    const { error } = await cancelCompetition(competition.id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    showToast('Competition cancelled', 'info')
+    loadData()
+  }
+
   const handleRecordMatch = (matchup: CompetitionMatchup) => {
     setRecordingMatchup(matchup)
     setShowScoreModal(true)
@@ -189,499 +244,561 @@ export default function CompetitionDetailsPage() {
     score_sets: { set_number: number; team1_score: number; team2_score: number }[]
   }) => {
     if (!recordingMatchup || !competition) return
-
-    setIsSubmitting(true)
     const { error } = await recordCompetitionMatch(recordingMatchup.id, {
       ...matchData,
       club_id: competition.club_id,
     })
-
-    if (!error) {
-      showToast('Match score updated!', 'success')
-      setShowScoreModal(false)
-      setRecordingMatchup(null)
-      loadData()
-
-      // If all matches completed, complete the competition
-      const updatedMatchups = await getCompetitionMatchups(competition.id)
-      const allComplete = updatedMatchups.matchups?.every(m => m.status === 'completed')
-      if (allComplete) {
-        await completeCompetition(competition.id)
-        showToast('All matches completed! Competition finalized.', 'success')
-        loadData()
-      }
-    } else {
-      showToast('Failed to save match score', 'error')
+    if (error) {
+      showToast(error.message, 'error')
+      return
     }
-    setIsSubmitting(false)
+    showToast('Match recorded!', 'success')
+    setShowScoreModal(false)
+    setRecordingMatchup(null)
+    loadData()
   }
 
-  // Calculate Standing records for Pools
-  const poolStandings = useMemo(() => {
-    const standingsMap: Record<string, {
-      participantId: string
-      name: string
-      played: number
-      wins: number
-      losses: number
-      setsWon: number
-      setsLost: number
-      pointsWon: number
-      pointsLost: number
-    }> = {}
+  // Standing computation for active competitions
+  const computedStandings = useMemo(() => {
+    if (!matchups.length || !participants.length) return []
 
-    participants.forEach(p => {
-      standingsMap[p.id] = {
-        participantId: p.id,
-        name: p.name,
-        played: 0,
-        wins: 0,
-        losses: 0,
-        setsWon: 0,
-        setsLost: 0,
-        pointsWon: 0,
-        pointsLost: 0
-      }
-    })
+    if (standings.length) return standings // Use cached if competition is completed
 
-    matchups.forEach(m => {
-      if (m.status !== 'completed' || !m.match?.score_sets?.length) return
+    const clubResults: Record<string, { played: number; won: number; lost: number; rubbersWon: number; rubbersLost: number }> = {}
+    const completed = matchups.filter(m => m.status === 'completed')
 
-      const pA = standingsMap[m.participant_a_id]
-      const pB = standingsMap[m.participant_b_id]
+    for (const m of completed) {
+      const a = participants.find(p => p.id === m.participant_a_id)
+      const b = participants.find(p => p.id === m.participant_b_id)
+      if (!a || !b) continue
 
-      if (!pA || !pB) return
+      if (!clubResults[a.club_id!]) clubResults[a.club_id!] = { played: 0, won: 0, lost: 0, rubbersWon: 0, rubbersLost: 0 }
+      if (!clubResults[b.club_id!]) clubResults[b.club_id!] = { played: 0, won: 0, lost: 0, rubbersWon: 0, rubbersLost: 0 }
 
-      pA.played += 1
-      pB.played += 1
-
-      let setsWonA = 0
-      let setsWonB = 0
-      let ptsWonA = 0
-      let ptsWonB = 0
-
-      m.match.score_sets.forEach(set => {
-        ptsWonA += set.team1_score
-        ptsWonB += set.team2_score
-        if (set.team1_score > set.team2_score) setsWonA += 1
-        else if (set.team2_score > set.team1_score) setsWonB += 1
-      })
-
-      pA.setsWon += setsWonA
-      pA.setsLost += setsWonB
-      pA.pointsWon += ptsWonA
-      pA.pointsLost += ptsWonB
-
-      pB.setsWon += setsWonB
-      pB.setsLost += setsWonA
-      pB.pointsWon += ptsWonB
-      pB.pointsLost += ptsWonA
-
+      // Count rubber-level wins for standings
       if (m.winner_participant_id === m.participant_a_id) {
-        pA.wins += 1
-        pB.losses += 1
+        clubResults[a.club_id!].rubbersWon++
+        clubResults[b.club_id!].rubbersLost++
       } else {
-        pB.wins += 1
-        pA.losses += 1
+        clubResults[b.club_id!].rubbersWon++
+        clubResults[a.club_id!].rubbersLost++
       }
-    })
+    }
 
-    type Standing = typeof standingsMap[string]
-    const grouped: Record<string, Standing[]> = {}
-    participants.forEach(p => {
-      const poolId = p.pool_id || 'unassigned'
-      if (!grouped[poolId]) grouped[poolId] = []
-      
-      const stats: Standing = standingsMap[p.id] || {
-        participantId: p.id,
-        name: p.name,
-        played: 0,
-        wins: 0,
-        losses: 0,
-        setsWon: 0,
-        setsLost: 0,
-        pointsWon: 0,
-        pointsLost: 0
+    // Calculate tie-level wins (a club wins a tie if they win more rubbers than the other)
+    if (competition?.format === 'league') {
+      const tieResults: Record<string, number> = {}
+      for (const m of completed) {
+        const a = participants.find(p => p.id === m.participant_a_id)
+        const b = participants.find(p => p.id === m.participant_b_id)
+        if (!a || !b) continue
+
+        const key = [a.club_id, b.club_id].sort().join('-')
+        if (tieResults[key] !== undefined) continue // Already processed this tie
+
+        // Get all matchups between these two clubs
+        const tieMatchups = completed.filter(mm => {
+          const aa = participants.find(p => p.id === mm.participant_a_id)
+          const bb = participants.find(p => p.id === mm.participant_b_id)
+          return aa && bb && ((aa.club_id === a.club_id && bb.club_id === b.club_id) || (aa.club_id === b.club_id && bb.club_id === a.club_id))
+        })
+
+        const clubARubbersWon = tieMatchups.filter(mm => {
+          const aa = participants.find(p => p.id === mm.participant_a_id)
+          return aa && aa.club_id === a.club_id && mm.winner_participant_id === mm.participant_a_id
+        }).length + tieMatchups.filter(mm => {
+          const bb = participants.find(p => p.id === mm.participant_b_id)
+          return bb && bb.club_id === a.club_id && mm.winner_participant_id === mm.participant_b_id
+        }).length
+
+        const clubBRubbersWon = tieMatchups.filter(mm => {
+          const aa = participants.find(p => p.id === mm.participant_a_id)
+          return aa && aa.club_id === b.club_id && mm.winner_participant_id === mm.participant_a_id
+        }).length + tieMatchups.filter(mm => {
+          const bb = participants.find(p => p.id === mm.participant_b_id)
+          return bb && bb.club_id === b.club_id && mm.winner_participant_id === mm.participant_b_id
+        }).length
+
+        if (clubARubbersWon > clubBRubbersWon) {
+          clubResults[a.club_id!].won++
+          clubResults[b.club_id!].lost++
+        } else if (clubBRubbersWon > clubARubbersWon) {
+          clubResults[b.club_id!].won++
+          clubResults[a.club_id!].lost++
+        }
+
+        tieResults[key] = 1
       }
-      grouped[poolId].push(stats)
-    })
+    } else {
+      // Friendly: count rubber wins
+      for (const m of completed) {
+        const a = participants.find(p => p.id === m.participant_a_id)
+        const b = participants.find(p => p.id === m.participant_b_id)
+        if (!a || !b) continue
+        clubResults[a.club_id!].played++
+        clubResults[b.club_id!].played++
+      }
+    }
 
-    Object.keys(grouped).forEach(poolId => {
-      grouped[poolId].sort((a, b) => {
-        if (b.wins !== a.wins) return b.wins - a.wins
-        const setDiffA = a.setsWon - a.setsLost
-        const setDiffB = b.setsWon - b.setsLost
-        if (setDiffB !== setDiffA) return setDiffB - setDiffA
-        const ptsDiffA = a.pointsWon - a.pointsLost
-        const ptsDiffB = b.pointsWon - b.pointsLost
-        return ptsDiffB - ptsDiffA
-      })
-    })
-
-    return grouped
-  }, [participants, matchups])
+    return Object.entries(clubResults).map(([clubId, r]) => {
+      const cc = compClubs.find(c => c.club_id === clubId)
+      return {
+        clubId,
+        clubName: cc?.club?.name || 'Unknown',
+        played: r.played,
+        won: r.won,
+        lost: r.lost,
+        rubbersWon: r.rubbersWon,
+        rubbersLost: r.rubbersLost,
+      }
+    }).sort((a, b) => b.won - a.won || (b.rubbersWon - b.rubbersLost) - (a.rubbersWon - a.rubbersLost))
+  }, [matchups, participants, compClubs, standings, competition])
 
   if (isLoading || !competition) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#040d0f]">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--arena-bg)]">
         <p className="text-slate-400">Loading competition...</p>
       </div>
     )
   }
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'rosters', label: 'Rosters' },
+    { id: 'matchups', label: 'Matchups' },
+    { id: 'live', label: 'Live' },
+    { id: 'results', label: 'Results' },
+  ]
+
   return (
-    <div className="min-h-screen bg-[#040d0f] p-3 text-white sm:p-4">
-      {/* Top action header */}
-      <div className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-400 hover:text-white cursor-pointer"
-        >
+    <div className="min-h-screen bg-[var(--arena-bg)] p-3 sm:p-4">
+
+      {/* Header */}
+      <div className="mx-auto mb-4 flex max-w-4xl items-center justify-between">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white cursor-pointer">
           <ArrowLeft size={20} />
           <span>Back</span>
         </button>
-        <Badge variant={competition.status === 'live' ? 'live' : 'blue'}>
-          {competition.status.toUpperCase()}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={
+            competition.status === 'live' ? 'live' :
+            competition.status === 'completed' ? 'blue' :
+            competition.status === 'cancelled' ? 'muted' : 'blue'
+          }>
+            {competition.status.toUpperCase()}
+          </Badge>
+        </div>
       </div>
 
-      {/* Main Title Banner */}
-      <div className="mx-auto max-w-4xl mb-6 text-center">
-        <h1 className="break-words text-2xl font-black uppercase tracking-tight text-white leading-tight sm:text-3xl">
-          {competition.title}
-        </h1>
-        <p className="mt-1.5 break-words text-xs uppercase tracking-wider text-[var(--arena-text-muted)]">
-          🏆 Format: {competition.format.replace(/_/g, ' ')} • Sport: {competition.sport}
+      {/* Title */}
+      <div className="mx-auto mb-4 max-w-4xl">
+        <h1 className="text-xl font-black uppercase text-white sm:text-2xl">{competition.title}</h1>
+        <p className="mt-1 text-xs text-slate-500">
+          {competition.format === 'friendly' ? '🤝 Friendly' : '🏆 League'} • {competition.pairs_count} pairs • {competition.sets_count === 1 ? '1 set' : 'Best of 3'} • {competition.points_per_set} pts
         </p>
       </div>
 
-      {/* Series History Bar for team friendlies */}
+      {/* Series bar for friendly */}
       {seriesStats && (
-        <div className="mx-auto max-w-4xl mb-6">
-          <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-2.5">
-            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Series</span>
-            <div className="flex h-1.5 min-w-[120px] flex-1 overflow-hidden rounded-full bg-slate-800">
-              <div
-                className="bg-[var(--arena-lime)] h-full transition-all duration-500"
-                style={{ width: `${seriesStats.hostWins === 0 && seriesStats.opponentWins === 0 ? 50 : (seriesStats.hostWins / (seriesStats.hostWins + seriesStats.opponentWins || 1)) * 100}%` }}
-              />
-              <div
-                className="bg-slate-700 h-full transition-all duration-500"
-                style={{ width: `${seriesStats.hostWins === 0 && seriesStats.opponentWins === 0 ? 50 : (seriesStats.opponentWins / (seriesStats.hostWins + seriesStats.opponentWins || 1)) * 100}%` }}
-              />
+        <div className="mx-auto mb-4 max-w-4xl">
+          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2">
+            <span className="text-xs font-bold uppercase text-slate-500">Series</span>
+            <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
+              <div className="bg-[var(--arena-lime)] h-full transition-all" style={{ width: `${seriesStats.total > 0 ? (seriesStats.clubAWins / seriesStats.total) * 100 : 50}%` }} />
+              <div className="bg-slate-600 h-full transition-all" style={{ width: `${seriesStats.total > 0 ? (seriesStats.clubBWins / seriesStats.total) * 100 : 50}%` }} />
             </div>
-            <span className="min-w-0 break-words text-xs font-bold text-slate-400">
-              <strong className="text-[var(--arena-lime)]">{seriesStats.hostName} {seriesStats.hostWins}</strong> - {seriesStats.opponentWins} {seriesStats.opponentName}
+            <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
+              <span className="text-[var(--arena-lime)]">{compClubs[0]?.club?.name || 'Home'} {seriesStats.clubAWins}</span>
+              {' '}—{' '}{seriesStats.clubBWins} {compClubs[1]?.club?.name || 'Away'}
             </span>
           </div>
         </div>
       )}
 
-      {/* Level 1 Navigation Tabs */}
-      <div className="mx-auto max-w-4xl border-b border-white/10 flex gap-2 overflow-x-auto whitespace-nowrap mb-6">
-        {([
-          { id: 'details', label: 'Details' },
-          { id: 'roster', label: 'Roster' },
-          { id: 'matches', label: 'Matches' },
-          { id: 'standings', label: 'Standings' },
-          { id: 'playoffs', label: 'Playoffs' }
-        ] as const).map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+      {/* Tabs */}
+      <div className="mx-auto max-w-4xl mb-6 flex gap-2 overflow-x-auto border-b border-white/10 whitespace-nowrap">
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "py-3 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer",
-              activeTab === tab.id
-                ? 'border-[var(--arena-lime)] text-[var(--arena-lime)]'
-                : 'border-transparent text-slate-400 hover:text-white'
-            )}
-          >
+              "py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer",
+              activeTab === tab.id ? 'border-[var(--arena-lime)] text-[var(--arena-lime)]' : 'border-transparent text-slate-500 hover:text-white'
+            )}>
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab Contents */}
+      {/* Content */}
       <div className="mx-auto max-w-4xl space-y-6">
-        {/* Tab 1: Details */}
-        {activeTab === 'details' && (
-          <Card className="border-white/10 bg-[#0a0f0e] shadow-[var(--arena-glow)]">
-            <CardContent className="p-6 space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-[var(--arena-lime)] flex items-center gap-1.5 uppercase tracking-wider mb-2">
-                  <Info size={16} /> Competition Details
-                </h3>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  {competition.rules || "No custom rules set. Default Badminton World Federation (BWF) scoring applied."}
-                </p>
+
+        {/* TAB: OVERVIEW */}
+        {activeTab === 'overview' && (
+          <Card className="border-white/10 bg-[var(--arena-surface)]">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Info size={16} className="text-[var(--arena-lime)]" />
+                <h3 className="text-sm font-bold text-white uppercase">Details</h3>
               </div>
-              <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Start Date</p>
-                  <p className="text-sm font-semibold text-white mt-1 flex items-center gap-1.5">
-                    <Calendar size={14} className="text-slate-400" />
-                    {competition.start_date ? new Date(competition.start_date).toLocaleDateString() : 'Pending schedule'}
+                  <p className="text-xs text-slate-500">Date</p>
+                  <p className="font-bold text-white flex items-center gap-1">
+                    <Calendar size={14} /> {competition.start_date ? new Date(competition.start_date).toLocaleDateString() : 'TBD'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Host Club</p>
-                  <p className="text-sm font-semibold text-white mt-1">
-                    {competition.club?.name} ({competition.club?.city})
+                  <p className="text-xs text-slate-500">Venue</p>
+                  <p className="font-bold text-white flex items-center gap-1">
+                    <MapPin size={14} /> {competition.location || 'TBD'}
                   </p>
                 </div>
               </div>
+
+              <div className="border-t border-white/10 pt-4">
+                <p className="mb-2 text-xs font-bold text-slate-500 uppercase">Participating Clubs</p>
+                <div className="space-y-2">
+                  {compClubs.filter(cc => cc.status !== 'declined').map(cc => (
+                    <div key={cc.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-sm">🏸</div>
+                        <div>
+                          <p className="font-bold text-white">{cc.club?.name || 'Unknown Club'}</p>
+                          <p className="text-xs text-slate-500">{cc.lineup_confirmed ? '✅ Lineup confirmed' : '⏳ Setting lineup'}</p>
+                        </div>
+                      </div>
+                      <Badge variant={cc.status === 'confirmed' ? 'blue' : 'muted'}>{cc.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {competition.rules && (
+                <div className="border-t border-white/10 pt-4">
+                  <p className="text-xs text-slate-500">Rules</p>
+                  <p className="text-sm text-slate-300 mt-1">{competition.rules}</p>
+                </div>
+              )}
+
+              {isAdmin && competition.status !== 'completed' && competition.status !== 'cancelled' && (
+                <div className="border-t border-white/10 pt-4">
+                  <Button variant="ghost" onClick={handleCancelCompetition} className="text-red-400 hover:text-red-300 text-xs">
+                    Cancel Competition
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Tab 2: Roster */}
-        {activeTab === 'roster' && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-black uppercase tracking-tight">Roster List</h2>
-              {isAdmin && (
-                <Button 
-                  onClick={() => {
-                    setInviteClubId(competition.club_id)
-                    setShowInviteModal(true)
-                  }}
-                  className="h-9 px-3 text-xs gap-1 bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 sm:h-10 sm:text-sm"
-                >
-                  <UserPlus size={15} />
-                  Invite Player
-                </Button>
-              )}
-            </div>
+        {/* TAB: ROSTERS */}
+        {activeTab === 'rosters' && (
+          <div className="space-y-6">
+            {compClubs.filter(cc => cc.status === 'confirmed').map(cc => {
+              const clubParts = participants.filter(p => p.club_id === cc.club_id).sort((a, b) => (a.rank || 99) - (b.rank || 99))
+              const isMyClub = cc.club_id === myClub?.club_id
+              const isConfirmed = cc.lineup_confirmed
+              const clubMemberList = clubMembers.filter(m => m.club_id === cc.club_id)
+              const availableMembers = clubMemberList.filter(m => !clubParts.some(p => p.user_1_id === m.user_id || p.user_2_id === m.user_id))
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {participants.map(p => {
-                const isUser1Pending = p.user_1_status === 'pending'
-                const isUser2Pending = p.user_2_status === 'pending'
-                return (
-                  <Card key={p.id} className="border-white/10 bg-[#0a0f0e]">
-                    <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <h4 className="break-words text-base font-extrabold leading-tight text-white">{p.name}</h4>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            User 1: {isUser1Pending ? '⏳ Invited' : '✅ Active'}
-                          </span>
-                          {p.user_2_id && (
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              User 2: {isUser2Pending ? '⏳ Invited' : '✅ Active'}
-                            </span>
+              return (
+                <div key={cc.id}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-white">{cc.club?.name || 'Club'}</h3>
+                      <p className="text-xs text-slate-500">{clubParts.length} / {competition.pairs_count} pairs</p>
+                    </div>
+                    {isConfirmed ? (
+                      <Badge variant="live">✅ Confirmed</Badge>
+                    ) : isMyClub ? (
+                      <Badge variant="blue">Your lineup</Badge>
+                    ) : (
+                      <Badge variant="muted">Waiting...</Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    {Array.from({ length: competition.pairs_count || 5 }).map((_, idx) => {
+                      const part = clubParts.find(p => p.rank === idx + 1)
+                      return (
+                        <div key={idx} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-400">
+                            {idx + 1}
+                          </div>
+                          {part ? (
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-white text-sm">{part.name}</p>
+                              <p className="text-xs text-slate-500">
+                                {part.player_1?.name || 'Player 1'}
+                                {part.player_2 ? ` + ${part.player_2.name}` : ''}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex-1">
+                              {isMyClub && !isConfirmed ? (
+                                <div className="flex flex-wrap gap-1">
+                                  <select
+                                    onChange={async (e) => {
+                                      if (!e.target.value) return
+                                      await handleInvitePlayer(cc.club_id, e.target.value)
+                                      e.target.value = ''
+                                    }}
+                                    className="flex-1 min-w-[120px] rounded border border-white/10 bg-slate-900 p-1.5 text-xs text-white"
+                                  >
+                                    <option value="">Add player...</option>
+                                    {availableMembers.map(m => (
+                                      <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-slate-600 italic">Waiting for pair</p>
+                              )}
+                            </div>
+                          )}
+                          {part && isMyClub && !isConfirmed && (
+                            <button onClick={() => handleRemovePlayer(part.id)} className="text-xs text-red-400 hover:text-red-300">
+                              Remove
+                            </button>
                           )}
                         </div>
+                      )
+                    })}
+                  </div>
+
+                  {isMyClub && !isConfirmed && clubParts.length > 0 && (
+                    <div className="mt-4">
+                      <p className="mb-2 text-xs text-slate-500">Drag to reorder by rank (strongest first)</p>
+                      <div className="space-y-1 mb-3">
+                        {clubParts.sort((a, b) => (a.rank || 99) - (b.rank || 99)).map((p, i) => (
+                          <div key={p.id} className="flex items-center gap-2 text-sm text-white">
+                            <span className="text-slate-500 w-6">{i + 1}.</span>
+                            <span className="flex-1">{p.name}</span>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={async () => {
+                                  const newRank = (p.rank || i + 1) - 1
+                                  if (newRank < 1) return
+                                  const swapWith = clubParts.find(pp => pp.rank === newRank)
+                                  if (swapWith) {
+                                    await supabase.from('competition_participants').update({ rank: p.rank }).eq('id', swapWith.id)
+                                    await supabase.from('competition_participants').update({ rank: newRank }).eq('id', p.id)
+                                    loadData()
+                                  }
+                                }}
+                                className="text-slate-500 hover:text-white px-1"
+                                disabled={i === 0}
+                              >↑</button>
+                              <button
+                                onClick={async () => {
+                                  const newRank = (p.rank || i + 1) + 1
+                                  const swapWith = clubParts.find(pp => pp.rank === newRank)
+                                  if (swapWith) {
+                                    await supabase.from('competition_participants').update({ rank: p.rank }).eq('id', swapWith.id)
+                                    await supabase.from('competition_participants').update({ rank: newRank }).eq('id', p.id)
+                                    loadData()
+                                  }
+                                }}
+                                className="text-slate-500 hover:text-white px-1"
+                                disabled={i === clubParts.length - 1}
+                              >↓</button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <Badge variant={(isUser1Pending || isUser2Pending) ? 'muted' : 'blue'}>
-                        {(isUser1Pending || isUser2Pending) ? 'Pending Accept' : 'Ready'}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-              {participants.length === 0 && (
-                <p className="text-slate-500 italic text-sm py-4">No participants registered in the rosters yet.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Matches */}
-        {activeTab === 'matches' && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-black uppercase tracking-tight">Match Schedule</h2>
-              {/* Pool filter */}
-              {pools.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500 font-bold uppercase">Pool:</span>
-                  <select
-                    value={selectedPoolId}
-                    onChange={(e) => setSelectedPoolId(e.target.value)}
-                    className="max-w-[170px] cursor-pointer rounded-lg border border-white/10 bg-slate-950 p-1.5 text-xs text-white"
-                  >
-                    <option value="all">All Pools</option>
-                    {pools.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {matchups
-                .filter(m => m.bracket_round === null || m.bracket_round === undefined)
-                .filter(m => selectedPoolId === 'all' || m.pool_id === selectedPoolId)
-                .map((m) => (
-                  <BwfMatchupCard
-                    key={m.id}
-                    matchup={m}
-                    isAdmin={isAdmin}
-                    onRecordScore={handleRecordMatch}
-                  />
-                ))}
-              {matchups.filter(m => m.bracket_round === null || m.bracket_round === undefined).length === 0 && (
-                <p className="text-slate-500 italic text-sm py-4">No group stage matches scheduled.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Standings */}
-        {activeTab === 'standings' && (
-          <div className="space-y-6">
-            {(pools.length > 0 ? pools : [{ id: 'unassigned', name: 'General Standings' }]).map(pool => {
-              const standingList = poolStandings[pool.id] || []
-              return (
-                <div key={pool.id} className="space-y-3">
-                  <h3 className="text-sm font-bold text-[var(--arena-lime)] uppercase tracking-wider">
-                    {pool.name}
-                  </h3>
-                  <Card className="border-white/10 bg-[#0a0f0e] overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead>
-                            <tr className="border-b border-white/10 bg-slate-950/40 text-[var(--arena-text-muted)] font-black uppercase">
-                              <th className="py-3 px-4">Rank</th>
-                              <th className="py-3 px-4">Player / Pair</th>
-                              <th className="py-3 px-4 text-center">Played</th>
-                              <th className="py-3 px-4 text-center">Wins</th>
-                              <th className="py-3 px-4 text-center">Losses</th>
-                              <th className="py-3 px-4 text-center">Sets (W/L)</th>
-                              <th className="py-3 px-4 text-center">Points (W/L)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {standingList.map((st, sIdx) => (
-                              <tr key={st.participantId} className="border-b border-white/5 hover:bg-white/[0.02]">
-                                <td className="py-3 px-4 font-extrabold text-[var(--arena-lime)]">#{sIdx + 1}</td>
-                                <td className="py-3 px-4 font-bold text-white">{st.name}</td>
-                                <td className="py-3 px-4 text-center font-semibold">{st.played}</td>
-                                <td className="py-3 px-4 text-center font-extrabold text-emerald-400">{st.wins}</td>
-                                <td className="py-3 px-4 text-center font-semibold text-red-400">{st.losses}</td>
-                                <td className="py-3 px-4 text-center font-mono text-slate-400">
-                                  {st.setsWon} - {st.setsLost}
-                                </td>
-                                <td className="py-3 px-4 text-center font-mono text-slate-400">
-                                  {st.pointsWon} - {st.pointsLost}
-                                </td>
-                              </tr>
-                            ))}
-                            {standingList.length === 0 && (
-                              <tr>
-                                <td colSpan={7} className="py-4 text-center text-slate-500 italic">No pool standings computed yet.</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <Button onClick={handleConfirmLineup} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 text-xs">
+                        Confirm Lineup
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         )}
 
-        {/* Tab 5: Playoffs */}
-        {activeTab === 'playoffs' && (
-          <PlayoffBracket
-            competitionId={competition.id}
-            matchups={matchups}
-            participants={participants}
-            isAdmin={isAdmin}
-            onRecordScore={handleRecordMatch}
-            onRefresh={loadData}
-          />
+        {/* TAB: MATCHUPS */}
+        {activeTab === 'matchups' && (
+          <div className="space-y-4">
+            {matchups.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-slate-500 mb-4">No matchups yet. All clubs must confirm their lineups first.</p>
+                {isAdmin && competition.status === 'matchmaking' && (
+                  <Button onClick={handleGenerateMatchups} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90">
+                    Generate Matchups
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {matchups.length > 0 && !matchups[0]?.locked && isAdmin && (
+              <div className="flex justify-end">
+                <Button onClick={handleStartCompetition} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90">
+                  Start Competition
+                </Button>
+              </div>
+            )}
+
+            {matchups.length > 0 && (
+              <div className="space-y-3">
+                {matchups.map(m => {
+                  const isAEditable = !m.locked && isAdmin && compClubs.some(cc => cc.club_id === myClub?.club_id)
+                  const myClubId = myClub?.club_id
+                  const myClubParticipants = participants.filter(p => p.club_id === myClubId)
+
+                  return (
+                    <div key={m.id} className="rounded-lg border border-white/10 bg-[var(--arena-surface)] p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-slate-500">Match {m.order_index + 1}</span>
+                        <Badge variant={m.status === 'completed' ? 'live' : m.status === 'live' ? 'live' : 'muted'}>
+                          {m.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 text-right">
+                          <p className="font-bold text-white">{m.participant_a?.name || 'TBD'}</p>
+                          {isAEditable && (
+                            <select
+                              value={m.participant_a_id}
+                              onChange={async (e) => {
+                                if (!e.target.value) return
+                                // Find opponent club participant to pair with
+                                const otherParticipants = participants.filter(p => p.club_id !== myClubId)
+                                const defaultOther = otherParticipants.find(p => p.rank === m.participant_b?.rank) || otherParticipants[0]
+                                if (defaultOther) {
+                                  await handleSwapPairing(m.id, e.target.value, defaultOther.id)
+                                }
+                              }}
+                              className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[150px]"
+                              disabled={m.locked || m.status === 'completed'}
+                            >
+                              {myClubParticipants.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                        <span className="text-slate-500 text-xs font-bold">VS</span>
+                        <div className="flex-1">
+                          <p className="font-bold text-white">{m.participant_b?.name || 'TBD'}</p>
+                          {isAEditable && !m.locked && (
+                            <select
+                              value={m.participant_b_id}
+                              onChange={async (e) => {
+                                if (!e.target.value) return
+                                await handleSwapPairing(m.id, m.participant_a_id, e.target.value)
+                              }}
+                              className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[150px]"
+                              disabled={m.locked || m.status === 'completed'}
+                            >
+                              {opponentParticipants.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                      {m.match?.score_sets && m.match.score_sets.length > 0 && (
+                        <p className="mt-2 text-xs text-slate-500 text-center">
+                          {m.match.score_sets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )}
+
+        {/* TAB: LIVE */}
+        {activeTab === 'live' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-white">Live Scores</h2>
+            {matchups.length === 0 && (
+              <p className="text-slate-500 italic">No matchups yet. Set up matchups first.</p>
+            )}
+            {matchups.length > 0 && (
+              <div className="space-y-3">
+                {matchups.map(m => (
+                  <BwfMatchupCard
+                    key={m.id}
+                    matchup={m}
+                    isAdmin={isAdmin && competition.status === 'live'}
+                    onRecordScore={isAdmin && competition.status === 'live' ? () => handleRecordMatch(m) : undefined}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: RESULTS */}
+        {activeTab === 'results' && (
+          <div className="space-y-6">
+            {competition.status === 'completed' && (
+              <Card className="border-green-800 bg-green-900/20 text-center">
+                <CardContent className="p-6">
+                  <Sparkles size={32} className="mx-auto mb-2 text-green-400" />
+                  <h2 className="text-xl font-black text-white uppercase">Competition Complete</h2>
+                  {competition.winning_club_id && (
+                    <p className="mt-2 text-lg text-green-400">
+                      🏆 {compClubs.find(cc => cc.club_id === competition.winning_club_id)?.club?.name || 'Winner'} Wins!
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {computedStandings.length > 0 && (
+              <Card className="border-white/10 bg-[var(--arena-surface)]">
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-white/10 bg-slate-950/40 text-slate-500 font-bold uppercase">
+                          <th className="py-3 px-4">Rank</th>
+                          <th className="py-3 px-4">Club</th>
+                          {competition.format === 'league' && <>
+                            <th className="py-3 px-4 text-center">Won</th>
+                            <th className="py-3 px-4 text-center">Lost</th>
+                          </>}
+                          <th className="py-3 px-4 text-center">Rubbers</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {computedStandings.map((s, i) => (
+                          <tr key={s.clubId} className="border-b border-white/5 hover:bg-white/[0.02]">
+                            <td className="py-3 px-4 font-bold text-[var(--arena-lime)]">#{i + 1}</td>
+                            <td className="py-3 px-4 font-bold text-white">{s.clubName}</td>
+                            {competition.format === 'league' && <>
+                              <td className="py-3 px-4 text-center text-emerald-400 font-bold">{s.won}</td>
+                              <td className="py-3 px-4 text-center text-red-400 font-bold">{s.lost}</td>
+                            </>}
+                            <td className="py-3 px-4 text-center font-mono text-slate-400">
+                              {s.rubbersWon} — {s.rubbersLost}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {computedStandings.length === 0 && competition.status !== 'completed' && (
+              <p className="text-slate-500 italic">Results will appear once matches are completed.</p>
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* Roster Invitation Modal Form */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-          <Card className="max-h-[92svh] w-full overflow-y-auto rounded-b-none rounded-t-xl border-white/10 bg-[#0a0f0e] text-white sm:max-w-md sm:rounded-xl">
-            <CardContent className="space-y-4 p-4 sm:p-6">
-              <h3 className="text-lg font-black uppercase tracking-tight">Roster Invitation</h3>
-              <form onSubmit={handleSendInvite} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Target Club</label>
-                  <select
-                    value={inviteClubId || ''}
-                    onChange={(e) => setInviteClubId(e.target.value || null)}
-                    className="w-full rounded-lg border border-white/10 bg-slate-950 p-2 text-sm text-white"
-                  >
-                    <option value={competition.club_id}>{competition.club?.name} (Host)</option>
-                    {competition.opponent_club_id && (
-                      <option value={competition.opponent_club_id}>{competition.opponent_club?.name} (Opponent)</option>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Player 1</label>
-                  <select
-                    value={inviteUserId}
-                    onChange={(e) => setInviteUserId(e.target.value)}
-                    required
-                    className="w-full rounded-lg border border-white/10 bg-slate-950 p-2 text-sm text-white"
-                  >
-                    <option value="">Select a player...</option>
-                    {(inviteClubId === competition.opponent_club_id ? opponentMembers : clubMembers).map(m => (
-                      <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Player 2 (Optional for Doubles)</label>
-                  <select
-                    value={invitePartnerId}
-                    onChange={(e) => setInvitePartnerId(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-slate-950 p-2 text-sm text-white"
-                  >
-                    <option value="">None (Singles)</option>
-                    {(inviteClubId === competition.opponent_club_id ? opponentMembers : clubMembers)
-                      .filter(m => m.user_id !== inviteUserId)
-                      .map(m => (
-                        <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowInviteModal(false)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Sending...' : 'Send Invite'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Record Score Modal */}
+      {/* Score Modal */}
       {showScoreModal && recordingMatchup && (
         <ScoreRecordingModal
           isOpen={showScoreModal}
-          onClose={() => {
-            setShowScoreModal(false)
-            setRecordingMatchup(null)
-          }}
+          onClose={() => { setShowScoreModal(false); setRecordingMatchup(null) }}
           clubId={competition.club_id}
           friendlyContext={{
             matchupId: recordingMatchup.id,
@@ -691,16 +808,18 @@ export default function CompetitionDetailsPage() {
               pair_name: recordingMatchup.participant_a.name,
               player_1_id: recordingMatchup.participant_a.user_1_id || '',
               player_2_id: recordingMatchup.participant_a.user_2_id || null,
-              order_index: 0
-            } : undefined,
+              order_index: 0,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any : undefined,
             pairB: recordingMatchup.participant_b ? {
               ...recordingMatchup.participant_b,
               friendly_id: competition.id,
               pair_name: recordingMatchup.participant_b.name,
               player_1_id: recordingMatchup.participant_b.user_1_id || '',
               player_2_id: recordingMatchup.participant_b.user_2_id || null,
-              order_index: 0
-            } : undefined
+              order_index: 0,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any : undefined,
           }}
           onSave={handleSaveMatch}
         />
