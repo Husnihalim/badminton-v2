@@ -58,31 +58,26 @@ export async function createCompetition(
 
   const competition = data as Competition
 
-  // Insert invited clubs
-  if (input.opponentClubIds && input.opponentClubIds.length > 0) {
-    const clubInserts = input.opponentClubIds.map(clubId => ({
+  const competitionClubRows = [
+    {
+      competition_id: competition.id,
+      club_id: input.clubId,
+      status: 'confirmed' as const,
+    },
+    ...(input.opponentClubIds || []).map(clubId => ({
       competition_id: competition.id,
       club_id: clubId,
       status: 'invited' as const,
-    }))
-    await supabase.from('competition_clubs').insert(clubInserts)
-  }
+    })),
+  ]
 
-  // If no opponent_club_ids specified but names given (offline clubs),
-  // we still create but with just the host club
-  if (!input.opponentClubIds || input.opponentClubIds.length === 0) {
-    await supabase.from('competition_clubs').insert({
-      competition_id: competition.id,
-      club_id: input.clubId,
-      status: 'confirmed',
-    })
-  } else {
-    // Host club is auto-confirmed
-    await supabase.from('competition_clubs').insert({
-      competition_id: competition.id,
-      club_id: input.clubId,
-      status: 'confirmed',
-    })
+  const { error: clubsError } = await supabase
+    .from('competition_clubs')
+    .insert(competitionClubRows)
+
+  if (clubsError) {
+    await supabase.from('competitions').delete().eq('id', competition.id)
+    return { competition: null, error: clubsError }
   }
 
   return { competition, error: null }

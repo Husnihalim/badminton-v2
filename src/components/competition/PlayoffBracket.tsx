@@ -18,12 +18,10 @@ interface PlayoffBracketProps {
 }
 
 export default function PlayoffBracket({
-  competitionId,
   matchups,
   participants,
   isAdmin,
-  onRecordScore,
-  onRefresh
+  onRecordScore
 }: PlayoffBracketProps) {
   const { showToast } = useNotifications()
   const [isSubmitting, setIsSubmitting] = useState(false)

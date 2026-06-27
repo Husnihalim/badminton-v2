@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, Users, X } from 'lucide-react'
+import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { createClub, getMyClubs, updateProfile, uploadProfilePhoto } from '../lib/api'

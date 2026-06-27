@@ -10,6 +10,7 @@ import {
   Trophy,
   Users,
   Megaphone,
+  ShoppingBag,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import ScorecardShareModal from '../components/ScorecardShareModal'
@@ -32,6 +33,10 @@ import { ClubScoresFeed } from '../features/clubs/components/ClubScoresFeed'
 import { ClubMembersSidebar } from '../features/clubs/components/ClubMembersSidebar'
 import { ClubMembersRoster } from '../features/clubs/components/ClubMembersRoster'
 import { SessionHighlightsWidget } from '../features/clubs/components/SessionHighlightsWidget'
+import { ClubMarketplace } from '../features/clubs/components/ClubMarketplace'
+
+type ClubHomeTab = 'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard' | 'marketplace'
+const clubHomeTabs: ClubHomeTab[] = ['overview', 'scores', 'leaderboard', 'members', 'noticeboard', 'marketplace']
 
 function calculateSessionHighlights(eventMatches: MatchWithDetails[]) {
   const playerStats = new Map<string, {
@@ -323,10 +328,9 @@ export default function ClubHomePage() {
     return fallbackList.slice(0, 4)
   }, [allClubStories, pinnedStoryIds])
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard'>(() => {
+  const [activeTab, setActiveTab] = useState<ClubHomeTab>(() => {
     const tabParam = new URLSearchParams(window.location.search).get('tab')
-    const validTabs = ['overview', 'scores', 'leaderboard', 'members', 'noticeboard']
-    return (tabParam && validTabs.includes(tabParam)) ? (tabParam as 'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard') : 'overview'
+    return (tabParam && clubHomeTabs.includes(tabParam as ClubHomeTab)) ? (tabParam as ClubHomeTab) : 'overview'
   })
   const [showCelebrationModal, setShowCelebrationModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
@@ -349,11 +353,10 @@ export default function ClubHomePage() {
   // Sync tab query parameter with activeTab state
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    const validTabs = ['overview', 'scores', 'leaderboard', 'members', 'noticeboard']
-    if (tabParam && validTabs.includes(tabParam)) {
+    if (tabParam && clubHomeTabs.includes(tabParam as ClubHomeTab)) {
       if (tabParam !== activeTab) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveTab(tabParam as 'overview' | 'scores' | 'leaderboard' | 'members' | 'noticeboard')
+        setActiveTab(tabParam as ClubHomeTab)
       }
     }
   }, [searchParams, activeTab])
@@ -483,7 +486,8 @@ export default function ClubHomePage() {
             { id: 'scores', label: 'Scores', icon: Activity },
             { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
             { id: 'members', label: 'Members', icon: Users },
-            { id: 'noticeboard', label: 'Notice Board', icon: Megaphone }
+            { id: 'noticeboard', label: 'Notice Board', icon: Megaphone },
+            { id: 'marketplace', label: 'Buy/Sell', icon: ShoppingBag }
           ] as const).map((tab) => {
             const Icon = tab.icon
             return (
@@ -746,6 +750,10 @@ export default function ClubHomePage() {
               setActionError={setActionError}
             />
           </div>
+        )}
+
+        {activeTab === 'marketplace' && (
+          <ClubMarketplace clubName={club.name} isMember={isMember} />
         )}
 
         {activeTab === 'scores' && (

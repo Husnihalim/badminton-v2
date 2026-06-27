@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, DollarSign, Share2, MessageCircle, Copy, ChevronLeft, ChevronRight, X, Users, Trophy, ClipboardPenLine } from 'lucide-react'
+import { Check, DollarSign, Share2, MessageCircle, Copy, ChevronLeft, ChevronRight, Users, Trophy, ClipboardPenLine } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubEvents, useMyMembership, useMyRsvps, useEventRsvps } from '../hooks/useClubQueries'
 import { useRsvpToEvent, useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../hooks/useMutations'

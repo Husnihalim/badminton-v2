@@ -17,6 +17,12 @@ ALTER TABLE competitions RENAME COLUMN pair_count TO pairs_count;
 ALTER TABLE competitions ALTER COLUMN pairs_count DROP NOT NULL;
 ALTER TABLE competitions ALTER COLUMN pairs_count SET DEFAULT 5;
 
+-- Update existing data (development migration)
+UPDATE competitions SET format = 'friendly' WHERE format IN ('team_friendly', 'single_elimination', 'pool_playoffs');
+UPDATE competitions SET format = 'league' WHERE format = 'round_robin';
+UPDATE competitions SET status = 'registration' WHERE status IN ('accepted', 'pending');
+UPDATE competitions SET status = 'cancelled' WHERE status IN ('declined');
+
 -- Simplify format: only 'friendly' or 'league'
 ALTER TABLE competitions ADD CONSTRAINT competitions_format_check
     CHECK (format IN ('friendly', 'league'));
@@ -24,12 +30,6 @@ ALTER TABLE competitions ADD CONSTRAINT competitions_format_check
 -- Simplify status
 ALTER TABLE competitions ADD CONSTRAINT competitions_status_check
     CHECK (status IN ('draft', 'registration', 'matchmaking', 'live', 'completed', 'cancelled'));
-
--- Update existing data (development migration)
-UPDATE competitions SET format = 'friendly' WHERE format IN ('team_friendly', 'single_elimination', 'pool_playoffs');
-UPDATE competitions SET format = 'league' WHERE format = 'round_robin';
-UPDATE competitions SET status = 'registration' WHERE status IN ('accepted', 'pending');
-UPDATE competitions SET status = 'cancelled' WHERE status IN ('declined');
 
 -- New columns
 ALTER TABLE competitions ADD COLUMN IF NOT EXISTS sets_count INTEGER DEFAULT 1;
@@ -54,26 +54,57 @@ CREATE TABLE IF NOT EXISTS competition_clubs (
 
 ALTER TABLE competition_clubs ENABLE ROW LEVEL SECURITY;
 
--- RLS: participating club members can view
+-- RLS: members can view their own club entry, and host club members can view
+-- every entry in a hosted competition. This avoids self-referencing
+-- competition_clubs inside its own policy.
 CREATE POLICY "Competition clubs viewable by participating clubs members"
     ON competition_clubs FOR SELECT
     USING (
         EXISTS (
+            SELECT 1 FROM memberships m
+            WHERE m.club_id = competition_clubs.club_id
+            AND m.user_id = auth.uid()
+            AND m.status = 'active'
+        )
+        OR EXISTS (
             SELECT 1 FROM competitions c
-            JOIN memberships m ON m.club_id = competition_clubs.club_id
+            JOIN memberships m ON m.club_id = c.club_id
             WHERE c.id = competition_clubs.competition_id
             AND m.user_id = auth.uid()
             AND m.status = 'active'
         )
     );
 
--- RLS: club owners/admins can manage their club's entry
+-- RLS: own club admins can manage their entry, and host club admins can add
+-- or update invited opponent entries for the hosted competition.
 CREATE POLICY "Club owners/admins can manage their competition entry"
     ON competition_clubs FOR ALL
     USING (
         EXISTS (
             SELECT 1 FROM memberships m
             WHERE m.club_id = competition_clubs.club_id
+            AND m.user_id = auth.uid()
+            AND m.role IN ('owner', 'admin')
+        )
+        OR EXISTS (
+            SELECT 1 FROM memberships m
+            JOIN competitions c ON c.club_id = m.club_id
+            WHERE c.id = competition_clubs.competition_id
+            AND m.user_id = auth.uid()
+            AND m.role IN ('owner', 'admin')
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM memberships m
+            WHERE m.club_id = competition_clubs.club_id
+            AND m.user_id = auth.uid()
+            AND m.role IN ('owner', 'admin')
+        )
+        OR EXISTS (
+            SELECT 1 FROM memberships m
+            JOIN competitions c ON c.club_id = m.club_id
+            WHERE c.id = competition_clubs.competition_id
             AND m.user_id = auth.uid()
             AND m.role IN ('owner', 'admin')
         )
