@@ -546,7 +546,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
     .from('matches')
     .select(`
       *,
-      match_participants(
+      match_participants!inner(
         *,
         profiles(name, display_name, avatar_url)
       ),
@@ -564,7 +564,7 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
     .eq('club_id', clubId)
     .order('match_date', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(250)
 
   if (error) {
     console.error('Error fetching club matches:', error)
@@ -623,7 +623,7 @@ export async function getClubMatchesPaginated(
     .from('matches')
     .select(`
       *,
-      match_participants(
+      match_participants!inner(
         *,
         profiles(name, display_name, avatar_url)
       ),

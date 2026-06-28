@@ -21,6 +21,13 @@ function renderRankBadge(rank: number) {
   return <span className="font-mono text-sm font-bold text-[var(--arena-text-dim)] w-6 text-center">#{rank}</span>
 }
 
+function getLeaderboardElo(member?: { singles_elo?: number | null; doubles_elo?: number | null; singles_games?: number | null; doubles_games?: number | null }) {
+  if (!member) return 1200
+  const singlesGames = member.singles_games ?? 0
+  const doublesGames = member.doubles_games ?? 0
+  return doublesGames > singlesGames ? (member.doubles_elo ?? 1200) : (member.singles_elo ?? 1200)
+}
+
 function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardRow[] {
   const playerStats = new Map<string, {
     games: number
@@ -262,8 +269,8 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
     const raw = calculateLeaderboard(filteredMatchesForLeaderboard)
     if (sortBy === 'elo') {
       return [...raw].sort((a, b) => {
-        const eloA = members.find(m => m.name?.toLowerCase() === a.name.toLowerCase())?.singles_elo ?? 1200
-        const eloB = members.find(m => m.name?.toLowerCase() === b.name.toLowerCase())?.singles_elo ?? 1200
+        const eloA = getLeaderboardElo(members.find(m => m.name?.toLowerCase() === a.name.toLowerCase()))
+        const eloB = getLeaderboardElo(members.find(m => m.name?.toLowerCase() === b.name.toLowerCase()))
         return eloB - eloA || b.winPercentage - a.winPercentage || b.games - a.games
       })
     }
@@ -542,7 +549,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                     <div className="flex items-center gap-2 min-w-0">
                       {(() => {
                         const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
-                        const elo = match?.singles_elo || 1200
+                        const elo = getLeaderboardElo(match)
                         const avatar = match?.avatar_url
                         const avatarEl = avatar ? (
                           <img src={avatar} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
