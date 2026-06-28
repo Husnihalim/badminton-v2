@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import type { Competition, CompetitionClub, CompetitionParticipant, CompetitionMatchup, CreateCompetitionInput } from '../../types/competition'
+import type { Competition, CompetitionClub, CreateCompetitionInput } from '../../types/competition'
 
 export {
   registerCompetitionParticipants,
@@ -30,11 +30,6 @@ function generateInviteCode(): string {
 
 async function getCurrentUserId(): Promise<string | null> {
   return (await supabase.auth.getUser()).data.user?.id || null
-}
-
-function normalizeClubData(data: unknown) {
-  if (!data) return null
-  return Array.isArray(data) ? data[0] : data
 }
 
 export async function createCompetition(

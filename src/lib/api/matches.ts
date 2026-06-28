@@ -358,11 +358,15 @@ export async function updateMatch(data: UpdateMatchScoreData): Promise<void> {
     throw new Error(getErrorMessage(deleteScoresError, 'Failed to update match scores'))
   }
 
-  // Reset elo_processed so the trigger recalculates on new scores
-  await supabase
+  const { error: markEloPendingError } = await supabase
     .from('matches')
-    .update({ elo_processed: false } as never)
+    .update({ elo_processed: true } as never)
     .eq('id', data.match_id)
+
+  if (markEloPendingError) {
+    console.error('Error preparing Elo rebuild:', markEloPendingError)
+    throw new Error(getErrorMessage(markEloPendingError, 'Failed to prepare Elo rebuild'))
+  }
 
   const scoreRows = data.score_sets.map((set) => ({
     match_id: data.match_id,
@@ -378,6 +382,15 @@ export async function updateMatch(data: UpdateMatchScoreData): Promise<void> {
   if (insertScoresError) {
     console.error('Error inserting new score sets:', insertScoresError)
     throw new Error(getErrorMessage(insertScoresError, 'Failed to update match scores'))
+  }
+
+  const { error: rebuildEloError } = await supabase.rpc('rebuild_global_elo_after_match_update', {
+    p_match_id: data.match_id,
+  })
+
+  if (rebuildEloError) {
+    console.error('Error rebuilding Elo after score update:', rebuildEloError)
+    throw new Error(getErrorMessage(rebuildEloError, 'Scores updated, but Elo rebuild failed'))
   }
 }
 
@@ -472,6 +485,7 @@ async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<Club
         pointsFor,
         pointsAgainst,
         points: pointsFor - pointsAgainst,
+        elo: 1200,
       }
     })
     .sort((a, b) => b.winPercentage - a.winPercentage || b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name))

@@ -28,6 +28,10 @@ type ProfileSummary = {
   email?: string | null
   display_name?: string | null
   avatar_url?: string | null
+  singles_elo?: number | null
+  doubles_elo?: number | null
+  singles_games?: number | null
+  doubles_games?: number | null
 }
 
 type ClubMembershipRow = {

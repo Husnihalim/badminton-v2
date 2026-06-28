@@ -87,7 +87,8 @@ function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardR
         winPercentage,
         pointsFor: stats.pointsFor,
         pointsAgainst: stats.pointsAgainst,
-        points
+        points,
+        elo: 1200
       }
     })
     .sort((a, b) => {
