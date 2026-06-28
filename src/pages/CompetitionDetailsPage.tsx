@@ -36,7 +36,7 @@ import type {
 import type { Club, Membership } from '../types'
 import { cn } from '../lib/utils'
 
-type Tab = 'overview' | 'rosters' | 'matchups' | 'live' | 'results'
+type Tab = 'overview' | 'rosters' | 'matchups' | 'results'
 
 export default function CompetitionDetailsPage() {
   const { competitionId } = useParams<{ competitionId: string }>()
@@ -383,6 +383,54 @@ export default function CompetitionDetailsPage() {
     }).sort((a, b) => b.won - a.won || (b.rubbersWon - b.rubbersLost) - (a.rubbersWon - a.rubbersLost))
   }, [matchups, participants, compClubs, standings, competition])
 
+  // Map participant id -> club_id
+  const participantClubMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    participants.forEach(p => { if (p.club_id) map[p.id] = p.club_id })
+    return map
+  }, [participants])
+
+  // Map club_id -> club name
+  const clubNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    compClubs.forEach(cc => { if (cc.club?.name) map[cc.club_id] = cc.club.name })
+    return map
+  }, [compClubs])
+
+  // Map competition_clubs.id -> club_id
+  const compClubToClubId = useMemo(() => {
+    const map: Record<string, string> = {}
+    compClubs.forEach(cc => { map[cc.id] = cc.club_id })
+    return map
+  }, [compClubs])
+
+  // Group matchups by tie (club A vs club B)
+  const tieGroups = useMemo(() => {
+    const groups: { clubAId: string; clubBId: string; clubAName: string; clubBName: string; matchups: CompetitionMatchup[] }[] = []
+    const seen = new Set<string>()
+
+    for (const m of matchups) {
+      const cA = m.club_a_id ? compClubToClubId[m.club_a_id] : participantClubMap[m.participant_a_id]
+      const cB = m.club_b_id ? compClubToClubId[m.club_b_id] : participantClubMap[m.participant_b_id]
+      if (!cA || !cB) continue
+
+      const key = [cA, cB].sort().join('-')
+      if (!seen.has(key)) {
+        seen.add(key)
+        groups.push({
+          clubAId: cA,
+          clubBId: cB,
+          clubAName: clubNameMap[cA] || 'Club A',
+          clubBName: clubNameMap[cB] || 'Club B',
+          matchups: [],
+        })
+      }
+      groups.find(g => [g.clubAId, g.clubBId].sort().join('-') === key)?.matchups.push(m)
+    }
+
+    return groups
+  }, [matchups, participantClubMap, clubNameMap, compClubToClubId])
+
   if (isLoading || !competition) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--arena-bg)]">
@@ -394,8 +442,7 @@ export default function CompetitionDetailsPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'rosters', label: 'Rosters' },
-    { id: 'matchups', label: 'Matchups' },
-    { id: 'live', label: 'Live' },
+    { id: 'matchups', label: 'Matches' },
     { id: 'results', label: 'Results' },
   ]
 
@@ -727,7 +774,7 @@ export default function CompetitionDetailsPage() {
           </div>
         )}
 
-        {/* TAB: MATCHUPS */}
+        {/* TAB: MATCHUPS (combined matchups + live) */}
         {activeTab === 'matchups' && (
           <div className="space-y-4">
             {matchups.length === 0 && (
@@ -749,113 +796,124 @@ export default function CompetitionDetailsPage() {
               </div>
             )}
 
-            {matchups.length > 0 && (
-              <div className="space-y-3">
-                {matchups.map(m => {
-                  const isAEditable = !m.locked && isAdmin && compClubs.some(cc => cc.club_id === myClub?.club_id)
-                  const myClubId = myClub?.club_id
-                  const myClubParticipants = participants.filter(p => p.club_id === myClubId)
-                  const matchupWarning = getMatchupParticipantOverlapMessage(m.participant_a, m.participant_b)
+            {tieGroups.map(group => {
+              const clubARubbers = group.matchups.filter(m => {
+                const cId = participantClubMap[m.participant_a_id]
+                return cId === group.clubAId && m.status === 'completed'
+              }).length + group.matchups.filter(m => {
+                const cId = participantClubMap[m.participant_b_id]
+                return cId === group.clubAId && m.status === 'completed'
+              }).length
+              const clubBRubbers = group.matchups.filter(m => {
+                const cId = participantClubMap[m.participant_b_id]
+                return cId === group.clubBId && m.status === 'completed'
+              }).length + group.matchups.filter(m => {
+                const cId = participantClubMap[m.participant_a_id]
+                return cId === group.clubBId && m.status === 'completed'
+              }).length
 
-                  return (
-                    <div key={m.id} className="rounded-lg border border-white/10 bg-[var(--arena-surface)] p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-slate-500">Match {m.order_index + 1}</span>
-                        <Badge variant={m.status === 'completed' ? 'live' : m.status === 'live' ? 'live' : 'muted'}>
-                          {m.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1 text-right">
-                          <p className="font-bold text-white">{m.participant_a?.name || 'TBD'}</p>
-                          {isAEditable && (
-                            <select
-                              value={m.participant_a_id}
-                              onChange={async (e) => {
-                                if (!e.target.value) return
-                                // Find opponent club participant to pair with
-                                const otherParticipants = participants.filter(p => p.club_id !== myClubId)
-                                const defaultOther = otherParticipants.find(p => p.rank === m.participant_b?.rank) || otherParticipants[0]
-                                if (defaultOther) {
-                                  await handleSwapPairing(m.id, e.target.value, defaultOther.id)
-                                }
-                              }}
-                              className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[150px]"
-                              disabled={m.locked || m.status === 'completed'}
-                            >
-                              {myClubParticipants.map(p => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
-                              ))}
-                            </select>
+              return (
+                <div key={`${group.clubAId}-${group.clubBId}`} className="rounded-lg border border-white/10 bg-[var(--arena-surface)] overflow-hidden">
+                  <div className="flex items-center justify-between bg-slate-950/40 px-4 py-3 border-b border-white/10">
+                    <div className="flex items-center gap-2 text-sm font-bold">
+                      <span className="text-white">{group.clubAName}</span>
+                      <span className="text-slate-500">vs</span>
+                      <span className="text-white">{group.clubBName}</span>
+                    </div>
+                    {clubARubbers + clubBRubbers > 0 && (
+                      <span className="text-xs text-slate-400">
+                        {group.clubAName} {clubARubbers} — {clubBRubbers} {group.clubBName}
+                      </span>
+                    )}
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {group.matchups.map(m => {
+                      const isAEditable = !m.locked && isAdmin && compClubs.some(cc => cc.club_id === myClub?.club_id)
+                      const aClubId = participantClubMap[m.participant_a_id]
+                      const bClubId = participantClubMap[m.participant_b_id]
+                      const myClubId = myClub?.club_id
+                      const myClubParticipants = participants.filter(p => p.club_id === myClubId)
+                      const matchupWarning = getMatchupParticipantOverlapMessage(m.participant_a, m.participant_b)
+
+                      return (
+                        <div key={m.id} className="p-4">
+                          {/* Admin editable mode (before lock) */}
+                          {isAEditable && !m.locked ? (
+                            <div>
+                              <div className="flex items-center gap-4">
+                                <div className="flex-1 text-right">
+                                  <p className="text-xs text-slate-500">{clubNameMap[aClubId] || ''}</p>
+                                  <p className="font-bold text-white">{m.participant_a?.name || 'TBD'}</p>
+                                  <select
+                                    value={m.participant_a_id}
+                                    onChange={async (e) => {
+                                      if (!e.target.value) return
+                                      const otherParticipants = participants.filter(p => p.club_id !== myClubId)
+                                      const defaultOther = otherParticipants.find(p => p.rank === m.participant_b?.rank) || otherParticipants[0]
+                                      if (defaultOther) {
+                                        await handleSwapPairing(m.id, e.target.value, defaultOther.id)
+                                      }
+                                    }}
+                                    className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[160px]"
+                                    disabled={m.locked || m.status === 'completed'}
+                                  >
+                                    {myClubParticipants.map(p => (
+                                      <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <span className="text-slate-500 text-xs font-bold shrink-0">VS</span>
+                                <div className="flex-1">
+                                  <p className="text-xs text-slate-500">{clubNameMap[bClubId] || ''}</p>
+                                  <p className="font-bold text-white">{m.participant_b?.name || 'TBD'}</p>
+                                  <select
+                                    value={m.participant_b_id}
+                                    onChange={async (e) => {
+                                      if (!e.target.value) return
+                                      await handleSwapPairing(m.id, m.participant_a_id, e.target.value)
+                                    }}
+                                    className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[160px]"
+                                    disabled={m.locked || m.status === 'completed'}
+                                  >
+                                    {opponentParticipants.map(p => (
+                                      <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              {m.match?.score_sets && m.match.score_sets.length > 0 && (
+                                <p className="mt-2 text-xs text-slate-500 text-center">
+                                  {m.match.score_sets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')}
+                                </p>
+                              )}
+                              {matchupWarning && (
+                                <p className="mt-3 rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">{matchupWarning}</p>
+                              )}
+                            </div>
+                          ) : (
+                            /* BwfMatchupCard for locked/live/completed */
+                            <div className="space-y-2">
+                              <BwfMatchupCard
+                                matchup={{
+                                  ...m,
+                                  participant_a: m.participant_a ? { ...m.participant_a, name: `[${clubNameMap[aClubId] || '?'}] ${m.participant_a.name}` } : undefined,
+                                  participant_b: m.participant_b ? { ...m.participant_b, name: `[${clubNameMap[bClubId] || '?'}] ${m.participant_b.name}` } : undefined,
+                                }}
+                                isAdmin={isAdmin && competition.status === 'live' && !matchupWarning}
+                                onRecordScore={isAdmin && competition.status === 'live' && !matchupWarning ? () => handleRecordMatch(m) : undefined}
+                              />
+                              {matchupWarning && (
+                                <p className="rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">{matchupWarning}</p>
+                              )}
+                            </div>
                           )}
                         </div>
-                        <span className="text-slate-500 text-xs font-bold">VS</span>
-                        <div className="flex-1">
-                          <p className="font-bold text-white">{m.participant_b?.name || 'TBD'}</p>
-                          {isAEditable && !m.locked && (
-                            <select
-                              value={m.participant_b_id}
-                              onChange={async (e) => {
-                                if (!e.target.value) return
-                                await handleSwapPairing(m.id, m.participant_a_id, e.target.value)
-                              }}
-                              className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[150px]"
-                              disabled={m.locked || m.status === 'completed'}
-                            >
-                              {opponentParticipants.map(p => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-                      </div>
-                      {m.match?.score_sets && m.match.score_sets.length > 0 && (
-                        <p className="mt-2 text-xs text-slate-500 text-center">
-                          {m.match.score_sets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')}
-                        </p>
-                      )}
-                      {matchupWarning && (
-                        <p className="mt-3 rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">
-                          {matchupWarning}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB: LIVE */}
-        {activeTab === 'live' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white">Live Scores</h2>
-            {matchups.length === 0 && (
-              <p className="text-slate-500 italic">No matchups yet. Set up matchups first.</p>
-            )}
-            {matchups.length > 0 && (
-              <div className="space-y-3">
-                {matchups.map(m => {
-                  const matchupWarning = getMatchupParticipantOverlapMessage(m.participant_a, m.participant_b)
-
-                  return (
-                    <div key={m.id} className="space-y-2">
-                      <BwfMatchupCard
-                        matchup={m}
-                        isAdmin={isAdmin && competition.status === 'live' && !matchupWarning}
-                        onRecordScore={isAdmin && competition.status === 'live' && !matchupWarning ? () => handleRecordMatch(m) : undefined}
-                      />
-                      {matchupWarning && (
-                        <p className="rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">
-                          {matchupWarning}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -913,7 +971,85 @@ export default function CompetitionDetailsPage() {
               </Card>
             )}
 
-            {computedStandings.length === 0 && competition.status !== 'completed' && (
+            {/* Per-tie rubber breakdown */}
+            {matchups.some(m => m.status === 'completed') && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Tie Results</h3>
+                {tieGroups.map(group => {
+                  const completed = group.matchups.filter(m => m.status === 'completed')
+                  if (completed.length === 0) return null
+
+                  const clubARubbersWon = completed.filter(m => {
+                    const aId = participantClubMap[m.participant_a_id]
+                    return aId === group.clubAId && m.winner_participant_id === m.participant_a_id
+                  }).length + completed.filter(m => {
+                    const bId = participantClubMap[m.participant_b_id]
+                    return bId === group.clubAId && m.winner_participant_id === m.participant_b_id
+                  }).length
+                  const clubBRubbersWon = completed.length - clubARubbersWon
+                  const tieWinner = clubARubbersWon > clubBRubbersWon ? group.clubAName : clubBRubbersWon > clubARubbersWon ? group.clubBName : null
+
+                  return (
+                    <Card key={`${group.clubAId}-${group.clubBId}-result`} className="border-white/10 bg-[var(--arena-surface)] overflow-hidden">
+                      <div className={cn(
+                        "flex items-center justify-between px-4 py-3 border-b border-white/10",
+                        tieWinner ? "bg-emerald-900/10" : "bg-slate-950/30"
+                      )}>
+                        <div className="flex items-center gap-2 text-sm font-bold">
+                          <span className="text-white">{group.clubAName}</span>
+                          <span className="text-slate-500 text-xs">vs</span>
+                          <span className="text-white">{group.clubBName}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-slate-400">
+                            {group.clubAName} {clubARubbersWon} — {clubBRubbersWon} {group.clubBName}
+                          </span>
+                          {tieWinner && (
+                            <Badge variant="live">{tieWinner} won</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="divide-y divide-white/5">
+                        {completed.map(m => {
+                          const aClubId = participantClubMap[m.participant_a_id]
+                          const bClubId = participantClubMap[m.participant_b_id]
+                          const aWon = m.winner_participant_id === m.participant_a_id
+                          const scoreText = m.match?.score_sets
+                            ? m.match.score_sets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')
+                            : ''
+
+                          return (
+                            <div key={m.id} className="flex items-center gap-4 px-4 py-3">
+                              <div className={cn("flex-1 text-right", aWon && "text-[var(--arena-lime)]")}>
+                                <p className={cn("text-xs", aClubId ? "text-slate-500" : "text-slate-500")}>
+                                  {clubNameMap[aClubId] || ''}
+                                </p>
+                                <p className={cn("font-bold", aWon ? "text-[var(--arena-lime)]" : "text-white")}>
+                                  {m.participant_a?.name || '?'}
+                                  {aWon && <span className="ml-1">✓</span>}
+                                </p>
+                              </div>
+                              <div className="text-center shrink-0">
+                                <p className="text-xs font-mono text-slate-400">{scoreText}</p>
+                              </div>
+                              <div className={cn("flex-1", !aWon && "text-[var(--arena-lime)]")}>
+                                <p className="text-xs text-slate-500">{clubNameMap[bClubId] || ''}</p>
+                                <p className={cn("font-bold", !aWon ? "text-[var(--arena-lime)]" : "text-white")}>
+                                  {!aWon && <span className="mr-1">✓</span>}
+                                  {m.participant_b?.name || '?'}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+
+            {matchups.filter(m => m.status === 'completed').length === 0 && competition.status !== 'completed' && (
               <p className="text-slate-500 italic">Results will appear once matches are completed.</p>
             )}
           </div>
