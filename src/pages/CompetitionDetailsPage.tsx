@@ -26,7 +26,7 @@ import {
   respondToCompetitionInvite,
 } from '../lib/api/competitions'
 import { getMatchupParticipantOverlapMessage } from '../lib/competitionIntegrity'
-import { getClubMembers, getMyClubs } from '../lib/api'
+import { getClubMembers, getMyClubs } from '../lib/api/clubs'
 import type {
   Competition,
   CompetitionClub,

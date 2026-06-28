@@ -34,7 +34,7 @@ import { User as UserIcon, Activity, Users, Edit3, Share2 } from 'lucide-react'
 
 import type { Club, MatchWithDetails, MatchParticipant, ScoreSet } from '../types'
 
-type DashboardClub = Club & { role?: string; elo_rating?: number | null; rank?: { rank: number; total: number } | null }
+type DashboardClub = Club & { role?: string; singles_elo?: number | null; rank?: { rank: number; total: number } | null }
 type DashboardMatch = MatchWithDetails & { clubName?: string }
 
 export default function DashboardPage() {
@@ -294,7 +294,7 @@ export default function DashboardPage() {
 
   const primaryClub = clubs[0]
   const primaryRank = primaryClub ? primaryClub.rank : null
-  const primaryElo = primaryClub ? primaryClub.elo_rating : null
+  const primaryElo = primaryClub ? primaryClub.singles_elo : null
   const displayName = user.display_name || user.name
   const firstName = displayName.split(' ')[0] || displayName
 

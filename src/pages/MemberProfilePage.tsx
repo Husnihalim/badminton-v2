@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, Shield, Trophy, ChevronLeft, Users, User as UserIcon, Share2, Edit3 } from 'lucide-react'
-import { getProfile, getClubMatches, getClubLeaderboard, getClubMembers } from '../lib/api'
+import { getProfile } from '../lib/api/profiles'
+import { getClubLeaderboard, getClubMatches } from '../lib/api/matches'
+import { getClubMembers } from '../lib/api/clubs'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { Club, MatchWithDetails, User } from '../types'
@@ -17,14 +19,16 @@ import { Badge } from '../components/ui/badge'
 
 type MemberEloHistoryRow = {
   id: string
-  rating_before: number
-  rating_after: number
+  profile_id: string
+  match_id: string
+  match_type: 'singles' | 'doubles'
+  elo_before: number
+  elo_after: number
+  delta: number
+  k_factor: number
+  opponent_rating_avg: number
+  partner_rating?: number | null
   created_at: string
-  memberships?: {
-    clubs?: {
-      name?: string | null
-    } | null
-  } | null
   matches?: {
     title?: string | null
     match_date?: string | null
@@ -38,7 +42,7 @@ export default function MemberProfilePage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [profile, setProfile] = useState<User | null>(null)
-  const [clubs, setClubs] = useState<(Club & { elo_rating?: number | null })[]>([])
+  const [clubs, setClubs] = useState<(Club & { singles_elo?: number | null; doubles_elo?: number | null })[]>([])
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -102,10 +106,10 @@ export default function MemberProfilePage() {
       }
       setProfile(userProfile)
 
-      // 2. Fetch User's Clubs and Elo ratings
+      // 2. Fetch User's Clubs and global Elo ratings
       const { data: membershipData, error: membershipError } = await supabase
         .from('memberships')
-        .select('club_id, elo_rating, clubs(*)')
+        .select('club_id, clubs(*)')
         .eq('user_id', userId)
         .eq('status', 'active')
 
@@ -113,15 +117,22 @@ export default function MemberProfilePage() {
         console.error('Error fetching memberships:', membershipError)
       }
 
-      const userClubs = (membershipData as unknown as Array<{ club_id: string; elo_rating: number | null; clubs: Club }> || [])
+      // Get global Elo from profile
+      const userProfileElo = {
+        singles_elo: userProfile.singles_elo ?? 1200,
+        doubles_elo: userProfile.doubles_elo ?? 1200,
+      }
+
+      const userClubs = (membershipData as unknown as Array<{ club_id: string; clubs: Club }> || [])
         .map((m) => {
           if (!m.clubs) return null
           return {
             ...m.clubs,
-            elo_rating: m.elo_rating
+            singles_elo: userProfileElo.singles_elo,
+            doubles_elo: userProfileElo.doubles_elo,
           }
         })
-        .filter((c): c is Club & { elo_rating: number | null } => c !== null)
+        .filter((c): c is Club & { singles_elo: number; doubles_elo: number } => c !== null)
       setClubs(userClubs)
 
       // 3. Fetch Matches if profile is public
@@ -129,18 +140,24 @@ export default function MemberProfilePage() {
         const allMatches: MatchWithDetails[] = []
         const clubLeaderboards: Record<string, Record<string, number>> = {}
 
-        // Fetch Elo History
+        // Fetch Elo History from global table
         supabase
-          .from('elo_history')
+          .from('elo_history_global')
           .select(`
             id,
-            rating_before,
-            rating_after,
+            profile_id,
+            match_id,
+            match_type,
+            elo_before,
+            elo_after,
+            delta,
+            k_factor,
+            opponent_rating_avg,
+            partner_rating,
             created_at,
-            memberships!inner(user_id, club_id, clubs(name)),
             matches(title, match_date)
           `)
-          .eq('memberships.user_id', userId)
+          .eq('profile_id', userId)
           .order('created_at', { ascending: false })
           .limit(10)
           .then(({ data: eloData, error: eloError }) => {
@@ -177,10 +194,10 @@ export default function MemberProfilePage() {
                 )
               )
 
-              // Sort by Elo rating DESC, then join date ASC
+              // Sort by global singles Elo DESC, then join date ASC
               const sortedMembers = [...activeMembersWithMatches].sort((a, b) => {
-                const eloA = a.elo_rating ?? 1200
-                const eloB = b.elo_rating ?? 1200
+                const eloA = a.singles_elo ?? 1200
+                const eloB = b.singles_elo ?? 1200
                 if (eloB !== eloA) return eloB - eloA
                 return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
               })
@@ -341,23 +358,21 @@ export default function MemberProfilePage() {
           const hasCleanSweepSet = scoreSets.some(s => Math.abs(s.team1_score - s.team2_score) >= 10)
           if (hasCleanSweepSet) cleanSweep = true
 
-          // Giant Slayer Check (Opponent has Elo > 100 ELO points more than this user rating before match)
+          // Giant Slayer Check (Opponent has global singles Elo > 100 points higher)
           const ELO_DIFF_GIANT_SLAYER = 100
-          const myRating = membershipData?.find(mShip => mShip.club_id === m.club_id)?.elo_rating || 1200
+          const myRating = userProfileElo.singles_elo || 1200
           if (part.team === (scoreSets.filter(s => s.team1_score > s.team2_score).length > scoreSets.filter(s => s.team2_score > s.team1_score).length ? 1 : 2)) {
             const oppTeam = part.team === 1 ? 2 : 1
             const opponentsList = m.participants.filter(p => p.team === oppTeam)
             for (const opp of opponentsList) {
               if (opp.user_id) {
-                // Fetch opponent's elo at that time or current
-                const { data: oppMembership } = await supabase
-                  .from('memberships')
-                  .select('elo_rating')
-                  .eq('user_id', opp.user_id)
-                  .eq('club_id', m.club_id)
+                const { data: oppProfile } = await supabase
+                  .from('profiles')
+                  .select('singles_elo')
+                  .eq('id', opp.user_id)
                   .single()
                 
-                if (oppMembership && oppMembership.elo_rating && (oppMembership.elo_rating - myRating) >= ELO_DIFF_GIANT_SLAYER) {
+                if (oppProfile && oppProfile.singles_elo && (oppProfile.singles_elo - myRating) >= ELO_DIFF_GIANT_SLAYER) {
                   giantSlayer = true
                   break
                 }
@@ -549,7 +564,7 @@ export default function MemberProfilePage() {
             profile={profile}
             stats={playerCardStats}
             rank={primaryRank}
-            elo={primaryClub?.elo_rating ?? 1200}
+            elo={primaryClub?.singles_elo ?? 1200}
             isOwner={isOwner}
             primaryClubName={primaryClub?.name}
             bestPartner={playerInsights?.bestPartner}
@@ -649,11 +664,11 @@ export default function MemberProfilePage() {
 
                   <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
                     {eloHistory.map((item) => {
-                      const ratingDiff = item.rating_after - item.rating_before
+                      const ratingDiff = item.delta
                       const isGain = ratingDiff >= 0
-                      const clubName = item.memberships?.clubs?.name || 'Club'
                       const matchTitle = item.matches?.title || 'Match'
                       const dateStr = new Date(item.matches?.match_date || item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                      const matchTypeLabel = item.match_type === 'doubles' ? 'Doubles' : 'Singles'
                       
                       return (
                         <div key={item.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
@@ -662,12 +677,12 @@ export default function MemberProfilePage() {
                               {matchTitle}
                             </span>
                             <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold block">
-                              {clubName} · {dateStr}
+                              {matchTypeLabel} · {dateStr}
                             </span>
                           </div>
                           <div className="flex items-center gap-2.5 shrink-0">
                             <span className="font-mono text-[var(--arena-text-dim)]">
-                              {item.rating_before} → <span className="font-extrabold text-slate-900">{item.rating_after}</span>
+                              {item.elo_before} → <span className="font-extrabold text-slate-900">{item.elo_after}</span>
                             </span>
                             <span className={cn(
                               "inline-flex items-center justify-center font-extrabold px-1.5 py-0.5 rounded text-[10px] w-12 text-center",

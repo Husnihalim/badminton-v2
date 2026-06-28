@@ -289,16 +289,16 @@ export const mockMemberships: Record<string, Membership[]> = {
 // ============================================
 export const mockLeaderboards: Record<string, ClubLeaderboardRow[]> = {
   'mock-lep-bc': [
-    { name: 'Amir', games: 24, wins: 18, losses: 6, winPercentage: 75.0, pointsFor: 492, pointsAgainst: 382, points: 18, elo_rating: 1610 },
-    { name: 'Husni Halim', games: 24, wins: 16, losses: 8, winPercentage: 66.7, pointsFor: 478, pointsAgainst: 410, points: 16, elo_rating: 1540 },
-    { name: 'Troma', games: 24, wins: 13, losses: 11, winPercentage: 54.2, pointsFor: 440, pointsAgainst: 422, points: 13, elo_rating: 1490 },
-    { name: 'Ziyad', games: 24, wins: 9, losses: 15, winPercentage: 37.5, pointsFor: 388, pointsAgainst: 462, points: 9, elo_rating: 1380 }
+    { name: 'Amir', games: 24, wins: 18, losses: 6, winPercentage: 75.0, pointsFor: 492, pointsAgainst: 382, points: 18, elo: 1610 },
+    { name: 'Husni Halim', games: 24, wins: 16, losses: 8, winPercentage: 66.7, pointsFor: 478, pointsAgainst: 410, points: 16, elo: 1540 },
+    { name: 'Troma', games: 24, wins: 13, losses: 11, winPercentage: 54.2, pointsFor: 440, pointsAgainst: 422, points: 13, elo: 1490 },
+    { name: 'Ziyad', games: 24, wins: 9, losses: 15, winPercentage: 37.5, pointsFor: 388, pointsAgainst: 462, points: 9, elo: 1380 }
   ],
   'mock-smashers-pj': [
-    { name: 'Jin', games: 20, wins: 14, losses: 6, winPercentage: 70.0, pointsFor: 412, pointsAgainst: 345, points: 14, elo_rating: 1580 },
-    { name: 'Sarah', games: 20, wins: 11, losses: 9, winPercentage: 55.0, pointsFor: 390, pointsAgainst: 375, points: 11, elo_rating: 1460 },
-    { name: 'Ken', games: 20, wins: 10, losses: 10, winPercentage: 50.0, pointsFor: 368, pointsAgainst: 366, points: 10, elo_rating: 1420 },
-    { name: 'Dave', games: 20, wins: 8, losses: 12, winPercentage: 40.0, pointsFor: 340, pointsAgainst: 390, points: 8, elo_rating: 1350 }
+    { name: 'Jin', games: 20, wins: 14, losses: 6, winPercentage: 70.0, pointsFor: 412, pointsAgainst: 345, points: 14, elo: 1580 },
+    { name: 'Sarah', games: 20, wins: 11, losses: 9, winPercentage: 55.0, pointsFor: 390, pointsAgainst: 375, points: 11, elo: 1460 },
+    { name: 'Ken', games: 20, wins: 10, losses: 10, winPercentage: 50.0, pointsFor: 368, pointsAgainst: 366, points: 10, elo: 1420 },
+    { name: 'Dave', games: 20, wins: 8, losses: 12, winPercentage: 40.0, pointsFor: 340, pointsAgainst: 390, points: 8, elo: 1350 }
   ]
 }
 
@@ -505,23 +505,20 @@ export const mockRsvps: Record<string, EventRsvp[]> = {
 }
 
 // ============================================
-// MOCK ELO HISTORY
+// MOCK ELO HISTORY (global format)
 // ============================================
 export const mockEloHistories: Record<string, EloHistory[]> = {
   'mock-husni': [
-    { id: 'elo-h1', user_id: 'mock-husni', club_id: 'mock-lep-bc', elo_rating: 1500, match_id: null, created_at: '2025-01-15T20:00:00Z' },
-    { id: 'elo-h2', user_id: 'mock-husni', club_id: 'mock-lep-bc', elo_rating: 1515, match_id: 'match-lep-2', created_at: '2026-06-11T20:45:00Z', matches: { title: 'Power Drive Clash', match_date: '2026-06-11T20:00:00Z', created_at: '2026-06-11T20:45:00Z' } },
-    { id: 'elo-h3', user_id: 'mock-husni', club_id: 'mock-lep-bc', elo_rating: 1540, match_id: 'match-lep-1', created_at: '2026-06-11T21:30:00Z', matches: { title: 'Game Day Doubles Decider', match_date: '2026-06-11T20:00:00Z', created_at: '2026-06-11T21:30:00Z' } }
+    { id: 'elo-h1', profile_id: 'mock-husni', match_id: 'match-lep-2', match_type: 'doubles', elo_before: 1200, elo_after: 1230, delta: 30, k_factor: 40, opponent_rating_avg: 1200, partner_rating: 1200, created_at: '2026-06-11T20:45:00Z', match_title: 'Power Drive Clash', match_date: '2026-06-11T20:00:00Z' },
+    { id: 'elo-h2', profile_id: 'mock-husni', match_id: 'match-lep-1', match_type: 'doubles', elo_before: 1230, elo_after: 1260, delta: 30, k_factor: 40, opponent_rating_avg: 1180, partner_rating: 1200, created_at: '2026-06-11T21:30:00Z', match_title: 'Game Day Doubles Decider', match_date: '2026-06-11T20:00:00Z' },
   ],
   'mock-troma': [
-    { id: 'elo-t1', user_id: 'mock-troma', club_id: 'mock-lep-bc', elo_rating: 1500, match_id: null, created_at: '2025-01-17T18:00:00Z' },
-    { id: 'elo-t2', user_id: 'mock-troma', club_id: 'mock-lep-bc', elo_rating: 1515, match_id: 'match-lep-2', created_at: '2026-06-11T20:45:00Z', matches: { title: 'Power Drive Clash', match_date: '2026-06-11T20:00:00Z', created_at: '2026-06-11T20:45:00Z' } },
-    { id: 'elo-t3', user_id: 'mock-troma', club_id: 'mock-lep-bc', elo_rating: 1490, match_id: 'match-lep-1', created_at: '2026-06-11T21:30:00Z', matches: { title: 'Game Day Doubles Decider', match_date: '2026-06-11T20:00:00Z', created_at: '2026-06-11T21:30:00Z' } }
+    { id: 'elo-t1', profile_id: 'mock-troma', match_id: 'match-lep-2', match_type: 'doubles', elo_before: 1200, elo_after: 1180, delta: -20, k_factor: 40, opponent_rating_avg: 1200, partner_rating: 1200, created_at: '2026-06-11T20:45:00Z', match_title: 'Power Drive Clash', match_date: '2026-06-11T20:00:00Z' },
+    { id: 'elo-t2', profile_id: 'mock-troma', match_id: 'match-lep-1', match_type: 'doubles', elo_before: 1180, elo_after: 1150, delta: -30, k_factor: 40, opponent_rating_avg: 1250, partner_rating: 1200, created_at: '2026-06-11T21:30:00Z', match_title: 'Game Day Doubles Decider', match_date: '2026-06-11T20:00:00Z' },
   ],
   'mock-amir': [
-    { id: 'elo-a1', user_id: 'mock-amir', club_id: 'mock-lep-bc', elo_rating: 1500, match_id: null, created_at: '2025-01-20T10:00:00Z' },
-    { id: 'elo-a2', user_id: 'mock-amir', club_id: 'mock-lep-bc', elo_rating: 1585, match_id: 'match-lep-2', created_at: '2026-06-11T20:45:00Z', matches: { title: 'Power Drive Clash', match_date: '2026-06-11T20:00:00Z', created_at: '2026-06-11T20:45:00Z' } },
-    { id: 'elo-a3', user_id: 'mock-amir', club_id: 'mock-lep-bc', elo_rating: 1610, match_id: 'match-lep-1', created_at: '2026-06-11T21:30:00Z', matches: { title: 'Game Day Doubles Decider', match_date: '2026-06-11T20:00:00Z', created_at: '2026-06-11T21:30:00Z' } }
+    { id: 'elo-a1', profile_id: 'mock-amir', match_id: 'match-lep-2', match_type: 'doubles', elo_before: 1200, elo_after: 1240, delta: 40, k_factor: 40, opponent_rating_avg: 1200, partner_rating: 1200, created_at: '2026-06-11T20:45:00Z', match_title: 'Power Drive Clash', match_date: '2026-06-11T20:00:00Z' },
+    { id: 'elo-a2', profile_id: 'mock-amir', match_id: 'match-lep-1', match_type: 'doubles', elo_before: 1240, elo_after: 1280, delta: 40, k_factor: 40, opponent_rating_avg: 1180, partner_rating: 1200, created_at: '2026-06-11T21:30:00Z', match_title: 'Game Day Doubles Decider', match_date: '2026-06-11T20:00:00Z' },
   ]
 }
 

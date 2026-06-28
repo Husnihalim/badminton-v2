@@ -6,7 +6,7 @@ import { useClub, useClubEvents, useClubMembers, useAllClubMatches } from '../ho
 import { THEME_MAP } from '../constants'
 import { Card, CardContent } from '../../../components/ui/card'
 import type { MatchWithDetails } from '../../../types'
-import type { ClubLeaderboardRow } from '../../../lib/api'
+import type { ClubLeaderboardRow } from '../../../lib/api/matches'
 
 interface ClubLeaderboardProps {
   clubId: string
@@ -261,8 +261,8 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
     const raw = calculateLeaderboard(filteredMatchesForLeaderboard)
     if (sortBy === 'elo') {
       return [...raw].sort((a, b) => {
-        const eloA = members.find(m => m.name?.toLowerCase() === a.name.toLowerCase())?.elo_rating ?? 1200
-        const eloB = members.find(m => m.name?.toLowerCase() === b.name.toLowerCase())?.elo_rating ?? 1200
+        const eloA = members.find(m => m.name?.toLowerCase() === a.name.toLowerCase())?.singles_elo ?? 1200
+        const eloB = members.find(m => m.name?.toLowerCase() === b.name.toLowerCase())?.singles_elo ?? 1200
         return eloB - eloA || b.winPercentage - a.winPercentage || b.games - a.games
       })
     }
@@ -541,7 +541,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                     <div className="flex items-center gap-2 min-w-0">
                       {(() => {
                         const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
-                        const elo = match?.elo_rating || 1200
+                        const elo = match?.singles_elo || 1200
                         const avatar = match?.avatar_url
                         const avatarEl = avatar ? (
                           <img src={avatar} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />

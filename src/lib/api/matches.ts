@@ -22,7 +22,9 @@ export type ClubLeaderboardRow = {
   pointsFor: number
   pointsAgainst: number
   points: number
-  elo_rating?: number
+  elo: number
+  user_id?: string
+  rank?: number
 }
 
 type ProfileSummary = {
@@ -45,7 +47,18 @@ type MatchCommentQueryRow = MatchComment & {
   profiles?: ProfileSummary | null
 }
 
-type EloHistoryQueryRow = EloHistory & {
+type EloHistoryQueryRow = {
+  id: string
+  profile_id: string
+  match_id: string
+  match_type: 'singles' | 'doubles'
+  elo_before: number
+  elo_after: number
+  delta: number
+  k_factor: number
+  opponent_rating_avg: number
+  partner_rating?: number | null
+  created_at: string
   matches?: {
     title?: string | null
     match_date?: string | null
@@ -345,6 +358,12 @@ export async function updateMatch(data: UpdateMatchScoreData): Promise<void> {
     throw new Error(getErrorMessage(deleteScoresError, 'Failed to update match scores'))
   }
 
+  // Reset elo_processed so the trigger recalculates on new scores
+  await supabase
+    .from('matches')
+    .update({ elo_processed: false } as never)
+    .eq('id', data.match_id)
+
   const scoreRows = data.score_sets.map((set) => ({
     match_id: data.match_id,
     set_number: set.set_number,
@@ -459,13 +478,14 @@ async function getClubLeaderboardQuery(clubId: string, limit = 10): Promise<Club
     .slice(0, Math.max(limit, 1))
 }
 
-export async function getClubLeaderboard(clubId: string, limit = 10): Promise<ClubLeaderboardRow[]> {
+export async function getClubLeaderboard(clubId: string, limit = 10, matchType = 'singles'): Promise<ClubLeaderboardRow[]> {
   if (clubId && clubId.startsWith('mock-')) {
     return (mockLeaderboards[clubId] || []).slice(0, limit)
   }
   const { data, error } = await supabase.rpc('get_club_leaderboard', {
     target_club_id: clubId,
     row_limit: limit,
+    match_type_filter: matchType,
   })
 
   if (error) {
@@ -479,27 +499,28 @@ export async function getClubLeaderboard(clubId: string, limit = 10): Promise<Cl
   }
 
   const result = (data as unknown as Array<{
-    player_name: string
-    games_played: number
+    user_id: string
+    name: string
+    elo: number
+    games: number
     wins: number
     losses: number
     win_percentage: number
-    points_for: number
-    points_against: number
-    points_diff: number
-    elo_rating?: number
+    rank: number
   }>) || []
 
   return result.map((r) => ({
-    name: r.player_name,
-    games: r.games_played,
+    name: r.name,
+    games: r.games,
     wins: r.wins,
     losses: r.losses,
     winPercentage: r.win_percentage,
-    pointsFor: r.points_for,
-    pointsAgainst: r.points_against,
-    points: r.points_diff,
-    elo_rating: r.elo_rating,
+    pointsFor: 0,
+    pointsAgainst: 0,
+    points: 0,
+    elo: r.elo,
+    user_id: r.user_id,
+    rank: r.rank,
   }))
 }
 
@@ -731,42 +752,36 @@ export async function deleteMatchComment(commentId: string): Promise<void> {
   }
 }
 
-export async function getMemberEloHistory(clubId: string, userId: string): Promise<EloHistory[]> {
-  if (clubId && clubId.startsWith('mock-') && userId && userId.startsWith('mock-')) {
+export async function getMemberEloHistory(userId: string): Promise<EloHistory[]> {
+  if (userId && userId.startsWith('mock-')) {
     return mockEloHistories[userId] || []
-  }
-  const { data: member, error: memberError } = await supabase
-    .from('memberships')
-    .select('id')
-    .eq('club_id', clubId)
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (memberError || !member) {
-    console.error('Error fetching membership for Elo history:', memberError)
-    return []
   }
 
   const { data, error } = await supabase
-    .from('elo_history')
+    .from('elo_history_global')
     .select(`
       *,
       matches(title, match_date, created_at)
     `)
-    .eq('membership_id', member.id)
+    .eq('profile_id', userId)
     .order('created_at', { ascending: true })
 
   if (error) {
-    console.error('Error fetching Elo history:', error)
+    console.error('Error fetching global Elo history:', error)
     return []
   }
 
   return ((data || []) as unknown as EloHistoryQueryRow[]).map((row) => ({
     id: row.id,
-    membership_id: row.membership_id,
+    profile_id: row.profile_id,
     match_id: row.match_id,
-    rating_before: row.rating_before,
-    rating_after: row.rating_after,
+    match_type: row.match_type,
+    elo_before: row.elo_before,
+    elo_after: row.elo_after,
+    delta: row.delta,
+    k_factor: row.k_factor,
+    opponent_rating_avg: row.opponent_rating_avg,
+    partner_rating: row.partner_rating,
     created_at: row.created_at,
     match_title: row.matches?.title || 'Match',
     match_date: row.matches?.match_date || row.matches?.created_at || row.created_at

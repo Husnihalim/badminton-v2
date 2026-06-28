@@ -50,7 +50,7 @@ type ClubMessageProfileRow = ClubMessage & {
 export async function getClubs(): Promise<Club[]> {
   const { data, error } = await supabase
     .from('clubs')
-    .select('*')
+    .select('id, name, description, location, city, sport_focus, open_join, approval_required, invite_code, owner_id, created_at, updated_at, logo_url, banner_url, banner_preset, accent_color, announcement, announcement_updated_at')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -67,7 +67,7 @@ export async function getClub(id: string): Promise<Club | null> {
   }
   const { data, error } = await supabase
     .from('clubs')
-    .select('*')
+    .select('id, name, description, location, city, sport_focus, open_join, approval_required, invite_code, owner_id, created_at, updated_at, logo_url, banner_url, banner_preset, accent_color, announcement, announcement_updated_at')
     .eq('id', id)
     .single()
 
@@ -153,7 +153,7 @@ export async function getClubMembers(clubId: string): Promise<Membership[]> {
   }
   const { data, error } = await supabase
     .from('memberships')
-    .select('*, profiles(name, display_name, email, avatar_url)')
+    .select('*, profiles(name, display_name, email, avatar_url, singles_elo, doubles_elo, singles_games, doubles_games)')
     .eq('club_id', clubId)
     .eq('status', 'active')
 
@@ -167,6 +167,10 @@ export async function getClubMembers(clubId: string): Promise<Membership[]> {
     name: m.profiles?.display_name || m.profiles?.name || 'Unknown',
     email: m.profiles?.email || '',
     avatar_url: m.profiles?.avatar_url || null,
+    singles_elo: m.profiles?.singles_elo || null,
+    doubles_elo: m.profiles?.doubles_elo || null,
+    singles_games: m.profiles?.singles_games || null,
+    doubles_games: m.profiles?.doubles_games || null,
   }))
 }
 
@@ -179,7 +183,7 @@ export async function getMyMembership(clubId: string): Promise<Membership | null
 
   const { data, error } = await supabase
     .from('memberships')
-    .select('*')
+    .select('id, club_id, user_id, role, status, joined_at, approved_by')
     .eq('club_id', clubId)
     .eq('user_id', user.id)
     .single()
@@ -581,7 +585,7 @@ export async function getClubActivity(clubId: string): Promise<ClubActivity[]> {
   }
   const { data, error } = await supabase
     .from('club_activities')
-    .select('*')
+    .select('id, club_id, type, title, description, actor_name, created_at')
     .eq('club_id', clubId)
     .order('created_at', { ascending: false })
     .limit(20)

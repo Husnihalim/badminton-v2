@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ClipboardPenLine, Plus, X, RotateCcw, Trophy } from 'lucide-react'
-import { createMatch, getClubMembers, updateMatch } from '../lib/api'
+import { createMatch, updateMatch } from '../lib/api/matches'
+import { getClubMembers } from '../lib/api/clubs'
 import { getErrorMessage } from '../lib/utils'
 import type { MatchWithDetails, Membership } from '../types'
 import type { FriendlyPair } from '../types/competition'
@@ -139,15 +140,13 @@ export default function ScoreRecordingModal({
       setMatchTitle('Friendly matchup')
       setMatchDate(eventDate || new Date().toISOString().split('T')[0])
 
-      const p1a = friendlyContext.pairA?.player_1
-      const p1b = friendlyContext.pairA?.player_2
-      const p2a = friendlyContext.pairB?.player_1
-      const p2b = friendlyContext.pairB?.player_2
+      const pairA = friendlyContext.pairA
+      const pairB = friendlyContext.pairB
 
-      setPlayer1A({ memberId: p1a?.id || '', customName: p1a ? '' : friendlyContext.pairA?.pair_name || '' })
-      setPlayer1B({ memberId: p1b?.id || '', customName: '' })
-      setPlayer2A({ memberId: p2a?.id || '', customName: p2a ? '' : friendlyContext.pairB?.pair_name || '' })
-      setPlayer2B({ memberId: p2b?.id || '', customName: '' })
+      setPlayer1A({ memberId: pairA?.player_1_id || '', customName: '' })
+      setPlayer1B({ memberId: pairA?.player_2_id || '', customName: '' })
+      setPlayer2A({ memberId: pairB?.player_1_id || '', customName: '' })
+      setPlayer2B({ memberId: pairB?.player_2_id || '', customName: '' })
       setSets([createScoreSetField()])
       setErrors({})
     } else if (editingMatch) {

@@ -15,6 +15,10 @@ export interface User {
   is_private?: boolean | null
   social_links?: PlayerSocialLinks | null
   gear?: PlayerGear | null
+  singles_elo?: number | null
+  doubles_elo?: number | null
+  singles_games?: number | null
+  doubles_games?: number | null
 }
 
 export type PlayerSocialLinks = {
@@ -93,19 +97,27 @@ export interface Membership {
   status: 'active' | 'inactive' | 'banned'
   joined_at: string
   approved_by: string | null
-  elo_rating?: number
   // Joined fields
   name?: string
   email?: string
   avatar_url?: string | null
+  singles_elo?: number | null
+  doubles_elo?: number | null
+  singles_games?: number | null
+  doubles_games?: number | null
 }
 
 export interface EloHistory {
   id: string
-  membership_id: string
+  profile_id: string
   match_id: string
-  rating_before: number
-  rating_after: number
+  match_type: 'singles' | 'doubles'
+  elo_before: number
+  elo_after: number
+  delta: number
+  k_factor: number
+  opponent_rating_avg: number
+  partner_rating?: number | null
   created_at: string
   match_title?: string
   match_date?: string
@@ -265,7 +277,7 @@ export interface ClubMessage {
 export interface PlayerDashboardData {
   clubs: (Club & {
     role: string
-    elo_rating: number
+    singles_elo: number
     rank: { rank: number; total: number } | null
     members_count: number
     avg_elo: number

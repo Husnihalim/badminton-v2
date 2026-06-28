@@ -15,7 +15,7 @@ import {
   Info
 } from 'lucide-react'
 import ClubCard from '../components/ClubCard'
-import { getClubs } from '../lib/api'
+import { getClubs } from '../lib/api/clubs'
 import type { Club, MatchWithDetails, MatchParticipant, ScoreSet } from '../types'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -333,7 +333,7 @@ export default function LandingPage() {
                           <td className="py-3 text-center font-mono font-semibold text-[var(--arena-text-muted)]">{row.games}</td>
                           <td className="py-3 text-center font-mono text-[var(--arena-text-muted)]">{row.wins} - {row.losses}</td>
                           <td className="py-3 text-center font-mono font-bold text-[var(--arena-text-muted)]">{row.winPercentage}%</td>
-                          <td className="py-3 text-right px-4 font-mono font-black text-[var(--arena-accent)]">{row.elo_rating ?? 1500}</td>
+                          <td className="py-3 text-right px-4 font-mono font-black text-[var(--arena-accent)]">{row.elo ?? 1500}</td>
                         </tr>
                       )
                     })}
