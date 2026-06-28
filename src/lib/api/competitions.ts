@@ -147,7 +147,8 @@ export async function createCompetition(
         message: `${hostName} has challenged your club to a ${input.format}!`,
         data: {
           competitionId: competition.id,
-          clubId: input.clubId,
+          hostClubId: input.clubId,
+          invitedClubId: clubId,
           clubName: hostName,
         },
       }))
@@ -696,14 +697,38 @@ export async function getCompetitionMatchups(
     .select(`
       *,
       participant_a:competition_participants!participant_a_id(*),
-      participant_b:competition_participants!participant_b_id(*),
-      match:matches(id, score_sets(team1_score, team2_score))
+      participant_b:competition_participants!participant_b_id(*)
     `)
     .eq('competition_id', competitionId)
     .order('order_index')
 
-  const hydrated = await hydrateCompetitionMatchups((data as CompetitionMatchup[]) || [])
-  return { matchups: hydrated, error }
+  if (error) return { matchups: [], error }
+
+  const matchups = data as CompetitionMatchup[]
+
+  // Fetch match data (score_sets) separately since there's no FK from
+  // competition_matchups.match_id → matches.id, so PostgREST embedding
+  // cannot resolve the relationship and would throw PGRST200.
+  const matchIds = matchups
+    .map(m => m.match_id)
+    .filter((id): id is string => Boolean(id))
+
+  if (matchIds.length > 0) {
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('id, score_sets(team1_score, team2_score)')
+      .in('id', matchIds)
+
+    const matchMap = new Map((matches || []).map(m => [m.id, m]))
+    for (const matchup of matchups) {
+      if (matchup.match_id && matchMap.has(matchup.match_id)) {
+        matchup.match = matchMap.get(matchup.match_id)
+      }
+    }
+  }
+
+  const hydrated = await hydrateCompetitionMatchups(matchups)
+  return { matchups: hydrated, error: null }
 }
 
 // ============================================

@@ -36,7 +36,17 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
     if (!notification.read) {
       await markAsRead(notification.id)
     }
-    
+
+    const competitionId = notification.data?.competitionId || notification.data?.competition_id
+    if (
+      typeof competitionId === 'string' &&
+      (notification.type === 'competition_invite' || notification.type === 'competition_update' || notification.type === 'roster_invite')
+    ) {
+      navigate(`/competition/${competitionId}`)
+      onClose()
+      return
+    }
+
     const clubId = notification.data?.clubId
     if (typeof clubId === 'string') {
       const isApproved = notification.type === 'join_approved'
@@ -54,6 +64,9 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
       case 'rsvp_update': return '✓'
       case 'score_recorded': return '🏆'
       case 'announcement': return '📢'
+      case 'competition_invite': return '🏸'
+      case 'competition_update': return '🏆'
+      case 'roster_invite': return '👥'
       default: return '📌'
     }
   }

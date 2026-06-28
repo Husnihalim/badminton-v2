@@ -66,18 +66,26 @@ export default function CompetitionDetailsPage() {
   const [recordingMatchup, setRecordingMatchup] = useState<CompetitionMatchup | null>(null)
   const [pairDrafts, setPairDrafts] = useState<Record<string, { player1Id: string; player2Id: string }>>({})
 
-  // My club's role in this competition
-  const myClub = useMemo(() => {
+  const myCompetitionClubs = useMemo(() => {
     if (!user || !compClubs.length) return null
-    return compClubs.find(cc => myClubs.some(mc => mc.id === cc.club_id)) || null
+    return compClubs.filter(cc => myClubs.some(mc => mc.id === cc.club_id))
   }, [user, compClubs, myClubs])
 
-  const myClubMembership = useMemo(() => {
-    if (!myClub) return null
-    return myClubs.find(c => c.id === myClub.club_id) || null
-  }, [myClub, myClubs])
+  // Prefer a confirmed club for match recording, but keep invited club context
+  // so invitation acceptance can still be shown before confirmation.
+  const myClub = useMemo(() => {
+    if (!myCompetitionClubs?.length) return null
+    return myCompetitionClubs.find(cc => cc.status === 'confirmed') || myCompetitionClubs[0]
+  }, [myCompetitionClubs])
 
-  const isAdmin = !!myClubMembership
+  const adminClubIds = useMemo(() => new Set(
+    myClubs
+      .filter(club => club.role === 'owner' || club.role === 'admin')
+      .map(club => club.id)
+  ), [myClubs])
+
+  const isAdmin = !!myCompetitionClubs?.some(cc => adminClubIds.has(cc.club_id))
+  const isHostAdmin = !!competition && adminClubIds.has(competition.club_id)
 
   const opponentParticipants = useMemo(() => {
     if (!myClub) return participants
@@ -176,9 +184,10 @@ export default function CompetitionDetailsPage() {
     showToast('Player removed', 'success')
   }
 
-  const handleConfirmLineup = async () => {
-    if (!competition || !myClub) return
-    const { error } = await confirmLineup(competition.id, myClub.club_id)
+  const handleConfirmLineup = async (clubId?: string) => {
+    const targetClubId = clubId || myClub?.club_id
+    if (!competition || !targetClubId) return
+    const { error } = await confirmLineup(competition.id, targetClubId)
     if (error) {
       showToast(error.message, 'error')
       return
@@ -196,7 +205,6 @@ export default function CompetitionDetailsPage() {
     }
     setMatchups(newMatchups || [])
     showToast('Matchups generated!', 'success')
-    loadData()
   }
 
   const handleSwapPairing = async (matchupId: string, newParticipantAId: string, newParticipantBId: string) => {
@@ -239,19 +247,15 @@ export default function CompetitionDetailsPage() {
     ) || null
   }, [user, compClubs, myClubs])
 
-  const canAcceptInvite = useMemo(() => {
-    if (!myInvitedClub || !myClubMembership) return false
-    return myClubMembership.role === 'owner' || myClubMembership.role === 'admin'
-  }, [myInvitedClub, myClubMembership])
-
-  const handleAcceptInvite = async () => {
-    if (!competition || !myInvitedClub) return
-    const { error } = await respondToCompetitionInvite(competition.invite_code, myInvitedClub.club_id)
+  const handleAcceptInvite = async (clubToAccept: CompetitionClub | null = myInvitedClub) => {
+    if (!competition || !clubToAccept) return
+    const { error } = await respondToCompetitionInvite(competition.invite_code, clubToAccept.club_id)
     if (error) {
       showToast(error.message, 'error')
       return
     }
     showToast('Invitation accepted!', 'success')
+    setActiveTab('rosters')
     loadData()
   }
 
@@ -483,6 +487,7 @@ export default function CompetitionDetailsPage() {
                 <div className="space-y-2">
                   {compClubs.filter(cc => cc.status !== 'declined').map(cc => {
                     const isMyInvitedClub = cc.status === 'invited' && myClubs.some(mc => mc.id === cc.club_id)
+                    const canManageThisClub = adminClubIds.has(cc.club_id)
                     return (
                       <div key={cc.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
                         <div className="flex items-center gap-3">
@@ -495,8 +500,8 @@ export default function CompetitionDetailsPage() {
                         <div className="flex items-center gap-2">
                           {cc.status === 'invited' && <Badge variant="muted">invited</Badge>}
                           {cc.status === 'confirmed' && <Badge variant="blue">confirmed</Badge>}
-                          {isMyInvitedClub && canAcceptInvite && (
-                            <Button onClick={handleAcceptInvite} size="sm" className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 text-xs h-7 px-3">
+                          {isMyInvitedClub && canManageThisClub && (
+                            <Button onClick={() => handleAcceptInvite(cc)} size="sm" className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 text-xs h-7 px-3">
                               Accept
                             </Button>
                           )}
@@ -514,7 +519,7 @@ export default function CompetitionDetailsPage() {
                 </div>
               )}
 
-              {isAdmin && competition.status !== 'completed' && competition.status !== 'cancelled' && (
+              {isHostAdmin && competition.status !== 'completed' && competition.status !== 'cancelled' && (
                 <div className="border-t border-white/10 pt-4">
                   <Button variant="ghost" onClick={handleCancelCompetition} className="text-red-400 hover:text-red-300 text-xs">
                     Cancel Competition
@@ -528,9 +533,10 @@ export default function CompetitionDetailsPage() {
         {/* TAB: ROSTERS */}
         {activeTab === 'rosters' && (
           <div className="space-y-6">
-            {compClubs.filter(cc => cc.status === 'confirmed').map(cc => {
+            {compClubs.filter(cc => cc.status !== 'declined').map(cc => {
               const clubParts = participants.filter(p => p.club_id === cc.club_id).sort((a, b) => (a.rank || 99) - (b.rank || 99))
-              const isMyClub = cc.club_id === myClub?.club_id
+              const canManageThisClub = adminClubIds.has(cc.club_id)
+              const isInvited = cc.status === 'invited'
               const isConfirmed = cc.lineup_confirmed
               const clubMemberList = clubMembers.filter(m => m.club_id === cc.club_id)
               const availableMembers = clubMemberList.filter(m => !clubParts.some(p => p.user_1_id === m.user_id || p.user_2_id === m.user_id))
@@ -542,13 +548,32 @@ export default function CompetitionDetailsPage() {
                       <h3 className="font-bold text-white">{cc.club?.name || 'Club'}</h3>
                       <p className="text-xs text-slate-500">{clubParts.length} / {competition.pairs_count} pairs</p>
                     </div>
-                    {isConfirmed ? (
-                      <Badge variant="live">✅ Confirmed</Badge>
-                    ) : isMyClub ? (
-                      <Badge variant="blue">Your lineup</Badge>
-                    ) : (
-                      <Badge variant="muted">Waiting...</Badge>
-                    )}
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {!isInvited && canManageThisClub && !isConfirmed && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => navigate(`/club/${cc.club_id}?tab=noticeboard`)}
+                          className="h-8 px-3 text-xs"
+                        >
+                          Announce
+                        </Button>
+                      )}
+                      {isInvited && canManageThisClub ? (
+                        <Button onClick={() => handleAcceptInvite(cc)} size="sm" className="h-8 bg-[var(--arena-lime)] px-3 text-xs text-black hover:bg-[var(--arena-lime)]/90">
+                          Accept invite
+                        </Button>
+                      ) : isInvited ? (
+                        <Badge variant="muted">Invited</Badge>
+                      ) : isConfirmed ? (
+                        <Badge variant="live">✅ Confirmed</Badge>
+                      ) : canManageThisClub ? (
+                        <Badge variant="blue">Your lineup</Badge>
+                      ) : (
+                        <Badge variant="muted">Waiting...</Badge>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -564,7 +589,13 @@ export default function CompetitionDetailsPage() {
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-400">
                             {rank}
                           </div>
-                          {part ? (
+                          {isInvited ? (
+                            <div className="flex-1">
+                              <p className="text-xs text-slate-500 italic">
+                                Waiting for this club to accept the competition invite.
+                              </p>
+                            </div>
+                          ) : part ? (
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-white text-sm">{part.name}</p>
                               <p className="text-xs text-slate-500">
@@ -574,7 +605,7 @@ export default function CompetitionDetailsPage() {
                             </div>
 	                          ) : (
 	                            <div className="flex-1">
-	                              {isMyClub && !isConfirmed ? (
+	                              {canManageThisClub && !isConfirmed ? (
 	                                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
 	                                  <select
 	                                    value={draft.player1Id}
@@ -634,7 +665,7 @@ export default function CompetitionDetailsPage() {
                               )}
                             </div>
                           )}
-                          {part && isMyClub && !isConfirmed && (
+                          {part && canManageThisClub && !isConfirmed && (
                             <button onClick={() => handleRemovePlayer(part.id)} className="text-xs text-red-400 hover:text-red-300">
                               Remove
                             </button>
@@ -644,7 +675,7 @@ export default function CompetitionDetailsPage() {
                     })}
                   </div>
 
-                  {isMyClub && !isConfirmed && clubParts.length > 0 && (
+                  {canManageThisClub && !isInvited && !isConfirmed && clubParts.length > 0 && (
                     <div className="mt-4">
                       <p className="mb-2 text-xs text-slate-500">Drag to reorder by rank (strongest first)</p>
                       <div className="space-y-1 mb-3">
@@ -684,7 +715,7 @@ export default function CompetitionDetailsPage() {
                           </div>
                         ))}
                       </div>
-                      <Button onClick={handleConfirmLineup} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 text-xs">
+                      <Button onClick={() => handleConfirmLineup(cc.club_id)} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90 text-xs">
                         Confirm Lineup
                       </Button>
                     </div>
@@ -701,7 +732,7 @@ export default function CompetitionDetailsPage() {
             {matchups.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-slate-500 mb-4">No matchups yet. All clubs must confirm their lineups first.</p>
-                {isAdmin && competition.status === 'matchmaking' && (
+                {isHostAdmin && competition.status === 'matchmaking' && (
                   <Button onClick={handleGenerateMatchups} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90">
                     Generate Matchups
                   </Button>
@@ -709,7 +740,7 @@ export default function CompetitionDetailsPage() {
               </div>
             )}
 
-            {matchups.length > 0 && !matchups[0]?.locked && isAdmin && (
+            {matchups.length > 0 && !matchups[0]?.locked && isHostAdmin && (
               <div className="flex justify-end">
                 <Button onClick={handleStartCompetition} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90">
                   Start Competition

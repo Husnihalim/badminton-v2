@@ -232,7 +232,7 @@ export interface EventRsvp {
 export interface Notification {
   id: string
   user_id: string
-  type: 'join_request' | 'join_approved' | 'event_reminder' | 'event_created' | 'rsvp_update' | 'score_recorded' | 'announcement' | 'roster_invite' | 'competition_update'
+  type: 'join_request' | 'join_approved' | 'event_reminder' | 'event_created' | 'rsvp_update' | 'score_recorded' | 'announcement' | 'roster_invite' | 'competition_invite' | 'competition_update'
   title: string
   message: string
   data?: Record<string, unknown>
@@ -292,4 +292,3 @@ export interface PlayerDashboardData {
     giantSlayer: boolean
   }
 }
-
