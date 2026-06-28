@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KelabSukan Competition UI Mockup</title>
+<style>
+  :root {
+    --arena-bg: #040d0f;
+    --arena-surface: #0a0f0e;
+    --arena-surface-muted: #1b2435;
+    --arena-surface-elevated: #1e293b;
+    --arena-text: #f8fafc;
+    --arena-text-muted: #b6c3d6;
+    --arena-text-dim: #8ea0b8;
+    --arena-border: rgba(148, 163, 184, 0.18);
+    --arena-lime: #ccff00;
+    --arena-blue: #38bdf8;
+    --court-green: #0f7b57;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --ink: #061013;
+    --shadow: 0 22px 70px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    min-height: 100%;
+    background: var(--arena-bg);
+    color: var(--arena-text);
+    font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.12), transparent 28rem),
+      linear-gradient(150deg, rgba(15, 123, 87, 0.16), transparent 34rem),
+      var(--arena-bg);
+    color: var(--arena-text);
+  }
+
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+
+  .shell {
+    width: min(1440px, calc(100% - 28px));
+    margin: 0 auto;
+    padding: 18px 0 40px;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 12px;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--arena-border);
+    border-radius: 8px;
+    background: rgba(4, 13, 15, 0.88);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--arena-lime), #77dd11);
+    color: var(--ink);
+    font-weight: 950;
+    letter-spacing: 0;
+    box-shadow: 0 0 26px rgba(204, 255, 0, 0.2);
+  }
+
+  .brand h1 {
+    margin: 0;
+    font-size: clamp(1.05rem, 1vw + 0.9rem, 1.45rem);
+    line-height: 1.05;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .brand p {
+    margin: 3px 0 0;
+    color: var(--arena-text-dim);
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
+  }
+
+  .screen-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid var(--arena-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .screen-tab {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--arena-text-muted);
+    font-weight: 800;
+    font-size: 0.82rem;
+  }
+
+  .screen-tab.is-active {
+    background: var(--arena-lime);
+    color: var(--ink);
+  }
+
+  .screen {
+    display: none;
+    margin-top: 18px;
+  }
+
+  .screen.is-active {
+    display: block;
+  }
+
+  .page-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: end;
+    margin: 22px 0 16px;
+  }
+
+  .eyebrow {
+    margin: 0 0 8px;
+    color: var(--arena-lime);
+    font-size: 0.74rem;
+    font-weight: 950;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  h2, h3, p { margin-top: 0; }
+
+  .page-head h2 {
+    margin-bottom: 8px;
+    max-width: 780px;
+    font-size: clamp(1.8rem, 3vw, 3.2rem);
+    line-height: 1.02;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .page-head p {
+    max-width: 780px;
+    margin-bottom: 0;
+    color: var(--arena-text-muted);
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .primary-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    gap: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--arena-border);
+    padding: 0 14px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--arena-text);
+    font-weight: 850;
+  }
+
+  .btn.primary {
+    border-color: transparent;
+    background: var(--arena-lime);
+    color: var(--ink);
+  }
+
+  .btn.blue {
+    border-color: rgba(56, 189, 248, 0.34);
+    background: rgba(56, 189, 248, 0.12);
+    color: #d7f5ff;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .rail, .panel, .metric, .phone, .public-slate, .type-card, .tie-card, .rubber-row, .standing-board {
+    border: 1px solid var(--arena-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  }
+
+  .rail {
+    align-self: start;
+    padding: 14px;
+    background: rgba(10, 15, 14, 0.82);
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .step:last-child { border-bottom: 0; }
+
+  .step-number {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--arena-text-muted);
+    font-size: 0.82rem;
+    font-weight: 900;
+  }
+
+  .step.done .step-number {
+    background: rgba(204, 255, 0, 0.12);
+    color: var(--arena-lime);
+  }
+
+  .step.active .step-number {
+    background: var(--arena-lime);
+    color: var(--ink);
+  }
+
+  .step strong {
+    display: block;
+    font-size: 0.9rem;
+  }
+
+  .step span {
+    display: block;
+    margin-top: 2px;
+    color: var(--arena-text-dim);
+    font-size: 0.78rem;
+  }
+
+  .builder-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+    gap: 14px;
+  }
+
+  .panel {
+    overflow: hidden;
+    background: rgba(10, 15, 14, 0.82);
+  }
+
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .panel-title {
+    margin: 0;
+    font-size: 1rem;
+    letter-spacing: 0;
+  }
+
+  .panel-subtitle {
+    margin: 3px 0 0;
+    color: var(--arena-text-dim);
+    font-size: 0.82rem;
+  }
+
+  .format-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .type-card {
+    position: relative;
+    min-height: 132px;
+    padding: 14px;
+    text-align: left;
+    color: inherit;
+    transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+  }
+
+  .type-card:hover,
+  .type-card.is-selected {
+    border-color: rgba(204, 255, 0, 0.64);
+    background: rgba(204, 255, 0, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .type-card .mini-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--arena-blue);
+    font-size: 0.78rem;
+    font-weight: 950;
+  }
+
+  .type-card.is-selected .mini-icon {
+    background: var(--arena-lime);
+    color: var(--ink);
+  }
+
+  .type-card strong {
+    display: block;
+    font-size: 0.98rem;
+  }
+
+  .type-card span {
+    display: block;
+    margin-top: 6px;
+    color: var(--arena-text-dim);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .rule-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0 16px 16px;
+  }
+
+  .rule {
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .rule label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--arena-text-dim);
+    font-size: 0.72rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .rule strong {
+    display: block;
+    font-size: 0.92rem;
+  }
+
+  .preview-stack {
+    padding: 16px;
+  }
+
+  .decision-card {
+    padding: 14px;
+    border-radius: 8px;
+    background:
+      linear-gradient(135deg, rgba(204, 255, 0, 0.12), transparent 45%),
+      rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(204, 255, 0, 0.24);
+  }
+
+  .decision-card h3 {
+    margin-bottom: 8px;
+    font-size: 1.15rem;
+  }
+
+  .decision-card p {
+    margin-bottom: 14px;
+    color: var(--arena-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .spec-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .spec-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .spec-row span {
+    color: var(--arena-text-dim);
+    font-size: 0.82rem;
+  }
+
+  .spec-row strong {
+    text-align: right;
+    font-size: 0.82rem;
+  }
+
+  .mini-schedule {
+    margin-top: 12px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .mini-tie {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--arena-text-muted);
+    font-size: 0.84rem;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .metric {
+    padding: 14px;
+    background: rgba(10, 15, 14, 0.82);
+  }
+
+  .metric span {
+    color: var(--arena-text-dim);
+    font-size: 0.72rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .metric strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 1.65rem;
+    line-height: 1;
+  }
+
+  .control-layout {
+    display: grid;
+    grid-template-columns: minmax(250px, 0.78fr) minmax(0, 1.4fr) minmax(340px, 0.9fr);
+    gap: 14px;
+  }
+
+  .competition-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .pill {
+    border: 1px solid var(--arena-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--arena-text-muted);
+    padding: 7px 12px;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    font-weight: 850;
+  }
+
+  .pill.active {
+    background: var(--arena-lime);
+    border-color: transparent;
+    color: var(--ink);
+  }
+
+  .tie-list {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .tie-card {
+    width: 100%;
+    padding: 12px;
+    text-align: left;
+    color: inherit;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .tie-card.is-active {
+    border-color: rgba(204, 255, 0, 0.52);
+    background: rgba(204, 255, 0, 0.08);
+  }
+
+  .club-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .club-logo {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(204, 255, 0, 0.2), rgba(56, 189, 248, 0.12));
+    color: var(--arena-text);
+    font-size: 0.7rem;
+    font-weight: 950;
+  }
+
+  .club-logo.nova { background: linear-gradient(135deg, #38bdf8, #155e75); }
+  .club-logo.pv { background: linear-gradient(135deg, #f59e0b, #7c2d12); }
+  .club-logo.smash { background: linear-gradient(135deg, #ec4899, #701a75); }
+
+  .tie-card .versus {
+    margin: 10px 0;
+    color: var(--arena-text-dim);
+    font-size: 0.76rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+  }
+
+  .tie-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+    color: var(--arena-text-dim);
+    font-size: 0.76rem;
+  }
+
+  .tie-hero {
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(90deg, rgba(204, 255, 0, 0.09), transparent 62%),
+      rgba(255, 255, 255, 0.02);
+  }
+
+  .tie-scoreboard {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .club-score {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .club-score.right {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .club-score strong {
+    display: block;
+    font-size: 1.15rem;
+  }
+
+  .club-score span {
+    color: var(--arena-text-dim);
+    font-size: 0.8rem;
+  }
+
+  .big-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: clamp(2.2rem, 4vw, 4.3rem);
+    font-weight: 950;
+    color: var(--arena-lime);
+    line-height: 1;
+  }
+
+  .rubbers {
+    display: grid;
+    gap: 9px;
+    padding: 14px;
+  }
+
+  .rubber-row {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto minmax(0, 1fr) 88px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .rubber-rank {
+    display: grid;
+    place-items: center;
+    min-height: 38px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--arena-text-muted);
+    font-size: 0.82rem;
+    font-weight: 950;
+  }
+
+  .pair {
+    min-width: 0;
+  }
+
+  .pair strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.88rem;
+  }
+
+  .pair span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    color: var(--arena-text-dim);
+    font-size: 0.74rem;
+  }
+
+  .rubber-score {
+    min-width: 74px;
+    text-align: center;
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-weight: 900;
+    color: var(--arena-lime);
+  }
+
+  .status {
+    justify-self: end;
+    border-radius: 999px;
+    padding: 6px 9px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--arena-text-dim);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .status.live {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fecaca;
+  }
+
+  .status.done {
+    background: rgba(204, 255, 0, 0.12);
+    color: var(--arena-lime);
+  }
+
+  .standing-board {
+    overflow: hidden;
+    background: rgba(10, 15, 14, 0.82);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    text-align: left;
+    font-size: 0.82rem;
+  }
+
+  th {
+    color: var(--arena-text-dim);
+    font-size: 0.7rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  td.num, th.num { text-align: right; }
+  tr.leader td { background: rgba(204, 255, 0, 0.06); }
+
+  .club-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .club-cell .club-logo {
+    width: 28px;
+    height: 28px;
+    font-size: 0.62rem;
+  }
+
+  .insight-list {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+  }
+
+  .insight {
+    padding: 12px;
+    border-left: 3px solid var(--arena-blue);
+    border-radius: 8px;
+    background: rgba(56, 189, 248, 0.08);
+    color: var(--arena-text-muted);
+    font-size: 0.82rem;
+  }
+
+  .public-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .public-slate {
+    overflow: hidden;
+    background: rgba(10, 15, 14, 0.86);
+  }
+
+  .broadcast-hero {
+    padding: 20px;
+    background:
+      linear-gradient(90deg, rgba(204, 255, 0, 0.14), rgba(56, 189, 248, 0.05)),
+      rgba(255, 255, 255, 0.03);
+  }
+
+  .broadcast-score {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .broadcast-score .club-logo {
+    width: 58px;
+    height: 58px;
+    font-size: 0.86rem;
+  }
+
+  .broadcast-score h3 {
+    margin-bottom: 4px;
+    font-size: 1.35rem;
+  }
+
+  .broadcast-score p {
+    margin: 0;
+    color: var(--arena-text-dim);
+  }
+
+  .match-feed {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .feed-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .feed-time {
+    color: var(--arena-blue);
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 0.76rem;
+    font-weight: 900;
+  }
+
+  .feed-item strong {
+    display: block;
+    font-size: 0.9rem;
+  }
+
+  .feed-item span {
+    color: var(--arena-text-dim);
+    font-size: 0.78rem;
+  }
+
+  .phone {
+    width: 390px;
+    max-width: 100%;
+    padding: 14px;
+    border-radius: 32px;
+    background: #030708;
+    box-shadow:
+      0 0 0 8px #111827,
+      0 36px 80px rgba(0, 0, 0, 0.55);
+  }
+
+  .phone-screen {
+    overflow: hidden;
+    min-height: 760px;
+    border-radius: 24px;
+    background: var(--arena-bg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .phone-top {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 14px;
+    color: rgba(255, 255, 255, 0.54);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .mobile-score {
+    padding: 12px;
+    background: linear-gradient(180deg, rgba(204, 255, 0, 0.1), rgba(255, 255, 255, 0.02));
+  }
+
+  .mobile-score h3 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+  }
+
+  .mobile-score-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mobile-club {
+    text-align: center;
+  }
+
+  .mobile-club .club-logo {
+    margin: 0 auto 8px;
+  }
+
+  .mobile-club strong {
+    display: block;
+    font-size: 0.9rem;
+  }
+
+  .mobile-club span {
+    color: var(--arena-text-dim);
+    font-size: 0.72rem;
+  }
+
+  .mobile-score-value {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    color: var(--arena-lime);
+    font-size: 2.1rem;
+    font-weight: 950;
+  }
+
+  .mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .mobile-tab {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--arena-text-muted);
+    padding: 8px 6px;
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+
+  .mobile-tab.active {
+    background: var(--arena-lime);
+    color: var(--ink);
+  }
+
+  .mobile-list {
+    display: grid;
+    gap: 8px;
+    padding: 0 10px 14px;
+  }
+
+  .mobile-rubber {
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .mobile-rubber-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    color: var(--arena-text-dim);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .mobile-pair-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 0.82rem;
+  }
+
+  .mobile-pair-row span {
+    color: var(--arena-text-dim);
+  }
+
+  .mobile-table {
+    margin: 2px 10px 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+  }
+
+  .mobile-table .row {
+    display: grid;
+    grid-template-columns: 1fr 44px 44px;
+    gap: 8px;
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    font-size: 0.78rem;
+  }
+
+  .mobile-table .row:last-child { border-bottom: 0; }
+  .mobile-table .row.header { color: var(--arena-text-dim); font-weight: 900; }
+  .mobile-table .row.leader { background: rgba(204, 255, 0, 0.06); }
+
+  .note-band {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 8px;
+    background: rgba(56, 189, 248, 0.08);
+    color: var(--arena-text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 1120px) {
+    .workspace, .builder-grid, .control-layout, .public-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .rail {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .step {
+      border-bottom: 0;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .phone {
+      margin: 0 auto;
+    }
+  }
+
+  @media (max-width: 760px) {
+    body { overflow-x: hidden; }
+    .shell {
+      width: 372px;
+      max-width: calc(100% - 18px);
+      margin-left: 9px;
+      margin-right: 0;
+      padding-top: 8px;
+    }
+    .topbar { position: static; grid-template-columns: 1fr; }
+    .screen-tabs { overflow-x: auto; }
+    .page-head { grid-template-columns: 1fr; }
+    .page-head h2 { font-size: 1.72rem; line-height: 1.08; }
+    .btn { min-width: 0; padding: 0 10px; }
+    .primary-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-content: stretch;
+      width: 100%;
+    }
+    .primary-actions .btn.primary { grid-column: 1 / -1; }
+    .format-grid, .rule-strip, .metrics { grid-template-columns: 1fr; }
+    .tie-scoreboard, .broadcast-score { grid-template-columns: 1fr; text-align: left; }
+    .big-score { justify-content: flex-start; font-size: 2.5rem; }
+    .club-score.right { justify-content: flex-start; text-align: left; }
+    .rubber-row {
+      grid-template-columns: 42px 1fr auto;
+      grid-template-areas:
+        "rank left status"
+        "rank right score";
+    }
+    .rubber-rank { grid-area: rank; }
+    .rubber-row .pair:first-of-type { grid-area: left; }
+    .rubber-row .pair:last-of-type { grid-area: right; }
+    .rubber-score { grid-area: score; text-align: right; }
+    .status { grid-area: status; }
+    .rail { grid-template-columns: repeat(5, 160px); }
+  }
+</style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">KS</div>
+        <div>
+          <h1>Competition experience mockup</h1>
+          <p>Choose the competition type first, then make schedule, table, and club identity obvious.</p>
+        </div>
+      </div>
+      <nav class="screen-tabs" aria-label="Mockup screens">
+        <button class="screen-tab is-active" data-screen="builder">Builder</button>
+        <button class="screen-tab" data-screen="control">Control Room</button>
+        <button class="screen-tab" data-screen="public">Public View</button>
+      </nav>
+    </header>
+
+    <section id="builder" class="screen is-active">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Step 1: decide the format</p>
+          <h2>The organizer chooses the competition shape before clubs or players are added.</h2>
+          <p>This avoids the current confusion where "generate matchups" works technically, but the screen does not explain whether it is league, group, knockout, or friendly.</p>
+        </div>
+        <div class="primary-actions">
+          <button class="btn">Save Draft</button>
+          <button class="btn primary">Continue Setup</button>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <aside class="rail" aria-label="Creation steps">
+          <div class="step active"><div class="step-number">1</div><div><strong>Format</strong><span>League, group, knockout, friendly</span></div></div>
+          <div class="step"><div class="step-number">2</div><div><strong>Entrants</strong><span>Clubs, teams, pairs, or players</span></div></div>
+          <div class="step"><div class="step-number">3</div><div><strong>Rules</strong><span>Matches, sets, ranking, seeding</span></div></div>
+          <div class="step"><div class="step-number">4</div><div><strong>Schedule</strong><span>Courts, sessions, order</span></div></div>
+          <div class="step"><div class="step-number">5</div><div><strong>Publish</strong><span>Public link and live scoring</span></div></div>
+        </aside>
+
+        <div class="builder-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h3 class="panel-title">Competition type</h3>
+                <p class="panel-subtitle">The selection changes the setup fields and the schedule generator.</p>
+              </div>
+              <span class="pill active">Club League selected</span>
+            </div>
+            <div class="format-grid">
+              <button class="type-card" data-format="friendly">
+                <span class="mini-icon">1v1</span>
+                <strong>Club Friendly</strong>
+                <span>One club versus one club. Fixed number of matches, no league table.</span>
+              </button>
+              <button class="type-card is-selected" data-format="league">
+                <span class="mini-icon">RR</span>
+                <strong>Club League</strong>
+                <span>Every club meets every other club. Standings decide the winner.</span>
+              </button>
+              <button class="type-card" data-format="group">
+                <span class="mini-icon">G+K</span>
+                <strong>Group + Knockout</strong>
+                <span>Group stage first, then top clubs or pairs advance to semifinals/final.</span>
+              </button>
+              <button class="type-card" data-format="knockout">
+                <span class="mini-icon">KO</span>
+                <strong>Straight Knockout</strong>
+                <span>Single elimination bracket with optional third-place playoff.</span>
+              </button>
+              <button class="type-card" data-format="singles">
+                <span class="mini-icon">MS</span>
+                <strong>Singles Tournament</strong>
+                <span>Individual players enter. Draw can be group, league, or knockout.</span>
+              </button>
+              <button class="type-card" data-format="doubles">
+                <span class="mini-icon">MD</span>
+                <strong>Doubles Tournament</strong>
+                <span>Fixed pairs enter. Draw can be seeded, open, or club-restricted.</span>
+              </button>
+            </div>
+            <div class="rule-strip">
+              <div class="rule"><label>Entrants</label><strong>4 confirmed clubs</strong></div>
+              <div class="rule"><label>Matches per tie</label><strong>5 ranked pairs</strong></div>
+              <div class="rule"><label>Ranking</label><strong>Tie wins, matches, points</strong></div>
+              <div class="rule"><label>Generated output</label><strong>6 ties, 30 matches</strong></div>
+            </div>
+          </section>
+
+          <aside class="panel">
+            <div class="panel-head">
+              <div>
+                <h3 class="panel-title">What the app will generate</h3>
+                <p class="panel-subtitle">This preview updates before the organizer confirms.</p>
+              </div>
+            </div>
+            <div class="preview-stack">
+              <div class="decision-card">
+                <h3 id="formatTitle">Club League</h3>
+                <p id="formatCopy">Every confirmed club plays every other confirmed club once. Each club meeting is shown as one tie with five ranked matches.</p>
+                <div class="spec-list">
+                  <div class="spec-row"><span>Schedule basis</span><strong id="basis">Club round-robin</strong></div>
+                  <div class="spec-row"><span>Player identity</span><strong>Pair name + club badge</strong></div>
+                  <div class="spec-row"><span>Table basis</span><strong id="tableBasis">Tie wins first</strong></div>
+                  <div class="spec-row"><span>Public display</span><strong>By tie, then match</strong></div>
+                </div>
+              </div>
+              <div class="mini-schedule">
+                <div class="mini-tie"><span>Round 1</span><strong>LEP BC vs Nova BC</strong></div>
+                <div class="mini-tie"><span>Round 1</span><strong>Pro Vibe vs Smash Lab</strong></div>
+                <div class="mini-tie"><span>Round 2</span><strong>LEP BC vs Pro Vibe</strong></div>
+                <div class="mini-tie"><span>Round 2</span><strong>Nova BC vs Smash Lab</strong></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="control" class="screen">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Organizer control room</p>
+          <h2>Matchups are grouped by club tie, not shown as a flat list of 30 rows.</h2>
+          <p>The organizer can see which club each pair belongs to, what stage the competition is in, and exactly what the generator created.</p>
+        </div>
+        <div class="primary-actions">
+          <button class="btn">Publish Link</button>
+          <button class="btn blue">Generate Schedule</button>
+          <button class="btn primary">Start Competition</button>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><span>Competition type</span><strong>League</strong></div>
+        <div class="metric"><span>Confirmed clubs</span><strong>4</strong></div>
+        <div class="metric"><span>Club ties</span><strong>6</strong></div>
+        <div class="metric"><span>Matches</span><strong>30</strong></div>
+      </div>
+
+      <div class="control-layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">Club ties</h3>
+              <p class="panel-subtitle">Generated from confirmed clubs and ranked pairs.</p>
+            </div>
+          </div>
+          <div class="tie-list">
+            <button class="tie-card is-active" data-tie="0">
+              <div class="club-line"><span class="club-logo">LEP</span><strong>LEP BC</strong></div>
+              <div class="versus">vs</div>
+              <div class="club-line"><span class="club-logo nova">NOV</span><strong>Nova BC</strong></div>
+              <div class="tie-meta"><span>Court A</span><span>2-1 live</span></div>
+            </button>
+            <button class="tie-card" data-tie="1">
+              <div class="club-line"><span class="club-logo pv">PRO</span><strong>Pro Vibe</strong></div>
+              <div class="versus">vs</div>
+              <div class="club-line"><span class="club-logo smash">SMA</span><strong>Smash Lab</strong></div>
+              <div class="tie-meta"><span>Court B</span><span>Starts 9:45 PM</span></div>
+            </button>
+            <button class="tie-card" data-tie="2">
+              <div class="club-line"><span class="club-logo">LEP</span><strong>LEP BC</strong></div>
+              <div class="versus">vs</div>
+              <div class="club-line"><span class="club-logo pv">PRO</span><strong>Pro Vibe</strong></div>
+              <div class="tie-meta"><span>Round 2</span><span>Pending</span></div>
+            </button>
+            <button class="tie-card" data-tie="3">
+              <div class="club-line"><span class="club-logo nova">NOV</span><strong>Nova BC</strong></div>
+              <div class="versus">vs</div>
+              <div class="club-line"><span class="club-logo smash">SMA</span><strong>Smash Lab</strong></div>
+              <div class="tie-meta"><span>Round 2</span><span>Pending</span></div>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="competition-tabs">
+            <span class="pill">Overview</span>
+            <span class="pill">Teams</span>
+            <span class="pill active">Schedule</span>
+            <span class="pill">Table</span>
+            <span class="pill">Live</span>
+            <span class="pill">Results</span>
+          </div>
+          <div class="tie-hero">
+            <div class="tie-scoreboard">
+              <div class="club-score">
+                <span class="club-logo">LEP</span>
+                <div><strong id="leftClub">LEP BC</strong><span>5 pairs confirmed</span></div>
+              </div>
+              <div class="big-score" id="tieScore">2 <span>-</span> 1</div>
+              <div class="club-score right">
+                <div><strong id="rightClub">Nova BC</strong><span>5 pairs confirmed</span></div>
+                <span class="club-logo nova" id="rightLogo">NOV</span>
+              </div>
+            </div>
+          </div>
+          <div class="rubbers" id="rubberRows">
+            <div class="rubber-row">
+              <div class="rubber-rank">Match 1</div>
+              <div class="pair"><strong>Mankise / Faizal S</strong><span><span class="club-logo">LEP</span> LEP BC</span></div>
+              <div class="rubber-score">21-18</div>
+              <div class="pair"><strong>Nova Player 7 / Nova Player 4</strong><span><span class="club-logo nova">NOV</span> Nova BC</span></div>
+              <span class="status done">Done</span>
+            </div>
+            <div class="rubber-row">
+              <div class="rubber-rank">Match 2</div>
+              <div class="pair"><strong>Arif / Hafiz</strong><span><span class="club-logo">LEP</span> LEP BC</span></div>
+              <div class="rubber-score">17-21</div>
+              <div class="pair"><strong>Nova Player 3 / Nova Player 6</strong><span><span class="club-logo nova">NOV</span> Nova BC</span></div>
+              <span class="status done">Done</span>
+            </div>
+            <div class="rubber-row">
+              <div class="rubber-rank">Match 3</div>
+              <div class="pair"><strong>Iqbal / Remy</strong><span><span class="club-logo">LEP</span> LEP BC</span></div>
+              <div class="rubber-score">16-12</div>
+              <div class="pair"><strong>Nova Player 1 / Nova Player 8</strong><span><span class="club-logo nova">NOV</span> Nova BC</span></div>
+              <span class="status live">Live</span>
+            </div>
+            <div class="rubber-row">
+              <div class="rubber-rank">Match 4</div>
+              <div class="pair"><strong>Azlan / Shahrul</strong><span><span class="club-logo">LEP</span> LEP BC</span></div>
+              <div class="rubber-score">-</div>
+              <div class="pair"><strong>Nova Player 2 / Nova Player 5</strong><span><span class="club-logo nova">NOV</span> Nova BC</span></div>
+              <span class="status">Next</span>
+            </div>
+            <div class="rubber-row">
+              <div class="rubber-rank">Match 5</div>
+              <div class="pair"><strong>Amir / Club Admin</strong><span><span class="club-logo">LEP</span> LEP BC</span></div>
+              <div class="rubber-score">-</div>
+              <div class="pair"><strong>Nova Player 9 / Nova Player 10</strong><span><span class="club-logo nova">NOV</span> Nova BC</span></div>
+              <span class="status">Queued</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="standing-board">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">League table</h3>
+              <p class="panel-subtitle">Visible while the league is running.</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Club</th>
+                <th class="num">P</th>
+                <th class="num">W</th>
+                <th class="num">M</th>
+                <th class="num">Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="leader"><td><span class="club-cell"><span class="club-logo">LEP</span>LEP BC</span></td><td class="num">1</td><td class="num">1</td><td class="num">4-1</td><td class="num">3</td></tr>
+              <tr><td><span class="club-cell"><span class="club-logo pv">PRO</span>Pro Vibe</span></td><td class="num">1</td><td class="num">1</td><td class="num">3-2</td><td class="num">3</td></tr>
+              <tr><td><span class="club-cell"><span class="club-logo nova">NOV</span>Nova BC</span></td><td class="num">1</td><td class="num">0</td><td class="num">1-4</td><td class="num">0</td></tr>
+              <tr><td><span class="club-cell"><span class="club-logo smash">SMA</span>Smash Lab</span></td><td class="num">1</td><td class="num">0</td><td class="num">2-3</td><td class="num">0</td></tr>
+            </tbody>
+          </table>
+          <div class="insight-list">
+            <div class="insight">Generator explanation: 4 confirmed clubs create 6 club ties. With 5 ranked pairs per club tie, the app generates 30 matches.</div>
+            <div class="insight">Lineup clarity: every player row carries the club badge and club name, so organizers know who belongs to whom.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="public" class="screen">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Public competition page</p>
+          <h2>Players and spectators see the same structure: club tie first, then matches, then table.</h2>
+          <p>The public screen should make the competition understandable even if someone opens the link halfway through the event.</p>
+        </div>
+        <div class="primary-actions">
+          <button class="btn">Copy Public Link</button>
+          <button class="btn primary">Open Live Board</button>
+        </div>
+      </div>
+
+      <div class="public-layout">
+        <section class="public-slate">
+          <div class="broadcast-hero">
+            <div class="broadcast-score">
+              <div class="club-score">
+                <span class="club-logo">LEP</span>
+                <div><h3>LEP BC</h3><p>Leading Court A</p></div>
+              </div>
+              <div class="big-score">2 <span>-</span> 1</div>
+              <div class="club-score right">
+                <div><h3>Nova BC</h3><p>Match 3 live</p></div>
+                <span class="club-logo nova">NOV</span>
+              </div>
+            </div>
+          </div>
+          <div class="match-feed">
+            <div class="feed-item"><span class="feed-time">Live</span><div><strong>Iqbal / Remy vs Nova Player 1 / Nova Player 8</strong><span>Match 3, game 1 on Court A</span></div><strong>16-12</strong></div>
+            <div class="feed-item"><span class="feed-time">Next</span><div><strong>Azlan / Shahrul vs Nova Player 2 / Nova Player 5</strong><span>Match 4 starts after current match</span></div><strong>-</strong></div>
+            <div class="feed-item"><span class="feed-time">9:45</span><div><strong>Pro Vibe vs Smash Lab</strong><span>Round 1, Court B, five matches</span></div><strong>0-0</strong></div>
+            <div class="feed-item"><span class="feed-time">Table</span><div><strong>LEP BC top on match difference</strong><span>Ranking: tie wins, matches won, point difference</span></div><strong>+3</strong></div>
+          </div>
+        </section>
+
+        <aside class="phone" aria-label="Mobile public preview">
+          <div class="phone-screen">
+            <div class="phone-top"><span>9:41</span><span>KelabSukan</span></div>
+            <div class="mobile-score">
+              <h3>LEP Invitational League</h3>
+              <div class="mobile-score-grid">
+                <div class="mobile-club"><span class="club-logo">LEP</span><strong>LEP BC</strong><span>2 matches</span></div>
+                <div class="mobile-score-value">2-1</div>
+                <div class="mobile-club"><span class="club-logo nova">NOV</span><strong>Nova BC</strong><span>1 match</span></div>
+              </div>
+            </div>
+            <div class="mobile-tabs">
+              <button class="mobile-tab active">Live</button>
+              <button class="mobile-tab">Schedule</button>
+              <button class="mobile-tab">Table</button>
+            </div>
+            <div class="mobile-list">
+              <div class="mobile-rubber">
+                <div class="mobile-rubber-head"><span>Match 3 live</span><span>Court A</span></div>
+                <div class="mobile-pair-row"><strong>Iqbal / Remy</strong><span>LEP</span></div>
+                <div class="mobile-pair-row"><strong>Nova Player 1 / Nova Player 8</strong><span>NOV</span></div>
+                <div class="mobile-pair-row"><strong>Score</strong><strong>16-12</strong></div>
+              </div>
+              <div class="mobile-rubber">
+                <div class="mobile-rubber-head"><span>Match 4 next</span><span>Queued</span></div>
+                <div class="mobile-pair-row"><strong>Azlan / Shahrul</strong><span>LEP</span></div>
+                <div class="mobile-pair-row"><strong>Nova Player 2 / Nova Player 5</strong><span>NOV</span></div>
+              </div>
+              <div class="mobile-rubber">
+                <div class="mobile-rubber-head"><span>Upcoming tie</span><span>9:45 PM</span></div>
+                <div class="mobile-pair-row"><strong>Pro Vibe</strong><span>PRO</span></div>
+                <div class="mobile-pair-row"><strong>Smash Lab</strong><span>SMA</span></div>
+              </div>
+            </div>
+            <div class="mobile-table">
+              <div class="row header"><span>Club</span><span>W</span><span>M</span></div>
+              <div class="row leader"><span>LEP BC</span><span>1</span><span>4-1</span></div>
+              <div class="row"><span>Pro Vibe</span><span>1</span><span>3-2</span></div>
+              <div class="row"><span>Nova BC</span><span>0</span><span>1-4</span></div>
+              <div class="row"><span>Smash Lab</span><span>0</span><span>2-3</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="note-band">
+        Product decision shown here: the app should not have one generic "Generate matchups" behavior. It should generate based on the selected competition type, then show a clear explanation of the output before and after generation.
+      </div>
+    </section>
+  </main>
+
+<script>
+  const screenButtons = document.querySelectorAll('[data-screen]');
+  const screens = document.querySelectorAll('.screen');
+
+  function showScreen(next, shouldScroll = true) {
+    screenButtons.forEach((tab) => tab.classList.toggle('is-active', tab.dataset.screen === next));
+    screens.forEach((screen) => screen.classList.toggle('is-active', screen.id === next));
+    if (location.hash.replace('#', '') !== next) {
+      history.replaceState(null, '', '#' + next);
+    }
+    if (shouldScroll) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  screenButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      showScreen(button.dataset.screen);
+    });
+  });
+
+  const initialScreen = location.hash.replace('#', '');
+  if (initialScreen && document.getElementById(initialScreen)) {
+    showScreen(initialScreen, false);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
+  }
+
+  const formatCopy = {
+    friendly: {
+      title: 'Club Friendly',
+      copy: 'One club plays one opponent club. The app generates one tie only, with the selected number of matches.',
+      basis: 'One club tie',
+      table: 'No league table'
+    },
+    league: {
+      title: 'Club League',
+      copy: 'Every confirmed club plays every other confirmed club once. Each club meeting is shown as one tie with five ranked matches.',
+      basis: 'Club round-robin',
+      table: 'Tie wins first'
+    },
+    group: {
+      title: 'Group + Knockout',
+      copy: 'Clubs or pairs are split into groups. The top qualifiers advance to a knockout bracket.',
+      basis: 'Groups then bracket',
+      table: 'Group table first'
+    },
+    knockout: {
+      title: 'Straight Knockout',
+      copy: 'Entrants are placed into a bracket. Winners advance and losing entrants are eliminated.',
+      basis: 'Seeded bracket',
+      table: 'Bracket progression'
+    },
+    singles: {
+      title: 'Singles Tournament',
+      copy: 'Individual players enter the draw. The organizer can choose league, group, or knockout rules for singles.',
+      basis: 'Player draw',
+      table: 'Selected draw rules'
+    },
+    doubles: {
+      title: 'Doubles Tournament',
+      copy: 'Fixed doubles pairs enter the draw. The organizer can seed pairs and choose the tournament structure.',
+      basis: 'Pair draw',
+      table: 'Selected draw rules'
+    }
+  };
+
+  document.querySelectorAll('[data-format]').forEach((card) => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('[data-format]').forEach((item) => item.classList.toggle('is-selected', item === card));
+      const copy = formatCopy[card.dataset.format];
+      document.getElementById('formatTitle').textContent = copy.title;
+      document.getElementById('formatCopy').textContent = copy.copy;
+      document.getElementById('basis').textContent = copy.basis;
+      document.getElementById('tableBasis').textContent = copy.table;
+    });
+  });
+
+  const ties = [
+    {
+      left: 'LEP BC',
+      right: 'Nova BC',
+      rightCode: 'NOV',
+      score: '2 - 1',
+      rows: [
+        ['Match 1', 'Mankise / Faizal S', 'LEP BC', '21-18', 'Nova Player 7 / Nova Player 4', 'Nova BC', 'Done'],
+        ['Match 2', 'Arif / Hafiz', 'LEP BC', '17-21', 'Nova Player 3 / Nova Player 6', 'Nova BC', 'Done'],
+        ['Match 3', 'Iqbal / Remy', 'LEP BC', '16-12', 'Nova Player 1 / Nova Player 8', 'Nova BC', 'Live'],
+        ['Match 4', 'Azlan / Shahrul', 'LEP BC', '-', 'Nova Player 2 / Nova Player 5', 'Nova BC', 'Next'],
+        ['Match 5', 'Amir / Club Admin', 'LEP BC', '-', 'Nova Player 9 / Nova Player 10', 'Nova BC', 'Queued']
+      ]
+    },
+    {
+      left: 'Pro Vibe',
+      right: 'Smash Lab',
+      rightCode: 'SMA',
+      score: '0 - 0',
+      rows: [
+        ['Match 1', 'PV Player 1 / PV Player 2', 'Pro Vibe', '-', 'Smash Pair 1', 'Smash Lab', 'Next'],
+        ['Match 2', 'PV Player 3 / PV Player 4', 'Pro Vibe', '-', 'Smash Pair 2', 'Smash Lab', 'Queued'],
+        ['Match 3', 'PV Player 5 / PV Player 6', 'Pro Vibe', '-', 'Smash Pair 3', 'Smash Lab', 'Queued'],
+        ['Match 4', 'PV Player 7 / PV Player 8', 'Pro Vibe', '-', 'Smash Pair 4', 'Smash Lab', 'Queued'],
+        ['Match 5', 'PV Player 9 / PV Player 10', 'Pro Vibe', '-', 'Smash Pair 5', 'Smash Lab', 'Queued']
+      ]
+    },
+    {
+      left: 'LEP BC',
+      right: 'Pro Vibe',
+      rightCode: 'PRO',
+      score: '0 - 0',
+      rows: [
+        ['Match 1', 'Mankise / Faizal S', 'LEP BC', '-', 'PV Player 1 / PV Player 2', 'Pro Vibe', 'Pending'],
+        ['Match 2', 'Arif / Hafiz', 'LEP BC', '-', 'PV Player 3 / PV Player 4', 'Pro Vibe', 'Pending'],
+        ['Match 3', 'Iqbal / Remy', 'LEP BC', '-', 'PV Player 5 / PV Player 6', 'Pro Vibe', 'Pending'],
+        ['Match 4', 'Azlan / Shahrul', 'LEP BC', '-', 'PV Player 7 / PV Player 8', 'Pro Vibe', 'Pending'],
+        ['Match 5', 'Amir / Club Admin', 'LEP BC', '-', 'PV Player 9 / PV Player 10', 'Pro Vibe', 'Pending']
+      ]
+    },
+    {
+      left: 'Nova BC',
+      right: 'Smash Lab',
+      rightCode: 'SMA',
+      score: '0 - 0',
+      rows: [
+        ['Match 1', 'Nova Player 7 / Nova Player 4', 'Nova BC', '-', 'Smash Pair 1', 'Smash Lab', 'Pending'],
+        ['Match 2', 'Nova Player 3 / Nova Player 6', 'Nova BC', '-', 'Smash Pair 2', 'Smash Lab', 'Pending'],
+        ['Match 3', 'Nova Player 1 / Nova Player 8', 'Nova BC', '-', 'Smash Pair 3', 'Smash Lab', 'Pending'],
+        ['Match 4', 'Nova Player 2 / Nova Player 5', 'Nova BC', '-', 'Smash Pair 4', 'Smash Lab', 'Pending'],
+        ['Match 5', 'Nova Player 9 / Nova Player 10', 'Nova BC', '-', 'Smash Pair 5', 'Smash Lab', 'Pending']
+      ]
+    }
+  ];
+
+  function logoClass(name) {
+    if (name.includes('Nova')) return 'nova';
+    if (name.includes('Pro')) return 'pv';
+    if (name.includes('Smash')) return 'smash';
+    return '';
+  }
+
+  document.querySelectorAll('[data-tie]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const tie = ties[Number(button.dataset.tie)];
+      document.querySelectorAll('[data-tie]').forEach((item) => item.classList.toggle('is-active', item === button));
+      document.getElementById('leftClub').textContent = tie.left;
+      document.getElementById('rightClub').textContent = tie.right;
+      document.getElementById('rightLogo').textContent = tie.rightCode;
+      document.getElementById('rightLogo').className = 'club-logo ' + logoClass(tie.right);
+      document.getElementById('tieScore').innerHTML = tie.score.replace(' - ', ' <span>-</span> ');
+      document.getElementById('rubberRows').innerHTML = tie.rows.map((row) => {
+        const statusClass = row[6].toLowerCase() === 'live' ? 'live' : row[6].toLowerCase() === 'done' ? 'done' : '';
+        return `
+          <div class="rubber-row">
+            <div class="rubber-rank">${row[0]}</div>
+            <div class="pair"><strong>${row[1]}</strong><span><span class="club-logo ${logoClass(row[2])}">${row[2].slice(0, 3).toUpperCase()}</span> ${row[2]}</span></div>
+            <div class="rubber-score">${row[3]}</div>
+            <div class="pair"><strong>${row[4]}</strong><span><span class="club-logo ${logoClass(row[5])}">${row[5].slice(0, 3).toUpperCase()}</span> ${row[5]}</span></div>
+            <span class="status ${statusClass}">${row[6]}</span>
+          </div>
+        `;
+      }).join('');
+    });
+  });
+</script>
+</body>
+</html>

@@ -7,12 +7,23 @@ import type {
   CreateCompetitionInput,
   RosterInvite
 } from '../../types/competition'
+import {
+  competitionParticipantsShareUser,
+  getDuplicateCompetitionUserMessage,
+  getMatchupParticipantOverlapMessage,
+  type CompetitionParticipantIdentity,
+} from '../competitionIntegrity'
 
 type ProfileSummary = {
   id: string
   name: string
   display_name: string | null
   avatar_url: string | null
+}
+
+type ParticipantIdentityRow = CompetitionParticipantIdentity & {
+  id: string
+  rank?: number | null
 }
 // ============================================
 // HELPERS
@@ -266,6 +277,29 @@ export async function registerCompetitionParticipants(
   clubId: string,
   participants: { name: string; user_1_id: string; user_2_id?: string | null; rank?: number }[]
 ): Promise<{ participants: CompetitionParticipant[]; error: Error | null }> {
+  const newParticipants = participants.map((p, index) => ({
+    id: `new-${index}`,
+    name: p.name,
+    user_1_id: p.user_1_id,
+    user_2_id: p.user_2_id || null,
+  }))
+
+  const newParticipantError = getDuplicateCompetitionUserMessage(newParticipants)
+  if (newParticipantError) return { participants: [], error: new Error(newParticipantError) }
+
+  const { data: existingParticipants, error: existingError } = await supabase
+    .from('competition_participants')
+    .select('id, name, user_1_id, user_2_id')
+    .eq('competition_id', competitionId)
+
+  if (existingError) return { participants: [], error: existingError }
+
+  const combinedParticipantError = getDuplicateCompetitionUserMessage([
+    ...((existingParticipants as ParticipantIdentityRow[]) || []),
+    ...newParticipants,
+  ])
+  if (combinedParticipantError) return { participants: [], error: new Error(combinedParticipantError) }
+
   const inserts = participants.map(p => ({
     competition_id: competitionId,
     club_id: clubId,
@@ -322,6 +356,29 @@ export async function inviteMemberToRoster(
   rank: number | null = null
 ): Promise<{ participant: CompetitionParticipant | null; error: Error | null }> {
   try {
+    if (partnerId && partnerId === userId) {
+      throw new Error('A pair needs two different players.')
+    }
+
+    const { data: existingParticipants, error: existingError } = await supabase
+      .from('competition_participants')
+      .select('id, name, user_1_id, user_2_id')
+      .eq('competition_id', competitionId)
+
+    if (existingError) throw existingError
+
+    const duplicateMessage = getDuplicateCompetitionUserMessage([
+      ...((existingParticipants as ParticipantIdentityRow[]) || []),
+      {
+        id: 'new-roster-invite',
+        name: 'This invite',
+        user_1_id: userId,
+        user_2_id: partnerId,
+      },
+    ])
+
+    if (duplicateMessage) throw new Error(duplicateMessage)
+
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('id, name, display_name')
@@ -568,6 +625,12 @@ export async function isAllLineupsConfirmed(
 export async function generateMatchups(
   competitionId: string
 ): Promise<{ matchups: CompetitionMatchup[]; error: Error | null }> {
+  const existing = await getCompetitionMatchups(competitionId)
+  if (existing.error) return existing
+  if (existing.matchups.length > 0) {
+    return { matchups: existing.matchups, error: null }
+  }
+
   const { data: comp } = await supabase
     .from('competitions')
     .select('pairs_count')
@@ -607,36 +670,51 @@ export async function generateMatchups(
     // Get participants for each club, ordered by rank
     const { data: participantsA } = await supabase
       .from('competition_participants')
-      .select('id')
+      .select('id, name, user_1_id, user_2_id, rank')
       .eq('competition_id', competitionId)
       .eq('club_id', clubA.club_id)
       .order('rank', { nullsFirst: false })
-      .limit(pairCount)
 
     const { data: participantsB } = await supabase
       .from('competition_participants')
-      .select('id')
+      .select('id, name, user_1_id, user_2_id, rank')
       .eq('competition_id', competitionId)
       .eq('club_id', clubB.club_id)
       .order('rank', { nullsFirst: false })
-      .limit(pairCount)
 
     if (!participantsA || !participantsB) continue
 
-    const maxPairs = Math.min(participantsA.length, participantsB.length, pairCount)
+    const rankedParticipantsA = (participantsA as ParticipantIdentityRow[]).slice(0, pairCount)
+    const rankedParticipantsB = participantsB as ParticipantIdentityRow[]
+    const usedParticipantBIds = new Set<string>()
 
-    for (let p = 0; p < maxPairs; p++) {
+    for (const participantA of rankedParticipantsA) {
+      const participantB = rankedParticipantsB.find(candidate => (
+        !usedParticipantBIds.has(candidate.id) &&
+        !competitionParticipantsShareUser(participantA, candidate)
+      ))
+
+      if (!participantB) continue
+      usedParticipantBIds.add(participantB.id)
+
       allMatchups.push({
         competition_id: competitionId,
         club_a_id: clubA.id,
         club_b_id: clubB.id,
-        participant_a_id: participantsA[p].id,
-        participant_b_id: participantsB[p].id,
+        participant_a_id: participantA.id,
+        participant_b_id: participantB.id,
         order_index: orderIndex++,
         round_index: roundIdx,
         status: 'pending',
         locked: false,
       })
+    }
+  }
+
+  if (allMatchups.length === 0) {
+    return {
+      matchups: [],
+      error: new Error('No matchups were generated. Check that each confirmed club has ranked pairs.'),
     }
   }
 
@@ -658,6 +736,22 @@ export async function swapMatchupParticipants(
   newParticipantAId: string,
   newParticipantBId: string
 ): Promise<{ error: Error | null }> {
+  if (newParticipantAId === newParticipantBId) {
+    return { error: new Error('A pair cannot play against itself.') }
+  }
+
+  const { data: selectedParticipants, error: participantError } = await supabase
+    .from('competition_participants')
+    .select('id, name, user_1_id, user_2_id')
+    .in('id', [newParticipantAId, newParticipantBId])
+
+  if (participantError) return { error: participantError }
+
+  const participantA = (selectedParticipants as ParticipantIdentityRow[] || []).find(p => p.id === newParticipantAId)
+  const participantB = (selectedParticipants as ParticipantIdentityRow[] || []).find(p => p.id === newParticipantBId)
+  const matchupError = getMatchupParticipantOverlapMessage(participantA, participantB)
+  if (matchupError) return { error: new Error(matchupError) }
+
   const { error } = await supabase
     .from('competition_matchups')
     .update({
@@ -673,6 +767,16 @@ export async function swapMatchupParticipants(
 export async function startCompetition(
   competitionId: string
 ): Promise<{ error: Error | null }> {
+  const existing = await getCompetitionMatchups(competitionId)
+  if (existing.error) return { error: existing.error }
+
+  for (const matchup of existing.matchups) {
+    const matchupError = getMatchupParticipantOverlapMessage(matchup.participant_a, matchup.participant_b)
+    if (matchupError) {
+      return { error: new Error(`Fix Match ${matchup.order_index + 1} before starting: ${matchupError}`) }
+    }
+  }
+
   // Lock all matchups and set competition to live
   const { error: lockError } = await supabase
     .from('competition_matchups')
@@ -747,9 +851,34 @@ export async function recordCompetitionMatch(
 ): Promise<{ match: { id: string } | null; error: Error | null }> {
   const { data: matchupDetails } = await supabase
     .from('competition_matchups')
-    .select('competition_id')
+    .select(`
+      competition_id,
+      participant_a_id,
+      participant_b_id,
+      participant_a:competition_participants!participant_a_id(id, name, user_1_id, user_2_id),
+      participant_b:competition_participants!participant_b_id(id, name, user_1_id, user_2_id)
+    `)
     .eq('id', matchupId)
     .single()
+
+  const typedMatchupDetails = matchupDetails as {
+    competition_id?: string | null
+    participant_a?: ParticipantIdentityRow | null
+    participant_b?: ParticipantIdentityRow | null
+  } | null
+  const competitionId = typedMatchupDetails?.competition_id
+
+  const matchupError = getMatchupParticipantOverlapMessage(
+    typedMatchupDetails?.participant_a,
+    typedMatchupDetails?.participant_b
+  )
+  if (matchupError) return { match: null, error: new Error(matchupError) }
+  if (!competitionId) return { match: null, error: new Error('Competition matchup not found.') }
+
+  const participantIds = matchData.participants.map(participant => participant.user_id)
+  if (new Set(participantIds).size !== participantIds.length) {
+    return { match: null, error: new Error('Each player can only appear once in a match.') }
+  }
 
   const userId = await getCurrentUserId()
 
@@ -760,7 +889,7 @@ export async function recordCompetitionMatch(
       sport: matchData.sport,
       match_type: matchData.match_type,
       recorded_by: userId,
-      tournament_id: matchupDetails?.competition_id || null,
+      tournament_id: competitionId,
     })
     .select('id')
     .single()
@@ -815,7 +944,7 @@ export async function recordCompetitionMatch(
           type: 'competition_update',
           title: `Match completed`,
           message: `Your rubber finished (${scoreText})`,
-          data: { competition_id: matchupDetails?.competition_id, matchup_id: matchupId },
+          data: { competition_id: competitionId, matchup_id: matchupId },
         })
       }
     }
@@ -860,11 +989,11 @@ export async function recordCompetitionMatch(
   const { data: remaining } = await supabase
     .from('competition_matchups')
     .select('id')
-    .eq('competition_id', matchupDetails?.competition_id)
+    .eq('competition_id', competitionId)
     .neq('status', 'completed')
 
   if (!remaining || remaining.length === 0) {
-    await completeCompetition(matchupDetails?.competition_id)
+    await completeCompetition(competitionId)
   }
 
   return { match: { id: match.id }, error: null }

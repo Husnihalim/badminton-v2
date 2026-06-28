@@ -25,6 +25,7 @@ import {
   cancelCompetition,
   respondToCompetitionInvite,
 } from '../lib/api/competitions'
+import { getMatchupParticipantOverlapMessage } from '../lib/competitionIntegrity'
 import { getClubMembers, getMyClubs } from '../lib/api'
 import type {
   Competition,
@@ -519,7 +520,7 @@ export default function CompetitionDetailsPage() {
                 </div>
               )}
 
-              {isHostAdmin && competition.status !== 'completed' && competition.status !== 'cancelled' && (
+              {isHostAdmin && ['draft', 'registration'].includes(competition.status) && (
                 <div className="border-t border-white/10 pt-4">
                   <Button variant="ghost" onClick={handleCancelCompetition} className="text-red-400 hover:text-red-300 text-xs">
                     Cancel Competition
@@ -754,6 +755,7 @@ export default function CompetitionDetailsPage() {
                   const isAEditable = !m.locked && isAdmin && compClubs.some(cc => cc.club_id === myClub?.club_id)
                   const myClubId = myClub?.club_id
                   const myClubParticipants = participants.filter(p => p.club_id === myClubId)
+                  const matchupWarning = getMatchupParticipantOverlapMessage(m.participant_a, m.participant_b)
 
                   return (
                     <div key={m.id} className="rounded-lg border border-white/10 bg-[var(--arena-surface)] p-4">
@@ -812,6 +814,11 @@ export default function CompetitionDetailsPage() {
                           {m.match.score_sets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')}
                         </p>
                       )}
+                      {matchupWarning && (
+                        <p className="mt-3 rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">
+                          {matchupWarning}
+                        </p>
+                      )}
                     </div>
                   )
                 })}
@@ -829,14 +836,24 @@ export default function CompetitionDetailsPage() {
             )}
             {matchups.length > 0 && (
               <div className="space-y-3">
-                {matchups.map(m => (
-                  <BwfMatchupCard
-                    key={m.id}
-                    matchup={m}
-                    isAdmin={isAdmin && competition.status === 'live'}
-                    onRecordScore={isAdmin && competition.status === 'live' ? () => handleRecordMatch(m) : undefined}
-                  />
-                ))}
+                {matchups.map(m => {
+                  const matchupWarning = getMatchupParticipantOverlapMessage(m.participant_a, m.participant_b)
+
+                  return (
+                    <div key={m.id} className="space-y-2">
+                      <BwfMatchupCard
+                        matchup={m}
+                        isAdmin={isAdmin && competition.status === 'live' && !matchupWarning}
+                        onRecordScore={isAdmin && competition.status === 'live' && !matchupWarning ? () => handleRecordMatch(m) : undefined}
+                      />
+                      {matchupWarning && (
+                        <p className="rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">
+                          {matchupWarning}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
