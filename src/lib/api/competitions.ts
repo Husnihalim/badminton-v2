@@ -9,7 +9,6 @@ import type {
 } from '../../types/competition'
 import {
   competitionParticipantsShareUser,
-  getDuplicateCompetitionUserMessage,
   getMatchupParticipantOverlapMessage,
   type CompetitionParticipantIdentity,
 } from '../competitionIntegrity'
@@ -277,29 +276,6 @@ export async function registerCompetitionParticipants(
   clubId: string,
   participants: { name: string; user_1_id: string; user_2_id?: string | null; rank?: number }[]
 ): Promise<{ participants: CompetitionParticipant[]; error: Error | null }> {
-  const newParticipants = participants.map((p, index) => ({
-    id: `new-${index}`,
-    name: p.name,
-    user_1_id: p.user_1_id,
-    user_2_id: p.user_2_id || null,
-  }))
-
-  const newParticipantError = getDuplicateCompetitionUserMessage(newParticipants)
-  if (newParticipantError) return { participants: [], error: new Error(newParticipantError) }
-
-  const { data: existingParticipants, error: existingError } = await supabase
-    .from('competition_participants')
-    .select('id, name, user_1_id, user_2_id')
-    .eq('competition_id', competitionId)
-
-  if (existingError) return { participants: [], error: existingError }
-
-  const combinedParticipantError = getDuplicateCompetitionUserMessage([
-    ...((existingParticipants as ParticipantIdentityRow[]) || []),
-    ...newParticipants,
-  ])
-  if (combinedParticipantError) return { participants: [], error: new Error(combinedParticipantError) }
-
   const inserts = participants.map(p => ({
     competition_id: competitionId,
     club_id: clubId,
@@ -359,25 +335,6 @@ export async function inviteMemberToRoster(
     if (partnerId && partnerId === userId) {
       throw new Error('A pair needs two different players.')
     }
-
-    const { data: existingParticipants, error: existingError } = await supabase
-      .from('competition_participants')
-      .select('id, name, user_1_id, user_2_id')
-      .eq('competition_id', competitionId)
-
-    if (existingError) throw existingError
-
-    const duplicateMessage = getDuplicateCompetitionUserMessage([
-      ...((existingParticipants as ParticipantIdentityRow[]) || []),
-      {
-        id: 'new-roster-invite',
-        name: 'This invite',
-        user_1_id: userId,
-        user_2_id: partnerId,
-      },
-    ])
-
-    if (duplicateMessage) throw new Error(duplicateMessage)
 
     const { data: userProfile } = await supabase
       .from('profiles')
