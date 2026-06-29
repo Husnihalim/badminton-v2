@@ -2,7 +2,7 @@ import React from 'react'
 import { MapPin, UserRound, Share2 } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Badge } from './ui/badge'
-import { cn } from '../lib/utils'
+import { cn, getEloRank } from '../lib/utils'
 import type { User } from '../types'
 
 export interface PlayerCardProps {
@@ -51,6 +51,7 @@ export function PlayerCard({
   onTabChange,
 }: PlayerCardProps) {
   const navigate = useNavigate()
+  const eloRank = elo != null ? getEloRank(elo) : null
   const displayName = profile.display_name || profile.name || 'Anonymous'
   const firstName = displayName.split(' ')[0] || displayName
   const isPrivate = profile.is_private ?? false
@@ -90,10 +91,13 @@ export function PlayerCard({
                 {profile.id ? `@${profile.name}` : 'Guest Player'}
               </p>
             </div>
-            {elo != null && (
-              <div className="text-right shrink-0">
-                <span className="text-xs font-black text-[#ccff00] bg-[#ccff00]/10 border border-[#ccff00]/25 px-1.5 py-0.5 rounded">
+            {elo != null && eloRank && (
+              <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
+                <span className="text-xs font-black text-[var(--arena-accent)] bg-[var(--arena-accent-soft)] border border-[var(--arena-accent)]/20 px-1.5 py-0.5 rounded">
                   ⚡ {elo}
+                </span>
+                <span className={cn("text-[8px] font-extrabold uppercase px-1 py-0.5 rounded whitespace-nowrap", eloRank.className)}>
+                  {eloRank.name}
                 </span>
               </div>
             )}
@@ -274,13 +278,18 @@ export function PlayerCard({
             </div>
             <div className="text-center border-x border-white/5">
               <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Win Rate</p>
-              <p className="text-lg font-black text-[#ccff00] mt-0.5">{stats?.winRate || 0}%</p>
+              <p className="text-lg font-black text-[var(--arena-accent)] mt-0.5">{stats?.winRate || 0}%</p>
             </div>
             <div className="text-center">
               <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">ELO Rating</p>
               <p className="text-lg font-black text-white mt-0.5 flex items-center justify-center gap-0.5">
-                <span className="text-[#ccff00]">⚡</span> {elo != null ? elo : 1200}
+                <span className="text-[var(--arena-accent)]">⚡</span> {elo != null ? elo : 1200}
               </p>
+              {eloRank && (
+                <span className={cn("inline-block mt-1 text-[8px] font-extrabold uppercase px-1 py-0.5 rounded scale-90 origin-top whitespace-nowrap", eloRank.className)}>
+                  {eloRank.name}
+                </span>
+              )}
             </div>
           </div>
         )}

@@ -99,6 +99,32 @@
   --sidebar-ring: var(--arena-accent);
 }
 
+:root[data-theme='light'] {
+  --arena-bg: #f8fafc;
+  --arena-surface: #ffffff;
+  --arena-surface-muted: #f1f5f9;
+  --arena-surface-elevated: #e2e8f0;
+  --arena-text: #0f172a;
+  --arena-text-muted: #475569;
+  --arena-text-dim: #64748b;
+  --arena-border: rgba(15, 23, 42, 0.08);
+  --arena-accent: #65a30d;
+  --arena-accent-soft: rgba(101, 163, 13, 0.08);
+  --arena-accent-text: #ffffff;
+  --arena-nav-bg: rgba(255, 255, 255, 0.92);
+  --arena-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.04);
+  --arena-glow: 0 0 20px rgba(101, 163, 13, 0.05);
+  --arena-gradient: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  --arena-lime: #65a30d;
+  --arena-blue: #0284c7;
+  --arena-line: rgba(0, 0, 0, 0.06);
+  --arena-line-blue: rgba(2, 132, 199, 0.1);
+  --arena-panel: rgba(0, 0, 0, 0.02);
+  --arena-admin: rgba(0, 0, 0, 0.01);
+  --arena-muted: rgba(0, 0, 0, 0.15);
+}
+
+
 @media (min-width: 768px) {
   :root {
     font-size: 16px;

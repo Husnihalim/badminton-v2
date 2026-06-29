@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy, RefreshCw, Save, Settings, ShieldAlert, Image as ImageIcon, Camera, Megaphone, Palette, UserCheck, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, deleteClub, getClubMembers } from '../lib/api'
+import { buildInviteUrl, createSpecificInviteLink, getClub, getMyMembership, getSpecificInviteLinks, regenerateInviteLink, revokeSpecificInviteLink, updateClub, uploadClubLogo, uploadClubBanner, type SpecificClubInvite, getClubMembers } from '../lib/api/clubs'
+import { deleteClub } from '../lib/api/superadmin'
 import type { Club, Membership } from '../types'
 import DeleteClubModal from '../components/DeleteClubModal'
 import { Badge } from '../components/ui/badge'
@@ -321,7 +322,7 @@ export default function ClubSettingsPage() {
       />
 
       <form className="space-y-5" onSubmit={handleSubmit}>
-        {error ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+        {error ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/30 dark:bg-red-950/40 dark:text-red-400">{error}</p> : null}
 
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-5">
@@ -604,7 +605,7 @@ export default function ClubSettingsPage() {
                         return (
                           <div key={invite.id} className="grid gap-2 rounded-lg border border-slate-600 bg-[var(--arena-surface)] p-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
                             <div className="min-w-0">
-                              <p className="truncate font-mono text-xs font-semibold text-slate-900">{buildInviteUrl(invite.token)}</p>
+                              <p className="truncate font-mono text-xs font-semibold text-[var(--arena-text)]">{buildInviteUrl(invite.token)}</p>
                               <p className="text-xs text-[var(--arena-text-dim)]">
                                 {isRevoked ? 'Revoked' : isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'} · Created {new Date(invite.created_at).toLocaleDateString()}
                               </p>

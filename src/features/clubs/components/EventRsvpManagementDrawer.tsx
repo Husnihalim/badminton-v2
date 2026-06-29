@@ -77,23 +77,23 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
   }
 
   return (
-    <div className="mt-2.5 p-3.5 bg-slate-100 rounded-lg border border-[var(--arena-border)] space-y-3">
+    <div className="mt-2.5 p-3.5 bg-[var(--arena-surface-muted)] rounded-lg border border-[var(--arena-border)] space-y-3">
       <div className="flex flex-col gap-1.5">
         <h4 className="text-[10px] font-bold text-[var(--arena-text-dim)] uppercase tracking-wider">
           Admin Control: Attendance & Payment
         </h4>
         
         {/* Summary Stats Panel */}
-        <div className="p-2.5 bg-[var(--arena-surface)] rounded-md border border-[var(--arena-border)]/80 text-[11px] font-medium text-slate-300 grid grid-cols-2 gap-2 shadow-sm">
+        <div className="p-2.5 bg-[var(--arena-surface)] rounded-md border border-[var(--arena-border)]/80 text-[11px] font-medium text-[var(--arena-text-muted)] grid grid-cols-2 gap-2 shadow-sm">
           <div>
-            📊 <span className="font-bold text-slate-900">Attended:</span> {attendedCount}
+            📊 <span className="font-bold text-[var(--arena-text)]">Attended:</span> {attendedCount}
           </div>
           <div>
-            💰 <span className="font-bold text-slate-900">Paid:</span> {paidCount}
+            💰 <span className="font-bold text-[var(--arena-text)]">Paid:</span> {paidCount}
           </div>
           {cost > 0 && (
-            <div className="col-span-2 border-t border-slate-100 pt-1.5 mt-0.5 flex justify-between items-center text-xs">
-              <span>💵 <span className="font-bold text-slate-900">Revenue:</span></span>
+            <div className="col-span-2 border-t border-[var(--arena-border)] pt-1.5 mt-0.5 flex justify-between items-center text-xs">
+              <span>💵 <span className="font-bold text-[var(--arena-text)]">Revenue:</span></span>
               <span className={`font-bold ${theme.text}`}>RM {collectedAmount.toFixed(2)} / RM {expectedAmount.toFixed(2)}</span>
             </div>
           )}

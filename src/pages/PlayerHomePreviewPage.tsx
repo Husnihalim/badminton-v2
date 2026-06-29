@@ -113,8 +113,8 @@ export default function PlayerHomePreviewPage() {
         <Card>
           <CardContent className="space-y-4 p-4 sm:p-5">
             <div>
-              <h2 className="text-lg font-bold text-slate-950">Activity summary</h2>
-              <p className="text-sm leading-6 text-slate-600">Overview of your club stats.</p>
+              <h2 className="text-lg font-bold text-[var(--arena-text)]">Activity summary</h2>
+              <p className="text-sm leading-6 text-[var(--arena-text-muted)]">Overview of your club stats.</p>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <MiniCount icon={<Users size={15} />} label="Clubs" value="2" />
@@ -130,17 +130,17 @@ export default function PlayerHomePreviewPage() {
           <CardContent className="space-y-4 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-950">Personal stats</h2>
-                <p className="text-sm leading-6 text-slate-600">Singles, doubles, ranking, and current form.</p>
+                <h2 className="text-lg font-bold text-[var(--arena-text)]">Personal stats</h2>
+                <p className="text-sm leading-6 text-[var(--arena-text-muted)]">Singles, doubles, ranking, and current form.</p>
               </div>
-              <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">Live from matches</Badge>
+              <Badge className="border-[var(--arena-accent)]/20 bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">Live from matches</Badge>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {statTiles.map(([label, value, note]) => (
-                <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-950">{value}</p>
-                  <p className="mt-1 text-xs font-medium text-slate-500">{note}</p>
+                <div key={label} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3">
+                  <p className="text-xs font-semibold uppercase text-[var(--arena-text-dim)]">{label}</p>
+                  <p className="mt-1 text-xl font-extrabold text-[var(--arena-text)]">{value}</p>
+                  <p className="mt-1 text-xs font-medium text-[var(--arena-text-dim)]">{note}</p>
                 </div>
               ))}
             </div>
@@ -151,8 +151,8 @@ export default function PlayerHomePreviewPage() {
           <CardContent className="space-y-4 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-950">My sports story</h2>
-                <p className="text-sm leading-6 text-slate-600">Proof-backed story cards from match data.</p>
+                <h2 className="text-lg font-bold text-[var(--arena-text)]">My sports story</h2>
+                <p className="text-sm leading-6 text-[var(--arena-text-muted)]">Proof-backed story cards from match data.</p>
               </div>
               <Button type="button" size="sm" variant="secondary">
                 <Share2 size={14} aria-hidden="true" />
@@ -161,13 +161,13 @@ export default function PlayerHomePreviewPage() {
             </div>
             <div className="grid gap-3">
               {storyCards.map((story) => (
-                <div key={story.title} className="rounded-lg border border-slate-200 bg-white p-3">
+                <div key={story.title} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-3">
                   <div className="flex items-start justify-between gap-3">
-                    <Badge className="border-slate-200 bg-slate-50 text-slate-700">{story.label}</Badge>
-                    <span className="text-xs font-semibold text-slate-400">{story.proof}</span>
+                    <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)]">{story.label}</Badge>
+                    <span className="text-xs font-semibold text-[var(--arena-text-dim)]">{story.proof}</span>
                   </div>
-                  <h3 className="mt-3 text-base font-extrabold text-slate-950">{story.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">{story.text}</p>
+                  <h3 className="mt-3 text-base font-extrabold text-[var(--arena-text)]">{story.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-[var(--arena-text-muted)]">{story.text}</p>
                 </div>
               ))}
             </div>
@@ -178,10 +178,10 @@ export default function PlayerHomePreviewPage() {
       <section className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardContent className="space-y-3 p-4 sm:p-5">
-            <h2 className="text-lg font-bold text-slate-950">Gear and tools</h2>
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Gear and tools</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {['Yonex Astrox 88D Pro', 'BG66 Ultimax', '27 lbs', 'Victor court shoes'].map((item) => (
-                <div key={item} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800">
+                <div key={item} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] px-3 py-2 text-sm font-semibold text-[var(--arena-text)]">
                   {item}
                 </div>
               ))}
@@ -190,11 +190,11 @@ export default function PlayerHomePreviewPage() {
         </Card>
         <Card>
           <CardContent className="space-y-3 p-4 sm:p-5">
-            <h2 className="text-lg font-bold text-slate-950">Clubs</h2>
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Clubs</h2>
             <div className="grid gap-2">
               {['KL Smash Club', 'Sunday Social Badminton'].map((club) => (
-                <div key={club} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <span className="font-semibold text-slate-900">{club}</span>
+                <div key={club} className="flex items-center justify-between rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] px-3 py-2">
+                  <span className="font-semibold text-[var(--arena-text)]">{club}</span>
                   <Badge>member</Badge>
                 </div>
               ))}
@@ -203,15 +203,15 @@ export default function PlayerHomePreviewPage() {
         </Card>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
+      <section className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">Find another club</h2>
-            <p className="text-sm leading-6 text-slate-600">This area stays below the player homepage, not above it.</p>
+            <h2 className="text-lg font-bold text-[var(--arena-text)]">Find another club</h2>
+            <p className="text-sm leading-6 text-[var(--arena-text-muted)]">This area stays below the player homepage, not above it.</p>
           </div>
           <div className="relative sm:w-80">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
-            <div className="min-h-10 rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm font-medium text-slate-400">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--arena-text-dim)]" size={16} aria-hidden="true" />
+            <div className="min-h-10 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] py-2 pl-9 pr-3 text-sm font-medium text-[var(--arena-text-dim)]">
               Search by club, city, or sport
             </div>
           </div>
@@ -225,12 +225,12 @@ export default function PlayerHomePreviewPage() {
 
 function MiniCount({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <div className="flex items-center justify-between gap-2 text-slate-500">
+    <div className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-3">
+      <div className="flex items-center justify-between gap-2 text-[var(--arena-text-dim)]">
         <span className="text-xs font-semibold">{label}</span>
-        <span className="text-emerald-700">{icon}</span>
+        {icon}
       </div>
-      <p className="mt-1 text-2xl font-extrabold text-slate-950">{value}</p>
+      <p className="mt-1 text-2xl font-extrabold text-[var(--arena-text)]">{value}</p>
     </div>
   )
 }

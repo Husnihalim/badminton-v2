@@ -30,6 +30,8 @@ function getLeaderboardElo(member?: { singles_elo?: number | null; doubles_elo?:
 
 function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardRow[] {
   const playerStats = new Map<string, {
+    userId: string
+    name: string
     games: number
     wins: number
     losses: number
@@ -55,14 +57,14 @@ function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardR
     }
 
     for (const participant of match.participants) {
-      if (participant.is_guest) continue
-      const name = participant.name || participant.guest_name || 'Guest'
+      if (participant.is_guest || !participant.user_id) continue
+      const name = participant.name || 'Club member'
       const isWin = participant.team === winningTeam
 
-      let stats = playerStats.get(name)
+      let stats = playerStats.get(participant.user_id)
       if (!stats) {
-        stats = { games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 }
-        playerStats.set(name, stats)
+        stats = { userId: participant.user_id, name, games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 }
+        playerStats.set(participant.user_id, stats)
       }
 
       stats.games += 1
@@ -82,12 +84,12 @@ function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardR
     }
   }
 
-  return Array.from(playerStats.entries())
-    .map(([name, stats]) => {
+  return Array.from(playerStats.values())
+    .map((stats) => {
       const winPercentage = stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0
       const points = stats.pointsFor - stats.pointsAgainst
       return {
-        name,
+        name: stats.name,
         games: stats.games,
         wins: stats.wins,
         losses: stats.losses,
@@ -95,7 +97,8 @@ function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardR
         pointsFor: stats.pointsFor,
         pointsAgainst: stats.pointsAgainst,
         points,
-        elo: 1200
+        elo: 1200,
+        user_id: stats.userId,
       }
     })
     .sort((a, b) => {
@@ -267,11 +270,17 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
   // Calculate Leaderboard rows
   const computedLeaderboard = useMemo(() => {
     const raw = calculateLeaderboard(filteredMatchesForLeaderboard)
+      .map(row => {
+        const member = members.find(m => m.user_id === row.user_id)
+        return {
+          ...row,
+          name: member?.name || row.name,
+          elo: getLeaderboardElo(member),
+        }
+      })
     if (sortBy === 'elo') {
       return [...raw].sort((a, b) => {
-        const eloA = getLeaderboardElo(members.find(m => m.name?.toLowerCase() === a.name.toLowerCase()))
-        const eloB = getLeaderboardElo(members.find(m => m.name?.toLowerCase() === b.name.toLowerCase()))
-        return eloB - eloA || b.winPercentage - a.winPercentage || b.games - a.games
+        return b.elo - a.elo || b.winPercentage - a.winPercentage || b.games - a.games
       })
     }
     return raw
@@ -367,7 +376,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'elo'
                     ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
-                    : "text-[var(--arena-text-muted)] hover:text-slate-900"
+                    : "text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]"
                 }`}
               >
                 ⚡ Elo
@@ -378,7 +387,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'win-rate'
                     ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
-                    : "text-[var(--arena-text-muted)] hover:text-slate-900"
+                    : "text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]"
                 }`}
               >
                 📈 Win Rate
@@ -528,14 +537,11 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
               {computedLeaderboard.map((player, index) => {
                 const streak = playerStreaks.get(player.name)
                 const hasWinStreak = streak && streak.type === 'win' && streak.count >= 2
-                const isMe = user && (
-                  user.name?.toLowerCase() === player.name.toLowerCase() ||
-                  user.display_name?.toLowerCase() === player.name.toLowerCase()
-                )
+                const isMe = Boolean(user && player.user_id === user.id)
 
                 return (
                   <div 
-                    key={player.name} 
+                    key={player.user_id || player.name} 
                     className={`grid grid-cols-[2rem_1fr_4.5rem] sm:grid-cols-[3rem_1fr_3.5rem_5rem_4.5rem] gap-2 px-3 py-2.5 items-center hover:bg-[var(--arena-surface-muted)]/30 transition-colors text-xs sm:text-sm ${
                       isMe ? 'bg-[var(--arena-accent-soft)]/20' : ''
                     }`}
@@ -548,7 +554,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                     {/* Player Info (Avatar, Name, Elo, Streak) */}
                     <div className="flex items-center gap-2 min-w-0">
                       {(() => {
-                        const match = members.find(m => m.name?.toLowerCase() === player.name.toLowerCase())
+                        const match = members.find(m => m.user_id === player.user_id)
                         const elo = getLeaderboardElo(match)
                         const avatar = match?.avatar_url
                         const avatarEl = avatar ? (

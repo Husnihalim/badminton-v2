@@ -16,6 +16,7 @@ import ScorecardShareModal from '../components/ScorecardShareModal'
 import { PlayerCard } from '../components/PlayerCard'
 import { calculatePlayerInsights, getSignatureMoment } from '../lib/insights'
 import { Badge } from '../components/ui/badge'
+import { EloProgressionChart } from '../components/EloProgressionChart'
 
 type MemberEloHistoryRow = {
   id: string
@@ -35,6 +36,18 @@ type MemberEloHistoryRow = {
   } | null
 }
 
+function getPrimaryElo(player?: {
+  singles_elo?: number | null
+  doubles_elo?: number | null
+  singles_games?: number | null
+  doubles_games?: number | null
+}) {
+  if (!player) return 1200
+  const singlesGames = player.singles_games ?? 0
+  const doublesGames = player.doubles_games ?? 0
+  return doublesGames > singlesGames ? (player.doubles_elo ?? 1200) : (player.singles_elo ?? 1200)
+}
+
 export default function MemberProfilePage() {
   const { userId } = useParams<{ userId: string }>()
   const { user: currentUser } = useAuth()
@@ -42,7 +55,12 @@ export default function MemberProfilePage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [profile, setProfile] = useState<User | null>(null)
-  const [clubs, setClubs] = useState<(Club & { singles_elo?: number | null; doubles_elo?: number | null })[]>([])
+  const [clubs, setClubs] = useState<(Club & {
+    singles_elo?: number | null
+    doubles_elo?: number | null
+    singles_games?: number | null
+    doubles_games?: number | null
+  })[]>([])
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -121,6 +139,8 @@ export default function MemberProfilePage() {
       const userProfileElo = {
         singles_elo: userProfile.singles_elo ?? 1200,
         doubles_elo: userProfile.doubles_elo ?? 1200,
+        singles_games: userProfile.singles_games ?? 0,
+        doubles_games: userProfile.doubles_games ?? 0,
       }
 
       const userClubs = (membershipData as unknown as Array<{ club_id: string; clubs: Club }> || [])
@@ -130,9 +150,11 @@ export default function MemberProfilePage() {
             ...m.clubs,
             singles_elo: userProfileElo.singles_elo,
             doubles_elo: userProfileElo.doubles_elo,
+            singles_games: userProfileElo.singles_games,
+            doubles_games: userProfileElo.doubles_games,
           }
         })
-        .filter((c): c is Club & { singles_elo: number; doubles_elo: number } => c !== null)
+        .filter((c): c is Club & { singles_elo: number; doubles_elo: number; singles_games: number; doubles_games: number } => c !== null)
       setClubs(userClubs)
 
       // 3. Fetch Matches if profile is public
@@ -175,11 +197,13 @@ export default function MemberProfilePage() {
         await Promise.all(
           userClubs.map(async (club) => {
             try {
-              const [clubMatches, leaderboardRows, members] = await Promise.all([
+              const [clubMatches, singlesLeaderboardRows, doublesLeaderboardRows, members] = await Promise.all([
                 getClubMatches(club.id),
-                getClubLeaderboard(club.id, 100),
+                getClubLeaderboard(club.id, 100, 'singles'),
+                getClubLeaderboard(club.id, 100, 'doubles'),
                 getClubMembers(club.id),
               ])
+              const leaderboardRows = [...singlesLeaderboardRows, ...doublesLeaderboardRows]
               
               allMatches.push(...clubMatches)
 
@@ -194,10 +218,10 @@ export default function MemberProfilePage() {
                 )
               )
 
-              // Sort by global singles Elo DESC, then join date ASC
+              // Sort by the same primary Elo shown in the club leaderboard.
               const sortedMembers = [...activeMembersWithMatches].sort((a, b) => {
-                const eloA = a.singles_elo ?? 1200
-                const eloB = b.singles_elo ?? 1200
+                const eloA = getPrimaryElo(a)
+                const eloB = getPrimaryElo(b)
                 if (eloB !== eloA) return eloB - eloA
                 return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
               })
@@ -487,7 +511,7 @@ export default function MemberProfilePage() {
 
       {/* Back button */}
       <div className="mb-2">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 text-[var(--arena-text-muted)] hover:text-slate-900 pl-0">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 text-[var(--arena-text-muted)] hover:text-[var(--arena-text)] pl-0">
           <ChevronLeft size={16} />
           Back
         </Button>
@@ -564,7 +588,7 @@ export default function MemberProfilePage() {
             profile={profile}
             stats={playerCardStats}
             rank={primaryRank}
-            elo={primaryClub?.singles_elo ?? 1200}
+            elo={getPrimaryElo(primaryClub)}
             isOwner={isOwner}
             primaryClubName={primaryClub?.name}
             bestPartner={playerInsights?.bestPartner}
@@ -653,14 +677,17 @@ export default function MemberProfilePage() {
             <>
               {/* Elo History Card */}
               {eloHistory.length > 0 && (
-                <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
-                  <div>
-                    <h2 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-2">
-                      <Activity size={16} className="text-[var(--arena-accent)] shrink-0" />
-                      Elo Rating Progression
-                    </h2>
-                    <p className="text-[11px] text-[var(--arena-text-dim)] mt-0.5">Recent rating changes from club matches.</p>
-                  </div>
+                <div className="space-y-4">
+                  <EloProgressionChart history={eloHistory} />
+                  
+                  <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
+                    <div>
+                      <h2 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-2">
+                        <Activity size={16} className="text-[var(--arena-accent)] shrink-0" />
+                        Elo Rating Progression
+                      </h2>
+                      <p className="text-[11px] text-[var(--arena-text-dim)] mt-0.5">Recent rating changes from club matches.</p>
+                    </div>
 
                   <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
                     {eloHistory.map((item) => {
@@ -673,7 +700,7 @@ export default function MemberProfilePage() {
                       return (
                         <div key={item.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
                           <div className="min-w-0">
-                            <span className="font-bold text-slate-900 truncate block">
+                            <span className="font-bold text-[var(--arena-text)] truncate block">
                               {matchTitle}
                             </span>
                             <span className="text-[10px] text-[var(--arena-text-dim)] font-semibold block">
@@ -682,13 +709,13 @@ export default function MemberProfilePage() {
                           </div>
                           <div className="flex items-center gap-2.5 shrink-0">
                             <span className="font-mono text-[var(--arena-text-dim)]">
-                              {item.elo_before} → <span className="font-extrabold text-slate-900">{item.elo_after}</span>
+                              {item.elo_before} → <span className="font-extrabold text-[var(--arena-text)]">{item.elo_after}</span>
                             </span>
                             <span className={cn(
                               "inline-flex items-center justify-center font-extrabold px-1.5 py-0.5 rounded text-[10px] w-12 text-center",
                               isGain 
-                                ? "bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-emerald-100" 
-                                : "bg-red-50 text-red-700 border border-red-100"
+                                ? "bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-[var(--arena-accent)]/20" 
+                                : "bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900/30"
                             )}>
                               {isGain ? `+${ratingDiff}` : ratingDiff}
                             </span>
@@ -697,7 +724,8 @@ export default function MemberProfilePage() {
                       )
                     })}
                   </div>
-                </section>
+                  </section>
+                </div>
               )}
 
               {/* Match Logs */}
