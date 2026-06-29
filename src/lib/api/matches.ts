@@ -667,8 +667,30 @@ export async function getClubMatchesPaginated(
   }
   const from = page * pageSize
   const to = from + pageSize - 1
-  const matches = await getClubMatches(clubId)
-  return matches.slice(from, to + 1)
+
+  const competitionIds = await getCompetitionIdsForClub(clubId)
+
+  let query = supabase
+    .from('matches')
+    .select(MATCH_DETAILS_SELECT)
+
+  if (competitionIds.length > 0) {
+    query = query.or(`club_id.eq.${clubId},tournament_id.in.(${competitionIds.map(id => `"${id}"`).join(',')})`)
+  } else {
+    query = query.eq('club_id', clubId)
+  }
+
+  const { data, error } = await query
+    .order('match_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    console.error('Error fetching paginated club matches:', error)
+    return []
+  }
+
+  return mapMatchRows((data || []) as unknown as MatchQueryRow[])
 }
 
 export async function toggleMatchReaction(matchId: string, reaction: string): Promise<void> {

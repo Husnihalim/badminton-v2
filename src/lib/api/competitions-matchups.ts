@@ -345,53 +345,18 @@ export async function recordCompetitionMatch(
 
   const userId = await getCurrentUserId()
 
-  const { data: match, error: matchError } = await supabase
-    .from('matches')
-    .insert({
-      club_id: matchData.club_id,
-      title: 'Competition match',
-      sport: matchData.sport,
-      match_type: matchData.match_type,
-      recorded_by: userId,
-      match_date: new Date().toISOString().split('T')[0],
-      tournament_id: competitionId,
-      elo_processed: true,
-    })
-    .select('id')
-    .single()
-
-  if (matchError || !match) return { match: null, error: matchError }
-
-  const { error: participantsError } = await supabase.from('match_participants').insert(
-    matchData.participants.map(p => ({
-      match_id: match.id,
-      user_id: p.user_id,
-      team: p.team,
-      is_guest: false,
-      guest_name: null,
-    }))
-  )
-
-  if (participantsError) return { match: null, error: participantsError }
-
-  const { error: scoreError } = await supabase.from('score_sets').insert(
-    matchData.score_sets.map(s => ({ match_id: match.id, set_number: s.set_number, team1_score: s.team1_score, team2_score: s.team2_score }))
-  )
-
-  if (scoreError) return { match: null, error: scoreError }
-
-  const { error: markEloPendingError } = await supabase
-    .from('matches')
-    .update({ elo_processed: false } as never)
-    .eq('id', match.id)
-
-  if (markEloPendingError) return { match: null, error: markEloPendingError }
-
-  const { error: recalcEloError } = await supabase.rpc('recalculate_match_elo', {
-    p_match_id: match.id,
+  const { data: match, error: rpcError } = await supabase.rpc('record_competition_match', {
+    p_matchup_id: matchupId,
+    p_club_id: matchData.club_id,
+    p_sport: matchData.sport,
+    p_match_type: matchData.match_type,
+    p_date: new Date().toISOString().split('T')[0],
+    p_competition_id: competitionId,
+    p_participants: matchData.participants.map(p => ({ user_id: p.user_id, team: p.team })),
+    p_score_sets: matchData.score_sets.map(s => ({ set_number: s.set_number, team1_score: s.team1_score, team2_score: s.team2_score }))
   })
 
-  if (recalcEloError) return { match: null, error: recalcEloError }
+  if (rpcError || !match) return { match: null, error: rpcError }
 
   const { data: matchup } = await supabase
     .from('competition_matchups')
@@ -403,16 +368,6 @@ export async function recordCompetitionMatch(
 
   const winnerParticipantId = winningTeam === 1 ? matchup.participant_a_id : matchup.participant_b_id
   const winnerClubId = winningTeam === 1 ? matchup.club_a_id : matchup.club_b_id
-
-  await supabase
-    .from('competition_matchups')
-    .update({
-      match_id: match.id,
-      status: 'completed',
-      winner_participant_id: winnerParticipantId,
-      winner_club_id: winnerClubId,
-    })
-    .eq('id', matchupId)
 
   const { data: participants } = await supabase
     .from('match_participants')
