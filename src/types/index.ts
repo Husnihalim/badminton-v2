@@ -151,6 +151,8 @@ export interface Match {
   recorded_by: string
   match_date: string
   event_id?: string | null
+  tournament_id?: string | null
+  elo_processed?: boolean | null
   created_at: string
 }
 

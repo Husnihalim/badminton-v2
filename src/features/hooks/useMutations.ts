@@ -3,13 +3,19 @@ import { useAuth } from '../../context/AuthContext'
 import {
   rsvpToEvent,
   adminUpdateEventRsvp,
-  createMatch,
-  updateMatch,
-  deleteMatch,
-  requestJoinClub,
   createEvent,
   updateEvent,
   deleteEvent,
+} from '../../lib/api/events'
+import {
+  createMatch,
+  updateMatch,
+  deleteMatch,
+  type CreateMatchData,
+  type UpdateMatchScoreData,
+} from '../../lib/api/matches'
+import {
+  requestJoinClub,
   updateClub,
   regenerateInviteLink,
   createSpecificInviteLink,
@@ -17,9 +23,7 @@ import {
   createClubAnnouncement,
   updateClubMessage,
   deleteClubMessage,
-  type CreateMatchData,
-  type UpdateMatchScoreData,
-} from '../../lib/api'
+} from '../../lib/api/clubs'
 import type { EventRsvp, ClubEvent } from '../../types'
 
 export const useRsvpToEvent = () => {

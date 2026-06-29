@@ -1,5 +1,6 @@
 import { supabase } from '../supabase'
 import type { Competition, CompetitionClub, CreateCompetitionInput } from '../../types/competition'
+import { postCompetitionNotice } from './competitions-announcements'
 
 export {
   registerCompetitionParticipants,
@@ -37,6 +38,8 @@ export async function createCompetition(
 ): Promise<{ competition: Competition | null; error: Error | null }> {
   const userId = await getCurrentUserId()
   const inviteCode = generateInviteCode()
+  const opponentClubIds = Array.from(new Set(input.opponentClubIds || []))
+    .filter(clubId => clubId !== input.clubId)
 
   const { data, error } = await supabase
     .from('competitions')
@@ -69,7 +72,7 @@ export async function createCompetition(
       club_id: input.clubId,
       status: 'confirmed' as const,
     },
-    ...(input.opponentClubIds || []).map(clubId => ({
+    ...opponentClubIds.map(clubId => ({
       competition_id: competition.id,
       club_id: clubId,
       status: 'invited' as const,
@@ -86,7 +89,17 @@ export async function createCompetition(
   }
 
   const hostName = input.myClubName || input.title.split(' vs ')[0] || 'A club'
-  for (const clubId of input.opponentClubIds || []) {
+  await postCompetitionNotice({
+    competitionId: competition.id,
+    clubIds: [input.clubId],
+    title: 'Competition created',
+    message: opponentClubIds.length > 0
+      ? `${competition.title} has been created. Invited clubs will be notified to accept and set their lineups.`
+      : `${competition.title} has been created. Set the lineup from the competition page.`,
+    data: { competitionId: competition.id, competition_id: competition.id },
+  })
+
+  for (const clubId of opponentClubIds) {
     const { data: admins } = await supabase
       .from('memberships')
       .select('user_id')
@@ -193,11 +206,13 @@ export async function respondToCompetitionInvite(
 ): Promise<{ error: Error | null }> {
   const { data: comp } = await supabase
     .from('competitions')
-    .select('id')
+    .select('id, title, club_id, club:clubs!club_id(name)')
     .eq('invite_code', inviteCode)
     .single()
 
   if (!comp) return { error: new Error('Competition not found') }
+
+  const userId = await getCurrentUserId()
 
   const { error } = await supabase
     .from('competition_clubs')
@@ -205,7 +220,71 @@ export async function respondToCompetitionInvite(
     .eq('competition_id', comp.id)
     .eq('club_id', clubId)
 
-  return { error }
+  if (error) return { error }
+
+  if (userId) {
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('type', 'competition_invite')
+      .eq('data->>competitionId', comp.id)
+
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('type', 'competition_invite')
+      .eq('data->>competition_id', comp.id)
+  }
+
+  const { data: acceptedClub } = await supabase
+    .from('clubs')
+    .select('name')
+    .eq('id', clubId)
+    .maybeSingle()
+
+  const competitionTitle = comp.title || 'competition'
+  const acceptedClubName = acceptedClub?.name || 'Invited club'
+
+  await postCompetitionNotice({
+    competitionId: comp.id,
+    clubIds: [clubId],
+    title: 'Competition invite accepted',
+    message: `${acceptedClubName} accepted "${competitionTitle}". Set the lineup from the competition page.`,
+    data: { competitionId: comp.id, competition_id: comp.id, clubId },
+  })
+
+  await postCompetitionNotice({
+    competitionId: comp.id,
+    clubIds: [comp.club_id],
+    title: 'Competition invite accepted',
+    message: `${acceptedClubName} accepted "${competitionTitle}".`,
+    data: { competitionId: comp.id, competition_id: comp.id, clubId },
+  })
+
+  const { data: hostAdmins } = await supabase
+    .from('memberships')
+    .select('user_id')
+    .eq('club_id', comp.club_id)
+    .eq('status', 'active')
+    .in('role', ['owner', 'admin'])
+
+  const hostNotifications = (hostAdmins || [])
+    .filter(admin => admin.user_id !== userId)
+    .map(admin => ({
+      user_id: admin.user_id,
+      type: 'competition_update',
+      title: 'Competition invite accepted',
+      message: `${acceptedClubName} accepted "${competitionTitle}".`,
+      data: { competitionId: comp.id, competition_id: comp.id, clubId },
+    }))
+
+  if (hostNotifications.length > 0) {
+    await supabase.from('notifications').insert(hostNotifications)
+  }
+
+  return { error: null }
 }
 
 export async function getClubCompetitionStats(clubId: string): Promise<{

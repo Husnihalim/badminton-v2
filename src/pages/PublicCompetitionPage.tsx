@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -19,6 +19,20 @@ import type {
   CompetitionMatchup,
 } from '../types/competition'
 import { cn } from '../lib/utils'
+
+type StandingRow = {
+  participantId: string
+  name: string
+  clubId: string | null
+  participant: CompetitionParticipant
+  played: number
+  wins: number
+  losses: number
+  setsWon: number
+  setsLost: number
+  pointsWon: number
+  pointsLost: number
+}
 
 export default function PublicCompetitionPage() {
   const { inviteCode } = useParams<{ inviteCode: string }>()
@@ -74,24 +88,14 @@ export default function PublicCompetitionPage() {
 
   // Standings computation (grouped by club)
   const clubStandings = useMemo(() => {
-    const standingsMap: Record<string, {
-      participantId: string
-      name: string
-      clubId: string | null
-      played: number
-      wins: number
-      losses: number
-      setsWon: number
-      setsLost: number
-      pointsWon: number
-      pointsLost: number
-    }> = {}
+    const standingsMap: Record<string, StandingRow> = {}
 
     participants.forEach(p => {
       standingsMap[p.id] = {
         participantId: p.id,
         name: p.name,
         clubId: p.club_id,
+        participant: p,
         played: 0,
         wins: 0,
         losses: 0,
@@ -136,12 +140,13 @@ export default function PublicCompetitionPage() {
     })
 
     // Group by club
-    const grouped: Record<string, typeof standingsMap[string][]> = {}
+    const grouped: Record<string, StandingRow[]> = {}
     for (const p of participants) {
       const clubId = p.club_id || 'unassigned'
       if (!grouped[clubId]) grouped[clubId] = []
       const stats = standingsMap[p.id] || {
         participantId: p.id, name: p.name, clubId: p.club_id,
+        participant: p,
         played: 0, wins: 0, losses: 0,
         setsWon: 0, setsLost: 0, pointsWon: 0, pointsLost: 0,
       }
@@ -170,6 +175,62 @@ export default function PublicCompetitionPage() {
     }
     return map
   }, [compClubs])
+
+  const participantLinkClass = "rounded-sm font-bold text-white underline-offset-4 hover:text-[var(--arena-blue)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arena-blue)]/70"
+
+  const renderParticipantLinks = (participant: CompetitionParticipant) => {
+    const playerOneName = participant.player_1?.display_name || participant.player_1?.name
+    const playerTwoName = participant.player_2?.display_name || participant.player_2?.name
+
+    if (!playerOneName && !playerTwoName) {
+      if (participant.user_1_id) {
+        return (
+          <Link to={`/member/${participant.user_1_id}`} className={participantLinkClass} title={`View ${participant.name}`}>
+            {participant.name}
+          </Link>
+        )
+      }
+      return <span className="font-bold text-white">{participant.name}</span>
+    }
+
+    return (
+      <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
+        {participant.user_1_id && playerOneName ? (
+          <Link to={`/member/${participant.user_1_id}`} className={participantLinkClass} title={`View ${playerOneName}`}>
+            {playerOneName}
+          </Link>
+        ) : (
+          <span className="font-bold text-white">{playerOneName || participant.name}</span>
+        )}
+        {playerTwoName && (
+          <>
+            <span className="text-slate-500">&</span>
+            {participant.user_2_id ? (
+              <Link to={`/member/${participant.user_2_id}`} className={participantLinkClass} title={`View ${playerTwoName}`}>
+                {playerTwoName}
+              </Link>
+            ) : (
+              <span className="font-bold text-white">{playerTwoName}</span>
+            )}
+          </>
+        )}
+      </span>
+    )
+  }
+
+  const renderClubLink = (clubId: string | null | undefined, clubName: string | undefined, fallback = 'General Standings') => {
+    const label = clubName || fallback
+    if (!clubId || clubId === 'unassigned' || !clubName) return <span>{label}</span>
+    return (
+      <Link
+        to={`/club/${clubId}`}
+        className="rounded-sm underline-offset-4 hover:text-[var(--arena-blue)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arena-blue)]/70"
+        title={`View ${label}`}
+      >
+        {label}
+      </Link>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -205,7 +266,8 @@ export default function PublicCompetitionPage() {
           {competition.title}
         </h1>
         <p className="mt-1.5 break-words text-xs uppercase tracking-wider text-[var(--arena-text-muted)]">
-          Hosted by: {competition.club?.name}
+          Hosted by:{' '}
+          {renderClubLink(competition.club?.id || competition.club_id, competition.club?.name, 'Host Club')}
         </p>
       </div>
 
@@ -241,6 +303,10 @@ export default function PublicCompetitionPage() {
                 key={m.id}
                 matchup={m}
                 isAdmin={false}
+                participantClubNames={{
+                  a: m.participant_a?.club_id ? clubNameMap.get(m.participant_a.club_id) : undefined,
+                  b: m.participant_b?.club_id ? clubNameMap.get(m.participant_b.club_id) : undefined,
+                }}
               />
             ))}
             {matchups.length === 0 && (
@@ -257,7 +323,7 @@ export default function PublicCompetitionPage() {
               return (
                 <div key={clubId} className="space-y-3">
                   <h3 className="text-sm font-bold text-[var(--arena-lime)] uppercase tracking-wider">
-                    {clubLabel}
+                    {renderClubLink(clubId, clubNameMap.get(clubId), clubLabel)}
                   </h3>
                   <Card className="overflow-hidden border-white/10 bg-[#0a0f0e]">
                     <CardContent className="p-0">
@@ -276,7 +342,7 @@ export default function PublicCompetitionPage() {
                             {standingList.map((st, sIdx) => (
                               <tr key={st.participantId} className="border-b border-white/5 hover:bg-white/[0.02]">
                                 <td className="py-3 px-4 font-extrabold text-[var(--arena-lime)]">#{sIdx + 1}</td>
-                                <td className="py-3 px-4 font-bold text-white">{st.name}</td>
+                                <td className="py-3 px-4">{renderParticipantLinks(st.participant)}</td>
                                 <td className="py-3 px-4 text-center font-semibold">{st.played}</td>
                                 <td className="py-3 px-4 text-center font-extrabold text-emerald-400">{st.wins}</td>
                                 <td className="py-3 px-4 text-center font-mono text-slate-400">
@@ -301,8 +367,12 @@ export default function PublicCompetitionPage() {
             {participants.map(p => (
               <Card key={p.id} className="border-white/10 bg-[#0a0f0e]">
                 <CardContent className="p-4">
-                  <h4 className="break-words text-base font-extrabold leading-tight text-white">{p.name}</h4>
-                  <p className="text-[10px] text-slate-500 font-mono mt-1">Rostered Pair</p>
+                  <h4 className="break-words text-base font-extrabold leading-tight">
+                    {renderParticipantLinks(p)}
+                  </h4>
+                  <p className="mt-1 text-[10px] font-mono uppercase text-slate-500">
+                    {renderClubLink(p.club_id, p.club_id ? clubNameMap.get(p.club_id) : undefined, 'Rostered Pair')}
+                  </p>
                 </CardContent>
               </Card>
             ))}

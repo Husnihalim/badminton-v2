@@ -31,8 +31,10 @@ vi.mock('../lib/supabase', () => {
 })
 
 // Mock the API logs so it does not trigger actual database updates
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/api/profiles', () => ({
   ensureCurrentUserProfile: vi.fn(),
+}))
+vi.mock('../lib/api/superadmin', () => ({
   logPlatformEvent: vi.fn(),
 }))
 

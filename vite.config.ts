@@ -11,6 +11,29 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname!, 'src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'vendor-react'
+          }
+          if (id.includes('node_modules/react-router-dom') || id.includes('node_modules/@remix-run')) {
+            return 'vendor-router'
+          }
+          if (id.includes('node_modules/@tanstack/react-query')) {
+            return 'vendor-query'
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons'
+          }
+          if (id.includes('node_modules/radix-ui') || id.includes('node_modules/@radix-ui')) {
+            return 'vendor-ui'
+          }
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     tailwindcss(),

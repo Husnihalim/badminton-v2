@@ -7,10 +7,7 @@ import { useMyRsvps, useEventRsvps } from '../../clubs/hooks/useClubQueries'
 import { useRsvpToEvent } from '../../hooks/useMutations'
 import { useNotifications } from '../../../context/NotificationsContext'
 import { useAuth } from '../../../context/AuthContext'
-import {
-  buildEventShareText,
-  buildEventShareUrl,
-} from '../../../lib/api'
+import { buildEventShareText, buildEventShareUrl } from '../../../lib/api/events'
 import type { ClubEvent, EventRsvp } from '../../../types'
 
 type DashboardEvent = ClubEvent & { clubName?: string }

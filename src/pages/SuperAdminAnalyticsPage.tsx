@@ -22,7 +22,6 @@ import {
   getSuperadminUsersList,
   getSuperadminClubsList,
   superadminUpdateUserRole,
-  deleteClub,
   getPlatformLogs,
   getCrashReports,
   getUserFeedback,
@@ -33,7 +32,8 @@ import {
   type PlatformLog,
   type CrashReport,
   type UserFeedback
-} from '../lib/api'
+} from '../lib/api/superadmin'
+import { deleteClub } from '../lib/api/superadmin'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'

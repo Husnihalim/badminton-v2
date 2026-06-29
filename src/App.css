@@ -301,6 +301,10 @@
     right: -8px;
     width: 220px;
   }
+
+  .desktop-only {
+    display: none !important;
+  }
 }
 
 @media (min-width: 768px) {
@@ -310,6 +314,12 @@
 
   .modal-panel {
     padding: 24px;
+  }
+}
+
+@media (min-width: 761px) {
+  .mobile-only {
+    display: none !important;
   }
 }
 
@@ -624,7 +634,7 @@
   object-fit: cover;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), var(--arena-glow);
   border: 1px solid var(--arena-line);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), z-index 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .racket-hero-image:hover {

@@ -48,7 +48,17 @@ const adminUser = {
   role: 'superadmin',
 }
 
-const fakeUsers = []
+const fakeUsers = [
+  { email: 'amir@test.com', name: 'Amir', role: 'member' },
+  { email: 'tan@test.com', name: 'Tan', role: 'member' },
+  { email: 'keith@test.com', name: 'Keith', role: 'member' },
+  { email: 'husni@test.com', name: 'Husni', role: 'member' },
+  { email: 'chen@test.com', name: 'Chen', role: 'member' },
+  { email: 'lee@test.com', name: 'Lee', role: 'member' },
+  { email: 'wong@test.com', name: 'Wong', role: 'member' },
+  { email: 'chong@test.com', name: 'Chong', role: 'member' },
+  { email: 'kok@test.com', name: 'Kok', role: 'member' },
+]
 
 async function getUserByEmail(email) {
   let page = 1
@@ -269,26 +279,26 @@ async function ensureMatch(clubId, recordedBy, title, participants, scoreSets) {
 
   let matchId = existingMatches?.[0]?.id
 
-  if (!matchId) {
-    const { data, error } = await supabase
-      .from('matches')
-      .insert({
-        club_id: clubId,
-        title,
-        sport: 'badminton',
-        match_type: participants.length === 4 ? 'doubles' : 'singles',
-        recorded_by: recordedBy,
-        match_date: new Date().toISOString().split('T')[0],
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-    matchId = data.id
+  if (matchId) {
+    // Match already exists, skip to avoid destructive re-insert
+    return matchId
   }
 
-  await supabase.from('match_participants').delete().eq('match_id', matchId)
-  await supabase.from('score_sets').delete().eq('match_id', matchId)
+  const { data, error } = await supabase
+    .from('matches')
+    .insert({
+      club_id: clubId,
+      title,
+      sport: 'badminton',
+      match_type: participants.length === 4 ? 'doubles' : 'singles',
+      recorded_by: recordedBy,
+      match_date: new Date().toISOString().split('T')[0],
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  matchId = data.id
 
   const { error: participantsError } = await supabase
     .from('match_participants')
@@ -326,11 +336,90 @@ async function main() {
   const club = await ensureClub(admin.id)
   await ensureMembership(club.id, admin.id, 'owner', admin.id)
 
-  console.log('Done.')
+  // Create fake users, profiles, and memberships
+  console.log('Creating fake users...')
+  const createdUsers = []
+  for (const u of fakeUsers) {
+    const user = await ensureUser(u)
+    createdUsers.push({ ...u, id: user.id })
+    await ensureMembership(club.id, user.id, 'member', admin.id)
+    console.log(`  Created user: ${u.email} (${u.name})`)
+  }
+
+  // Create past events
+  console.log('Creating sample events...')
+  const now = new Date()
+  const pastEvents = [
+    { title: 'Monday Night Games', daysFromNow: -14, location: 'LEP Court 1', max: 20 },
+    { title: 'Wednesday Doubles', daysFromNow: -10, location: 'LEP Court 2', max: 16 },
+    { title: 'Friday Social', daysFromNow: -7, location: 'LEP Main Hall', max: 24 },
+    { title: 'Weekend Tournament Prep', daysFromNow: -3, location: 'LEP Court 1', max: 20 },
+  ]
+  const events = []
+  for (const evt of pastEvents) {
+    const event = await ensureEvent(club.id, admin.id, evt.title, evt.daysFromNow, evt.location, evt.max)
+    events.push(event)
+    console.log(`  Event: ${evt.title}`)
+
+    // Add some RSVPs
+    for (const u of createdUsers.slice(0, 6)) {
+      await ensureRsvp(event.id, u.id, Math.random() > 0.3 ? 'going' : 'not_going')
+    }
+    await ensureRsvp(event.id, admin.id, 'going')
+  }
+
+  // Create sample matches with scores
+  console.log('Creating sample matches...')
+  const matchConfigs = [
+    {
+      title: 'Amir vs Tan',
+      participants: [
+        { userId: createdUsers[0].id, team: 1 },
+        { userId: createdUsers[1].id, team: 2 },
+      ],
+      scores: [[21, 15], [21, 18]],
+    },
+    {
+      title: 'Keith vs Husni',
+      participants: [
+        { userId: createdUsers[2].id, team: 1 },
+        { userId: createdUsers[3].id, team: 2 },
+      ],
+      scores: [[18, 21], [21, 17], [21, 14]],
+    },
+    {
+      title: 'Chen vs Lee',
+      participants: [
+        { userId: createdUsers[4].id, team: 1 },
+        { userId: createdUsers[5].id, team: 2 },
+      ],
+      scores: [[21, 19], [19, 21], [21, 16]],
+    },
+    {
+      title: 'Wong & Chong vs Kok & Admin',
+      participants: [
+        { userId: createdUsers[6].id, team: 1 },
+        { userId: createdUsers[7].id, team: 1 },
+        { userId: createdUsers[8].id, team: 2 },
+        { userId: admin.id, team: 2 },
+      ],
+      scores: [[21, 17], [21, 15]],
+    },
+  ]
+
+  for (const config of matchConfigs) {
+    const matchId = await ensureMatch(club.id, admin.id, config.title, config.participants, config.scores)
+    console.log(`  Match: ${config.title} (${matchId})`)
+  }
+
+  console.log('\nDone.')
   console.log(`Club: ${club.name}`)
   console.log(`Club ID: ${club.id}`)
   console.log(`Invite code: ${club.invite_code}`)
   console.log(`Admin/owner: ${adminUser.email}`)
+  console.log(`Fake users created: ${createdUsers.length}`)
+  console.log(`Events created: ${events.length}`)
+  console.log(`Matches created: ${matchConfigs.length}`)
 }
 
 main().catch((error) => {

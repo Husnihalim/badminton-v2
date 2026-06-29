@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationsContext'
 import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Page, PageHeader } from '../components/ui/page'
@@ -39,6 +40,7 @@ type DashboardMatch = MatchWithDetails & { clubName?: string }
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
+  const { fetchNotifications } = useNotifications()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -72,6 +74,7 @@ export default function DashboardPage() {
     if (!error) {
       setToastMessage(accept ? 'Invitation accepted!' : 'Invitation declined')
       setPendingInvites(prev => prev.filter(inv => inv.id !== inviteId))
+      await fetchNotifications()
       setTimeout(() => setToastMessage(''), 2000)
     } else {
       setToastMessage('Failed to update invitation status')

@@ -2,8 +2,20 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Navbar from '../Navbar'
-import { getMyClubs } from '../../lib/api'
+import { getMyClubs } from '../../lib/api/clubs'
+
+function renderWithProviders(element: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{element}</MemoryRouter>
+    </QueryClientProvider>
+  )
+}
 
 // Mock context hooks
 vi.mock('../../context/AuthContext', () => ({
@@ -27,7 +39,7 @@ vi.mock('../../context/ThemeContext', () => ({
 }))
 
 // Mock API
-vi.mock('../../lib/api', () => ({
+vi.mock('../../lib/api/clubs', () => ({
   getMyClubs: vi.fn(),
 }))
 
@@ -39,11 +51,7 @@ describe('Navbar Component - Responsive & Theme Toggle', () => {
   it('renders navbar with brand logo and theme toggle button', async () => {
     vi.mocked(getMyClubs).mockResolvedValue([])
 
-    render(
-      <MemoryRouter>
-        <Navbar />
-      </MemoryRouter>
-    )
+    renderWithProviders(<Navbar />)
 
     // Wait for async state updates to finish and brand text to show
     await waitFor(() => {
@@ -63,11 +71,7 @@ describe('Navbar Component - Responsive & Theme Toggle', () => {
     ]
     vi.mocked(getMyClubs).mockResolvedValue(mockClubs as any)
 
-    render(
-      <MemoryRouter>
-        <Navbar />
-      </MemoryRouter>
-    )
+    renderWithProviders(<Navbar />)
 
     // Wait for clubs to resolve
     await waitFor(() => {

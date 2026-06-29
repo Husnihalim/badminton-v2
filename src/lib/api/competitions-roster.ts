@@ -1,5 +1,11 @@
 import { supabase } from '../supabase'
 import type { CompetitionParticipant, RosterInvite } from '../../types/competition'
+import {
+  getClubName,
+  getCompetitionClubRows,
+  postCompetitionNotice,
+  postCompetitionNoticeToConfirmedClubs,
+} from './competitions-announcements'
 
 type ProfileSummary = {
   id: string
@@ -11,6 +17,25 @@ type ProfileSummary = {
 function normalizeClubData(data: unknown) {
   if (!data) return null
   return Array.isArray(data) ? data[0] : data
+}
+
+async function getCurrentUserId(): Promise<string | null> {
+  return (await supabase.auth.getUser()).data.user?.id || null
+}
+
+async function getClubAdminUserIds(clubId: string, userIds: string[]): Promise<Set<string>> {
+  const ids = Array.from(new Set(userIds.filter(Boolean)))
+  if (ids.length === 0) return new Set()
+
+  const { data } = await supabase
+    .from('memberships')
+    .select('user_id')
+    .eq('club_id', clubId)
+    .eq('status', 'active')
+    .in('role', ['owner', 'admin'])
+    .in('user_id', ids)
+
+  return new Set((data || []).map(m => m.user_id))
 }
 
 async function hydrateCompetitionParticipants(
@@ -129,6 +154,11 @@ export async function inviteMemberToRoster(
 
     if (!comp) throw new Error('Competition not found')
 
+    const currentUserId = await getCurrentUserId()
+    const clubAdminUserIds = await getClubAdminUserIds(clubId, [userId, partnerId].filter((id): id is string => Boolean(id)))
+    const user1AutoAccepted = userId === currentUserId || clubAdminUserIds.has(userId)
+    const user2AutoAccepted = partnerId ? partnerId === currentUserId || clubAdminUserIds.has(partnerId) : true
+
     const { data: participant, error: partError } = await supabase
       .from('competition_participants')
       .insert({
@@ -138,8 +168,8 @@ export async function inviteMemberToRoster(
         user_1_id: userId,
         user_2_id: partnerId || null,
         rank,
-        user_1_status: 'pending',
-        user_2_status: partnerId ? 'pending' : 'accepted',
+        user_1_status: user1AutoAccepted ? 'accepted' : 'pending',
+        user_2_status: user2AutoAccepted ? 'accepted' : 'pending',
       })
       .select('id, competition_id, pool_id, club_id, name, user_1_id, user_2_id, user_1_status, user_2_status, seed, rank, created_at')
       .single()
@@ -150,15 +180,17 @@ export async function inviteMemberToRoster(
     const clubName = normalizeClubData(comp.club)?.name || 'Admin'
     const inviteMessage = `${clubName} invited you to play in "${comp.title}"`
 
-    await supabase.from('notifications').insert({
-      user_id: userId,
-      type: 'roster_invite',
-      title: 'Roster Invitation',
-      message: inviteMessage,
-      data: { competition_id: competitionId, participant_id: participant.id },
-    })
+    if (!user1AutoAccepted) {
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        type: 'roster_invite',
+        title: 'Roster Invitation',
+        message: inviteMessage,
+        data: { competition_id: competitionId, participant_id: participant.id },
+      })
+    }
 
-    if (partnerId) {
+    if (partnerId && !user2AutoAccepted) {
       await supabase.from('notifications').insert({
         user_id: partnerId,
         type: 'roster_invite',
@@ -264,7 +296,19 @@ export async function getPendingRosterInvites(
 
     if (error) throw error
 
-    const invites: RosterInvite[] = (data || []).map(item => {
+    const clubIds = Array.from(new Set((data || []).map(item => item.club_id).filter(Boolean)))
+    const { data: adminMemberships } = clubIds.length > 0
+      ? await supabase
+        .from('memberships')
+        .select('club_id')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .in('role', ['owner', 'admin'])
+        .in('club_id', clubIds)
+      : { data: [] }
+    const adminClubIds = new Set((adminMemberships || []).map(m => m.club_id))
+
+    const invites: RosterInvite[] = (data || []).filter(item => !item.club_id || !adminClubIds.has(item.club_id)).map(item => {
       const c = Array.isArray(item.competition) ? item.competition[0] : item.competition
       const clubData = c ? (Array.isArray(c.club) ? c.club[0] : c.club) : null
       return {
@@ -290,6 +334,13 @@ export async function confirmLineup(
   competitionId: string,
   clubId: string
 ): Promise<{ error: Error | null }> {
+  const { data: existingEntry } = await supabase
+    .from('competition_clubs')
+    .select('lineup_confirmed')
+    .eq('competition_id', competitionId)
+    .eq('club_id', clubId)
+    .maybeSingle()
+
   const { error } = await supabase
     .from('competition_clubs')
     .update({ lineup_confirmed: true, lineup_confirmed_at: new Date().toISOString() })
@@ -297,6 +348,26 @@ export async function confirmLineup(
     .eq('club_id', clubId)
 
   if (error) return { error }
+
+  const wasAlreadyConfirmed = Boolean(existingEntry?.lineup_confirmed)
+  const { data: competition } = await supabase
+    .from('competitions')
+    .select('title')
+    .eq('id', competitionId)
+    .maybeSingle()
+  const competitionTitle = competition?.title || 'the competition'
+  const competitionClubs = await getCompetitionClubRows(competitionId)
+  const confirmingClub = competitionClubs.find(club => club.club_id === clubId)
+
+  if (!wasAlreadyConfirmed) {
+    await postCompetitionNotice({
+      competitionId,
+      clubIds: [clubId],
+      title: 'Lineup confirmed',
+      message: `${getClubName(confirmingClub)} confirmed the lineup for "${competitionTitle}".`,
+      data: { competitionId, competition_id: competitionId, clubId },
+    })
+  }
 
   const { data: clubs } = await supabase
     .from('competition_clubs')
@@ -310,6 +381,15 @@ export async function confirmLineup(
       .from('competitions')
       .update({ status: 'matchmaking' })
       .eq('id', competitionId)
+
+    if (!wasAlreadyConfirmed) {
+      await postCompetitionNoticeToConfirmedClubs(
+        competitionId,
+        'All lineups confirmed',
+        `All clubs have confirmed their lineups for "${competitionTitle}". Matchups can now be generated.`,
+        { competitionId, competition_id: competitionId }
+      )
+    }
   }
 
   return { error: null }

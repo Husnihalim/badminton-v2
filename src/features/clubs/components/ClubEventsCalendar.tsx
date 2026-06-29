@@ -11,10 +11,7 @@ import { Badge } from '../../../components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog'
 import { Input } from '../../../components/ui/input'
 import { EventRsvpManagementDrawer } from './EventRsvpManagementDrawer'
-import { 
-  buildEventShareUrl, 
-  buildEventShareText,
-} from '../../../lib/api'
+import { buildEventShareUrl, buildEventShareText } from '../../../lib/api/events'
 import type { ClubEvent, EventRsvp } from '../../../types'
 
 interface ClubEventsCalendarProps {

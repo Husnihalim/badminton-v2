@@ -1,27 +1,34 @@
+import { memo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Bell, Home, LayoutDashboard, LogIn, LogOut, User, UserPlus, Settings, Shield, Sun, Moon, Users, ChevronDown, Trophy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import NotificationsPanel from './NotificationsPanel'
-import logoImg from '../assets/logo.png'
-import { getMyClubs } from '../lib/api'
-import type { Club } from '../types'
+import logoImg from '../assets/logo.webp'
+import { getMyClubs } from '../lib/api/clubs'
 import { useTheme } from '../context/ThemeContext';
-export default function Navbar() {
+const Navbar = memo(function Navbar() {
   const { user, logout } = useAuth()
   const { unreadCount } = useNotifications()
   const location = useLocation()
   
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [clubs, setClubs] = useState<(Club & { role: string })[]>([])
   const [isClubsDropdownOpen, setIsClubsDropdownOpen] = useState(false)
   
   const dropdownRef = useRef<HTMLDivElement>(null)
   const clubsDropdownRef = useRef<HTMLDivElement>(null)
 
   const { theme, toggleTheme } = useTheme();
+
+  const { data: clubs = [] } = useQuery({
+    queryKey: ['my-clubs', user?.id],
+    queryFn: getMyClubs,
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  })
 
   // Handle click outside dropdowns to close them
   useEffect(() => {
@@ -39,30 +46,6 @@ export default function Navbar() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
-
-  // Fetch user's active clubs
-  useEffect(() => {
-    if (!user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setClubs([])
-      return
-    }
-
-    let isMounted = true
-    getMyClubs()
-      .then((data) => {
-        if (isMounted) {
-          setClubs(data)
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching clubs for navbar:', err)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [user, location.pathname])
 
   // Helper to extract user initials for the avatar fallback
   const getInitials = (name: string) => {
@@ -95,7 +78,7 @@ export default function Navbar() {
     <>
       <nav className="nav-bar">
         <Link className="site-brand" to="/">
-          <img src={logoImg} alt="kelabsukan.com logo" className="site-brand-logo" />
+          <img src={logoImg} alt="kelabsukan.com logo" className="site-brand-logo" loading="eager" />
           <span className="site-brand-text">kelabsukan.com</span>
         </Link>
         <div className="nav-links">
@@ -374,4 +357,6 @@ export default function Navbar() {
       />
     </>
   )
-}
+})
+
+export default Navbar

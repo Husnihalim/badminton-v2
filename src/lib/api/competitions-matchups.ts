@@ -5,6 +5,12 @@ import {
   getMatchupParticipantOverlapMessage,
   type CompetitionParticipantIdentity,
 } from '../competitionIntegrity'
+import {
+  getClubName,
+  getCompetitionClubRows,
+  postCompetitionNotice,
+  postCompetitionNoticeToConfirmedClubs,
+} from './competitions-announcements'
 
 type ParticipantIdentityRow = CompetitionParticipantIdentity & {
   id: string
@@ -73,7 +79,7 @@ export async function generateMatchups(
 
   const { data: comp } = await supabase
     .from('competitions')
-    .select('pairs_count')
+    .select('title, pairs_count')
     .eq('id', competitionId)
     .single()
 
@@ -165,6 +171,12 @@ export async function generateMatchups(
     `)
 
   const hydrated = await hydrateCompetitionMatchups((data as CompetitionMatchup[]) || [])
+  await postCompetitionNoticeToConfirmedClubs(
+    competitionId,
+    'Match schedule ready',
+    `${hydrated.length} matches have been generated for "${comp.title || 'the competition'}". Check the competition page for pairings.`,
+    { competitionId, competition_id: competitionId }
+  )
   return { matchups: hydrated, error }
 }
 
@@ -225,6 +237,21 @@ export async function startCompetition(
     .from('competitions')
     .update({ status: 'live' })
     .eq('id', competitionId)
+
+  if (!error) {
+    const { data: competition } = await supabase
+      .from('competitions')
+      .select('title')
+      .eq('id', competitionId)
+      .maybeSingle()
+
+    await postCompetitionNoticeToConfirmedClubs(
+      competitionId,
+      'Competition is live',
+      `"${competition?.title || 'The competition'}" is now live. Scores can be recorded from the competition page.`,
+      { competitionId, competition_id: competitionId }
+    )
+  }
 
   return { error }
 }
@@ -309,33 +336,62 @@ export async function recordCompetitionMatch(
     return { match: null, error: new Error('Each player can only appear once in a match.') }
   }
 
+  const team1Wins = matchData.score_sets.filter(s => s.team1_score > s.team2_score).length
+  const team2Wins = matchData.score_sets.filter(s => s.team2_score > s.team1_score).length
+  if (team1Wins === team2Wins) {
+    return { match: null, error: new Error('A competition match needs a winner.') }
+  }
+  const winningTeam = team1Wins > team2Wins ? 1 : 2
+
   const userId = await getCurrentUserId()
 
   const { data: match, error: matchError } = await supabase
     .from('matches')
     .insert({
       club_id: matchData.club_id,
+      title: 'Competition match',
       sport: matchData.sport,
       match_type: matchData.match_type,
       recorded_by: userId,
+      match_date: new Date().toISOString().split('T')[0],
       tournament_id: competitionId,
+      elo_processed: true,
     })
     .select('id')
     .single()
 
   if (matchError || !match) return { match: null, error: matchError }
 
-  await supabase.from('match_participants').insert(
-    matchData.participants.map(p => ({ match_id: match.id, user_id: p.user_id, team: p.team }))
+  const { error: participantsError } = await supabase.from('match_participants').insert(
+    matchData.participants.map(p => ({
+      match_id: match.id,
+      user_id: p.user_id,
+      team: p.team,
+      is_guest: false,
+      guest_name: null,
+    }))
   )
 
-  await supabase.from('score_sets').insert(
+  if (participantsError) return { match: null, error: participantsError }
+
+  const { error: scoreError } = await supabase.from('score_sets').insert(
     matchData.score_sets.map(s => ({ match_id: match.id, set_number: s.set_number, team1_score: s.team1_score, team2_score: s.team2_score }))
   )
 
-  const team1Wins = matchData.score_sets.filter(s => s.team1_score > s.team2_score).length
-  const team2Wins = matchData.score_sets.filter(s => s.team2_score > s.team1_score).length
-  const winningTeam = team1Wins > team2Wins ? 1 : 2
+  if (scoreError) return { match: null, error: scoreError }
+
+  const { error: markEloPendingError } = await supabase
+    .from('matches')
+    .update({ elo_processed: false } as never)
+    .eq('id', match.id)
+
+  if (markEloPendingError) return { match: null, error: markEloPendingError }
+
+  const { error: recalcEloError } = await supabase.rpc('recalculate_match_elo', {
+    p_match_id: match.id,
+  })
+
+  if (recalcEloError) return { match: null, error: recalcEloError }
 
   const { data: matchup } = await supabase
     .from('competition_matchups')
@@ -371,7 +427,7 @@ export async function recordCompetitionMatch(
           user_id: p.user_id,
           type: 'competition_update',
           title: 'Match completed',
-          message: `Your rubber finished (${scoreText})`,
+          message: `Your match finished (${scoreText})`,
           data: { competition_id: competitionId, matchup_id: matchupId },
         })
       }
@@ -393,22 +449,24 @@ export async function recordCompetitionMatch(
   if (partA) {
     const isWinner = winnerParticipantId === matchup.participant_a_id
     const scoreText = matchData.score_sets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')
-    await supabase.from('club_messages').insert({
-      club_id: partA.club_id,
-      title: isWinner ? '✅ Rubber Won' : '❌ Rubber Lost',
+    await postCompetitionNotice({
+      competitionId,
+      clubIds: [partA.club_id],
+      title: isWinner ? 'Match won' : 'Match lost',
       message: `${partA.name} ${isWinner ? 'beat' : 'lost to'} ${partB?.name || 'opponent'} (${scoreText})`,
-      created_by: userId,
+      data: { competitionId, competition_id: competitionId, matchupId, matchup_id: matchupId, matchId: match.id },
     })
   }
 
   if (partB && partB.club_id !== partA?.club_id) {
     const isWinner = winnerParticipantId === matchup.participant_b_id
     const scoreText = matchData.score_sets.map(s => `${s.team2_score}-${s.team1_score}`).join(', ')
-    await supabase.from('club_messages').insert({
-      club_id: partB.club_id,
-      title: isWinner ? '✅ Rubber Won' : '❌ Rubber Lost',
+    await postCompetitionNotice({
+      competitionId,
+      clubIds: [partB.club_id],
+      title: isWinner ? 'Match won' : 'Match lost',
       message: `${partB.name} ${isWinner ? 'beat' : 'lost to'} ${partA?.name || 'opponent'} (${scoreText})`,
-      created_by: userId,
+      data: { competitionId, competition_id: competitionId, matchupId, matchup_id: matchupId, matchId: match.id },
     })
   }
 
@@ -450,25 +508,6 @@ export async function completeCompetition(
       if (m.winner_club_id) clubWins[m.winner_club_id] = (clubWins[m.winner_club_id] || 0) + 1
     }
     winningClubId = Object.entries(clubWins).sort((a, b) => b[1] - a[1])[0]?.[0] || null
-
-    const { data: cc } = await supabase
-      .from('competition_clubs')
-      .select('club_id, club:clubs!club_id(name)')
-      .eq('competition_id', competitionId)
-
-    const winningClubName = normalizeClubData(cc?.find(c => c.club_id === winningClubId)?.club)?.name
-
-    for (const club of cc || []) {
-      const isWinner = club.club_id === winningClubId
-      await supabase.from('club_messages').insert({
-        club_id: club.club_id,
-        title: isWinner ? 'Competition Won!' : 'Competition Completed',
-        message: isWinner
-          ? 'Your club won the friendly!'
-          : `${winningClubName || 'The other club'} won the friendly. Well played!`,
-        created_by: (await getCurrentUserId()) || undefined,
-      })
-    }
   } else {
     const tieWins: Record<string, number> = {}
     const clubIds = new Set<string>()
@@ -503,6 +542,21 @@ export async function completeCompetition(
     .eq('id', competitionId)
     .select('*, club:clubs!club_id(id, name, city, logo_url)')
     .single()
+
+  if (!error && data) {
+    const competitionClubs = await getCompetitionClubRows(competitionId)
+    const winningClub = competitionClubs.find(club => club.id === winningClubId || club.club_id === winningClubId)
+    const winningClubName = winningClubId ? getClubName(winningClub, 'The winner') : null
+
+    await postCompetitionNoticeToConfirmedClubs(
+      competitionId,
+      winningClubName ? 'Competition winner announced' : 'Competition completed',
+      winningClubName
+        ? `${winningClubName} won "${data.title || 'the competition'}". Well played by all clubs.`
+        : `"${data.title || 'The competition'}" is complete. Well played by all clubs.`,
+      { competitionId, competition_id: competitionId, winningClubId }
+    )
+  }
 
   return { competition: data as Competition | null, error }
 }

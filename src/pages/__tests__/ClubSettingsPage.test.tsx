@@ -4,9 +4,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ClubSettingsPage from '../ClubSettingsPage';
-import * as api from '../../lib/api';
+import * as api from '../../lib/api/clubs';
+import * as superadminApi from '../../lib/api/superadmin';
 
-vi.mock('../../lib/api', () => ({
+vi.mock('../../lib/api/clubs', () => ({
   buildInviteUrl: vi.fn((token: string) => `https://kelabsukan.test/invite/${token}`),
   createSpecificInviteLink: vi.fn(),
   getClub: vi.fn(),
@@ -17,8 +18,11 @@ vi.mock('../../lib/api', () => ({
   updateClub: vi.fn(),
   uploadClubBanner: vi.fn(),
   uploadClubLogo: vi.fn(),
-  deleteClub: vi.fn(),
   getClubMembers: vi.fn(),
+}));
+
+vi.mock('../../lib/api/superadmin', () => ({
+  deleteClub: vi.fn(),
 }));
 
 const mockUser = { id: 'user-1', role: 'superadmin' };
@@ -59,7 +63,7 @@ describe('ClubSettingsPage tests', () => {
     vi.mocked(api.getMyMembership).mockResolvedValue(mockMembership as never);
     vi.mocked(api.getSpecificInviteLinks).mockResolvedValue([]);
     vi.mocked(api.getClubMembers).mockResolvedValue([]);
-    vi.mocked(api.deleteClub).mockResolvedValue(undefined as never);
+    vi.mocked(superadminApi.deleteClub).mockResolvedValue(undefined as never);
   });
 
   it('shows delete modal and deletes club when no members', async () => {
@@ -84,7 +88,7 @@ describe('ClubSettingsPage tests', () => {
     // confirm deletion
     await waitFor(() => fireEvent.click(screen.getByRole('button', { name: /delete forever/i })));
 
-    await waitFor(() => expect(api.deleteClub).toHaveBeenCalledWith('club-1'));
+    await waitFor(() => expect(superadminApi.deleteClub).toHaveBeenCalledWith('club-1'));
     // redirected to dashboard
     await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
   });
@@ -109,7 +113,7 @@ describe('ClubSettingsPage tests', () => {
     await waitFor(() =>
       expect(screen.getAllByText(/Cannot delete club: it still has 1 other member/)[0]).toBeInTheDocument()
     );
-    expect(api.deleteClub).not.toHaveBeenCalled();
+    expect(superadminApi.deleteClub).not.toHaveBeenCalled();
   });
 
   it('allows owner or superadmin deletion when they are the only member', async () => {
@@ -127,7 +131,7 @@ describe('ClubSettingsPage tests', () => {
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /delete forever/i }));
 
-    await waitFor(() => expect(api.deleteClub).toHaveBeenCalledWith('club-1'));
+    await waitFor(() => expect(superadminApi.deleteClub).toHaveBeenCalledWith('club-1'));
     await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
   });
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { MessageSquare, X, Send, Star, Smile } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { submitUserFeedback } from '../lib/api'
+import { submitUserFeedback } from '../lib/api/superadmin'
 
 export default function FeedbackWidget() {
   const { user } = useAuth()

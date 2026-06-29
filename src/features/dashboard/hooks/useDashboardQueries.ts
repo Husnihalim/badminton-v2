@@ -1,5 +1,7 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
-import { getPlayerDashboard, getClubs, getClubMatches, getClubMembers } from '../../../lib/api'
+import { getPlayerDashboard } from '../../../lib/api/profiles'
+import { getClubs, getClubMembers } from '../../../lib/api/clubs'
+import { getClubMatches } from '../../../lib/api/matches'
 
 export const usePlayerDashboard = (userId?: string) => useQuery({
   queryKey: ['dashboard', userId],

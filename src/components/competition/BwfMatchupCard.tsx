@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Award, ChevronDown, ChevronUp, Swords } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -10,12 +11,17 @@ interface BwfMatchupCardProps {
   matchup: CompetitionMatchup
   isAdmin: boolean
   onRecordScore?: (matchup: CompetitionMatchup) => void
+  participantClubNames?: {
+    a?: string
+    b?: string
+  }
 }
 
 export default function BwfMatchupCard({
   matchup,
   isAdmin,
-  onRecordScore
+  onRecordScore,
+  participantClubNames
 }: BwfMatchupCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -32,6 +38,94 @@ export default function BwfMatchupCard({
 
   const isWinnerA = matchup.winner_participant_id === matchup.participant_a_id
   const isWinnerB = matchup.winner_participant_id === matchup.participant_b_id
+
+  const getParticipantMeta = (part?: CompetitionParticipant, clubName?: string) => {
+    if (clubName?.trim()) return clubName.trim()
+    if (part?.user_1_id) return 'Club member'
+    return 'Guest'
+  }
+
+  const getParticipantNameClass = (isWinner: boolean) => cn(
+    "font-extrabold text-sm md:text-base leading-snug truncate",
+    isCompleted ? (isWinner ? "text-[var(--arena-lime)]" : "text-slate-400") : "text-white"
+  )
+
+  const playerLinkClass = "min-w-0 truncate rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arena-blue)]/70"
+
+  const renderParticipantName = (part: CompetitionParticipant | undefined, fallback: string, isWinner: boolean) => {
+    if (!part) {
+      return (
+        <span className={getParticipantNameClass(isWinner)} title={fallback}>
+          {fallback}
+        </span>
+      )
+    }
+
+    const playerOneName = part.player_1?.display_name || part.player_1?.name
+    const playerTwoName = part.player_2?.display_name || part.player_2?.name
+    const hasPlayerNames = Boolean(playerOneName || playerTwoName)
+
+    if (!hasPlayerNames) {
+      const name = part.name || fallback
+      if (part.user_1_id) {
+        return (
+          <Link to={`/member/${part.user_1_id}`} className={cn(getParticipantNameClass(isWinner), playerLinkClass)} title={`View ${name}`}>
+            {name}
+          </Link>
+        )
+      }
+      return (
+        <span className={getParticipantNameClass(isWinner)} title={name}>
+          {name}
+        </span>
+      )
+    }
+
+    return (
+      <span className={cn(getParticipantNameClass(isWinner), "flex min-w-0 items-center gap-1.5")} title={part.name || fallback}>
+        {part.user_1_id && playerOneName ? (
+          <Link to={`/member/${part.user_1_id}`} className={playerLinkClass} title={`View ${playerOneName}`}>
+            {playerOneName}
+          </Link>
+        ) : (
+          <span className="min-w-0 truncate">{playerOneName || part.name || fallback}</span>
+        )}
+        {playerTwoName && (
+          <>
+            <span className="shrink-0 text-slate-500">&</span>
+            {part.user_2_id ? (
+              <Link to={`/member/${part.user_2_id}`} className={playerLinkClass} title={`View ${playerTwoName}`}>
+                {playerTwoName}
+              </Link>
+            ) : (
+              <span className="min-w-0 truncate">{playerTwoName}</span>
+            )}
+          </>
+        )}
+      </span>
+    )
+  }
+
+  const renderParticipantMeta = (part: CompetitionParticipant | undefined, clubName?: string) => {
+    const label = getParticipantMeta(part, clubName)
+    if (part?.club_id && clubName?.trim()) {
+      return (
+        <Link
+          to={`/club/${part.club_id}`}
+          className="block truncate text-xs font-semibold text-slate-500 underline-offset-4 hover:text-[var(--arena-blue)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arena-blue)]/70"
+          title={`View ${label}`}
+        >
+          {label}
+        </Link>
+      )
+    }
+
+    return (
+      <span className="block truncate text-xs font-semibold text-slate-500" title={label}>
+        {label}
+      </span>
+    )
+  }
 
   const renderAvatars = (part?: CompetitionParticipant) => {
     if (!part) return null
@@ -113,23 +207,14 @@ export default function BwfMatchupCard({
           <div className="flex-1 space-y-4">
             {/* Player A Row */}
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 {renderAvatars(matchup.participant_a)}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span 
-                      className={cn(
-                        "font-extrabold text-sm md:text-base leading-snug truncate",
-                        isCompleted ? (isWinnerA ? "text-[var(--arena-lime)]" : "text-slate-400") : "text-white"
-                      )}
-                    >
-                      {matchup.participant_a?.name || "TBD Player A"}
-                    </span>
+                    {renderParticipantName(matchup.participant_a, "TBD Player A", isWinnerA)}
                     {isWinnerA && <Award size={14} className="text-[var(--arena-lime)] shrink-0" />}
                   </div>
-                  <span className="text-[10px] text-slate-500 font-medium block">
-                    {matchup.participant_a?.player_1?.display_name ? "Club Player" : "Guest"}
-                  </span>
+                  {renderParticipantMeta(matchup.participant_a, participantClubNames?.a)}
                 </div>
               </div>
 
@@ -156,23 +241,14 @@ export default function BwfMatchupCard({
 
             {/* Player B Row */}
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 {renderAvatars(matchup.participant_b)}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span 
-                      className={cn(
-                        "font-extrabold text-sm md:text-base leading-snug truncate",
-                        isCompleted ? (isWinnerB ? "text-[var(--arena-lime)]" : "text-slate-400") : "text-white"
-                      )}
-                    >
-                      {matchup.participant_b?.name || "TBD Player B"}
-                    </span>
+                    {renderParticipantName(matchup.participant_b, "TBD Player B", isWinnerB)}
                     {isWinnerB && <Award size={14} className="text-[var(--arena-lime)] shrink-0" />}
                   </div>
-                  <span className="text-[10px] text-slate-500 font-medium block">
-                    {matchup.participant_b?.player_1?.display_name ? "Club Player" : "Guest"}
-                  </span>
+                  {renderParticipantMeta(matchup.participant_b, participantClubNames?.b)}
                 </div>
               </div>
 

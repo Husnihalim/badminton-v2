@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { User } from '../types'
 import { supabase } from '../lib/supabase'
-import { ensureCurrentUserProfile, logPlatformEvent } from '../lib/api'
+import { ensureCurrentUserProfile } from '../lib/api/profiles'
+import { logPlatformEvent } from '../lib/api/superadmin'
 
 type AuthContextType = {
   user: User | null

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { useAuth } from './AuthContext'
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/api'
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/api/notifications'
 import { supabase } from '../lib/supabase'
 import type { Notification } from '../types'
 

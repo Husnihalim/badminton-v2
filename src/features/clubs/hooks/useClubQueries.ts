@@ -1,18 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../context/AuthContext'
-import { 
-  getClub, 
-  getClubEvents, 
-  getClubMatchesPaginated, 
-  getClubLeaderboard, 
-  getMyMembership, 
-  getSpecificInviteLinks,
-  getClubMembers,
-  getClubMessages,
-  getMyEventRsvps,
-  getEventRsvps,
-  getClubMatches
-} from '../../../lib/api'
+import { getClub, getMyMembership, getSpecificInviteLinks, getClubMembers, getClubMessages } from '../../../lib/api/clubs'
+import { getClubEvents, getMyEventRsvps, getEventRsvps } from '../../../lib/api/events'
+import { getClubLeaderboard, getClubMatchesPaginated, getClubMatches } from '../../../lib/api/matches'
 
 export const useClub = (clubId?: string) => useQuery({
   queryKey: ['clubs', clubId],

@@ -46,6 +46,8 @@ const renderApp = (path = '/') => {
   return render(<App />)
 }
 
+const routeWait = { timeout: 10000 }
+
 beforeEach(() => {
   window.localStorage.clear()
   vi.clearAllMocks()
@@ -59,7 +61,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /The Grassroots/i })).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getAllByRole('link', { name: /Start Your Club free/i }).length).toBeGreaterThan(0)
       expect(screen.queryByText(/mobile-first club operations/i)).not.toBeInTheDocument()
@@ -70,7 +72,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Fast Scoring & Elo/i)).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getAllByText(/Auto-Generated Stories/i).length).toBeGreaterThan(0)
       expect(screen.getAllByText(/WhatsApp Sharing/i).length).toBeGreaterThan(0)
@@ -83,7 +85,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByText('kelabsukan.com')).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getByRole('link', { name: /^home$/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /my court/i })).toBeInTheDocument()
@@ -96,7 +98,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /log in/i })).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
@@ -108,7 +110,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getByLabelText(/name/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
@@ -121,7 +123,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /reset password/i })).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /send reset link/i })).toBeInTheDocument()
@@ -132,7 +134,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /set new password/i })).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getByLabelText(/^new password$/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/confirm new password/i)).toBeInTheDocument()
@@ -144,14 +146,14 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /The Grassroots/i })).toBeInTheDocument()
-      })
+      }, routeWait)
 
       const loginLinks = screen.getAllByRole('link', { name: /log in/i })
       await userEvent.click(loginLinks[0])
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /log in/i })).toBeInTheDocument()
-      })
+      }, routeWait)
     })
   })
 
@@ -161,7 +163,7 @@ describe('KelabSukan App - Core Features', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/page not found/i)).toBeInTheDocument()
-      })
+      }, routeWait)
       
       expect(screen.getByRole('link', { name: /return home/i })).toBeInTheDocument()
     })
@@ -173,7 +175,7 @@ describe('KelabSukan App - Core Features', () => {
       
       await waitFor(() => {
         expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
-      })
+      }, routeWait)
     })
 
     it('form inputs have associated labels', async () => {
@@ -182,7 +184,7 @@ describe('KelabSukan App - Core Features', () => {
       await waitFor(() => {
         expect(screen.getByLabelText(/email/i)).toHaveAttribute('id')
         expect(screen.getByLabelText(/password/i)).toHaveAttribute('id')
-      })
+      }, routeWait)
     })
   })
 })

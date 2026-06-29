@@ -32,6 +32,34 @@
 -- Name: Regular Member
 
 -- ============================================
+-- SEED AUTH USER FOR OWNER
+-- ============================================
+
+INSERT INTO auth.users (
+    id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    aud,
+    role,
+    created_at,
+    updated_at
+) VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'owner@test.com',
+    '$2a$10$abcdefghijklmnopqrstuv',
+    NOW(),
+    '{"provider": "email", "providers": ["email"]}'::jsonb,
+    '{"name": "Club Owner", "role": "owner"}'::jsonb,
+    'authenticated',
+    'authenticated',
+    NOW(),
+    NOW()
+) ON CONFLICT (id) DO NOTHING;
+
+-- ============================================
 -- SEED CLUBS (will be created after users exist)
 -- ============================================
 

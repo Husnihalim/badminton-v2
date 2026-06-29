@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationsContext'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import BwfMatchupCard from '../components/competition/BwfMatchupCard'
+import { MomentCard } from '../components/MomentCard'
 import { supabase } from '../lib/supabase'
 import {
   getCompetition,
@@ -26,6 +27,7 @@ import {
   respondToCompetitionInvite,
 } from '../lib/api/competitions'
 import { getMatchupParticipantOverlapMessage } from '../lib/competitionIntegrity'
+import { generateCompetitionStories } from '../lib/storyMoments'
 import { getClubMembers, getMyClubs } from '../lib/api/clubs'
 import type {
   Competition,
@@ -42,7 +44,7 @@ export default function CompetitionDetailsPage() {
   const { competitionId } = useParams<{ competitionId: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { showToast } = useNotifications()
+  const { showToast, fetchNotifications } = useNotifications()
 
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [compClubs, setCompClubs] = useState<CompetitionClub[]>([])
@@ -257,6 +259,7 @@ export default function CompetitionDetailsPage() {
     }
     showToast('Invitation accepted!', 'success')
     setActiveTab('rosters')
+    await fetchNotifications()
     loadData()
   }
 
@@ -304,7 +307,7 @@ export default function CompetitionDetailsPage() {
       if (!clubResults[a.club_id!]) clubResults[a.club_id!] = { played: 0, won: 0, lost: 0, rubbersWon: 0, rubbersLost: 0 }
       if (!clubResults[b.club_id!]) clubResults[b.club_id!] = { played: 0, won: 0, lost: 0, rubbersWon: 0, rubbersLost: 0 }
 
-      // Count rubber-level wins for standings
+      // Count match-level wins for standings
       if (m.winner_participant_id === m.participant_a_id) {
         clubResults[a.club_id!].rubbersWon++
         clubResults[b.club_id!].rubbersLost++
@@ -314,7 +317,7 @@ export default function CompetitionDetailsPage() {
       }
     }
 
-    // Calculate tie-level wins (a club wins a tie if they win more rubbers than the other)
+    // Calculate tie-level wins (a club wins a tie if they win more matches than the other)
     if (competition?.format === 'league') {
       const tieResults: Record<string, number> = {}
       for (const m of completed) {
@@ -359,7 +362,7 @@ export default function CompetitionDetailsPage() {
         tieResults[key] = 1
       }
     } else {
-      // Friendly: count rubber wins
+      // Friendly: count match wins
       for (const m of completed) {
         const a = participants.find(p => p.id === m.participant_a_id)
         const b = participants.find(p => p.id === m.participant_b_id)
@@ -430,6 +433,10 @@ export default function CompetitionDetailsPage() {
 
     return groups
   }, [matchups, participantClubMap, clubNameMap, compClubToClubId])
+
+  const competitionStories = useMemo(() => (
+    competition ? generateCompetitionStories(competition, matchups).slice(0, 3) : []
+  ), [competition, matchups])
 
   if (isLoading || !competition) {
     return (
@@ -567,6 +574,20 @@ export default function CompetitionDetailsPage() {
                 </div>
               )}
 
+              {competitionStories.length > 0 && (
+                <div className="border-t border-white/10 pt-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Sparkles size={15} className="text-[var(--arena-lime)]" />
+                    <p className="text-xs font-bold uppercase text-slate-500">Competition Stories</p>
+                  </div>
+                  <div className="grid gap-3">
+                    {competitionStories.map(story => (
+                      <MomentCard key={story.id} moment={story} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {isHostAdmin && ['draft', 'registration'].includes(competition.status) && (
                 <div className="border-t border-white/10 pt-4">
                   <Button variant="ghost" onClick={handleCancelCompetition} className="text-red-400 hover:text-red-300 text-xs">
@@ -624,7 +645,7 @@ export default function CompetitionDetailsPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {Array.from({ length: competition.pairs_count || 5 }).map((_, idx) => {
                       const rank = idx + 1
                       const part = clubParts.find(p => p.rank === rank)
@@ -633,28 +654,28 @@ export default function CompetitionDetailsPage() {
                       const player1Options = availableMembers.filter(member => member.user_id !== draft.player2Id)
                       const player2Options = availableMembers.filter(member => member.user_id !== draft.player1Id)
                       return (
-                        <div key={idx} className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 p-3 sm:flex-row sm:items-center">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-400">
+                        <div key={idx} className="flex min-h-[58px] items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-400">
                             {rank}
                           </div>
                           {isInvited ? (
-                            <div className="flex-1">
-                              <p className="text-xs text-slate-500 italic">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs text-slate-500 italic">
                                 Waiting for this club to accept the competition invite.
                               </p>
                             </div>
                           ) : part ? (
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-white text-sm">{part.name}</p>
-                              <p className="text-xs text-slate-500">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-bold leading-tight text-white">{part.name}</p>
+                              <p className="truncate text-xs leading-tight text-slate-500">
                                 {part.player_1?.name || 'Player 1'}
                                 {part.player_2 ? ` + ${part.player_2.name}` : ''}
                               </p>
                             </div>
 	                          ) : (
-	                            <div className="flex-1">
+	                            <div className="min-w-0 flex-1">
 	                              {canManageThisClub && !isConfirmed ? (
-	                                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+	                                <div className="grid gap-1.5 sm:grid-cols-[1fr_1fr_auto]">
 	                                  <select
 	                                    value={draft.player1Id}
 	                                    onChange={(e) => {
@@ -667,7 +688,7 @@ export default function CompetitionDetailsPage() {
 	                                        },
 	                                      }))
 	                                    }}
-	                                    className="flex-1 min-w-[120px] rounded border border-white/10 bg-slate-900 p-1.5 text-xs text-white"
+	                                    className="h-8 min-w-0 rounded border border-white/10 bg-slate-900 px-2 text-xs text-white"
 	                                  >
 	                                    <option value="">Player 1...</option>
 	                                    {player1Options.map(m => (
@@ -686,7 +707,7 @@ export default function CompetitionDetailsPage() {
                                           },
                                         }))
                                       }}
-                                      className="flex-1 min-w-[120px] rounded border border-white/10 bg-slate-900 p-1.5 text-xs text-white"
+                                      className="h-8 min-w-0 rounded border border-white/10 bg-slate-900 px-2 text-xs text-white"
                                     >
                                       <option value="">Player 2...</option>
                                       {player2Options.map(m => (
@@ -703,18 +724,18 @@ export default function CompetitionDetailsPage() {
                                           [draftKey]: { player1Id: '', player2Id: '' },
                                         }))
                                       }}
-                                      className="h-8 bg-[var(--arena-lime)] px-3 text-xs text-black hover:bg-[var(--arena-lime)]/90 disabled:opacity-50"
+                                      className="h-8 px-3 text-xs text-black bg-[var(--arena-lime)] hover:bg-[var(--arena-lime)]/90 disabled:opacity-50"
                                     >
                                       Add pair
                                     </Button>
 	                                </div>
 	                              ) : (
-	                                <p className="text-xs text-slate-600 italic">Waiting for pair</p>
+	                                <p className="truncate text-xs text-slate-600 italic">Waiting for pair</p>
                               )}
                             </div>
                           )}
                           {part && canManageThisClub && !isConfirmed && (
-                            <button onClick={() => handleRemovePlayer(part.id)} className="text-xs text-red-400 hover:text-red-300">
+                            <button onClick={() => handleRemovePlayer(part.id)} className="shrink-0 text-xs text-red-400 hover:text-red-300">
                               Remove
                             </button>
                           )}
@@ -894,12 +915,12 @@ export default function CompetitionDetailsPage() {
                             /* BwfMatchupCard for locked/live/completed */
                             <div className="space-y-2">
                               <BwfMatchupCard
-                                matchup={{
-                                  ...m,
-                                  participant_a: m.participant_a ? { ...m.participant_a, name: `[${clubNameMap[aClubId] || '?'}] ${m.participant_a.name}` } : undefined,
-                                  participant_b: m.participant_b ? { ...m.participant_b, name: `[${clubNameMap[bClubId] || '?'}] ${m.participant_b.name}` } : undefined,
-                                }}
+                                matchup={m}
                                 isAdmin={isAdmin && competition.status === 'live' && !matchupWarning}
+                                participantClubNames={{
+                                  a: clubNameMap[aClubId],
+                                  b: clubNameMap[bClubId],
+                                }}
                                 onRecordScore={isAdmin && competition.status === 'live' && !matchupWarning ? () => handleRecordMatch(m) : undefined}
                               />
                               {matchupWarning && (
@@ -947,7 +968,7 @@ export default function CompetitionDetailsPage() {
                             <th className="py-3 px-4 text-center">Won</th>
                             <th className="py-3 px-4 text-center">Lost</th>
                           </>}
-                          <th className="py-3 px-4 text-center">Rubbers</th>
+                          <th className="py-3 px-4 text-center">Matches</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -971,7 +992,7 @@ export default function CompetitionDetailsPage() {
               </Card>
             )}
 
-            {/* Per-tie rubber breakdown */}
+            {/* Per-tie match breakdown */}
             {matchups.some(m => m.status === 'completed') && (
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Tie Results</h3>

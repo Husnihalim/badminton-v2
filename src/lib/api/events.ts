@@ -32,7 +32,7 @@ export async function getClubEvents(clubId: string): Promise<ClubEvent[]> {
   }
   const { data, error } = await supabase
     .from('events')
-    .select('*')
+    .select('id, club_id, title, event_date, location, cost_amount, cost_note, max_participants, description, status, signup_open, created_by, created_at, updated_at')
     .eq('club_id', clubId)
     .order('event_date', { ascending: true })
 

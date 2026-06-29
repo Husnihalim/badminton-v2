@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, LogIn, UserPlus } from 'lucide-react'
-import { joinClubByInviteLinkToken } from '../lib/api'
+import { joinClubByInviteLinkToken } from '../lib/api/clubs'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader } from '../components/ui/card'

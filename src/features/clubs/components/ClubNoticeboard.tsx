@@ -10,7 +10,7 @@ import { Badge } from '../../../components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog'
 import { Input } from '../../../components/ui/input'
 import { Textarea } from '../../../components/ui/textarea'
-import { buildInviteUrl } from '../../../lib/api'
+import { buildInviteUrl } from '../../../lib/api/clubs'
 import type { ClubMessage } from '../../../types'
 
 interface ClubNoticeboardProps {

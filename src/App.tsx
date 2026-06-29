@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Layout from './components/Layout'
@@ -8,6 +8,24 @@ import { NotificationsProvider } from './context/NotificationsContext'
 import { ThemeProvider } from './context/ThemeContext';
 
 import './App.css'
+
+function PrefetchRoutes() {
+  useEffect(() => {
+    const idle = typeof requestIdleCallback === 'function'
+      ? requestIdleCallback
+      : (cb: () => void) => setTimeout(cb, 2000)
+
+    idle(() => {
+      import('./pages/DashboardPage')
+      import('./pages/Auth/LoginPage')
+      import('./pages/Auth/RegisterPage')
+      import('./pages/FriendliesListPage')
+      import('./pages/ClubHomePage')
+    })
+  }, [])
+
+  return null
+}
 
 const FriendlyRedirect = () => {
   const { competitionId } = useParams();
@@ -59,6 +77,7 @@ function App() {
           <AuthProvider>
             <NotificationsProvider>
               <BrowserRouter>
+                <PrefetchRoutes />
                 <Layout>
                   <Suspense fallback={<div className="p-4 text-sm text-slate-600">Loading...</div>}>
                     <Routes>

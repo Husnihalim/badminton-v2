@@ -8,10 +8,10 @@ import {
   getEventDetails,
   getEventRsvps,
   getMyEventRsvps,
-  getMyMembership,
   joinClubBySharedEvent,
   rsvpToEvent,
-} from '../lib/api'
+} from '../lib/api/events'
+import { getMyMembership } from '../lib/api/clubs'
 import type { ClubEvent, EventRsvp, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'

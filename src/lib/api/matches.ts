@@ -74,6 +74,77 @@ type MatchQueryRow = Match & {
   recorded_by_profile?: ProfileSummary | null
 }
 
+const MATCH_DETAILS_SELECT = `
+  *,
+  match_participants!inner(
+    *,
+    profiles(name, display_name, avatar_url)
+  ),
+  score_sets(*),
+  match_reactions(
+    *,
+    profiles(name, display_name)
+  ),
+  match_comments(
+    *,
+    profiles(name, display_name, avatar_url)
+  ),
+  recorded_by_profile:profiles!recorded_by(name, display_name)
+`
+
+function mapMatchRows(rows: MatchQueryRow[]): MatchWithDetails[] {
+  return rows.map((match) => {
+    const participants = (match.match_participants || []).map((p) => ({
+      ...p,
+      name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
+      profile: p.profiles || null,
+    })) as MatchParticipant[]
+    const reactions = (match.match_reactions || []).map((r) => ({
+      ...r,
+      name: r.profiles?.name || 'Member',
+      display_name: r.profiles?.display_name || r.profiles?.name || 'Member',
+    }))
+    const comments = (match.match_comments || []).map((c) => ({
+      ...c,
+      name: c.profiles?.name || 'Member',
+      display_name: c.profiles?.display_name || c.profiles?.name || 'Member',
+      avatar_url: c.profiles?.avatar_url || null,
+    }))
+    return {
+      ...(match as Match),
+      participants,
+      score_sets: (match.score_sets || []).sort((a, b) => a.set_number - b.set_number),
+      reactions,
+      comments,
+      recorded_by_profile: match.recorded_by_profile
+        ? {
+            name: match.recorded_by_profile.name,
+            display_name: match.recorded_by_profile.display_name,
+          }
+        : null,
+    }
+  })
+}
+
+async function getCompetitionIdsForClub(clubId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('competition_clubs')
+    .select('competition_id')
+    .eq('club_id', clubId)
+    .eq('status', 'confirmed')
+
+  if (error) {
+    console.error('Error fetching club competition ids:', error)
+    return []
+  }
+
+  return Array.from(new Set(
+    (data || [])
+      .map(row => row.competition_id)
+      .filter((id): id is string => Boolean(id))
+  ))
+}
+
 export interface CreateMatchData {
   club_id: string
   title?: string
@@ -542,68 +613,46 @@ export async function getClubMatches(clubId: string): Promise<MatchWithDetails[]
   if (clubId && clubId.startsWith('mock-')) {
     return mockMatches[clubId] || []
   }
-  const { data, error } = await supabase
+
+  const { data: directData, error: directError } = await supabase
     .from('matches')
-    .select(`
-      *,
-      match_participants!inner(
-        *,
-        profiles(name, display_name, avatar_url)
-      ),
-      score_sets(*),
-      match_reactions(
-        *,
-        profiles(name, display_name)
-      ),
-      match_comments(
-        *,
-        profiles(name, display_name, avatar_url)
-      ),
-      recorded_by_profile:profiles!recorded_by(name, display_name)
-    `)
+    .select(MATCH_DETAILS_SELECT)
     .eq('club_id', clubId)
     .order('match_date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(250)
 
-  if (error) {
-    console.error('Error fetching club matches:', error)
+  if (directError) {
+    console.error('Error fetching club matches:', directError)
     return []
   }
 
-  const rows = (data || []) as unknown as MatchQueryRow[]
+  let rows = (directData || []) as unknown as MatchQueryRow[]
+  const competitionIds = await getCompetitionIdsForClub(clubId)
 
-  return rows.map((match) => {
-    const participants = (match.match_participants || []).map((p) => ({
-      ...p,
-      name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
-      profile: p.profiles || null,
-    })) as MatchParticipant[]
-    const reactions = (match.match_reactions || []).map((r) => ({
-      ...r,
-      name: r.profiles?.name || 'Member',
-      display_name: r.profiles?.display_name || r.profiles?.name || 'Member',
-    }))
-    const comments = (match.match_comments || []).map((c) => ({
-      ...c,
-      name: c.profiles?.name || 'Member',
-      display_name: c.profiles?.display_name || c.profiles?.name || 'Member',
-      avatar_url: c.profiles?.avatar_url || null,
-    }))
-    return {
-      ...(match as Match),
-      participants,
-      score_sets: (match.score_sets || []).sort((a, b) => a.set_number - b.set_number),
-      reactions,
-      comments,
-      recorded_by_profile: match.recorded_by_profile
-        ? {
-            name: match.recorded_by_profile.name,
-            display_name: match.recorded_by_profile.display_name,
-          }
-        : null,
+  if (competitionIds.length > 0) {
+    const { data: competitionData, error: competitionError } = await supabase
+      .from('matches')
+      .select(MATCH_DETAILS_SELECT)
+      .in('tournament_id', competitionIds)
+      .order('match_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(250)
+
+    if (competitionError) {
+      console.error('Error fetching competition matches for club:', competitionError)
+    } else {
+      const matchMap = new Map(rows.map(row => [row.id, row]))
+      for (const row of (competitionData || []) as unknown as MatchQueryRow[]) {
+        matchMap.set(row.id, row)
+      }
+      rows = Array.from(matchMap.values())
     }
-  })
+  }
+
+  return mapMatchRows(rows).sort(
+    (a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime()
+  )
 }
 
 export async function getClubMatchesPaginated(
@@ -618,69 +667,8 @@ export async function getClubMatchesPaginated(
   }
   const from = page * pageSize
   const to = from + pageSize - 1
-
-  const { data, error } = await supabase
-    .from('matches')
-    .select(`
-      *,
-      match_participants!inner(
-        *,
-        profiles(name, display_name, avatar_url)
-      ),
-      score_sets(*),
-      match_reactions(
-        *,
-        profiles(name, display_name)
-      ),
-      match_comments(
-        *,
-        profiles(name, display_name, avatar_url)
-      ),
-      recorded_by_profile:profiles!recorded_by(name, display_name)
-    `)
-    .eq('club_id', clubId)
-    .order('match_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .range(from, to)
-
-  if (error) {
-    console.error('Error fetching club matches paginated:', error)
-    return []
-  }
-
-  const rows = (data || []) as unknown as MatchQueryRow[]
-
-  return rows.map((match) => {
-    const participants = (match.match_participants || []).map((p) => ({
-      ...p,
-      name: p.profiles?.display_name || p.profiles?.name || p.guest_name || 'Guest',
-      profile: p.profiles || null,
-    })) as MatchParticipant[]
-    const reactions = (match.match_reactions || []).map((r) => ({
-      ...r,
-      name: r.profiles?.name || 'Member',
-      display_name: r.profiles?.display_name || r.profiles?.name || 'Member',
-    }))
-    const comments = (match.match_comments || []).map((c) => ({
-      ...c,
-      name: c.profiles?.name || 'Member',
-      display_name: c.profiles?.display_name || c.profiles?.name || 'Member',
-      avatar_url: c.profiles?.avatar_url || null,
-    }))
-    return {
-      ...(match as Match),
-      participants,
-      score_sets: (match.score_sets || []).sort((a, b) => a.set_number - b.set_number),
-      reactions,
-      comments,
-      recorded_by_profile: match.recorded_by_profile
-        ? {
-            name: match.recorded_by_profile.name,
-            display_name: match.recorded_by_profile.display_name,
-          }
-        : null,
-    }
-  })
+  const matches = await getClubMatches(clubId)
+  return matches.slice(from, to + 1)
 }
 
 export async function toggleMatchReaction(matchId: string, reaction: string): Promise<void> {
