@@ -156,6 +156,9 @@ function getOtherPlayers(match: StoryMatch, userPart: MatchParticipant, sameTeam
 }
 
 export const winStreakTemplates = [
+  "{displayName} is on absolute fire! Racking up {streakCount} consecutive wins. {oppList} played like sayur tonight, not even a challenge. Time to belanja water at the mamak!",
+  "{displayName} is simply on another level! {streakCount} wins in a row. They are gliding across the court like a wizard while {oppList} is left fully koyak.",
+  "God mode active! {displayName} hits a {streakCount}-match win streak, defeating {oppList}. Opponents are already filing dynamic excuses about shuttlecock speed.",
   "{displayName} is officially on a rampage, stacking up {streakCount} consecutive wins and leaving {oppList} in the dust. Opponents are starting to wonder if they've secretly upgraded their racket, changed the laws of gravity on the court, or if they are just playing against a badminton wizard. At this rate, someone needs to step up and check their racket for illegal substances before their ego takes over the entire arena!",
   "Unstoppable! {displayName} is tearing through the competition with a {streakCount}-match winning streak, most recently defeating {oppList}. Rumors are circulating that the local court administrators are considering a handicap because nobody can seem to find an answer to their lethal cross-court drops.",
   "Form of their life! {displayName} makes it {streakCount} wins in a row after putting on a clinic against {oppList}. Opponents are reportedly scheduling emergency coaching sessions, while {displayName} is already looking for a larger trophy cabinet.",
@@ -180,6 +183,9 @@ export const winStreakTemplates = [
 ]
 
 export const responseNeededTemplates = [
+  "Slump patrol! {displayName} has dropped {streakCount} matches in a row. Group chat is already cooking up memes and their mental state is fully koyak. Response match needed immediately to stop the banter!",
+  "Tough luck! {displayName} is on a {streakCount}-match slide after falling to {oppList}. Insiders report a 5-page essay of excuses is currently being drafted.",
+  "Finding the rhythm is key. {displayName} slips to {streakCount} straight defeats, latest to {oppList}. Time to change the grip tape, stop looking sayur, and bounce back!",
   "Rough patch alert! {displayName} has dropped {streakCount} matches in a row, with {oppList} taking full advantage of the situation. Rumor has it they are already drafting a 5-page essay in the club chat about 'unlucky court conditions', 'suboptimal racket tension', and 'the sun was in my eyes' (indoors, mind you). A response match is desperately needed in the next session to stop the group chat memes from becoming permanent lore!",
   "Crisis mode? {displayName} is currently on a {streakCount}-match slide, with {oppList} inflicting the latest damage. Club insiders report a sudden spike in {displayName}'s search history for 'how to serve without flicking' and 'best badminton excuses'. A bounce-back win next time is crucial to restore order.",
   "The struggle is real. {displayName} has suffered {streakCount} straight defeats, falling most recently to {oppList}. The badminton gods have not been kind, but a true champion is defined by how they rise. Time to dust off the racket, stretch those hamstrings, and get back in the win column!",
@@ -204,6 +210,9 @@ export const responseNeededTemplates = [
 ]
 
 export const comebackWinTemplates = [
+  "The ultimate comeback! {displayName} staged a dramatic escape after dropping set one and looking ready to pack their gear. They managed to gostan and steal the win from {oppList}!",
+  "{displayName} pulled off a legendary turnaround! Lost set one, looked dead and buried, but adjusted their tactics to leave {oppList} empty-handed. Never celebrate too early against them!",
+  "Cardiac arrest averted! {displayName} did it the hard way, dropping the opener before fighting back to stun {oppList}. Absolute mental toughness and local grit on display.",
   "{displayName} staged a dramatic escape! After dropping the opening set and looking ready to pack their gear, they pulled off a spectacular turnaround to steal the match from {oppList}. Was it pure tactical genius, or did the opponents just run out of steam and start celebrating too early? Either way, the bragging rights are secured and {oppList} is left wondering how they let this slip.",
   "The ultimate turn-around! {displayName} looked dead and buried after set one, but summoned their inner warrior to snatch victory from the clutches of {oppList}. A masterclass in mental toughness and court adjustments that has left the crowd speechless and the opponents in disbelief.",
   "Never count them out! {displayName} clawed their way back from a set down to pull off an epic comeback against {oppList}. The first set was one to forget, but the next two were pure poetry in motion. This is why we play to the final point!",
@@ -228,6 +237,9 @@ export const comebackWinTemplates = [
 ]
 
 export const cleanSweepTemplates = [
+  "Total slaughter! {displayName} completely dominated a set, beating {oppList} by {sweepMargin} points. They played like absolute ayam. Someone buy them a map because they were completely lost!",
+  "Ruthless smash clinic! {displayName} won a set by a massive {sweepMargin} points against {oppList}. If you blink, you miss the shuttlecock. Time to belanja drinks!",
+  "No mercy shown! {displayName} ran riot, securing a set with a commanding {sweepMargin}-point margin over {oppList}. Form is temporary, but class (and smashing power) is permanent.",
   "Total domination! {displayName} produced an absolute statement of a set, leaving {oppList} completely stranded with a margin of {sweepMargin} points or better. A clinical display of court coverage that probably has the other side checking the rulebook for mercy rules. Someone buy {oppList} a map, because they looked completely lost on the court!",
   "Class is in session! {displayName} taught a lesson in court placement, winning a set by a whopping {sweepMargin} points against {oppList}. It wasn't just a win; it was a badminton clinic. The scoreline speaks for itself, and {oppList} will definitely want to burn the game tape.",
   "Absolutely ruthless! {displayName} put on a show of power and precision, blowing {oppList} away by {sweepMargin} points in a single set. If you blink, you miss the smashes. An absolute demolition job that sends a clear warning to the rest of the club.",

@@ -22,9 +22,6 @@ function normalizeClubData(data: unknown) {
   return Array.isArray(data) ? data[0] : data
 }
 
-async function getCurrentUserId(): Promise<string | null> {
-  return (await supabase.auth.getUser()).data.user?.id || null
-}
 
 async function hydrateCompetitionParticipants(
   participants: CompetitionParticipant[]
@@ -343,8 +340,6 @@ export async function recordCompetitionMatch(
   }
   const winningTeam = team1Wins > team2Wins ? 1 : 2
 
-  const userId = await getCurrentUserId()
-
   const { data: match, error: rpcError } = await supabase.rpc('record_competition_match', {
     p_matchup_id: matchupId,
     p_club_id: matchData.club_id,
@@ -367,7 +362,6 @@ export async function recordCompetitionMatch(
   if (!matchup) return { match, error: null }
 
   const winnerParticipantId = winningTeam === 1 ? matchup.participant_a_id : matchup.participant_b_id
-  const winnerClubId = winningTeam === 1 ? matchup.club_a_id : matchup.club_b_id
 
   const { data: participants } = await supabase
     .from('match_participants')

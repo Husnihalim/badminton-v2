@@ -53,7 +53,7 @@ export function StoryShareGroup({
   const [copied, setCopied] = useState(false)
 
   const shareUrl = url || window.location.origin
-  const shareText = `🔥 *${title}*\n🏆 ${body}\n\n📊 *The Proof:* ${proofLabel}\n📍 ${clubName} | ${new Date().toLocaleDateString()}\n\nRead match reports on KelabSukan:\n🔗 ${shareUrl}`
+  const shareText = `🔥 *${title}*\n🏆 ${body}\n\n📊 *The Proof:* ${proofLabel}\n📍 ${clubName} | ${new Date().toLocaleDateString()}\n\nRead the full match report & view stats:\n🔗 ${shareUrl}`
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`
