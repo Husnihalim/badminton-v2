@@ -87,6 +87,40 @@
         </p>
       </main>
     </noscript>
+    <script>
+      // One-time service worker killer — flush stale PWA caches so visitors
+      // loading the new homepage redesign don't get locked into old bundles.
+      // Runs before main.tsx; gated by a 24h localStorage flag so it only
+      // fires once per browser (no reload loop on subsequent visits).
+      (async () => {
+        try {
+          if (!('serviceWorker' in navigator)) return
+          const FLAG = 'ks_sw_flush_v1'
+          const raw = localStorage.getItem(FLAG)
+          if (raw) {
+            const ts = Number(raw)
+            if (!Number.isNaN(ts) && Date.now() - ts < 24 * 60 * 60 * 1000) return
+          }
+
+          const regs = await navigator.serviceWorker.getRegistrations()
+          const hadOld = regs.length > 0
+          await Promise.all(regs.map((r) => r.unregister()))
+
+          if (window.caches && caches.keys) {
+            const keys = await caches.keys()
+            await Promise.all(keys.map((k) => caches.delete(k)))
+          }
+
+          localStorage.setItem(FLAG, String(Date.now()))
+
+          if (hadOld) {
+            // Hard reload so the fresh bundle loads without old SW interference
+            window.location.reload()
+            return
+          }
+        } catch (e) { /* no-op */ }
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
