@@ -76,7 +76,7 @@ const Navbar = memo(function Navbar() {
 
   return (
     <>
-      <nav className="nav-bar">
+      <nav className="nav-bar" data-tour-id="navbar">
         <Link className="site-brand" to="/">
           <img src={logoImg} alt="kelabsukan.com logo" className="site-brand-logo" loading="eager" />
           <span className="site-brand-text">kelabsukan.com</span>
@@ -231,8 +231,8 @@ const Navbar = memo(function Navbar() {
                       width: '18px',
                       height: '18px',
                       borderRadius: '50%',
-                      backgroundColor: '#dc2626',
-                      color: 'white',
+                      backgroundColor: 'var(--arena-danger)',
+                      color: 'var(--arena-danger-text)',
                       fontSize: '11px',
                       fontWeight: 'bold',
                       display: 'flex',
@@ -312,9 +312,9 @@ const Navbar = memo(function Navbar() {
                         className="nav-dropdown-item" 
                         to="/superadmin/analytics"
                         onClick={() => setIsDropdownOpen(false)}
-                        style={{ color: '#ef4444' }}
+                        style={{ color: 'var(--arena-danger)' }}
                       >
-                        <Shield size={15} aria-hidden="true" style={{ color: '#f87171' }} />
+                        <Shield size={15} aria-hidden="true" style={{ color: 'var(--arena-danger)' }} />
                         Super Admin Panel
                       </Link>
                     )}

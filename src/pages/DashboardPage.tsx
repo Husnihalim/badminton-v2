@@ -7,8 +7,12 @@ import { Button } from '../components/ui/button'
 import { Page, PageHeader } from '../components/ui/page'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import RivalryShareModal from '../components/RivalryShareModal'
+import { OnboardingTour } from '../components/OnboardingTour'
+import { useOnboarding } from '../hooks/useOnboarding'
+import { playerTourSteps } from '../lib/onboarding/steps'
 import { generateStoryMoments } from '../lib/storyMoments'
 import { calculatePlayerInsights, getSignatureMoment } from '../lib/insights'
+import { getPrimaryElo } from '../lib/playerCardData'
 import { getPendingRosterInvites, respondToRosterInvite } from '../lib/api/competitions'
 import type { RosterInvite } from '../types/competition'
 
@@ -17,8 +21,7 @@ import type { RosterInvite } from '../types/competition'
 import {
   usePlayerDashboard,
   useDiscoverClubs,
-  useClubsMatches,
-  useClubsMembers,
+  usePlayerMatches,
 } from '../features/dashboard/hooks/useDashboardQueries'
 
 // Components
@@ -31,11 +34,18 @@ import DashboardUpcomingGameDays from '../features/dashboard/components/Dashboar
 import DashboardRecentMatches from '../features/dashboard/components/DashboardRecentMatches'
 
 // Icons
-import { User as UserIcon, Activity, Users, Edit3, Share2 } from 'lucide-react'
+import { User as UserIcon, Activity, Users, Edit3, Share2, Zap } from 'lucide-react'
 
 import type { Club, MatchWithDetails, MatchParticipant, ScoreSet } from '../types'
 
-type DashboardClub = Club & { role?: string; singles_elo?: number | null; rank?: { rank: number; total: number } | null }
+type DashboardClub = Club & {
+  role?: string
+  singles_elo?: number | null
+  doubles_elo?: number | null
+  singles_games?: number | null
+  doubles_games?: number | null
+  rank?: { rank: number; total: number } | null
+}
 type DashboardMatch = MatchWithDetails & { clubName?: string }
 
 export default function DashboardPage() {
@@ -86,57 +96,47 @@ export default function DashboardPage() {
   // React Query Queries
   const { data: dashboardData, isLoading: dashboardLoading } = usePlayerDashboard(user?.id)
   const { data: allClubs = [] } = useDiscoverClubs(!!user)
+  const { data: playerMatches = [] } = usePlayerMatches(user?.id)
+  const { isVisible, skip, complete } = useOnboarding({
+    user,
+    tourId: 'player-dashboard',
+    autoShow: true,
+    enabled: !authLoading && !dashboardLoading,
+  })
 
   // Extract club list from dashboard data
   const clubs: DashboardClub[] = useMemo(() => dashboardData?.clubs || [], [dashboardData])
-  const clubIds = useMemo(() => clubs.map((c: DashboardClub) => c.id), [clubs])
-
-  // Fetch all matches and members for joined clubs in parallel
-  const matchesQueries = useClubsMatches(clubIds)
-  const membersQueries = useClubsMembers(clubIds)
 
   // Aggregate user matches across all joined clubs
   const allUserMatches = useMemo(() => {
     if (!user) return []
-    const allMatches: DashboardMatch[] = []
-    matchesQueries.forEach((q, idx) => {
-      if (q.data) {
-        const clubName = clubs[idx]?.name
-        q.data.forEach((m) => {
-          allMatches.push({ ...m, clubName })
-        })
-      }
-    })
-
-    const filtered = allMatches.filter((m) =>
-      m.participants.some((p) => p.user_id === user.id)
-    )
-
-    return filtered.sort(
+    const clubsMap = new Map(clubs.map((c: DashboardClub) => [c.id, c.name]))
+    return (playerMatches as DashboardMatch[]).map((m) => ({
+      ...m,
+      clubName: clubsMap.get(m.club_id) || 'Unknown Club'
+    })).sort(
       (a, b) =>
         new Date(b.match_date || b.created_at).getTime() -
         new Date(a.match_date || a.created_at).getTime()
     )
-  }, [matchesQueries, clubs, user])
+  }, [playerMatches, clubs, user])
 
   // Build the profiles mapping for calculating user details and avatars
   const memberProfilesMap = useMemo(() => {
     const profilesMap: Record<string, { userId: string; avatarUrl: string | null }> = {}
-    membersQueries.forEach((q) => {
-      if (q.data) {
-        q.data.forEach((m) => {
-          const mName = m.name || 'Unknown'
-          if (m.user_id) {
-            profilesMap[mName.toLowerCase()] = {
-              userId: m.user_id,
-              avatarUrl: m.avatar_url ?? null,
-            }
+    playerMatches.forEach((m) => {
+      m.participants?.forEach((p) => {
+        const pName = p.name || p.guest_name || 'Guest'
+        if (p.user_id) {
+          profilesMap[pName.toLowerCase()] = {
+            userId: p.user_id,
+            avatarUrl: p.profile?.avatar_url || null,
           }
-        })
-      }
+        }
+      })
     })
     return profilesMap
-  }, [membersQueries])
+  }, [playerMatches])
 
   // Calculate top partner, top rival and ELO insights client-side
   const playerInsights = useMemo(() => {
@@ -297,7 +297,7 @@ export default function DashboardPage() {
 
   const primaryClub = clubs[0]
   const primaryRank = primaryClub ? primaryClub.rank : null
-  const primaryElo = primaryClub ? primaryClub.singles_elo : null
+  const primaryElo = getPrimaryElo(primaryClub)
   const displayName = user.display_name || user.name
   const firstName = displayName.split(' ')[0] || displayName
 
@@ -312,6 +312,7 @@ export default function DashboardPage() {
 
       {/* Page Header */}
       <PageHeader
+        data-tour-id="dashboard-header"
         eyebrow="Personal home"
         title={`Welcome back, ${firstName}`}
         description="Your profile, player card, stats, stories, clubs, and next actions in one place."
@@ -324,6 +325,7 @@ export default function DashboardPage() {
               onClick={() => navigate('/profile')}
               className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg"
               title="Edit Card"
+              data-tour-id="edit-profile-button"
             >
               <Edit3 size={14} aria-hidden="true" />
             </Button>
@@ -343,11 +345,12 @@ export default function DashboardPage() {
 
       {/* completeness banner */}
       {!isBannerDismissed && profileCompleteness < 100 && (
-        <div className="mb-4 rounded-xl border border-[var(--arena-accent)]/20 bg-[var(--arena-surface-elevated)]/30 p-4 backdrop-blur-sm">
+        <div className="mb-4 rounded-xl border border-[var(--arena-accent)]/20 bg-[var(--arena-surface-elevated)]/30 p-4 backdrop-blur-sm" data-tour-id="profile-completeness-banner">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-1.5">
-                <span className="text-[var(--arena-accent)]">⚡ Complete Your Player Card</span>
+                <Zap size={14} className="text-[var(--arena-accent)] fill-[var(--arena-accent)]" aria-hidden="true" />
+                <span className="text-[var(--arena-accent)]">Complete Your Player Card</span>
                 <span className="rounded bg-[var(--arena-accent-soft)] px-1.5 py-0.5 text-[10px] font-black uppercase text-[var(--arena-accent)] border border-[var(--arena-accent)]/20">
                   {profileCompleteness}% Complete
                 </span>
@@ -380,7 +383,7 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-          <div className="mt-3 h-1.5 w-full rounded-full bg-slate-900 overflow-hidden border border-white/5">
+          <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--arena-surface-muted)] overflow-hidden border border-[var(--arena-border)]">
             <div
               className="h-full bg-[var(--arena-accent)] transition-all duration-500 shadow-[0_0_8px_rgba(204,255,0,0.4)]"
               style={{ width: `${profileCompleteness}%` }}
@@ -398,7 +401,7 @@ export default function DashboardPage() {
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-1.5">
                   <span className="text-[var(--arena-blue)]">🏸 Roster Invitation</span>
-                  <span className="rounded bg-[rgba(56,189,248,0.1)] px-1.5 py-0.5 text-[10px] font-black uppercase text-[var(--arena-blue)] border border-[rgba(56,189,248,0.2)]">
+                  <span className="rounded bg-info-soft px-1.5 py-0.5 text-[10px] font-black uppercase text-info border border-info/20">
                     Pending
                   </span>
                 </h3>
@@ -419,7 +422,7 @@ export default function DashboardPage() {
                   type="button"
                   size="sm"
                   variant="secondary"
-                  className="h-8 text-xs cursor-pointer border-red-500/25 text-red-400 hover:bg-red-950/20"
+                  className="h-8 text-xs cursor-pointer border-danger/25 text-danger hover:bg-danger-soft"
                   onClick={() => handleRespondToInvite(invite.id, false)}
                 >
                   Decline
@@ -442,6 +445,7 @@ export default function DashboardPage() {
           return (
             <button
               key={tab.id}
+              data-tour-id={`tab-${tab.id}`}
               onClick={() => {
                 setActiveTab(tab.id)
                 const newParams = new URLSearchParams(window.location.search)
@@ -541,6 +545,13 @@ export default function DashboardPage() {
           onClose={() => setShareRivalMatch(null)}
         />
       ) : null}
+
+      <OnboardingTour
+        steps={playerTourSteps}
+        isOpen={isVisible}
+        onComplete={complete}
+        onSkip={skip}
+      />
     </Page>
   )
 }

@@ -11,10 +11,14 @@ import {
   Users,
   Megaphone,
   ShoppingBag,
+  Lock,
 } from 'lucide-react'
 import ScoreRecordingModal from '../components/ScoreRecordingModal'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import CelebrationConfetti from '../components/CelebrationConfetti'
+import { OnboardingTour } from '../components/OnboardingTour'
+import { useOnboarding } from '../hooks/useOnboarding'
+import { adminTourSteps } from '../lib/onboarding/steps'
 import { useAuth } from '../context/AuthContext'
 import { StoryShareGroup } from '../components/StoryShareGroup'
 import { useClub, useMyMembership, useClubMembers, useAllClubMatches, useClubEvents } from '../features/clubs/hooks/useClubQueries'
@@ -207,6 +211,18 @@ export default function ClubHomePage() {
   const { data: matches = [] } = useAllClubMatches(clubId)
   const { data: events = [] } = useClubEvents(clubId)
 
+  const isAdminRole =
+    myMembership?.role === 'owner' ||
+    myMembership?.role === 'admin' ||
+    user?.role === 'superadmin'
+
+  const { isVisible: isAdminTourVisible, skip: skipAdminTour, complete: completeAdminTour } = useOnboarding({
+    user,
+    tourId: `admin-club-${clubId}`,
+    autoShow: true,
+    enabled: isAdminRole && !clubLoading && !membershipLoading && !authLoading,
+  })
+
   // Latest Completed Session Highlights
   const latestSessionInfo = useMemo(() => {
     if (matches.length === 0) return null
@@ -384,6 +400,8 @@ export default function ClubHomePage() {
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
   const isMember = myMembership?.status === 'active' || user?.role === 'superadmin'
+  const isPrivateTab = ['scores', 'leaderboard', 'noticeboard'].includes(activeTab)
+  const isTabBlocked = club.is_private && !isMember && isPrivateTab
   const inviteUrl = club.invite_code ? buildInviteUrl(club.invite_code) : ''
 
   const handleCopyInviteLink = async () => {
@@ -462,20 +480,22 @@ export default function ClubHomePage() {
 
   return (
     <Page>
-      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
+      {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-[var(--arena-surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--arena-text)] shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
       {actionError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 mb-4">
+        <div className="rounded-lg border border-danger/20 bg-danger-soft p-3 text-sm text-danger mb-4">
           {actionError}
         </div>
       ) : null}
 
       <div className="space-y-6">
         {/* Header Cover Banner */}
-        <ClubHeader 
-          clubId={clubId} 
-          setSuccessMessage={setSuccessMessage} 
-          setActionError={setActionError} 
-        />
+        <div data-tour-id="club-header">
+          <ClubHeader 
+            clubId={clubId} 
+            setSuccessMessage={setSuccessMessage} 
+            setActionError={setActionError} 
+          />
+        </div>
 
         {/* Tab Navigation */}
         <div className="border-b border-[var(--arena-border)] flex gap-1 overflow-x-auto whitespace-nowrap">
@@ -486,11 +506,14 @@ export default function ClubHomePage() {
             { id: 'members', label: 'Members', icon: Users },
             { id: 'noticeboard', label: 'Notice Board', icon: Megaphone },
             { id: 'marketplace', label: 'Buy/Sell', icon: ShoppingBag }
-          ] as const).map((tab) => {
+          ] as const)
+          .filter((tab) => !club.is_private || isMember || ['overview', 'members', 'marketplace'].includes(tab.id))
+          .map((tab) => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
+                data-tour-id={`club-tab-${tab.id}`}
                 onClick={() => {
                   setActiveTab(tab.id)
                   const newParams = new URLSearchParams(window.location.search)
@@ -510,10 +533,22 @@ export default function ClubHomePage() {
           })}
         </div>
 
-        {activeTab === 'overview' && (
-          <div className="space-y-4 sm:space-y-6">
-            {/* Pinned noticeboard announcements */}
-            {club.announcement ? (
+        {isTabBlocked ? (
+          <Card className="mx-auto my-12 max-w-md text-center p-6 border-[var(--arena-border)] bg-[var(--arena-surface)] animate-fade-in">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--arena-bg)]/20 text-[var(--arena-text-dim)] mb-4">
+              <Lock size={24} aria-hidden="true" />
+            </div>
+            <h3 className="text-lg font-black uppercase tracking-tight text-[var(--arena-text)] mb-2">Private Tab</h3>
+            <p className="text-sm text-[var(--arena-text-dim)] mb-4 leading-relaxed">
+              The {activeTab === 'scores' ? 'score history' : activeTab === 'leaderboard' ? 'leaderboard standings' : 'notice board announcements'} of this club are private. Join the club to gain access.
+            </p>
+          </Card>
+        ) : (
+          <>
+            {activeTab === 'overview' && (
+              <div className="space-y-4 sm:space-y-6">
+                {/* Pinned noticeboard announcements */}
+                {club.announcement && (!club.is_private || isMember) ? (
               <div className="animate-fade-in rounded-xl border border-[var(--arena-accent)]/20 bg-[var(--arena-accent-soft)] p-3 shadow-sm sm:p-4">
                 <div className="flex gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm">
@@ -538,7 +573,7 @@ export default function ClubHomePage() {
 
             {/* Club actions quick access */}
             {isMember ? (
-              <Card className="border-[var(--arena-border)] bg-[var(--arena-surface)]">
+              <Card className="border-[var(--arena-border)] bg-[var(--arena-surface)]" data-tour-id="admin-controls">
                 <CardContent className="space-y-3 pt-4 sm:pt-5">
                   <div className="flex items-center gap-2 text-[var(--arena-accent)]">
                     <ShieldCheck size={18} aria-hidden="true" />
@@ -549,6 +584,7 @@ export default function ClubHomePage() {
                   }`}>
                     <button
                       type="button"
+                      data-tour-id="record-score-button"
                       onClick={handleCreateScore}
                       className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-center text-[var(--arena-text)] transition-all hover:bg-[var(--arena-accent-soft)] active:scale-[0.98]"
                     >
@@ -559,6 +595,7 @@ export default function ClubHomePage() {
                       <>
                         <button
                           type="button"
+                          data-tour-id="copy-invite-button"
                           onClick={handleCopyInviteLink}
                           disabled={!inviteUrl}
                           className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-center text-[var(--arena-text)] transition-all hover:bg-[var(--arena-accent-soft)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
@@ -568,6 +605,7 @@ export default function ClubHomePage() {
                         </button>
                         <button
                           type="button"
+                          data-tour-id="join-requests-button"
                           onClick={() => { loadJoinRequests(); setShowJoinRequestsModal(true) }}
                           className="flex min-h-[68px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-2 text-center text-[var(--arena-text)] transition-all hover:bg-[var(--arena-accent-soft)] active:scale-[0.98]"
                         >
@@ -598,7 +636,7 @@ export default function ClubHomePage() {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
                     <Trophy size={16} className="text-[var(--arena-accent)]" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Latest Session Highlights</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-[var(--arena-text)]">Latest Session Highlights</h3>
                   </div>
                   <span className="text-[10px] font-mono text-[var(--arena-text-dim)]">
                     {new Date(latestSessionInfo.date).toLocaleDateString(undefined, {
@@ -619,11 +657,11 @@ export default function ClubHomePage() {
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
                   {/* MVP (King of the Court) */}
                   {latestHighlights.mvp && (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 relative hover:bg-amber-500/10 transition-colors duration-150">
+                    <div className="rounded-lg border border-warning/20 bg-warning-soft p-3 relative hover:bg-warning/10 transition-colors duration-150">
                       <span className="absolute top-2 right-2 text-sm">👑</span>
-                      <p className="text-[8px] font-black text-amber-400 uppercase tracking-widest leading-none">MVP (King of Court)</p>
-                      <p className="text-sm font-black text-white truncate mt-2">{latestHighlights.mvp.name}</p>
-                      <p className="text-[10px] text-amber-300 font-semibold mt-1 flex items-center gap-1">
+                      <p className="text-[8px] font-black text-warning uppercase tracking-widest leading-none">MVP (King of Court)</p>
+                      <p className="text-sm font-black text-[var(--arena-text)] truncate mt-2">{latestHighlights.mvp.name}</p>
+                      <p className="text-[10px] text-warning font-semibold mt-1 flex items-center gap-1">
                         <span>🏆</span>
                         <span>{Math.round(latestHighlights.mvp.winRate)}% Win Rate ({latestHighlights.mvp.wins}W-{latestHighlights.mvp.losses}L)</span>
                       </p>
@@ -635,7 +673,7 @@ export default function ClubHomePage() {
                     <div className="rounded-lg border border-[var(--arena-accent)]/25 bg-[var(--arena-accent-soft)]/20 p-3 relative hover:bg-[var(--arena-accent-soft)]/30 transition-colors duration-150">
                       <span className="absolute top-2 right-2 text-sm">🔥</span>
                       <p className="text-[8px] font-black text-[var(--arena-accent)] uppercase tracking-widest leading-none">Streak Star</p>
-                      <p className="text-sm font-black text-white truncate mt-2">{latestHighlights.streakStar.name}</p>
+                      <p className="text-sm font-black text-[var(--arena-text)] truncate mt-2">{latestHighlights.streakStar.name}</p>
                       <p className="text-[10px] text-[var(--arena-accent)] font-semibold mt-1 flex items-center gap-1">
                         <span>📈</span>
                         <span>{latestHighlights.streakStar.longestStreak} Match Win Streak</span>
@@ -645,11 +683,11 @@ export default function ClubHomePage() {
 
                   {/* Resilience Award */}
                   {latestHighlights.resilience && (
-                    <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-3 relative hover:bg-sky-500/10 transition-colors duration-150">
+                    <div className="rounded-lg border border-info/20 bg-info-soft p-3 relative hover:bg-info/10 transition-colors duration-150">
                       <span className="absolute top-2 right-2 text-sm">💪</span>
-                      <p className="text-[8px] font-black text-sky-400 uppercase tracking-widest leading-none">Resilience Award</p>
-                      <p className="text-sm font-black text-white truncate mt-2">{latestHighlights.resilience.name}</p>
-                      <p className="text-[10px] text-sky-300 font-semibold mt-1 flex items-center gap-1">
+                      <p className="text-[8px] font-black text-info uppercase tracking-widest leading-none">Resilience Award</p>
+                      <p className="text-sm font-black text-[var(--arena-text)] truncate mt-2">{latestHighlights.resilience.name}</p>
+                      <p className="text-[10px] text-info font-semibold mt-1 flex items-center gap-1">
                         <span>🏸</span>
                         <span>Played {latestHighlights.resilience.games} Matches</span>
                       </p>
@@ -661,14 +699,14 @@ export default function ClubHomePage() {
 
             {/* Featured Club Stories */}
             {featuredStories.length > 0 && (
-              <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4 space-y-3 shadow-sm">
+              <div className="rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface)]/30 p-4 space-y-3 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-start gap-1.5 text-white sm:items-center">
+                  <div className="flex min-w-0 items-start gap-1.5 text-[var(--arena-text)] sm:items-center">
                     <Activity size={16} className="text-[var(--arena-lime)]" />
-                    <h3 className="flex min-w-0 flex-col gap-1 text-sm font-black uppercase tracking-tight text-slate-100 sm:flex-row sm:items-center sm:gap-2">
+                      <h3 className="flex min-w-0 flex-col gap-1 text-sm font-black uppercase tracking-tight text-[var(--arena-text)] sm:flex-row sm:items-center sm:gap-2">
                       <span>Featured Player Stories</span>
                       {pinnedStoryIds.length === 0 && (
-                        <span className="w-fit text-[9px] lowercase font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded">
+                        <span className="w-fit text-[9px] lowercase font-mono text-[var(--arena-text-dim)] bg-[var(--arena-surface-muted)] border border-[var(--arena-border)] px-1 py-0.5 rounded">
                           (auto-selected)
                         </span>
                       )}
@@ -680,7 +718,7 @@ export default function ClubHomePage() {
                       variant="secondary"
                       size="sm"
                       onClick={() => setShowStorySelectorModal(true)}
-                      className="h-8 w-full cursor-pointer items-center gap-1 border-slate-800 bg-slate-900/50 px-2 text-[10px] font-black uppercase hover:bg-slate-900 hover:text-white sm:w-auto"
+                      className="h-8 w-full cursor-pointer items-center gap-1 border-[var(--arena-border)] bg-[var(--arena-surface)]/50 px-2 text-[10px] font-black uppercase hover:bg-[var(--arena-surface)] hover:text-[var(--arena-text)] sm:w-auto"
                     >
                       Manage Features
                     </Button>
@@ -689,23 +727,23 @@ export default function ClubHomePage() {
                 
                 <div className="grid gap-3 sm:grid-cols-2">
                   {featuredStories.map((story: StoryMoment & { playerName: string }, index) => (
-                    <div key={`${story.id}-${story.playerName}-${index}`} className="min-w-0 rounded-lg border border-slate-800/80 bg-slate-900/50 p-3 flex flex-col justify-between hover:border-slate-700 transition-all duration-150">
+                    <div key={`${story.id}-${story.playerName}-${index}`} className="min-w-0 rounded-lg border border-[var(--arena-border)]/80 bg-[var(--arena-surface)]/50 p-3 flex flex-col justify-between hover:border-[var(--arena-border)] transition-all duration-150">
                       <div>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="min-w-0 max-w-full break-words text-[8px] font-bold text-[var(--arena-lime)] uppercase tracking-wider bg-[var(--arena-lime)]/10 border border-[var(--arena-lime)]/20 px-1.5 py-0.5 rounded">
                             {story.title}
                           </span>
-                          <span className="text-[9px] text-slate-400 font-mono">
+                          <span className="text-[9px] text-[var(--arena-text-dim)] font-mono">
                             {story.matchDate ? new Date(story.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
                           </span>
                         </div>
-                        <p className="mt-2 break-words text-xs font-medium leading-relaxed text-slate-200">
+                        <p className="mt-2 break-words text-xs font-medium leading-relaxed text-[var(--arena-text-muted)]">
                           {story.body}
                         </p>
                       </div>
                       
-                      <div className="mt-3 flex flex-col gap-2.5 border-t border-slate-800 pt-2.5 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="min-w-0 truncate text-[9px] font-mono text-slate-400 sm:flex-1">
+                      <div className="mt-3 flex flex-col gap-2.5 border-t border-[var(--arena-border)] pt-2.5 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="min-w-0 truncate text-[9px] font-mono text-[var(--arena-text-dim)] sm:flex-1">
                           {story.proofLabel}
                         </span>
                         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 sm:justify-end">
@@ -715,8 +753,8 @@ export default function ClubHomePage() {
                               onClick={() => handleTogglePinStory(story.id)}
                               className={`min-h-7 shrink-0 text-[9px] font-black uppercase flex items-center gap-0.5 cursor-pointer hover:underline ${
                                 pinnedStoryIds.includes(story.id)
-                                  ? 'text-yellow-400'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'text-warning'
+                                  : 'text-[var(--arena-text-dim)] hover:text-[var(--arena-text)]'
                               }`}
                               title={pinnedStoryIds.includes(story.id) ? "Unfeature Story" : "Feature Story"}
                             >
@@ -799,11 +837,13 @@ export default function ClubHomePage() {
             setActionError={setActionError} 
           />
         )}
+          </>
+        )}
       </div>
 
       {/* Modals & Portals */}
       {showJoinRequestsModal && isAdmin ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowJoinRequestsModal(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-end bg-[var(--arena-bg)]/45 p-0 sm:place-items-center sm:p-4" onClick={() => setShowJoinRequestsModal(false)}>
           <Card className="max-h-[92vh] w-full overflow-auto rounded-b-none sm:max-w-lg sm:rounded-lg" onClick={(e) => e.stopPropagation()}>
             <CardContent className="space-y-4 pt-4 sm:pt-5">
               <div className="flex items-start justify-between gap-3">
@@ -841,14 +881,14 @@ export default function ClubHomePage() {
       ) : null}
 
       {showStorySelectorModal && isAdmin && (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/60 p-0 backdrop-blur-sm sm:place-items-center sm:p-4" onClick={() => setShowStorySelectorModal(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-end bg-[var(--arena-bg)]/60 p-0 backdrop-blur-sm sm:place-items-center sm:p-4" onClick={() => setShowStorySelectorModal(false)}>
           <Card className="animate-fade-in flex max-h-[92svh] w-full flex-col overflow-hidden rounded-b-none rounded-t-xl border-[var(--arena-border)] bg-[var(--arena-surface)] shadow-2xl sm:max-h-[85vh] sm:max-w-xl sm:rounded-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--arena-border)] bg-slate-950/40 p-4">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--arena-border)] bg-[var(--arena-bg)]/40 p-4">
               <div className="min-w-0">
-                <h3 className="text-base font-black uppercase text-white tracking-tight">Feature Player Stories</h3>
+                <h3 className="text-base font-black uppercase text-[var(--arena-text)] tracking-tight">Feature Player Stories</h3>
                 <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">Select which exciting moments to display on the club homepage.</p>
               </div>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg text-slate-400 hover:text-white" onClick={() => setShowStorySelectorModal(false)} aria-label="Close">
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 min-h-0 p-0 flex items-center justify-center cursor-pointer rounded-lg text-[var(--arena-text-dim)] hover:text-[var(--arena-text)]" onClick={() => setShowStorySelectorModal(false)} aria-label="Close">
                 <X size={16} aria-hidden="true" />
               </Button>
             </div>
@@ -865,8 +905,8 @@ export default function ClubHomePage() {
                       onClick={() => handleTogglePinStory(story.id)}
                       className={`flex min-w-0 cursor-pointer select-none items-start gap-3 rounded-lg border p-3 transition-all duration-150 ${
                         isPinned
-                          ? 'border-[var(--arena-accent)]/40 bg-[var(--arena-accent-soft)] text-white'
-                          : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900 text-slate-300'
+                          ? 'border-[var(--arena-accent)]/40 bg-[var(--arena-accent-soft)] text-[var(--arena-text)]'
+                          : 'border-[var(--arena-border)] bg-[var(--arena-surface)]/50 hover:bg-[var(--arena-surface)] text-[var(--arena-text-muted)]'
                       }`}
                     >
                       <input
@@ -880,12 +920,12 @@ export default function ClubHomePage() {
                           <span className="min-w-0 break-words text-[10px] font-black uppercase tracking-wider text-[var(--arena-lime)]">
                             {story.playerName} • {story.title}
                           </span>
-                          <span className="text-[9px] text-slate-400 font-mono shrink-0">
+                          <span className="text-[9px] text-[var(--arena-text-dim)] font-mono shrink-0">
                             {story.matchDate ? new Date(story.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-200 mt-1 leading-relaxed line-clamp-2">{story.body}</p>
-                        <p className="text-[9px] font-mono text-slate-500 mt-1">{story.proofLabel}</p>
+                        <p className="text-xs text-[var(--arena-text-muted)] mt-1 leading-relaxed line-clamp-2">{story.body}</p>
+                        <p className="text-[9px] font-mono text-[var(--arena-text-dim)] mt-1">{story.proofLabel}</p>
                       </div>
                     </div>
                   )
@@ -893,11 +933,11 @@ export default function ClubHomePage() {
               )}
             </div>
             
-            <div className="p-4 border-t border-[var(--arena-border)] flex justify-end shrink-0 bg-slate-950/40">
+            <div className="p-4 border-t border-[var(--arena-border)] flex justify-end shrink-0 bg-[var(--arena-bg)]/40">
               <Button
                 type="button"
                 onClick={() => setShowStorySelectorModal(false)}
-                className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
+                className="bg-[var(--arena-surface-muted)] hover:bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] font-bold text-xs"
               >
                 Done
               </Button>
@@ -940,9 +980,9 @@ export default function ClubHomePage() {
       {showCelebrationModal ? (
         <>
           <CelebrationConfetti />
-          <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setShowCelebrationModal(false)}>
+          <div className="fixed inset-0 z-50 grid place-items-center bg-[var(--arena-bg)]/60 p-4 backdrop-blur-sm" onClick={() => setShowCelebrationModal(false)}>
             <Card className="relative w-full max-w-md overflow-hidden rounded-2xl border-none bg-[var(--arena-surface)] text-center shadow-2xl transition-all" onClick={(e) => e.stopPropagation()}>
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
+              <div className="absolute top-0 left-0 right-0 h-2 bg-[var(--arena-success)]" />
               <CardContent className="space-y-6 px-6 pt-10 pb-8 sm:px-8">
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] shadow-inner animate-bounce">
                   <span className="text-4xl">🎉</span>
@@ -958,12 +998,12 @@ export default function ClubHomePage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-100 bg-[var(--arena-surface-muted)] p-4 text-left space-y-3">
+                <div className="rounded-xl border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] p-4 text-left space-y-3">
                   <div className="flex items-center gap-3">
                     {club.logo_url ? (
                       <img src={club.logo_url} alt={`${club.name} logo`} className="h-10 w-10 rounded-full object-cover border border-[var(--arena-border)]" />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--arena-accent)] text-white font-bold">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--arena-accent)] text-[var(--arena-accent-text)] font-bold">
                         {club.name[0]}
                       </div>
                     )}
@@ -983,11 +1023,11 @@ export default function ClubHomePage() {
                   <p className="font-bold text-[var(--arena-text-muted)] uppercase tracking-wide">Next steps:</p>
                   <ul className="space-y-2.5 text-[var(--arena-text-muted)] pl-1">
                     <li className="flex items-start gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-[var(--arena-accent)]">1</span>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-success-soft text-[10px] font-bold text-success">1</span>
                       <span>Check the **Upcoming Sessions** below and submit your RSVP.</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-[var(--arena-accent)]">2</span>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-success-soft text-[10px] font-bold text-success">2</span>
                       <span>View recent match history and record set scores to update the ELO leaderboard.</span>
                     </li>
                   </ul>
@@ -998,7 +1038,7 @@ export default function ClubHomePage() {
                     type="button"
                     fullWidth
                     onClick={() => setShowCelebrationModal(false)}
-                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-600/10 font-bold"
+                    className="bg-success hover:bg-success/90 text-[var(--arena-text)] shadow-md shadow-success/10 font-bold"
                   >
                     Let's Play! 🏸
                   </Button>
@@ -1008,6 +1048,13 @@ export default function ClubHomePage() {
           </div>
         </>
       ) : null}
+
+      <OnboardingTour
+        steps={adminTourSteps}
+        isOpen={isAdminTourVisible}
+        onComplete={completeAdminTour}
+        onSkip={skipAdminTour}
+      />
     </Page>
   )
 }

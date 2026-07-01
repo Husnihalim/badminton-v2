@@ -25,7 +25,7 @@ interface JoinedClubsListProps {
 
 export default function JoinedClubsList({ clubs }: JoinedClubsListProps) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" data-tour-id="joined-clubs-list">
       <h2 className="text-lg font-bold text-[var(--arena-text)]">Your clubs</h2>
       {clubs.length ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -35,7 +35,7 @@ export default function JoinedClubsList({ clubs }: JoinedClubsListProps) {
 
             return (
               <Link key={club.id} to={`/club/${club.id}`} className="block">
-                <Card className="h-full transition hover:border-emerald-300 hover:shadow-md">
+                <Card className="h-full transition hover:border-[var(--arena-accent)]/40 hover:shadow-md">
                   <CardContent className="space-y-3 pt-4 sm:pt-5">
                     <div className="flex items-start gap-3">
                       <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">
@@ -57,13 +57,13 @@ export default function JoinedClubsList({ clubs }: JoinedClubsListProps) {
                     <div className="flex flex-wrap gap-1.5 items-center">
                       <Badge>{club.role || 'member'}</Badge>
                       {club.role === 'owner' || club.role === 'admin' ? (
-                        <Badge className="border-blue-200 bg-blue-50 text-blue-800">
+                        <Badge className="border-info-soft bg-info-soft text-info">
                           <ShieldCheck size={14} aria-hidden="true" />
                           Admin actions
                         </Badge>
                       ) : null}
                       {rankInfo && rankInfo.rank ? (
-                        <Badge className="border-amber-200 bg-amber-50 text-amber-800 font-bold">
+                        <Badge className="border-warning-soft bg-warning-soft text-warning font-bold">
                           🏆 Rank #{rankInfo.rank} / {rankInfo.total}
                         </Badge>
                       ) : null}

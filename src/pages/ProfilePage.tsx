@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, Users } from 'lucide-react'
+import { Building2, Camera, KeyRound, Lock, MapPin, Plus, Save, Users, Compass } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { createClub, getMyClubs } from '../lib/api/clubs'
 import { updateProfile, uploadProfilePhoto } from '../lib/api/profiles'
+import { useOnboarding } from '../hooks/useOnboarding'
 import type { Club, PlayerGear, PlayerSocialLinks } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog'
@@ -32,6 +33,12 @@ export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { reset: resetPlayerTour } = useOnboarding({
+    user,
+    tourId: 'player-dashboard',
+    autoShow: false,
+    enabled: false,
+  })
   const [clubs, setClubs] = useState<Club[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showCreateClubModal, setShowCreateClubModal] = useState(false)
@@ -585,6 +592,32 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="border-[var(--arena-border)] bg-[var(--arena-surface)]">
+        <CardContent className="space-y-3 pt-4 sm:pt-5">
+          <div className="flex items-center gap-2 text-[var(--arena-accent)]">
+            <Compass size={18} aria-hidden="true" />
+            <h2 className="font-bold text-[var(--arena-text)]">Help &amp; tours</h2>
+          </div>
+          <p className="text-sm text-[var(--arena-text-muted)]">
+            Skipped the welcome tour? Replay it anytime to relearn how to navigate your dashboard, player card, and clubs.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                resetPlayerTour()
+                navigate('/my-court')
+              }}
+            >
+              <Compass size={15} aria-hidden="true" />
+              Replay dashboard tour
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

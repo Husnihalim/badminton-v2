@@ -56,7 +56,7 @@ export default function ClubDiscoveryPanel({ discoverableClubs }: ClubDiscoveryP
   }
 
   return (
-    <section id="club-discovery" className="space-y-4">
+    <section id="club-discovery" className="space-y-4" data-tour-id="club-discovery-panel">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-[var(--arena-text)]">Find another club</h2>
