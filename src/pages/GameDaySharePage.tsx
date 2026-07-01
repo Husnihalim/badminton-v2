@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { CalendarDays, Check, Copy, DollarSign, LogIn, MessageCircle, Share2, UserPlus } from 'lucide-react'
+import { CalendarDays, Check, Copy, DollarSign, LogIn, Share2, UserPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import {
   buildEventShareText,
@@ -12,6 +12,7 @@ import {
   rsvpToEvent,
 } from '../lib/api/events'
 import { getMyMembership } from '../lib/api/clubs'
+import { sharePayload, copyToClipboard } from '../lib/share'
 import type { ClubEvent, EventRsvp, Membership } from '../types'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -106,22 +107,24 @@ export default function GameDaySharePage() {
 
   const copyShareLink = async () => {
     if (!shareUrl) return
-    await navigator.clipboard.writeText(shareUrl)
-    setSuccessMessage('Game day link copied.')
-    setTimeout(() => setSuccessMessage(''), 3000)
+    const ok = await copyToClipboard(shareUrl)
+    if (ok) {
+      setSuccessMessage('Game day link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    }
   }
 
   const nativeShare = async () => {
-    if (!event || !navigator.share) {
-      await copyShareLink()
-      return
-    }
-
-    await navigator.share({
+    if (!event) return
+    const result = await sharePayload({
       title: event.title,
       text: shareText,
       url: shareUrl,
     })
+    if (result === 'copied') {
+      setSuccessMessage('Game day link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    }
   }
 
   const handleRsvp = async (status: EventRsvp['status']) => {
@@ -157,8 +160,6 @@ export default function GameDaySharePage() {
   if (pageError && !event) return <Navigate to="/not-found" replace />
   if (!event) return null
 
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
-
   return (
     <Page>
       {successMessage ? <div className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-[var(--arena-text)] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg sm:left-auto sm:w-80">{successMessage}</div> : null}
@@ -172,9 +173,9 @@ export default function GameDaySharePage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
-          {pageError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{pageError}</p> : null}
+          {pageError ? <p className="rounded-lg border border-danger-soft bg-danger-soft p-3 text-sm text-danger">{pageError}</p> : null}
 
-          <div className="grid gap-3 rounded-lg border border-slate-600 bg-[var(--arena-surface)] p-3 text-sm text-[var(--arena-text-dim)]">
+          <div className="grid gap-3 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-3 text-sm text-[var(--arena-text-dim)]">
             <p className="inline-flex items-center gap-2 font-semibold text-[var(--arena-text)]">
               <CalendarDays size={17} aria-hidden="true" />
               {new Date(event.event_date).toLocaleString()}
@@ -187,7 +188,7 @@ export default function GameDaySharePage() {
               </p>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+              <Badge className={event.signup_open ? undefined : 'border-danger-soft bg-danger-soft text-danger'}>
                 {event.signup_open ? 'Open' : 'Closed'}
               </Badge>
               {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-dim)]">{acceptedRsvps.length}/{event.max_participants} accepted</Badge> : null}
@@ -207,15 +208,6 @@ export default function GameDaySharePage() {
               >
                 <Share2 size={15} aria-hidden="true" />
               </Button>
-              <a
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-dim)] transition-colors hover:bg-slate-700 cursor-pointer"
-                href={whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
-                title="Share on WhatsApp"
-              >
-                <MessageCircle size={15} aria-hidden="true" />
-              </a>
               <Button
                 type="button"
                 size="sm"
@@ -273,15 +265,15 @@ export default function GameDaySharePage() {
               {myRsvp ? <p className="text-sm font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p> : null}
             </div>
           ) : (
-            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">Signup is closed for this game day.</p>
+            <p className="rounded-lg border border-danger-soft bg-danger-soft p-3 text-sm font-semibold text-danger">Signup is closed for this game day.</p>
           )}
 
           {user ? (
             <div className="space-y-2 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-3">
               <div className="flex flex-wrap gap-2">
                 <Badge className="border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)]">{acceptedRsvps.length} accepted</Badge>
-                <Badge className="border-amber-200 bg-amber-50 text-amber-800">{holdingRsvps.length} holding</Badge>
-                <Badge className="border-slate-600 bg-[var(--arena-surface)] text-[var(--arena-text-dim)]">{rejectedRsvps.length} rejected</Badge>
+                <Badge className="border-warning-soft bg-warning-soft text-warning">{holdingRsvps.length} holding</Badge>
+                <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-dim)]">{rejectedRsvps.length} rejected</Badge>
               </div>
               {acceptedRsvps.length ? (
                 <p className="text-sm leading-6 text-[var(--arena-text-dim)]">

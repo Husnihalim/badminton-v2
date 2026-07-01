@@ -15,7 +15,7 @@ const storyCards = [
   {
     label: 'Rivalry',
     title: 'Daniel rematch watch',
-    text: 'The head-to-head is tightening after their latest club-night result.',
+    text: 'The record is tightening after their latest club-night result.',
     proof: 'Record: 3-2',
   },
   {

@@ -64,9 +64,9 @@ export default function ResetPasswordPage() {
     <section className="mx-auto mt-4 max-w-md sm:mt-10">
       <Card>
         <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Account recovery</p>
-          <h1 className="text-2xl font-bold leading-tight text-slate-950">Set new password</h1>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">Account recovery</p>
+          <h1 className="text-2xl font-bold leading-tight text-[var(--arena-text)]">Set new password</h1>
+          <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
             Enter a new password for your kelabsukan.com account.
           </p>
         </CardHeader>
@@ -78,8 +78,8 @@ export default function ResetPasswordPage() {
                 role="status"
                 className={
                   message
-                    ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
-                    : 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
+                    ? 'rounded-lg border border-[var(--arena-success)]/20 bg-[var(--arena-success-soft)] px-3 py-2 text-sm text-[var(--arena-success)]'
+                    : 'rounded-lg border border-[var(--arena-danger)]/20 bg-[var(--arena-danger-soft)] px-3 py-2 text-sm text-[var(--arena-danger)]'
                 }
               >
                 {message || error || 'Supabase is not configured for this environment yet.'}
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="new-password">New password</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="new-password">New password</label>
               <PasswordInput
                 id="new-password"
                 name="password"
@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="confirm-new-password">
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="confirm-new-password">
                 Confirm new password
               </label>
               <PasswordInput
@@ -120,8 +120,8 @@ export default function ResetPasswordPage() {
             </Button>
           </form>
 
-          <p className="mt-5 text-sm text-slate-600">
-            Back to <Link className="font-semibold text-emerald-700" to="/login">log in</Link>
+          <p className="mt-5 text-sm text-[var(--arena-text-muted)]">
+            Back to <Link className="font-semibold text-[var(--arena-accent)]" to="/login">log in</Link>
           </p>
         </CardContent>
       </Card>

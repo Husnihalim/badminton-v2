@@ -208,12 +208,12 @@ export default function RivalryShareModal({
   const handleShare = async () => {
     const shareText = mode === 'partner'
       ? `Check out our doubles partnership stats on kelabsukan.com!\nRecord: ${userName.split(' ')[0]} & ${rivalName.split(' ')[0]} - ${wins} Wins / ${losses} Losses`
-      : `Check out my Head-to-Head rivalry stats against ${rivalName} on kelabsukan.com!\nRecord: ${userName.split(' ')[0]} ${wins} - ${losses} ${rivalName.split(' ')[0]}`
+      : `Check out my rivalry stats against ${rivalName} on kelabsukan.com!\nRecord: ${userName.split(' ')[0]} ${wins} - ${losses} ${rivalName.split(' ')[0]}`
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: mode === 'partner' ? 'Doubles Partnership Stats' : 'H2H Rivalry Comparison',
+          title: mode === 'partner' ? 'Doubles Partnership Stats' : 'Rivalry Comparison',
           text: shareText,
           url: window.location.href,
         })
@@ -228,29 +228,29 @@ export default function RivalryShareModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" onClick={onClose}>
-      <Card className="w-full max-w-2xl bg-slate-900 border-slate-800 text-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[var(--arena-bg)]/60 p-4" onClick={onClose}>
+      <Card className="w-full max-w-2xl bg-[var(--arena-surface)] border-[var(--arena-surface-elevated)] text-[var(--arena-text)] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <CardContent className="p-4 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white">{mode === 'partner' ? 'Share Partnership Card' : 'Share Rivalry Card'}</h2>
+              <h2 className="text-xl font-bold text-[var(--arena-text)]">{mode === 'partner' ? 'Share Partnership Card' : 'Share Rivalry Card'}</h2>
               <p className="text-sm text-[var(--arena-text-dim)]">Download or copy a premium {mode === 'partner' ? 'partnership' : 'rivalry'} summary card.</p>
             </div>
-            <button type="button" className="text-[var(--arena-text-dim)] hover:text-white" onClick={onClose} aria-label="Close">
+            <button type="button" className="text-[var(--arena-text-dim)] hover:text-[var(--arena-text)]" onClick={onClose} aria-label="Close">
               <X size={20} />
             </button>
           </div>
 
-          <div className="flex justify-center border border-slate-800 rounded-lg overflow-hidden bg-slate-950 p-2 sm:p-4">
-            <canvas ref={canvasRef} className="max-w-full max-h-[300px] sm:max-h-[380px] object-contain rounded shadow-lg border border-slate-800" />
+          <div className="flex justify-center border border-[var(--arena-surface-elevated)] rounded-lg overflow-hidden bg-[var(--arena-bg)] p-2 sm:p-4">
+            <canvas ref={canvasRef} className="max-w-full max-h-[300px] sm:max-h-[380px] object-contain rounded shadow-lg border border-[var(--arena-surface-elevated)]" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <Button type="button" onClick={handleDownload} fullWidth className="gap-2 bg-amber-500 hover:bg-amber-600 text-[var(--arena-text)] font-bold border-none">
+            <Button type="button" onClick={handleDownload} fullWidth className="gap-2 bg-warning hover:bg-warning/90 text-[var(--arena-text)] font-bold border-none">
               <Download size={16} />
               Download Image
             </Button>
-            <Button type="button" variant="secondary" onClick={handleShare} fullWidth className="gap-2 border-slate-700 text-slate-200 bg-slate-800 hover:bg-slate-700">
+            <Button type="button" variant="secondary" onClick={handleShare} fullWidth className="gap-2 border-[var(--arena-surface-muted)] text-[var(--arena-text-muted)] bg-[var(--arena-surface-elevated)] hover:bg-[var(--arena-surface-muted)]">
               {copied ? <Check size={16} className="text-[var(--arena-accent)]" /> : <Share2 size={16} />}
               {copied ? 'Copied Details' : 'Share Card'}
             </Button>

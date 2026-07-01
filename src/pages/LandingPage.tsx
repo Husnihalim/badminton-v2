@@ -24,6 +24,7 @@ import heroBadminton from '../assets/hero-badminton.webp'
 import heroPickleball from '../assets/hero-pickleball.webp'
 import heroTennis from '../assets/hero-tennis.webp'
 import { mockClubs, mockUsers, mockStories, mockLeaderboards, mockMatches } from '../lib/mockShowcase'
+import { getPrimaryElo } from '../lib/playerCardData'
 
 export default function LandingPage() {
   const [realClubs, setRealClubs] = useState<Club[]>([])
@@ -150,7 +151,7 @@ export default function LandingPage() {
             <span className="text-[var(--arena-accent)]">Sports Arena</span>
           </h1>
           <p className="landing-hero-text text-sm md:text-base leading-relaxed text-[var(--arena-text-muted)] max-w-lg mb-6">
-            Where social athletes become visible. Organize your racket club, schedule game days, capture scores, track Elo leaderboards, and auto-generate ESPN-style story moments to share on WhatsApp.
+            Where social athletes become visible. Organize your racket club, schedule game days, capture scores, track Elo leaderboards, and auto-generate ESPN-style story moments to share anywhere.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -248,10 +249,10 @@ export default function LandingPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                          story.type === 'comeback_win' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
-                          story.type === 'clean_sweep' ? 'bg-blue-950 text-blue-400 border border-blue-800' :
-                          story.type === 'win_streak' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
-                          'bg-rose-950 text-rose-400 border border-rose-800'
+                          story.type === 'comeback_win' ? 'bg-success-soft text-success border border-success/30' :
+                          story.type === 'clean_sweep' ? 'bg-info-soft text-info border border-info/30' :
+                          story.type === 'win_streak' ? 'bg-warning-soft text-warning border border-warning/30' :
+                          'bg-danger-soft text-danger border border-danger/30'
                         }`}>
                           {story.type.replace('_', ' ')}
                         </span>
@@ -315,6 +316,8 @@ export default function LandingPage() {
                   <tbody>
                     {mockLeaderboards[leaderboardClubId].map((row, idx) => {
                       const userKey = Object.keys(mockUsers).find(k => mockUsers[k].name === row.name)
+                      const profile = userKey ? mockUsers[userKey] : null
+                      const elo = getPrimaryElo(profile, row.elo ?? 1200)
                       return (
                         <tr key={idx} className="border-b border-[var(--arena-border)]/50 hover:bg-[var(--arena-surface-muted)]/50 text-xs transition-colors">
                           <td className="py-3 px-4 font-mono font-bold text-[var(--arena-text-muted)]">
@@ -333,7 +336,7 @@ export default function LandingPage() {
                           <td className="py-3 text-center font-mono font-semibold text-[var(--arena-text-muted)]">{row.games}</td>
                           <td className="py-3 text-center font-mono text-[var(--arena-text-muted)]">{row.wins} - {row.losses}</td>
                           <td className="py-3 text-center font-mono font-bold text-[var(--arena-text-muted)]">{row.winPercentage}%</td>
-                          <td className="py-3 text-right px-4 font-mono font-black text-[var(--arena-accent)]">{row.elo ?? 1500}</td>
+                          <td className="py-3 text-right px-4 font-mono font-black text-[var(--arena-accent)]">{elo}</td>
                         </tr>
                       )
                     })}
@@ -602,10 +605,10 @@ export default function LandingPage() {
                   <div key={idx} className="flex justify-between items-center text-[10px] font-mono bg-[var(--arena-surface-muted)]/80 px-2 py-1 rounded border border-[var(--arena-border)]/30">
                     <span className="font-semibold text-[var(--arena-text-muted)]">{h.score}</span>
                     <div className="flex gap-2 items-center">
-                      <span className={`px-1 rounded text-[8px] font-extrabold ${h.result === 'W' ? 'bg-emerald-950 text-emerald-400' : 'bg-rose-950 text-rose-400'}`}>
+                      <span className={`px-1 rounded text-[8px] font-extrabold ${h.result === 'W' ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
                         {h.result}
                       </span>
-                      <span className={h.eloChange > 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                      <span className={h.eloChange > 0 ? 'text-success' : 'text-danger'}>
                         {h.eloChange > 0 ? '+' : ''}{h.eloChange} Elo
                       </span>
                     </div>
@@ -624,7 +627,7 @@ export default function LandingPage() {
                   ) : (
                     <>
                       <Copy size={10} />
-                      Copy WhatsApp Performance Hype
+                      Copy summary
                     </>
                   )}
                 </button>
@@ -636,7 +639,7 @@ export default function LandingPage() {
         {/* WIDGET: TRY CLUB SETUP */}
         <div className="arena-panel p-6 flex flex-col justify-between space-y-4">
           <div>
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--arena-blue)] uppercase tracking-wider bg-sky-950/20 px-2.5 py-0.5 rounded border border-[var(--arena-blue)]/10">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--arena-blue)] uppercase tracking-wider bg-info-soft/20 px-2.5 py-0.5 rounded border border-[var(--arena-blue)]/10">
               <Zap size={12} className="fill-[var(--arena-blue)]" /> Club Lobby Builder
             </span>
             <h3 className="text-lg font-black text-[var(--arena-text)] uppercase tracking-tight mt-2">Design Your Club</h3>
@@ -760,8 +763,8 @@ export default function LandingPage() {
           />
           <FeatureCard 
             icon={<Smartphone size={20} />} 
-            title="WhatsApp Sharing" 
-            text="Copy rich, formatted updates containing emojis and details. Perfect for pasting summaries directly into your chat groups." 
+            title="Share Cards" 
+            text="Generate rich, proof-backed match summaries and share them anywhere — your group chat, socials, or status. One tap uses your device's native share sheet." 
           />
           <FeatureCard 
             icon={<Users size={20} />} 
@@ -826,7 +829,7 @@ export default function LandingPage() {
                     </span>
                   </div>
                 </div>
-                <span className="text-[9px] font-mono px-2 py-0.5 bg-sky-950 text-[var(--arena-blue)] rounded border border-[var(--arena-blue)]/20 font-bold uppercase tracking-wider">
+                <span className="text-[9px] font-mono px-2 py-0.5 bg-info-soft text-[var(--arena-blue)] rounded border border-[var(--arena-blue)]/20 font-bold uppercase tracking-wider">
                   ⭐ Showcase Club
                 </span>
               </div>

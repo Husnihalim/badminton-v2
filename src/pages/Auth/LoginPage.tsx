@@ -30,7 +30,7 @@ export default function LoginPage() {
   if (isLoading) {
     return (
       <Card className="mx-auto mt-8 max-w-md">
-        <CardContent className="pt-5 text-center text-sm text-slate-600">Checking your session...</CardContent>
+        <CardContent className="pt-5 text-center text-sm text-[var(--arena-text-muted)]">Checking your session...</CardContent>
       </Card>
     )
   }
@@ -74,9 +74,9 @@ export default function LoginPage() {
     <section className="mx-auto mt-4 max-w-md sm:mt-10">
       <Card>
         <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Welcome back</p>
-          <h1 className="text-2xl font-bold leading-tight text-slate-950">Log in</h1>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">Welcome back</p>
+          <h1 className="text-2xl font-bold leading-tight text-[var(--arena-text)]">Log in</h1>
+          <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
             Use your kelabsukan.com account. Your session stays active on this device.
           </p>
         </CardHeader>
@@ -84,18 +84,18 @@ export default function LoginPage() {
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             {(!isSupabaseConfigured || error) && (
-              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div role="alert" className="rounded-lg border border-[var(--arena-danger)]/20 bg-[var(--arena-danger-soft)] px-3 py-2 text-sm text-[var(--arena-danger)]">
                 {error || 'Supabase is not configured for this environment yet.'}
               </div>
             )}
             {searchParams.get('verified') === 'true' && !error && (
-              <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 font-medium">
+              <div role="status" className="rounded-lg border border-[var(--arena-success)]/20 bg-[var(--arena-success-soft)] px-3 py-2.5 text-sm text-[var(--arena-success)] font-medium">
                 Email verified successfully! Please log in to your account.
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="login-email">Email</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="login-email">Email</label>
               <Input
                 id="login-email"
                 name="email"
@@ -109,7 +109,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="login-password">Password</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="login-password">Password</label>
               <PasswordInput
                 id="login-password"
                 name="password"
@@ -121,10 +121,10 @@ export default function LoginPage() {
               />
             </div>
 
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <label className="flex items-center gap-2 text-sm font-semibold text-[var(--arena-text-muted)]">
               <input
                 type="checkbox"
-                className="h-4 w-4 accent-emerald-700"
+                className="h-4 w-4 accent-[var(--arena-accent)]"
                 checked={rememberEmail}
                 onChange={(event) => setRememberEmail(event.target.checked)}
               />
@@ -137,12 +137,12 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-5 space-y-2 text-sm text-slate-600">
+          <div className="mt-5 space-y-2 text-sm text-[var(--arena-text-muted)]">
             <p>
-              <Link className="font-semibold text-emerald-700" to="/forgot-password">Forgot password?</Link>
+              <Link className="font-semibold text-[var(--arena-accent)] hover:underline" to="/forgot-password">Forgot password?</Link>
             </p>
             <p>
-              New here? <Link className="font-semibold text-emerald-700" to={`/register?redirect=${encodeURIComponent(redirectTo)}`}>Create account</Link>
+              New here? <Link className="font-semibold text-[var(--arena-accent)] hover:underline" to={`/register?redirect=${encodeURIComponent(redirectTo)}`}>Create account</Link>
             </p>
           </div>
         </CardContent>

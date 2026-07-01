@@ -35,8 +35,8 @@ export function ScoreboardTile({ label, value, helper, tone = 'neutral' }: Score
         'rounded-lg border bg-[rgba(4,13,15,0.86)] p-3 text-[var(--arena-text)]',
         tone === 'lime' && 'border-[var(--arena-line)]',
         tone === 'blue' && 'border-[var(--arena-line-blue)]',
-        tone === 'heat' && 'border-amber-400/35',
-        tone === 'neutral' && 'border-white/10'
+        tone === 'heat' && 'border-warning/35',
+        tone === 'neutral' && 'border-[var(--arena-border)]'
       )}
     >
       <p className="arena-label">{label}</p>
@@ -54,7 +54,7 @@ type PlayerStatTileProps = {
 
 export function PlayerStatTile({ label, value, note }: PlayerStatTileProps) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.045] p-3">
+    <div className="rounded-lg border border-[var(--arena-border)] bg-white/[0.045] p-3">
       <p className="arena-label">{label}</p>
       <p className="mt-1 truncate text-xl font-black text-[var(--arena-text)]">{value}</p>
       {note ? <p className="arena-meta mt-1">{note}</p> : null}
@@ -87,7 +87,7 @@ type MetadataLabelProps = {
 
 export function MetadataLabel({ icon, children }: MetadataLabelProps) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--arena-text-muted)]">
       {icon}
       {children}
     </span>
@@ -109,10 +109,10 @@ export function StoryCard({ category, title, body, proof, tone = 'lime', actionL
       <CardContent className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <Badge variant={tone === 'heat' ? 'heat' : tone === 'blue' ? 'blue' : 'live'}>{category}</Badge>
-          <span className="text-right text-xs font-semibold text-slate-400">{proof}</span>
+          <span className="text-right text-xs font-semibold text-[var(--arena-text-dim)]">{proof}</span>
         </div>
         <h3 className="arena-heading text-2xl">{title}</h3>
-        <p className="text-sm leading-6 text-slate-300">{body}</p>
+        <p className="text-sm leading-6 text-[var(--arena-text-muted)]">{body}</p>
         {actionLabel ? (
           <Button type="button" size="sm" variant="panel">
             <Share2 size={14} aria-hidden="true" />
@@ -242,7 +242,7 @@ export function PlayerIdentityCard({
   const playerTypePreferenceLabel = gear?.player_type ? (gear.player_type === 'both' ? 'Singles & Doubles' : gear.player_type.charAt(0).toUpperCase() + gear.player_type.slice(1)) : null
 
   const renderOpponentLink = (opp: PlayerIdentityCardProps['toughestOpponent']) => {
-    if (!opp) return <span className="text-slate-400 text-xs">None recorded</span>
+    if (!opp) return <span className="text-[var(--arena-text-dim)] text-xs">None recorded</span>
 
     const matchStatsText = opp.matches && opp.matches > 0 
       ? ` (${opp.wins}W-${opp.losses}L)` 
@@ -252,25 +252,25 @@ export function PlayerIdentityCard({
       return (
         <Link
           to={`/member/${opp.userId}`}
-          className="inline-flex items-center gap-1.5 text-xs text-slate-200 hover:text-[var(--arena-lime)] transition-colors group"
+          className="inline-flex items-center gap-1.5 text-xs text-[var(--arena-text)] hover:text-[var(--arena-lime)] transition-colors group"
         >
           {opp.avatarUrl ? (
-            <img src={opp.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover border border-white/20" />
+            <img src={opp.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover border border-[var(--arena-border)]" />
           ) : (
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-[var(--arena-lime)] border border-white/10">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--arena-surface-elevated)] text-[10px] font-bold text-[var(--arena-lime)] border border-[var(--arena-border)]">
               {opp.name.charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="font-bold underline decoration-white/20 group-hover:decoration-[var(--arena-lime)]">{opp.name}</span>
-          <span className="text-slate-400 font-normal">{matchStatsText}</span>
+          <span className="font-bold underline decoration-[var(--arena-border)] group-hover:decoration-[var(--arena-lime)]">{opp.name}</span>
+          <span className="text-[var(--arena-text-dim)] font-normal">{matchStatsText}</span>
         </Link>
       )
     }
 
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-slate-200">
+      <span className="inline-flex items-center gap-1.5 text-xs text-[var(--arena-text)]">
         <span className="font-bold">{opp.name}</span>
-        <span className="text-slate-400">{matchStatsText}</span>
+        <span className="text-[var(--arena-text-dim)]">{matchStatsText}</span>
       </span>
     )
   }
@@ -279,9 +279,9 @@ export function PlayerIdentityCard({
     <Card variant="live" className="overflow-hidden">
       <CardContent className="p-0">
         <div className="grid gap-0 md:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="relative min-h-48 md:min-h-72 bg-slate-950">
+          <div className="relative min-h-48 md:min-h-72 bg-[var(--arena-bg)]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(204,255,0,0.22),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_34%),linear-gradient(160deg,#08110f,#020706_62%,#102310)]" />
-            <div className="absolute inset-x-5 bottom-5 top-8 overflow-hidden rounded-lg border border-white/10 bg-slate-950/45 shadow-2xl">
+            <div className="absolute inset-x-5 bottom-5 top-8 overflow-hidden rounded-lg border border-[var(--arena-border)] bg-[var(--arena-bg)]/45 shadow-2xl">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -315,12 +315,12 @@ export function PlayerIdentityCard({
                     </MetadataLabel>
                   ) : null}
                   {dominantHandLabel && (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--arena-text-dim)]">
                       • {dominantHandLabel}
                     </span>
                   )}
                   {playerTypePreferenceLabel && (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--arena-text-dim)]">
                       • {playerTypePreferenceLabel}
                     </span>
                   )}
@@ -328,14 +328,14 @@ export function PlayerIdentityCard({
               </div>
             </div>
 
-            <p className="max-w-2xl text-sm leading-6 text-slate-350">
+            <p className="max-w-2xl text-sm leading-6 text-[var(--arena-text-muted)]">
               {bio || 'Add a short playing bio, social handles, and gear to make this card feel complete.'}
             </p>
 
             {socialHandles.length ? (
               <div className="flex flex-wrap gap-2">
                 {socialHandles.slice(0, 4).map((handle) => (
-                  <span key={handle} className="rounded-md border border-white/10 bg-white/[0.05] px-2 py-1 text-xs font-semibold text-slate-350">
+                  <span key={handle} className="rounded-md border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] px-2 py-1 text-xs font-semibold text-[var(--arena-text-muted)]">
                     {handle}
                   </span>
                 ))}
@@ -344,9 +344,9 @@ export function PlayerIdentityCard({
 
             {rankings && rankings.length > 0 && (
               <div className="flex flex-wrap gap-2 items-center text-xs pt-1">
-                <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Club Rankings:</span>
+                <span className="text-[var(--arena-text-dim)] font-bold uppercase tracking-wider text-[10px]">Club Rankings:</span>
                 {rankings.map((r) => (
-                  <Link key={r.clubId} to={`/club/${r.clubId}`} className="inline-flex items-center gap-1 rounded bg-slate-900 border border-white/10 px-2 py-0.5 font-bold text-[var(--arena-lime)] hover:bg-slate-800 transition-colors">
+                  <Link key={r.clubId} to={`/club/${r.clubId}`} className="inline-flex items-center gap-1 rounded bg-[var(--arena-surface)] border border-[var(--arena-border)] px-2 py-0.5 font-bold text-[var(--arena-lime)] hover:bg-[var(--arena-surface-elevated)] transition-colors">
                     {r.clubName}: #{r.rank} / {r.total}
                   </Link>
                 ))}
@@ -363,14 +363,14 @@ export function PlayerIdentityCard({
 
         {/* Dynamic Gear Bags section */}
         {gear && (gear.racket || gear.shoes || gear.strings || gear.tension || gear.grip_type || gear.grip) && (
-          <div className="border-t border-white/10 p-5 sm:p-6 bg-slate-950/20">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Player Bag & Specs</p>
+          <div className="border-t border-[var(--arena-border)] p-5 sm:p-6 bg-[var(--arena-bg)]/20">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)] mb-2">Player Bag & Specs</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {(gear.racket || gear.strings || gear.tension || gear.racket_weight || gear.racket_balance || gear.racket_stiffness) && (
-                <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">Racket Setup</p>
-                  <p className="text-sm font-bold text-slate-200 mt-0.5">{gear.racket || 'Unspecified Racket'}</p>
-                  <p className="text-xs text-slate-400 mt-1">
+                <div className="rounded-lg border border-[var(--arena-border)] bg-white/[0.02] p-3">
+                  <p className="text-[10px] font-bold text-[var(--arena-text-dim)] uppercase">Racket Setup</p>
+                  <p className="text-sm font-bold text-[var(--arena-text)] mt-0.5">{gear.racket || 'Unspecified Racket'}</p>
+                  <p className="text-xs text-[var(--arena-text-dim)] mt-1">
                     {[
                       gear.racket_weight ? `Weight: ${gear.racket_weight}` : null,
                       gear.racket_balance ? `Balance: ${BALANCE_LABELS[gear.racket_balance] || gear.racket_balance}` : null,
@@ -389,17 +389,17 @@ export function PlayerIdentityCard({
                 </div>
               )}
               {gear.shoes && (
-                <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">Court Shoes</p>
-                  <p className="text-sm font-bold text-slate-200 mt-0.5">{gear.shoes}</p>
-                  <p className="text-xs text-slate-400 mt-1">Court Footwear</p>
+                <div className="rounded-lg border border-[var(--arena-border)] bg-white/[0.02] p-3">
+                  <p className="text-[10px] font-bold text-[var(--arena-text-dim)] uppercase">Court Shoes</p>
+                  <p className="text-sm font-bold text-[var(--arena-text)] mt-0.5">{gear.shoes}</p>
+                  <p className="text-xs text-[var(--arena-text-dim)] mt-1">Court Footwear</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        <div className="grid gap-3 border-t border-white/10 p-5 sm:grid-cols-4 sm:p-6 bg-slate-900/10">
+        <div className="grid gap-3 border-t border-[var(--arena-border)] p-5 sm:grid-cols-4 sm:p-6 bg-[var(--arena-surface)]/10">
           {details.map((detail) => (
             <div key={detail.label} className="min-w-0">
               <p className="arena-label">{detail.label}</p>
@@ -409,7 +409,7 @@ export function PlayerIdentityCard({
 
           {/* Opponent Insights links */}
           {(toughestOpponent || mostDefeatedOpponent) && (
-            <div className="col-span-full grid gap-3 sm:grid-cols-2 pt-3 border-t border-white/5 mt-1">
+            <div className="col-span-full grid gap-3 sm:grid-cols-2 pt-3 border-t border-[var(--arena-border)] mt-1">
               <div className="space-y-1">
                 <p className="arena-label">Nemesis (Toughest Opponent)</p>
                 <div className="mt-1">{renderOpponentLink(toughestOpponent)}</div>

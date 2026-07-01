@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { getClubMatches, deleteClub, createClub, updateMemberRole } from './api'
+import { getClubMatches, deleteClub, createClub, updateMemberRole, getPlayerMatches } from './api'
 import { supabase } from './supabase'
 
 // Mock Supabase client
@@ -262,4 +262,20 @@ describe('api.ts - Critical Database Methods', () => {
       })
     })
   })
+
+  describe('getPlayerMatches', () => {
+    it('calls get_player_matches RPC with user ID and limit', async () => {
+      const mockRpc = vi.mocked(supabase.rpc)
+      mockRpc.mockResolvedValue({ data: [{ id: 'match-1' }], error: null } as never)
+
+      const result = await getPlayerMatches('user-123', 10)
+
+      expect(mockRpc).toHaveBeenCalledWith('get_player_matches', {
+        p_user_id: 'user-123',
+        p_limit: 10,
+      })
+      expect(result).toEqual([{ id: 'match-1' }])
+    })
+  })
 })
+

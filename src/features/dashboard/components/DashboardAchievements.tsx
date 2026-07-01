@@ -18,7 +18,7 @@ export default function DashboardAchievements({ achievements }: DashboardAchieve
     <section className="app-section space-y-4">
       <div className="app-section-header">
         <h2 className="app-section-title">
-          <Trophy size={18} className="text-amber-500 shrink-0" />
+          <Trophy size={18} className="text-warning shrink-0" />
           Achievements & Milestones
         </h2>
         <p className="app-section-subtitle">
@@ -32,40 +32,40 @@ export default function DashboardAchievements({ achievements }: DashboardAchieve
           title="On Fire"
           description="3+ Win Streak"
           icon="🔥"
-          glowClass="shadow-orange-500/10 border-orange-200 bg-orange-50/50 text-orange-600"
-          lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+          glowClass="shadow-warning/10 border-warning/20 bg-warning-soft text-warning"
+          lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
         />
         <AchievementBadge
           unlocked={achievements.giantSlayer}
           title="Giant Slayer"
           description="Beat a higher rank"
           icon="🛡️"
-          glowClass="shadow-blue-500/10 border-blue-200 bg-blue-50/50 text-blue-600"
-          lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+          glowClass="shadow-info/10 border-info/20 bg-info-soft text-info"
+          lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
         />
         <AchievementBadge
           unlocked={achievements.cleanSweep}
           title="Clean Sweep"
           description="Win set by 10+ pts"
           icon="🎯"
-          glowClass="shadow-emerald-500/10 border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)]/50 text-[var(--arena-accent)]"
-          lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+          glowClass="shadow-success/10 border-success-soft bg-success-soft text-success"
+          lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
         />
         <AchievementBadge
           unlocked={achievements.ironMan}
           title="Iron Man"
           description="Play 3+ matches in 1 day"
           icon="🚀"
-          glowClass="shadow-purple-500/10 border-purple-200 bg-purple-50/50 text-purple-600"
-          lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+          glowClass="shadow-danger/10 border-danger/20 bg-danger-soft text-danger"
+          lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
         />
         <AchievementBadge
           unlocked={achievements.dynamicDuo}
           title="Dynamic Duo"
           description="3+ doubles streak"
           icon="🤝"
-          glowClass="shadow-amber-500/10 border-amber-200 bg-amber-50/50 text-amber-600"
-          lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+          glowClass="shadow-warning/10 border-warning/20 bg-warning-soft text-warning"
+          lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
         />
       </div>
     </section>

@@ -91,7 +91,7 @@ export default function FriendliesListPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--arena-bg)]">
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-[var(--arena-text-muted)]">Loading...</p>
       </div>
     )
   }
@@ -111,7 +111,7 @@ export default function FriendliesListPage() {
                   loadCompetitions(matched.id)
                 }
               }}
-              className="rounded-md border border-white/10 bg-white/5 p-1 text-sm text-white focus:border-[var(--arena-lime)]"
+              className="rounded-md border border-[var(--arena-border)] bg-[var(--arena-surface)] p-1 text-sm text-[var(--arena-text)] focus:border-[var(--arena-lime)]"
             >
               {myClubs.map(c => (
                 <option key={c.id} value={c.id} className="bg-[var(--arena-surface)]">{c.name}</option>
@@ -131,18 +131,18 @@ export default function FriendliesListPage() {
 
       {active.length > 0 && (
         <div className="mb-8 space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">
             Active ({active.length})
           </p>
           {active.map(c => (
-            <Card key={c.id} className="cursor-pointer border-white/10 bg-[var(--arena-surface)] transition-colors hover:border-white/20"
+            <Card key={c.id} className="cursor-pointer border-[var(--arena-border)] bg-[var(--arena-surface)] transition-colors hover:border-[var(--arena-accent)]/40"
               onClick={() => navigate(`/competition/${c.id}`)}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="mb-1">{getStatusBadge(c)}</div>
-                    <p className="font-bold text-white">vs {displayName(c)}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="font-bold text-[var(--arena-text)]">vs {displayName(c)}</p>
+                    <p className="text-xs text-[var(--arena-text-muted)]">
                       {c.format === 'league' ? 'League' : 'Friendly'} • {c.pairs_count} pairs • {new Date(c.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -155,23 +155,23 @@ export default function FriendliesListPage() {
 
       {completed.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">
             History ({completed.length})
           </p>
           {completed.map(c => (
-            <Card key={c.id} className="cursor-pointer border-white/10 bg-[var(--arena-surface)] transition-colors hover:border-white/20"
+            <Card key={c.id} className="cursor-pointer border-[var(--arena-border)] bg-[var(--arena-surface)] transition-colors hover:border-[var(--arena-accent)]/40"
               onClick={() => navigate(`/competition/${c.id}`)}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="mb-1">{getStatusBadge(c)}</div>
-                    <p className="font-bold text-white">vs {displayName(c)}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="font-bold text-[var(--arena-text)]">vs {displayName(c)}</p>
+                    <p className="text-xs text-[var(--arena-text-muted)]">
                       {c.format === 'league' ? 'League' : 'Friendly'} • {c.pairs_count} pairs
                     </p>
                   </div>
                   {c.winning_club_id && (
-                    <div className={`text-2xl font-bold ${c.winning_club_id === currentClub?.id ? 'text-[var(--arena-lime)]' : 'text-slate-500'}`}>
+                    <div className={`text-2xl font-bold ${c.winning_club_id === currentClub?.id ? 'text-[var(--arena-lime)]' : 'text-[var(--arena-text-dim)]'}`}>
                       {c.winning_club_id === currentClub?.id ? 'W' : 'L'}
                     </div>
                   )}
@@ -183,15 +183,15 @@ export default function FriendliesListPage() {
       )}
 
       {competitions.length === 0 && (
-        <Card className="border-white/10 bg-[var(--arena-surface)]">
+        <Card className="border-[var(--arena-border)] bg-[var(--arena-surface)]">
           <CardContent className="p-8 text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
-                <Trophy size={32} className="text-slate-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--arena-surface-elevated)]">
+                <Trophy size={32} className="text-[var(--arena-text-dim)]" />
               </div>
             </div>
-            <h2 className="mb-2 text-xl font-bold text-white">No Competitions Yet</h2>
-            <p className="mb-4 text-slate-400">Challenge another club or start a league</p>
+            <h2 className="mb-2 text-xl font-bold text-[var(--arena-text)]">No Competitions Yet</h2>
+            <p className="mb-4 text-[var(--arena-text-muted)]">Challenge another club or start a league</p>
             <Button onClick={() => setIsCreateModalOpen(true)}
               className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90">
               New Competition

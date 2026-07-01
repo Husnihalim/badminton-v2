@@ -118,30 +118,30 @@ export default function RegisterPage() {
     <section className="mx-auto mt-4 max-w-md sm:mt-10">
       <Card>
         <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">New member</p>
-          <h1 className="text-2xl font-bold leading-tight text-slate-950">Create account</h1>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">New member</p>
+          <h1 className="text-2xl font-bold leading-tight text-[var(--arena-text)]">Create account</h1>
+          <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
             Set up your account so you can join clubs, RSVP, and record scores.
           </p>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             {(error || !isSupabaseConfigured) && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="rounded-lg border border-[var(--arena-danger)]/20 bg-[var(--arena-danger-soft)] px-3 py-2 text-sm text-[var(--arena-danger)]">
                 {error || 'Supabase is not configured for this environment yet.'}
               </div>
             )}
             {successMessage && (
-              <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
+              <div className="space-y-3 rounded-lg border border-[var(--arena-success)]/20 bg-[var(--arena-success-soft)] px-3 py-3 text-sm text-[var(--arena-success)]">
                 <p>{successMessage}</p>
-                <Link className="inline-flex font-semibold text-emerald-900" to={`/login?redirect=${encodeURIComponent(targetRedirect)}`}>
+                <Link className="inline-flex font-semibold text-[var(--arena-success)] hover:underline" to={`/login?redirect=${encodeURIComponent(targetRedirect)}`}>
                   Go to login
                 </Link>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="name">Name</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="name">Name</label>
               <Input
                 id="name"
                 name="name"
@@ -154,7 +154,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="email">Email</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="email">Email</label>
               <Input
                 id="email"
                 name="email"
@@ -167,7 +167,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="password">Password</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="password">Password</label>
               <PasswordInput
                 id="password"
                 name="password"
@@ -179,7 +179,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="confirmPassword">Confirm password</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="confirmPassword">Confirm password</label>
               <PasswordInput
                 id="confirmPassword"
                 name="confirmPassword"
@@ -191,8 +191,8 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-3 pt-2">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                Choose your Cartoon Avatar <span className="text-xs font-normal text-slate-500">(Pre-selected for you)</span>
+              <label className="text-sm font-bold text-[var(--arena-text)]">
+                Choose your Cartoon Avatar <span className="text-xs font-normal text-[var(--arena-text-dim)]">(Pre-selected for you)</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {DEFAULT_AVATARS.map((avatar) => (
@@ -201,15 +201,15 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setSelectedAvatarId(avatar.id)}
                     className={cn(
-                      "relative aspect-square rounded-xl border-2 bg-slate-900 overflow-hidden flex items-center justify-center p-1 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer",
+                      "relative aspect-square rounded-xl border-2 bg-[var(--arena-surface)] overflow-hidden flex items-center justify-center p-1 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer",
                       selectedAvatarId === avatar.id
-                        ? "border-emerald-600 ring-2 ring-emerald-600/20 shadow-lg"
-                        : "border-slate-250 dark:border-white/10 hover:border-slate-350 dark:hover:border-white/20"
+                        ? "border-[var(--arena-accent)] ring-2 ring-[var(--arena-accent-soft)] shadow-lg"
+                        : "border-[var(--arena-border)] hover:border-[var(--arena-text-dim)]"
                     )}
                   >
                     <img src={avatar.url} alt={avatar.label} className="h-full w-full object-contain" />
                     {selectedAvatarId === avatar.id && (
-                      <div className="absolute right-1 top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-md">
+                      <div className="absolute right-1 top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[var(--arena-accent)] text-[var(--arena-accent-text)] text-[10px] font-black shadow-md">
                         ✓
                       </div>
                     )}
@@ -222,22 +222,22 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowOptionalFields(!showOptionalFields)}
-                className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-350 cursor-pointer select-none"
+                className="flex w-full items-center justify-between rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)] px-4 py-2.5 text-sm font-bold text-[var(--arena-text)] hover:bg-[var(--arena-surface-elevated)] cursor-pointer select-none"
               >
                 <span>Step 2: Customize Player Card (Optional)</span>
                 <span className="text-xs">{showOptionalFields ? '▲ Close' : '▼ Expand'}</span>
               </button>
 
               {showOptionalFields && (
-                <div className="mt-4 space-y-4 rounded-lg border border-slate-100 bg-slate-50/50 p-4 dark:border-white/5 dark:bg-white/[0.01]">
+                <div className="mt-4 space-y-4 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="preferred-sport">Preferred Sport</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="preferred-sport">Preferred Sport</label>
                       <select
                         id="preferred-sport"
                         value={preferredSport}
                         onChange={(e) => setPreferredSport(e.target.value)}
-                        className="w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+                        className="w-full rounded-md border border-[var(--arena-border)] bg-[var(--arena-surface)] p-2 text-sm text-[var(--arena-text)]"
                       >
                         <option value="badminton">Badminton</option>
                         <option value="tennis">Tennis</option>
@@ -249,7 +249,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="city">City</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="city">City</label>
                       <Input
                         id="city"
                         value={city}
@@ -261,12 +261,12 @@ export default function RegisterPage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="play-style">Play Style</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="play-style">Play Style</label>
                       <select
                         id="play-style"
                         value={playStyle}
                         onChange={(e) => setPlayStyle(e.target.value)}
-                        className="w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+                        className="w-full rounded-md border border-[var(--arena-border)] bg-[var(--arena-surface)] p-2 text-sm text-[var(--arena-text)]"
                       >
                         <option value="">Select style...</option>
                         <option value="net_play">Net Player (Front Court)</option>
@@ -278,7 +278,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="racket">Racket Name</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="racket">Racket Name</label>
                       <Input
                         id="racket"
                         value={racket}
@@ -290,12 +290,12 @@ export default function RegisterPage() {
 
                   <div className="grid gap-3 grid-cols-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="racket-weight">Weight</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="racket-weight">Weight</label>
                       <select
                         id="racket-weight"
                         value={racketWeight}
                         onChange={(e) => setRacketWeight(e.target.value)}
-                        className="w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+                        className="w-full rounded-md border border-[var(--arena-border)] bg-[var(--arena-surface)] p-2 text-sm text-[var(--arena-text)]"
                       >
                         <option value="">Select...</option>
                         <option value="3U">3U (85-89g)</option>
@@ -306,12 +306,12 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="racket-balance">Balance</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="racket-balance">Balance</label>
                       <select
                         id="racket-balance"
                         value={racketBalance}
                         onChange={(e) => setRacketBalance(e.target.value)}
-                        className="w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+                        className="w-full rounded-md border border-[var(--arena-border)] bg-[var(--arena-surface)] p-2 text-sm text-[var(--arena-text)]"
                       >
                         <option value="">Select...</option>
                         <option value="head_heavy">Head Heavy</option>
@@ -321,12 +321,12 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="racket-stiffness">Stiffness</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="racket-stiffness">Stiffness</label>
                       <select
                         id="racket-stiffness"
                         value={racketStiffness}
                         onChange={(e) => setRacketStiffness(e.target.value)}
-                        className="w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+                        className="w-full rounded-md border border-[var(--arena-border)] bg-[var(--arena-surface)] p-2 text-sm text-[var(--arena-text)]"
                       >
                         <option value="">Select...</option>
                         <option value="stiff">Stiff</option>
@@ -338,7 +338,7 @@ export default function RegisterPage() {
 
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="strings">Strings</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="strings">Strings</label>
                       <Input
                         id="strings"
                         value={strings}
@@ -348,7 +348,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="tension">Tension</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="tension">Tension</label>
                       <Input
                         id="tension"
                         value={tension}
@@ -358,7 +358,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" htmlFor="shoes">Shoes</label>
+                      <label className="text-xs font-semibold text-[var(--arena-text-muted)]" htmlFor="shoes">Shoes</label>
                       <Input
                         id="shoes"
                         value={shoes}
@@ -377,9 +377,9 @@ export default function RegisterPage() {
                 type="checkbox"
                 checked={wantCreateClub}
                 onChange={(e) => setWantCreateClub(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-350 text-emerald-700 focus:ring-emerald-700"
+                className="h-4 w-4 rounded border-[var(--arena-border)] text-[var(--arena-accent)] focus:ring-[var(--arena-accent)]"
               />
-              <label htmlFor="want-create-club" className="text-sm font-semibold text-slate-700 select-none">
+              <label htmlFor="want-create-club" className="text-sm font-semibold text-[var(--arena-text-muted)] select-none">
                 I want to create a new club
               </label>
             </div>
@@ -389,8 +389,8 @@ export default function RegisterPage() {
               {isSubmitting ? 'Creating account...' : 'Sign up'}
             </Button>
           </form>
-          <p className="mt-5 text-sm text-slate-600">
-            Already have an account? <Link className="font-semibold text-emerald-700" to={`/login?redirect=${encodeURIComponent(redirectTo)}`}>Log in</Link>
+          <p className="mt-5 text-sm text-[var(--arena-text-muted)]">
+            Already have an account? <Link className="font-semibold text-[var(--arena-accent)] hover:underline" to={`/login?redirect=${encodeURIComponent(redirectTo)}`}>Log in</Link>
           </p>
         </CardContent>
       </Card>

@@ -75,7 +75,7 @@ describe('KelabSukan App - Core Features', () => {
       }, routeWait)
       
       expect(screen.getAllByText(/Auto-Generated Stories/i).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/WhatsApp Sharing/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/Share Cards/i).length).toBeGreaterThan(0)
     })
   })
 

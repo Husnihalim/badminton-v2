@@ -441,7 +441,7 @@ export default function CompetitionDetailsPage() {
   if (isLoading || !competition) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--arena-bg)]">
-        <p className="text-slate-400">Loading competition...</p>
+        <p className="text-[var(--arena-text-dim)]">Loading competition...</p>
       </div>
     )
   }
@@ -458,7 +458,7 @@ export default function CompetitionDetailsPage() {
 
       {/* Header */}
       <div className="mx-auto mb-4 flex max-w-4xl items-center justify-between">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white cursor-pointer">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] cursor-pointer">
           <ArrowLeft size={20} />
           <span>Back</span>
         </button>
@@ -475,8 +475,8 @@ export default function CompetitionDetailsPage() {
 
       {/* Title */}
       <div className="mx-auto mb-4 max-w-4xl">
-        <h1 className="text-xl font-black uppercase text-white sm:text-2xl">{competition.title}</h1>
-        <p className="mt-1 text-xs text-slate-500">
+        <h1 className="text-xl font-black uppercase text-[var(--arena-text)] sm:text-2xl">{competition.title}</h1>
+        <p className="mt-1 text-xs text-[var(--arena-text-dim)]">
           {competition.format === 'friendly' ? '🤝 Friendly' : '🏆 League'} • {competition.pairs_count} pairs • {competition.sets_count === 1 ? '1 set' : 'Best of 3'} • {competition.points_per_set} pts
         </p>
       </div>
@@ -484,13 +484,13 @@ export default function CompetitionDetailsPage() {
       {/* Series bar for friendly */}
       {seriesStats && (
         <div className="mx-auto mb-4 max-w-4xl">
-          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2">
-            <span className="text-xs font-bold uppercase text-slate-500">Series</span>
-            <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--arena-border)] bg-white/[0.02] px-4 py-2">
+            <span className="text-xs font-bold uppercase text-[var(--arena-text-dim)]">Series</span>
+            <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-[var(--arena-surface-elevated)]">
               <div className="bg-[var(--arena-lime)] h-full transition-all" style={{ width: `${seriesStats.total > 0 ? (seriesStats.clubAWins / seriesStats.total) * 100 : 50}%` }} />
-              <div className="bg-slate-600 h-full transition-all" style={{ width: `${seriesStats.total > 0 ? (seriesStats.clubBWins / seriesStats.total) * 100 : 50}%` }} />
+              <div className="bg-[var(--arena-surface-muted)] h-full transition-all" style={{ width: `${seriesStats.total > 0 ? (seriesStats.clubBWins / seriesStats.total) * 100 : 50}%` }} />
             </div>
-            <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
+            <span className="text-xs font-bold text-[var(--arena-text-dim)] whitespace-nowrap">
               <span className="text-[var(--arena-lime)]">{compClubs[0]?.club?.name || 'Home'} {seriesStats.clubAWins}</span>
               {' '}—{' '}{seriesStats.clubBWins} {compClubs[1]?.club?.name || 'Away'}
             </span>
@@ -499,12 +499,12 @@ export default function CompetitionDetailsPage() {
       )}
 
       {/* Tabs */}
-      <div className="mx-auto max-w-4xl mb-6 flex gap-2 overflow-x-auto border-b border-white/10 whitespace-nowrap">
+      <div className="mx-auto max-w-4xl mb-6 flex gap-2 overflow-x-auto border-b border-[var(--arena-border)] whitespace-nowrap">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={cn(
               "py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer",
-              activeTab === tab.id ? 'border-[var(--arena-lime)] text-[var(--arena-lime)]' : 'border-transparent text-slate-500 hover:text-white'
+              activeTab === tab.id ? 'border-[var(--arena-lime)] text-[var(--arena-lime)]' : 'border-transparent text-[var(--arena-text-dim)] hover:text-[var(--arena-text)]'
             )}>
             {tab.label}
           </button>
@@ -516,40 +516,40 @@ export default function CompetitionDetailsPage() {
 
         {/* TAB: OVERVIEW */}
         {activeTab === 'overview' && (
-          <Card className="border-white/10 bg-[var(--arena-surface)]">
+          <Card className="border-[var(--arena-border)] bg-[var(--arena-surface)]">
             <CardContent className="p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <Info size={16} className="text-[var(--arena-lime)]" />
-                <h3 className="text-sm font-bold text-white uppercase">Details</h3>
+                <h3 className="text-sm font-bold text-[var(--arena-text)] uppercase">Details</h3>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-xs text-slate-500">Date</p>
-                  <p className="font-bold text-white flex items-center gap-1">
+                  <p className="text-xs text-[var(--arena-text-dim)]">Date</p>
+                  <p className="font-bold text-[var(--arena-text)] flex items-center gap-1">
                     <Calendar size={14} /> {competition.start_date ? new Date(competition.start_date).toLocaleDateString() : 'TBD'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Venue</p>
-                  <p className="font-bold text-white flex items-center gap-1">
+                  <p className="text-xs text-[var(--arena-text-dim)]">Venue</p>
+                  <p className="font-bold text-[var(--arena-text)] flex items-center gap-1">
                     <MapPin size={14} /> {competition.location || 'TBD'}
                   </p>
                 </div>
               </div>
 
-              <div className="border-t border-white/10 pt-4">
-                <p className="mb-2 text-xs font-bold text-slate-500 uppercase">Participating Clubs</p>
+              <div className="border-t border-[var(--arena-border)] pt-4">
+                <p className="mb-2 text-xs font-bold text-[var(--arena-text-dim)] uppercase">Participating Clubs</p>
                 <div className="space-y-2">
                   {compClubs.filter(cc => cc.status !== 'declined').map(cc => {
                     const isMyInvitedClub = cc.status === 'invited' && myClubs.some(mc => mc.id === cc.club_id)
                     const canManageThisClub = adminClubIds.has(cc.club_id)
                     return (
-                      <div key={cc.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
+                      <div key={cc.id} className="flex items-center justify-between rounded-lg border border-[var(--arena-border)] bg-white/5 p-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-sm">🏸</div>
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--arena-surface-elevated)] text-sm">🏸</div>
                           <div>
-                            <p className="font-bold text-white">{cc.club?.name || 'Unknown Club'}</p>
-                            <p className="text-xs text-slate-500">{cc.lineup_confirmed ? '✅ Lineup confirmed' : '⏳ Setting lineup'}</p>
+                            <p className="font-bold text-[var(--arena-text)]">{cc.club?.name || 'Unknown Club'}</p>
+                            <p className="text-xs text-[var(--arena-text-dim)]">{cc.lineup_confirmed ? '✅ Lineup confirmed' : '⏳ Setting lineup'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -568,17 +568,17 @@ export default function CompetitionDetailsPage() {
               </div>
 
               {competition.rules && (
-                <div className="border-t border-white/10 pt-4">
-                  <p className="text-xs text-slate-500">Rules</p>
-                  <p className="text-sm text-slate-300 mt-1">{competition.rules}</p>
+                <div className="border-t border-[var(--arena-border)] pt-4">
+                  <p className="text-xs text-[var(--arena-text-dim)]">Rules</p>
+                  <p className="text-sm text-[var(--arena-text-muted)] mt-1">{competition.rules}</p>
                 </div>
               )}
 
               {competitionStories.length > 0 && (
-                <div className="border-t border-white/10 pt-4">
+                <div className="border-t border-[var(--arena-border)] pt-4">
                   <div className="mb-3 flex items-center gap-2">
                     <Sparkles size={15} className="text-[var(--arena-lime)]" />
-                    <p className="text-xs font-bold uppercase text-slate-500">Competition Stories</p>
+                    <p className="text-xs font-bold uppercase text-[var(--arena-text-dim)]">Competition Stories</p>
                   </div>
                   <div className="grid gap-3">
                     {competitionStories.map(story => (
@@ -589,8 +589,8 @@ export default function CompetitionDetailsPage() {
               )}
 
               {isHostAdmin && ['draft', 'registration'].includes(competition.status) && (
-                <div className="border-t border-white/10 pt-4">
-                  <Button variant="ghost" onClick={handleCancelCompetition} className="text-red-400 hover:text-red-300 text-xs">
+                <div className="border-t border-[var(--arena-border)] pt-4">
+                  <Button variant="ghost" onClick={handleCancelCompetition} className="text-danger hover:text-danger text-xs">
                     Cancel Competition
                   </Button>
                 </div>
@@ -614,8 +614,8 @@ export default function CompetitionDetailsPage() {
                 <div key={cc.id}>
                   <div className="mb-3 flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold text-white">{cc.club?.name || 'Club'}</h3>
-                      <p className="text-xs text-slate-500">{clubParts.length} / {competition.pairs_count} pairs</p>
+                      <h3 className="font-bold text-[var(--arena-text)]">{cc.club?.name || 'Club'}</h3>
+                      <p className="text-xs text-[var(--arena-text-dim)]">{clubParts.length} / {competition.pairs_count} pairs</p>
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       {!isInvited && canManageThisClub && !isConfirmed && (
@@ -654,20 +654,20 @@ export default function CompetitionDetailsPage() {
                       const player1Options = availableMembers.filter(member => member.user_id !== draft.player2Id)
                       const player2Options = availableMembers.filter(member => member.user_id !== draft.player1Id)
                       return (
-                        <div key={idx} className="flex min-h-[58px] items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-400">
+                        <div key={idx} className="flex min-h-[58px] items-center gap-2.5 rounded-lg border border-[var(--arena-border)] bg-white/[0.04] px-2.5 py-2">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-elevated)] text-xs font-bold text-[var(--arena-text-dim)]">
                             {rank}
                           </div>
                           {isInvited ? (
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs text-slate-500 italic">
+                              <p className="truncate text-xs text-[var(--arena-text-dim)] italic">
                                 Waiting for this club to accept the competition invite.
                               </p>
                             </div>
                           ) : part ? (
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-bold leading-tight text-white">{part.name}</p>
-                              <p className="truncate text-xs leading-tight text-slate-500">
+                              <p className="truncate text-sm font-bold leading-tight text-[var(--arena-text)]">{part.name}</p>
+                              <p className="truncate text-xs leading-tight text-[var(--arena-text-dim)]">
                                 {part.player_1?.name || 'Player 1'}
                                 {part.player_2 ? ` + ${part.player_2.name}` : ''}
                               </p>
@@ -688,7 +688,7 @@ export default function CompetitionDetailsPage() {
 	                                        },
 	                                      }))
 	                                    }}
-	                                    className="h-8 min-w-0 rounded border border-white/10 bg-slate-900 px-2 text-xs text-white"
+	                                    className="h-8 min-w-0 rounded border border-[var(--arena-border)] bg-[var(--arena-surface)] px-2 text-xs text-[var(--arena-text)]"
 	                                  >
 	                                    <option value="">Player 1...</option>
 	                                    {player1Options.map(m => (
@@ -707,7 +707,7 @@ export default function CompetitionDetailsPage() {
                                           },
                                         }))
                                       }}
-                                      className="h-8 min-w-0 rounded border border-white/10 bg-slate-900 px-2 text-xs text-white"
+                                      className="h-8 min-w-0 rounded border border-[var(--arena-border)] bg-[var(--arena-surface)] px-2 text-xs text-[var(--arena-text)]"
                                     >
                                       <option value="">Player 2...</option>
                                       {player2Options.map(m => (
@@ -730,12 +730,12 @@ export default function CompetitionDetailsPage() {
                                     </Button>
 	                                </div>
 	                              ) : (
-	                                <p className="truncate text-xs text-slate-600 italic">Waiting for pair</p>
+	                                <p className="truncate text-xs text-[var(--arena-text-dim)] italic">Waiting for pair</p>
                               )}
                             </div>
                           )}
                           {part && canManageThisClub && !isConfirmed && (
-                            <button onClick={() => handleRemovePlayer(part.id)} className="shrink-0 text-xs text-red-400 hover:text-red-300">
+                            <button onClick={() => handleRemovePlayer(part.id)} className="shrink-0 text-xs text-danger hover:text-danger">
                               Remove
                             </button>
                           )}
@@ -746,11 +746,11 @@ export default function CompetitionDetailsPage() {
 
                   {canManageThisClub && !isInvited && !isConfirmed && clubParts.length > 0 && (
                     <div className="mt-4">
-                      <p className="mb-2 text-xs text-slate-500">Drag to reorder by rank (strongest first)</p>
+                      <p className="mb-2 text-xs text-[var(--arena-text-dim)]">Drag to reorder by rank (strongest first)</p>
                       <div className="space-y-1 mb-3">
                         {clubParts.sort((a, b) => (a.rank || 99) - (b.rank || 99)).map((p, i) => (
-                          <div key={p.id} className="flex items-center gap-2 text-sm text-white">
-                            <span className="text-slate-500 w-6">{i + 1}.</span>
+                          <div key={p.id} className="flex items-center gap-2 text-sm text-[var(--arena-text)]">
+                            <span className="text-[var(--arena-text-dim)] w-6">{i + 1}.</span>
                             <span className="flex-1">{p.name}</span>
                             <div className="flex gap-1">
                               <button
@@ -764,7 +764,7 @@ export default function CompetitionDetailsPage() {
                                     loadData()
                                   }
                                 }}
-                                className="text-slate-500 hover:text-white px-1"
+                                className="text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] px-1"
                                 disabled={i === 0}
                               >↑</button>
                               <button
@@ -777,7 +777,7 @@ export default function CompetitionDetailsPage() {
                                     loadData()
                                   }
                                 }}
-                                className="text-slate-500 hover:text-white px-1"
+                                className="text-[var(--arena-text-dim)] hover:text-[var(--arena-text)] px-1"
                                 disabled={i === clubParts.length - 1}
                               >↓</button>
                             </div>
@@ -800,7 +800,7 @@ export default function CompetitionDetailsPage() {
           <div className="space-y-4">
             {matchups.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-slate-500 mb-4">No matchups yet. All clubs must confirm their lineups first.</p>
+                <p className="text-[var(--arena-text-dim)] mb-4">No matchups yet. All clubs must confirm their lineups first.</p>
                 {isHostAdmin && competition.status === 'matchmaking' && (
                   <Button onClick={handleGenerateMatchups} className="bg-[var(--arena-lime)] text-black hover:bg-[var(--arena-lime)]/90">
                     Generate Matchups
@@ -834,15 +834,15 @@ export default function CompetitionDetailsPage() {
               }).length
 
               return (
-                <div key={`${group.clubAId}-${group.clubBId}`} className="rounded-lg border border-white/10 bg-[var(--arena-surface)] overflow-hidden">
-                  <div className="flex items-center justify-between bg-slate-950/40 px-4 py-3 border-b border-white/10">
+                <div key={`${group.clubAId}-${group.clubBId}`} className="rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] overflow-hidden">
+                  <div className="flex items-center justify-between bg-[var(--arena-bg)]/40 px-4 py-3 border-b border-[var(--arena-border)]">
                     <div className="flex items-center gap-2 text-sm font-bold">
-                      <span className="text-white">{group.clubAName}</span>
-                      <span className="text-slate-500">vs</span>
-                      <span className="text-white">{group.clubBName}</span>
+                      <span className="text-[var(--arena-text)]">{group.clubAName}</span>
+                      <span className="text-[var(--arena-text-dim)]">vs</span>
+                      <span className="text-[var(--arena-text)]">{group.clubBName}</span>
                     </div>
                     {clubARubbers + clubBRubbers > 0 && (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-[var(--arena-text-dim)]">
                         {group.clubAName} {clubARubbers} — {clubBRubbers} {group.clubBName}
                       </span>
                     )}
@@ -863,8 +863,8 @@ export default function CompetitionDetailsPage() {
                             <div>
                               <div className="flex items-center gap-4">
                                 <div className="flex-1 text-right">
-                                  <p className="text-xs text-slate-500">{clubNameMap[aClubId] || ''}</p>
-                                  <p className="font-bold text-white">{m.participant_a?.name || 'TBD'}</p>
+                                  <p className="text-xs text-[var(--arena-text-dim)]">{clubNameMap[aClubId] || ''}</p>
+                                  <p className="font-bold text-[var(--arena-text)]">{m.participant_a?.name || 'TBD'}</p>
                                   <select
                                     value={m.participant_a_id}
                                     onChange={async (e) => {
@@ -875,7 +875,7 @@ export default function CompetitionDetailsPage() {
                                         await handleSwapPairing(m.id, e.target.value, defaultOther.id)
                                       }
                                     }}
-                                    className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[160px]"
+                                    className="mt-1 text-xs rounded border border-[var(--arena-border)] bg-[var(--arena-surface)] p-1 text-[var(--arena-text)] max-w-[160px]"
                                     disabled={m.locked || m.status === 'completed'}
                                   >
                                     {myClubParticipants.map(p => (
@@ -883,17 +883,17 @@ export default function CompetitionDetailsPage() {
                                     ))}
                                   </select>
                                 </div>
-                                <span className="text-slate-500 text-xs font-bold shrink-0">VS</span>
+                                <span className="text-[var(--arena-text-dim)] text-xs font-bold shrink-0">VS</span>
                                 <div className="flex-1">
-                                  <p className="text-xs text-slate-500">{clubNameMap[bClubId] || ''}</p>
-                                  <p className="font-bold text-white">{m.participant_b?.name || 'TBD'}</p>
+                                  <p className="text-xs text-[var(--arena-text-dim)]">{clubNameMap[bClubId] || ''}</p>
+                                  <p className="font-bold text-[var(--arena-text)]">{m.participant_b?.name || 'TBD'}</p>
                                   <select
                                     value={m.participant_b_id}
                                     onChange={async (e) => {
                                       if (!e.target.value) return
                                       await handleSwapPairing(m.id, m.participant_a_id, e.target.value)
                                     }}
-                                    className="mt-1 text-xs rounded border border-white/10 bg-slate-900 p-1 text-white max-w-[160px]"
+                                    className="mt-1 text-xs rounded border border-[var(--arena-border)] bg-[var(--arena-surface)] p-1 text-[var(--arena-text)] max-w-[160px]"
                                     disabled={m.locked || m.status === 'completed'}
                                   >
                                     {opponentParticipants.map(p => (
@@ -903,12 +903,12 @@ export default function CompetitionDetailsPage() {
                                 </div>
                               </div>
                               {m.match?.score_sets && m.match.score_sets.length > 0 && (
-                                <p className="mt-2 text-xs text-slate-500 text-center">
+                                <p className="mt-2 text-xs text-[var(--arena-text-dim)] text-center">
                                   {m.match.score_sets.map(s => `${s.team1_score}-${s.team2_score}`).join(', ')}
                                 </p>
                               )}
                               {matchupWarning && (
-                                <p className="mt-3 rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">{matchupWarning}</p>
+                                <p className="mt-3 rounded border border-danger/30 bg-danger-soft/40 px-3 py-2 text-xs font-semibold text-danger">{matchupWarning}</p>
                               )}
                             </div>
                           ) : (
@@ -924,7 +924,7 @@ export default function CompetitionDetailsPage() {
                                 onRecordScore={isAdmin && competition.status === 'live' && !matchupWarning ? () => handleRecordMatch(m) : undefined}
                               />
                               {matchupWarning && (
-                                <p className="rounded border border-red-500/30 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-200">{matchupWarning}</p>
+                                <p className="rounded border border-danger/30 bg-danger-soft/40 px-3 py-2 text-xs font-semibold text-danger">{matchupWarning}</p>
                               )}
                             </div>
                           )}
@@ -942,12 +942,12 @@ export default function CompetitionDetailsPage() {
         {activeTab === 'results' && (
           <div className="space-y-6">
             {competition.status === 'completed' && (
-              <Card className="border-green-800 bg-green-900/20 text-center">
+              <Card className="border-success bg-success-soft/20 text-center">
                 <CardContent className="p-6">
-                  <Sparkles size={32} className="mx-auto mb-2 text-green-400" />
-                  <h2 className="text-xl font-black text-white uppercase">Competition Complete</h2>
+                  <Sparkles size={32} className="mx-auto mb-2 text-success" />
+                  <h2 className="text-xl font-black text-[var(--arena-text)] uppercase">Competition Complete</h2>
                   {competition.winning_club_id && (
-                    <p className="mt-2 text-lg text-green-400">
+                    <p className="mt-2 text-lg text-success">
                       🏆 {compClubs.find(cc => cc.club_id === competition.winning_club_id)?.club?.name || 'Winner'} Wins!
                     </p>
                   )}
@@ -956,12 +956,12 @@ export default function CompetitionDetailsPage() {
             )}
 
             {computedStandings.length > 0 && (
-              <Card className="border-white/10 bg-[var(--arena-surface)]">
+              <Card className="border-[var(--arena-border)] bg-[var(--arena-surface)]">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-white/10 bg-slate-950/40 text-slate-500 font-bold uppercase">
+                        <tr className="border-b border-[var(--arena-border)] bg-[var(--arena-bg)]/40 text-[var(--arena-text-dim)] font-bold uppercase">
                           <th className="py-3 px-4">Rank</th>
                           <th className="py-3 px-4">Club</th>
                           {competition.format === 'league' && <>
@@ -973,14 +973,14 @@ export default function CompetitionDetailsPage() {
                       </thead>
                       <tbody>
                         {computedStandings.map((s, i) => (
-                          <tr key={s.clubId} className="border-b border-white/5 hover:bg-white/[0.02]">
+                          <tr key={s.clubId} className="border-b border-[var(--arena-border)] hover:bg-white/[0.02]">
                             <td className="py-3 px-4 font-bold text-[var(--arena-lime)]">#{i + 1}</td>
-                            <td className="py-3 px-4 font-bold text-white">{s.clubName}</td>
+                            <td className="py-3 px-4 font-bold text-[var(--arena-text)]">{s.clubName}</td>
                             {competition.format === 'league' && <>
-                              <td className="py-3 px-4 text-center text-emerald-400 font-bold">{s.won}</td>
-                              <td className="py-3 px-4 text-center text-red-400 font-bold">{s.lost}</td>
+                              <td className="py-3 px-4 text-center text-success font-bold">{s.won}</td>
+                              <td className="py-3 px-4 text-center text-danger font-bold">{s.lost}</td>
                             </>}
-                            <td className="py-3 px-4 text-center font-mono text-slate-400">
+                            <td className="py-3 px-4 text-center font-mono text-[var(--arena-text-dim)]">
                               {s.rubbersWon} — {s.rubbersLost}
                             </td>
                           </tr>
@@ -995,7 +995,7 @@ export default function CompetitionDetailsPage() {
             {/* Per-tie match breakdown */}
             {matchups.some(m => m.status === 'completed') && (
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Tie Results</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Tie Results</h3>
                 {tieGroups.map(group => {
                   const completed = group.matchups.filter(m => m.status === 'completed')
                   if (completed.length === 0) return null
@@ -1011,18 +1011,18 @@ export default function CompetitionDetailsPage() {
                   const tieWinner = clubARubbersWon > clubBRubbersWon ? group.clubAName : clubBRubbersWon > clubARubbersWon ? group.clubBName : null
 
                   return (
-                    <Card key={`${group.clubAId}-${group.clubBId}-result`} className="border-white/10 bg-[var(--arena-surface)] overflow-hidden">
+                    <Card key={`${group.clubAId}-${group.clubBId}-result`} className="border-[var(--arena-border)] bg-[var(--arena-surface)] overflow-hidden">
                       <div className={cn(
-                        "flex items-center justify-between px-4 py-3 border-b border-white/10",
-                        tieWinner ? "bg-emerald-900/10" : "bg-slate-950/30"
+                        "flex items-center justify-between px-4 py-3 border-b border-[var(--arena-border)]",
+                        tieWinner ? "bg-success/10" : "bg-[var(--arena-bg)]/30"
                       )}>
                         <div className="flex items-center gap-2 text-sm font-bold">
-                          <span className="text-white">{group.clubAName}</span>
-                          <span className="text-slate-500 text-xs">vs</span>
-                          <span className="text-white">{group.clubBName}</span>
+                          <span className="text-[var(--arena-text)]">{group.clubAName}</span>
+                          <span className="text-[var(--arena-text-dim)] text-xs">vs</span>
+                          <span className="text-[var(--arena-text)]">{group.clubBName}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-[var(--arena-text-dim)]">
                             {group.clubAName} {clubARubbersWon} — {clubBRubbersWon} {group.clubBName}
                           </span>
                           {tieWinner && (
@@ -1042,20 +1042,20 @@ export default function CompetitionDetailsPage() {
                           return (
                             <div key={m.id} className="flex items-center gap-4 px-4 py-3">
                               <div className={cn("flex-1 text-right", aWon && "text-[var(--arena-lime)]")}>
-                                <p className={cn("text-xs", aClubId ? "text-slate-500" : "text-slate-500")}>
+                                <p className={cn("text-xs", aClubId ? "text-[var(--arena-text-dim)]" : "text-[var(--arena-text-dim)]")}>
                                   {clubNameMap[aClubId] || ''}
                                 </p>
-                                <p className={cn("font-bold", aWon ? "text-[var(--arena-lime)]" : "text-white")}>
+                                <p className={cn("font-bold", aWon ? "text-[var(--arena-lime)]" : "text-[var(--arena-text)]")}>
                                   {m.participant_a?.name || '?'}
                                   {aWon && <span className="ml-1">✓</span>}
                                 </p>
                               </div>
                               <div className="text-center shrink-0">
-                                <p className="text-xs font-mono text-slate-400">{scoreText}</p>
+                                <p className="text-xs font-mono text-[var(--arena-text-dim)]">{scoreText}</p>
                               </div>
                               <div className={cn("flex-1", !aWon && "text-[var(--arena-lime)]")}>
-                                <p className="text-xs text-slate-500">{clubNameMap[bClubId] || ''}</p>
-                                <p className={cn("font-bold", !aWon ? "text-[var(--arena-lime)]" : "text-white")}>
+                                <p className="text-xs text-[var(--arena-text-dim)]">{clubNameMap[bClubId] || ''}</p>
+                                <p className={cn("font-bold", !aWon ? "text-[var(--arena-lime)]" : "text-[var(--arena-text)]")}>
                                   {!aWon && <span className="mr-1">✓</span>}
                                   {m.participant_b?.name || '?'}
                                 </p>
@@ -1071,7 +1071,7 @@ export default function CompetitionDetailsPage() {
             )}
 
             {matchups.filter(m => m.status === 'completed').length === 0 && competition.status !== 'completed' && (
-              <p className="text-slate-500 italic">Results will appear once matches are completed.</p>
+              <p className="text-[var(--arena-text-dim)] italic">Results will appear once matches are completed.</p>
             )}
           </div>
         )}

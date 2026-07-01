@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { Flame } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubEvents, useClubMembers, useAllClubMatches } from '../hooks/useClubQueries'
-import { THEME_MAP } from '../constants'
+
 import { Card, CardContent } from '../../../components/ui/card'
+import { getPrimaryElo } from '../../../lib/playerCardData'
 import type { MatchWithDetails } from '../../../types'
 import type { ClubLeaderboardRow } from '../../../lib/api/matches'
 
@@ -15,17 +16,10 @@ interface ClubLeaderboardProps {
 }
 
 function renderRankBadge(rank: number) {
-  if (rank === 1) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700 shadow-sm border border-amber-200" title="Gold Medal">🥇</span>
-  if (rank === 2) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-[var(--arena-text-muted)] shadow-sm border border-[var(--arena-border)]" title="Silver Medal">🥈</span>
-  if (rank === 3) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-sm font-bold text-amber-800 shadow-sm border border-amber-100" title="Bronze Medal">🥉</span>
+  if (rank === 1) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning-soft text-sm font-bold text-warning-text shadow-sm border border-warning/30" title="Gold Medal">🥇</span>
+  if (rank === 2) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-sm font-bold text-[var(--arena-text-muted)] shadow-sm border border-[var(--arena-border)]" title="Silver Medal">🥈</span>
+  if (rank === 3) return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning-soft text-sm font-bold text-warning-text shadow-sm border border-warning/30" title="Bronze Medal">🥉</span>
   return <span className="font-mono text-sm font-bold text-[var(--arena-text-dim)] w-6 text-center">#{rank}</span>
-}
-
-function getLeaderboardElo(member?: { singles_elo?: number | null; doubles_elo?: number | null; singles_games?: number | null; doubles_games?: number | null }) {
-  if (!member) return 1200
-  const singlesGames = member.singles_games ?? 0
-  const doublesGames = member.doubles_games ?? 0
-  return doublesGames > singlesGames ? (member.doubles_elo ?? 1200) : (member.singles_elo ?? 1200)
 }
 
 function calculateLeaderboard(matchesList: MatchWithDetails[]): ClubLeaderboardRow[] {
@@ -275,7 +269,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
         return {
           ...row,
           name: member?.name || row.name,
-          elo: getLeaderboardElo(member),
+          elo: getPrimaryElo(member),
         }
       })
     if (sortBy === 'elo') {
@@ -354,9 +348,6 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
 
   if (!club) return null
 
-  const accent = club.accent_color || 'emerald'
-  const theme = THEME_MAP[accent] || THEME_MAP.emerald
-
   return (
     <Card>
       <CardContent className="space-y-4 pt-4 sm:pt-5">
@@ -375,7 +366,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 onClick={() => setSortBy('elo')}
                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'elo'
-                    ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                    ? 'bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm border border-[var(--arena-border)]/50'
                     : "text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]"
                 }`}
               >
@@ -386,7 +377,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                 onClick={() => setSortBy('win-rate')}
                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition select-none cursor-pointer ${
                   sortBy === 'win-rate'
-                    ? `bg-[var(--arena-surface)] ${theme.text} shadow-sm border border-[var(--arena-border)]/50`
+                    ? 'bg-[var(--arena-surface)] text-[var(--arena-accent)] shadow-sm border border-[var(--arena-border)]/50'
                     : "text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]"
                 }`}
               >
@@ -399,7 +390,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
               <select
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
-                className={`text-xs font-semibold py-1.5 pl-2.5 pr-8 border border-slate-700 rounded-lg bg-slate-900 text-slate-100 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accent}-600 focus:border-${accent}-600 appearance-none min-h-[30px]`}
+                className="text-xs font-semibold py-1.5 pl-2.5 pr-8 border border-[var(--arena-border)] rounded-lg bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] shadow-sm focus:outline-none focus:ring-1 focus:ring-[var(--arena-accent)] focus:border-[var(--arena-accent)] appearance-none min-h-[30px]"
                 style={{
                   backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.85)'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/></svg>")`,
                   backgroundRepeat: 'no-repeat',
@@ -407,16 +398,16 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                   backgroundSize: '1em',
                 }}
               >
-                <option value="all-time" className="bg-slate-900 text-slate-100">🏆 All-Time</option>
-                <option value="week" className="bg-slate-900 text-slate-100">📅 This Week</option>
-                <option value="month" className="bg-slate-900 text-slate-100">📅 This Month</option>
+                <option value="all-time" className="bg-[var(--arena-surface-elevated)] text-[var(--arena-text)]">🏆 All-Time</option>
+                <option value="week" className="bg-[var(--arena-surface-elevated)] text-[var(--arena-text)]">📅 This Week</option>
+                <option value="month" className="bg-[var(--arena-surface-elevated)] text-[var(--arena-text)]">📅 This Month</option>
                 {events.length > 0 && (
-                  <optgroup label="Sessions" className="bg-slate-900 text-slate-350">
+                  <optgroup label="Sessions" className="bg-[var(--arena-surface-elevated)] text-[var(--arena-text-muted)]">
                     {events
                       .slice()
                       .reverse()
                       .map((event) => (
-                        <option key={event.id} value={event.id} className="bg-slate-900 text-slate-100 text-xs">
+                        <option key={event.id} value={event.id} className="bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] text-xs">
                           🎯 {event.title}
                         </option>
                       ))}
@@ -434,28 +425,28 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
               const mvp = weeklyHighlights.mvp
               const m = members.find(mem => mem.name?.toLowerCase() === mvp.name.toLowerCase())
               const avatarEl = m?.avatar_url ? (
-                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-amber-500/20 shrink-0" />
+                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-warning/20 shrink-0" />
               ) : (
-                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[8px] font-bold text-amber-500 border border-amber-500/20">
+                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-warning/10 text-[8px] font-bold text-warning border border-warning/20">
                   {mvp.name.charAt(0).toUpperCase()}
                 </div>
               )
               return (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-xs text-slate-100 shadow-sm">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-warning/10 border border-warning/30 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm">
                   <span title="Weekly MVP">🏆</span>
-                  <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">MVP</span>
+                  <span className="text-[10px] font-black text-warning uppercase tracking-wider">MVP</span>
                   {m?.user_id ? (
-                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-slate-100">
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{mvp.name}</span>
                     </Link>
                   ) : (
-                    <span className="flex items-center gap-1 font-bold text-slate-100">
+                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{mvp.name}</span>
                     </span>
                   )}
-                  <span className="text-[10px] text-amber-300/80 font-semibold">({Math.round(mvp.winRate)}% Win)</span>
+                  <span className="text-[10px] text-warning/80 font-semibold">({Math.round(mvp.winRate)}% Win)</span>
                 </div>
               )
             })()}
@@ -464,28 +455,28 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
               const streakStar = weeklyHighlights.streakStar
               const m = members.find(mem => mem.name?.toLowerCase() === streakStar.name.toLowerCase())
               const avatarEl = m?.avatar_url ? (
-                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-orange-500/20 shrink-0" />
+                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-info/20 shrink-0" />
               ) : (
-                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-[8px] font-bold text-orange-500 border border-orange-500/20">
+                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-info/10 text-[8px] font-bold text-info border border-info/20">
                   {streakStar.name.charAt(0).toUpperCase()}
                 </div>
               )
               return (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 px-2.5 py-0.5 text-xs text-slate-100 shadow-sm">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-info/10 border border-info/30 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm">
                   <span title="Streak Star">🔥</span>
-                  <span className="text-[10px] font-black text-orange-400 uppercase tracking-wider">Streak</span>
+                  <span className="text-[10px] font-black text-info uppercase tracking-wider">Streak</span>
                   {m?.user_id ? (
-                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-slate-100">
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{streakStar.name}</span>
                     </Link>
                   ) : (
-                    <span className="flex items-center gap-1 font-bold text-slate-100">
+                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{streakStar.name}</span>
                     </span>
                   )}
-                  <span className="text-[10px] text-orange-300/80 font-semibold">({streakStar.longestStreak} W)</span>
+                  <span className="text-[10px] text-info/80 font-semibold">({streakStar.longestStreak} W)</span>
                 </div>
               )
             })()}
@@ -494,28 +485,28 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
               const resilience = weeklyHighlights.resilience
               const m = members.find(mem => mem.name?.toLowerCase() === resilience.name.toLowerCase())
               const avatarEl = m?.avatar_url ? (
-                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-emerald-500/20 shrink-0" />
+                <img src={m.avatar_url} alt="" className="h-[18px] w-[18px] rounded-full object-cover border border-success/20 shrink-0" />
               ) : (
-                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-[8px] font-bold text-emerald-500 border border-emerald-500/20">
+                <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-success/10 text-[8px] font-bold text-success border border-success/20">
                   {resilience.name.charAt(0).toUpperCase()}
                 </div>
               )
               return (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-xs text-slate-100 shadow-sm">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-success/10 border border-success/30 px-2.5 py-0.5 text-xs text-[var(--arena-text)] shadow-sm">
                   <span title="Resilience">💪</span>
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Resilience</span>
+                  <span className="text-[10px] font-black text-success uppercase tracking-wider">Resilience</span>
                   {m?.user_id ? (
-                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-slate-100">
+                    <Link to={`/member/${m.user_id}`} className="flex items-center gap-1 hover:underline font-bold text-[var(--arena-text)]">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{resilience.name}</span>
                     </Link>
                   ) : (
-                    <span className="flex items-center gap-1 font-bold text-slate-100">
+                    <span className="flex items-center gap-1 font-bold text-[var(--arena-text)]">
                       {avatarEl}
                       <span className="truncate max-w-[80px] sm:max-w-none">{resilience.name}</span>
                     </span>
                   )}
-                  <span className="text-[10px] text-emerald-300/80 font-semibold">({resilience.games} G)</span>
+                  <span className="text-[10px] text-success/80 font-semibold">({resilience.games} G)</span>
                 </div>
               )
             })()}
@@ -555,7 +546,7 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                     <div className="flex items-center gap-2 min-w-0">
                       {(() => {
                         const match = members.find(m => m.user_id === player.user_id)
-                        const elo = getLeaderboardElo(match)
+                        const elo = getPrimaryElo(match)
                         const avatar = match?.avatar_url
                         const avatarEl = avatar ? (
                           <img src={avatar} alt="" className="h-[20px] w-[20px] rounded-full object-cover border border-[var(--arena-border)] shrink-0" />
@@ -587,19 +578,10 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                                 ⚡ {elo}
                               </span>
                               {hasWinStreak && (
-                                <span className="shrink-0 text-[9px] px-1 bg-amber-500/10 text-amber-500 rounded font-black flex items-center gap-0.5" title={`${streak.count} win streak`}>
-                                  <Flame size={10} className="fill-amber-500" />
+                                <span className="shrink-0 text-[9px] px-1 bg-warning/10 text-warning rounded font-black flex items-center gap-0.5" title={`${streak.count} win streak`}>
+                                  <Flame size={10} className="fill-warning" />
                                   {streak.count}
                                 </span>
-                              )}
-                              {user && !isMe && (
-                                <Link
-                                  to={`/my-court?rival=${player.name}`}
-                                  className="text-[9px] font-extrabold text-[var(--arena-accent)] hover:underline opacity-80 hover:opacity-100"
-                                  title="Compare Head-to-Head"
-                                >
-                                  ⚔️ H2H
-                                </Link>
                               )}
                             </div>
                           </>
@@ -615,8 +597,8 @@ export function ClubLeaderboard({ clubId }: ClubLeaderboardProps) {
                     {/* Record (W-L) */}
                     <div className="hidden sm:block text-center font-semibold text-[var(--arena-text-dim)] text-[10px] sm:text-xs">
                       <span className="text-[var(--arena-accent)]">{player.wins}W</span>
-                      <span className="mx-0.5 text-slate-500">-</span>
-                      <span className="text-red-500">{player.losses}L</span>
+                      <span className="mx-0.5 text-[var(--arena-text-dim)]">-</span>
+                      <span className="text-danger">{player.losses}L</span>
                     </div>
 
                     {/* Win % */}

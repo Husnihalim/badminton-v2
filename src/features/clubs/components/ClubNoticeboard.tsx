@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Megaphone, ChevronRight, Share2, MessageCircle, Copy, X } from 'lucide-react'
+import { Megaphone, ChevronRight, Share2, Copy, X } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubMessages, useMyMembership } from '../hooks/useClubQueries'
 import { useCreateClubAnnouncement, useUpdateClubMessage, useDeleteClubMessage } from '../../hooks/useMutations'
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '../../../components/ui/input'
 import { Textarea } from '../../../components/ui/textarea'
 import { buildInviteUrl } from '../../../lib/api/clubs'
+import { sharePayload, copyToClipboard } from '../../../lib/share'
 import type { ClubMessage } from '../../../types'
 
 interface ClubNoticeboardProps {
@@ -48,7 +49,6 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
     'Join the club to follow announcements and game days.',
     inviteUrl,
   ].filter(Boolean).join('\n')
-  const boardWhatsappUrl = `https://wa.me/?text=${encodeURIComponent(boardShareText)}`
 
   const announcementItems = (messages || []).map((message) => ({
     id: `message-${message.id}`,
@@ -139,26 +139,24 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
 
   const handleNativeBoardShare = async () => {
     if (!inviteUrl) return
-
-    if (!navigator.share) {
-      await navigator.clipboard.writeText(inviteUrl)
-      setSuccessMessage('General request link copied.')
-      setTimeout(() => setSuccessMessage(''), 3000)
-      return
-    }
-
-    await navigator.share({
+    const result = await sharePayload({
       title: `${club.name} club board`,
       text: boardShareText,
       url: inviteUrl,
     })
+    if (result === 'copied') {
+      setSuccessMessage('General request link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    }
   }
 
   const handleCopyInviteLink = async () => {
     if (!inviteUrl) return
-    await navigator.clipboard.writeText(inviteUrl)
-    setSuccessMessage('General request link copied.')
-    setTimeout(() => setSuccessMessage(''), 3000)
+    const ok = await copyToClipboard(inviteUrl)
+    if (ok) {
+      setSuccessMessage('General request link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    }
   }
 
   return (
@@ -204,17 +202,6 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                 >
                   <Share2 size={15} aria-hidden="true" />
                 </Button>
-                <a
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-muted)] transition-colors hover:bg-[var(--arena-surface-muted)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] cursor-pointer ${
-                    !inviteUrl ? 'pointer-events-none opacity-50' : ''
-                  }`}
-                  href={boardWhatsappUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Share on WhatsApp"
-                >
-                  <MessageCircle size={15} aria-hidden="true" />
-                </a>
                 <Button
                   type="button"
                   size="sm"
@@ -266,7 +253,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <p className="font-semibold text-xs text-[var(--arena-text)]">{item.actor}</p>
-                            <Badge className="border-blue-200/50 bg-blue-50/10 text-blue-400 text-[9px] px-1 py-0">Announcement</Badge>
+                            <Badge className="border-info/30 bg-info-soft text-info-text text-[9px] px-1 py-0">Announcement</Badge>
                             <span className="text-[9px] text-[var(--arena-text-dim)]">
                               {isExpanded ? 'Click to collapse' : 'Click to expand'}
                             </span>
@@ -295,7 +282,7 @@ export function ClubNoticeboard({ clubId, setSuccessMessage, setActionError }: C
                             type="button" 
                             size="icon" 
                             variant="ghost" 
-                            className="min-h-8 h-8 w-8 p-0 text-[var(--arena-text-muted)] hover:bg-red-500/10 hover:text-red-400 rounded-lg flex items-center justify-center shrink-0" 
+                            className="min-h-8 h-8 w-8 p-0 text-[var(--arena-text-muted)] hover:bg-danger/10 hover:text-danger rounded-lg flex items-center justify-center shrink-0" 
                             onClick={(e) => { e.stopPropagation(); handleDeleteMessage(item.message); }} 
                             disabled={deleteMessageMutation.isPending}
                             title="Delete announcement"

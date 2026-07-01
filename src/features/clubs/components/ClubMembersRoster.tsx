@@ -188,7 +188,7 @@ export function ClubMembersRoster({
                       <Button
                         variant="danger"
                         size="sm"
-                        className="h-8 w-8 min-h-8 p-0 flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 hover:border-red-500/60"
+                        className="h-8 w-8 min-h-8 p-0 flex items-center justify-center rounded-lg border border-danger/20 bg-danger/5 text-danger hover:bg-danger/10 hover:border-danger/60"
                         type="button"
                         onClick={() => setMemberToRemove(member)}
                         title="Remove member"
@@ -212,7 +212,7 @@ export function ClubMembersRoster({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-danger/10 text-danger">
                 <Shield size={18} aria-hidden="true" />
               </span>
               <div>

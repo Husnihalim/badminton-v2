@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { X, Search, MessageCircle, Users } from 'lucide-react'
+import { X, Search, Share2, Users, UserPlus } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Input } from '../ui/input'
 import { Badge } from '../ui/badge'
 import { createFriendly } from '../../lib/api/competitions'
+import { sharePayload, copyToClipboard } from '../../lib/share'
 import type { Club } from '../../types'
 
 interface FriendlyCreateModalProps {
@@ -72,14 +73,14 @@ export function FriendlyCreateModal({
     }
   }
 
-  const handleShareWhatsApp = () => {
-    const message = `🏸 *Friendly Challenge*\n\nWe challenge you to a Friendly match on KelabSukan!\n\n${pairCount} pairs • 1 set each\nWinner takes the bragging rights\n\nTap to accept:\n${window.location.origin}/c/${inviteCode}`
-    
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/c/${inviteCode}`
+    const message = `🏸 Friendly Challenge\n\nWe challenge you to a Friendly match on KelabSukan!\n\n${pairCount} pairs • 1 set each\nWinner takes the bragging rights\n\nTap to accept:\n${shareUrl}`
+    sharePayload({ title: 'Friendly Challenge', text: message, url: shareUrl })
   }
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/c/${inviteCode}`)
+    copyToClipboard(`${window.location.origin}/c/${inviteCode}`)
   }
 
   return (
@@ -157,7 +158,7 @@ export function FriendlyCreateModal({
                 className="flex w-full items-center gap-3 rounded-lg border border-dashed border-white/20 bg-white/5 p-4 text-left transition-colors hover:border-[var(--arena-lime)] hover:bg-white/10"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800">
-                  <MessageCircle size={20} className="text-[var(--arena-lime)]" />
+                  <UserPlus size={20} className="text-[var(--arena-lime)]" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-white">Club not on KelabSukan?</p>
@@ -194,7 +195,7 @@ export function FriendlyCreateModal({
                       className="border-white/10 bg-white/5 text-white placeholder:text-slate-500"
                     />
                     <Input
-                      placeholder="Contact (WhatsApp/Phone)"
+                      placeholder="Contact (phone / messaging handle)"
                       value={newClubContact}
                       onChange={(e) => setNewClubContact(e.target.value)}
                       className="border-white/10 bg-white/5 text-white placeholder:text-slate-500"
@@ -288,11 +289,11 @@ export function FriendlyCreateModal({
               <div className="space-y-3">
                 <Button
                   type="button"
-                  onClick={handleShareWhatsApp}
-                  className="w-full gap-2 bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleShare}
+                  className="w-full gap-2"
                 >
-                  <MessageCircle size={18} />
-                  Share to WhatsApp
+                  <Share2 size={18} />
+                  Share challenge
                 </Button>
                 <Button
                   type="button"
@@ -300,7 +301,7 @@ export function FriendlyCreateModal({
                   onClick={handleCopyLink}
                   className="w-full border-white/10"
                 >
-                  Copy Link
+                  Copy link
                 </Button>
               </div>
 

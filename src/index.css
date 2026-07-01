@@ -22,6 +22,18 @@
   --color-accent-text: var(--arena-accent-text);
   --color-lime: var(--arena-lime);
   --color-blue: var(--arena-blue);
+  --color-success: var(--arena-success);
+  --color-success-soft: var(--arena-success-soft);
+  --color-success-text: var(--arena-success-text);
+  --color-warning: var(--arena-warning);
+  --color-warning-soft: var(--arena-warning-soft);
+  --color-warning-text: var(--arena-warning-text);
+  --color-danger: var(--arena-danger);
+  --color-danger-soft: var(--arena-danger-soft);
+  --color-danger-text: var(--arena-danger-text);
+  --color-info: var(--arena-info);
+  --color-info-soft: var(--arena-info-soft);
+  --color-info-text: var(--arena-info-text);
 }
 
 :root,
@@ -54,6 +66,20 @@
   --arena-panel: rgba(255, 255, 255, 0.04);
   --arena-admin: rgba(255, 255, 255, 0.03);
   --arena-muted: rgba(255, 255, 255, 0.4);
+
+  /* Semantic status tokens */
+  --arena-success: #22c55e;
+  --arena-success-soft: rgba(34, 197, 94, 0.12);
+  --arena-success-text: #040d0f;
+  --arena-warning: #f59e0b;
+  --arena-warning-soft: rgba(245, 158, 11, 0.12);
+  --arena-warning-text: #040d0f;
+  --arena-danger: #ef4444;
+  --arena-danger-soft: rgba(239, 68, 68, 0.12);
+  --arena-danger-text: #f8fafc;
+  --arena-info: #38bdf8;
+  --arena-info-soft: rgba(56, 189, 248, 0.12);
+  --arena-info-text: #040d0f;
 
   --surface: var(--arena-surface);
   --surface-muted: var(--arena-surface-muted);
@@ -122,6 +148,20 @@
   --arena-panel: rgba(0, 0, 0, 0.02);
   --arena-admin: rgba(0, 0, 0, 0.01);
   --arena-muted: rgba(0, 0, 0, 0.15);
+
+  /* Semantic status tokens (light) */
+  --arena-success: #16a34a;
+  --arena-success-soft: rgba(22, 163, 74, 0.1);
+  --arena-success-text: #ffffff;
+  --arena-warning: #d97706;
+  --arena-warning-soft: rgba(217, 119, 6, 0.1);
+  --arena-warning-text: #ffffff;
+  --arena-danger: #dc2626;
+  --arena-danger-soft: rgba(220, 38, 38, 0.1);
+  --arena-danger-text: #ffffff;
+  --arena-info: #0284c7;
+  --arena-info-soft: rgba(2, 132, 199, 0.1);
+  --arena-info-text: #ffffff;
 }
 
 
@@ -206,6 +246,18 @@ main {
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-success: var(--arena-success);
+  --color-success-soft: var(--arena-success-soft);
+  --color-success-text: var(--arena-success-text);
+  --color-warning: var(--arena-warning);
+  --color-warning-soft: var(--arena-warning-soft);
+  --color-warning-text: var(--arena-warning-text);
+  --color-danger: var(--arena-danger);
+  --color-danger-soft: var(--arena-danger-soft);
+  --color-danger-text: var(--arena-danger-text);
+  --color-info: var(--arena-info);
+  --color-info-soft: var(--arena-info-soft);
+  --color-info-text: var(--arena-info-text);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

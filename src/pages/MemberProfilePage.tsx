@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, Shield, Trophy, ChevronLeft, Users, User as UserIcon, Share2, Edit3 } from 'lucide-react'
-import { getProfile } from '../lib/api/profiles'
-import { getClubLeaderboard, getClubMatches } from '../lib/api/matches'
-import { getClubMembers } from '../lib/api/clubs'
+import { getProfile, getPlayerDashboard } from '../lib/api/profiles'
+import { getPlayerMatches } from '../lib/api/matches'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { Club, MatchWithDetails, User } from '../types'
@@ -15,6 +14,7 @@ import { MatchScoreboard } from '../components/MatchScoreboard'
 import ScorecardShareModal from '../components/ScorecardShareModal'
 import { PlayerCard } from '../components/PlayerCard'
 import { calculatePlayerInsights, getSignatureMoment } from '../lib/insights'
+import { getPrimaryElo } from '../lib/playerCardData'
 import { Badge } from '../components/ui/badge'
 import { EloProgressionChart } from '../components/EloProgressionChart'
 
@@ -34,18 +34,6 @@ type MemberEloHistoryRow = {
     title?: string | null
     match_date?: string | null
   } | null
-}
-
-function getPrimaryElo(player?: {
-  singles_elo?: number | null
-  doubles_elo?: number | null
-  singles_games?: number | null
-  doubles_games?: number | null
-}) {
-  if (!player) return 1200
-  const singlesGames = player.singles_games ?? 0
-  const doublesGames = player.doubles_games ?? 0
-  return doublesGames > singlesGames ? (player.doubles_elo ?? 1200) : (player.singles_elo ?? 1200)
 }
 
 export default function MemberProfilePage() {
@@ -124,18 +112,9 @@ export default function MemberProfilePage() {
       }
       setProfile(userProfile)
 
-      // 2. Fetch User's Clubs and global Elo ratings
-      const { data: membershipData, error: membershipError } = await supabase
-        .from('memberships')
-        .select('club_id, clubs(*)')
-        .eq('user_id', userId)
-        .eq('status', 'active')
+      // 2. Fetch User's Dashboard details (clubs, stats, achievements, ranks)
+      const dashboard = await getPlayerDashboard(userId)
 
-      if (membershipError) {
-        console.error('Error fetching memberships:', membershipError)
-      }
-
-      // Get global Elo from profile
       const userProfileElo = {
         singles_elo: userProfile.singles_elo ?? 1200,
         doubles_elo: userProfile.doubles_elo ?? 1200,
@@ -143,27 +122,28 @@ export default function MemberProfilePage() {
         doubles_games: userProfile.doubles_games ?? 0,
       }
 
-      const userClubs = (membershipData as unknown as Array<{ club_id: string; clubs: Club }> || [])
-        .map((m) => {
-          if (!m.clubs) return null
-          return {
-            ...m.clubs,
-            singles_elo: userProfileElo.singles_elo,
-            doubles_elo: userProfileElo.doubles_elo,
-            singles_games: userProfileElo.singles_games,
-            doubles_games: userProfileElo.doubles_games,
-          }
-        })
-        .filter((c): c is Club & { singles_elo: number; doubles_elo: number; singles_games: number; doubles_games: number } => c !== null)
+      const userClubs = (dashboard.clubs || []).map((c) => ({
+        ...c,
+        singles_elo: userProfileElo.singles_elo,
+        doubles_elo: userProfileElo.doubles_elo,
+        singles_games: userProfileElo.singles_games,
+        doubles_games: userProfileElo.doubles_games,
+      }))
       setClubs(userClubs)
+
+      // Ranks mapping
+      const ranks: Record<string, { rank: number; total: number }> = {}
+      dashboard.clubs.forEach((c) => {
+        if (c.rank) {
+          ranks[c.id] = { rank: c.rank.rank, total: c.rank.total }
+        }
+      })
+      setClubRanks(ranks)
 
       // 3. Fetch Matches if profile is public
       if (!userProfile.is_private || currentUser?.id === userId) {
-        const allMatches: MatchWithDetails[] = []
-        const clubLeaderboards: Record<string, Record<string, number>> = {}
-
         // Fetch Elo History from global table
-        supabase
+        const { data: eloData, error: eloError } = await supabase
           .from('elo_history_global')
           .select(`
             id,
@@ -182,231 +162,51 @@ export default function MemberProfilePage() {
           .eq('profile_id', userId)
           .order('created_at', { ascending: false })
           .limit(10)
-          .then(({ data: eloData, error: eloError }) => {
-            if (eloError) {
-              console.error('Error fetching Elo history:', eloError)
-            } else {
-              setEloHistory((eloData || []) as unknown as MemberEloHistoryRow[])
-            }
-          })
 
-        // Fetch matches, leaderboards and members for each club
-        const ranks: Record<string, { rank: number; total: number }> = {}
+        if (eloError) {
+          console.error('Error fetching Elo history:', eloError)
+        } else {
+          setEloHistory((eloData || []) as unknown as MemberEloHistoryRow[])
+        }
+
+        // Fetch user matches directly using optimized RPC
+        const userMatches = await getPlayerMatches(userId, 50)
+        setMatches(userMatches.slice(0, 10))
+        setAllUserMatches(userMatches)
+
+        // Build profiles mapping dynamically from participants of user's matches
         const profilesMap: Record<string, { userId: string; avatarUrl: string | null }> = {}
-
-        await Promise.all(
-          userClubs.map(async (club) => {
-            try {
-              const [clubMatches, singlesLeaderboardRows, doublesLeaderboardRows, members] = await Promise.all([
-                getClubMatches(club.id),
-                getClubLeaderboard(club.id, 100, 'singles'),
-                getClubLeaderboard(club.id, 100, 'doubles'),
-                getClubMembers(club.id),
-              ])
-              const leaderboardRows = [...singlesLeaderboardRows, ...doublesLeaderboardRows]
-              
-              allMatches.push(...clubMatches)
-
-              // Build leaderboard map and capture this user's rank based on Elo ranking
-              const normalizeName = (value?: string | null) => (value || '').trim().toLowerCase()
-              const viewedName = normalizeName(userProfile.display_name) || normalizeName(userProfile.name)
-
-              // Only rank members who have played at least one match
-              const activeMembersWithMatches = members.filter(m =>
-                leaderboardRows.some(row =>
-                  normalizeName(row.name) === normalizeName(m.name)
-                )
-              )
-
-              // Sort by the same primary Elo shown in the club leaderboard.
-              const sortedMembers = [...activeMembersWithMatches].sort((a, b) => {
-                const eloA = getPrimaryElo(a)
-                const eloB = getPrimaryElo(b)
-                if (eloB !== eloA) return eloB - eloA
-                return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
-              })
-
-              const index = sortedMembers.findIndex(
-                m => normalizeName(m.name) === viewedName || m.user_id === userProfile.id
-              )
-
-              if (index !== -1) {
-                ranks[club.id] = { rank: index + 1, total: sortedMembers.length }
+        userMatches.forEach((m) => {
+          m.participants?.forEach((p) => {
+            const pName = p.name || p.guest_name || 'Guest'
+            if (p.user_id) {
+              profilesMap[pName.toLowerCase()] = {
+                userId: p.user_id,
+                avatarUrl: p.profile?.avatar_url || null,
               }
-
-              const lbMap: Record<string, number> = {}
-              sortedMembers.forEach((m, sIdx) => {
-                lbMap[normalizeName(m.name)] = sIdx + 1
-              })
-              clubLeaderboards[club.id] = lbMap
-
-              members.forEach((m) => {
-                const mName = m.name || 'Unknown'
-                if (m.user_id) {
-                  profilesMap[mName.toLowerCase()] = {
-                    userId: m.user_id,
-                    avatarUrl: m.avatar_url ?? null,
-                  }
-                }
-              })
-            } catch (e) {
-              console.error(`Error loading matches for club ${club.id}:`, e)
             }
           })
-        )
-
-        setClubRanks(ranks)
+        })
         setMemberProfilesMap(profilesMap)
 
-        // Filter user matches
-        const userMatches = allMatches.filter((m) =>
-          m.participants.some((p) => p.user_id === userId)
-        )
-
-        // De-duplicate matches
-        const uniqueMatchesMap = new Map<string, MatchWithDetails>()
-        userMatches.forEach((m) => {
-          if (m.id) uniqueMatchesMap.set(m.id, m)
-        })
-        const sortedUniqueMatches = Array.from(uniqueMatchesMap.values()).sort(
-          (a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime()
-        )
-
-        setMatches(sortedUniqueMatches.slice(0, 10))
-        setAllUserMatches(sortedUniqueMatches)
-
-        // Calculate stats
-        let winsCount = 0
-        let lossesCount = 0
-        sortedUniqueMatches.forEach((m) => {
-          const part = m.participants.find((p) => p.user_id === userId)
-          if (!part) return
-
-          const scoreSets = m.score_sets || []
-          if (scoreSets.length === 0) return
-
-          const t1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
-          const t2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-          if (t1Sets === t2Sets) return
-
-          const winningTeam = t1Sets > t2Sets ? 1 : 2
-          if (part.team === winningTeam) winsCount++
-          else lossesCount++
-        })
-
-        const totalPlayed = winsCount + lossesCount
-        const winRateVal = totalPlayed > 0 ? Math.round((winsCount / totalPlayed) * 100) : 0
-
-        // Calculate Streak
-        let activeStreak = 0
-        let activeStreakType: 'win' | 'loss' | null = null
-
-        for (const m of sortedUniqueMatches) {
-          const part = m.participants.find((p) => p.user_id === userId)
-          if (!part) continue
-
-          const scoreSets = m.score_sets || []
-          if (scoreSets.length === 0) continue
-
-          const t1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
-          const t2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-          if (t1Sets === t2Sets) continue
-
-          const winningTeam = t1Sets > t2Sets ? 1 : 2
-          const won = part.team === winningTeam
-          const matchType: 'win' | 'loss' = won ? 'win' : 'loss'
-
-          if (activeStreakType === null) {
-            activeStreakType = matchType
-            activeStreak = 1
-          } else if (activeStreakType === matchType) {
-            activeStreak++
-          } else {
-            break
-          }
-        }
-
+        // Set stats directly from dashboard
         setPersonalStats({
-          matchesPlayed: totalPlayed,
-          wins: winsCount,
-          losses: lossesCount,
-          winRate: winRateVal,
-          streak: activeStreak,
-          streakType: activeStreakType,
+          matchesPlayed: dashboard.stats?.matchesPlayed || 0,
+          wins: dashboard.stats?.wins || 0,
+          losses: dashboard.stats?.losses || 0,
+          winRate: dashboard.stats?.winRate || 0,
+          streak: dashboard.stats?.streak || 0,
+          streakType: dashboard.stats?.streakType || null,
         })
 
-        // Calculate Achievements
-        const onFire = activeStreakType === 'win' && activeStreak >= 3
-        let giantSlayer = false
-        let cleanSweep = false
-        let ironMan = false
-        let dynamicDuo = false
-
-        // Iron Man Check (3 matches in 1 day)
-        const dateCounts: Record<string, number> = {}
-        sortedUniqueMatches.forEach((m) => {
-          const d = new Date(m.match_date || m.created_at).toDateString()
-          dateCounts[d] = (dateCounts[d] || 0) + 1
-          if (dateCounts[d] >= 3) ironMan = true
+        // Set achievements directly from dashboard
+        setAchievements({
+          onFire: dashboard.achievements?.onFire || false,
+          giantSlayer: dashboard.achievements?.giantSlayer || false,
+          cleanSweep: dashboard.achievements?.cleanSweep || false,
+          ironMan: dashboard.achievements?.ironMan || false,
+          dynamicDuo: dashboard.achievements?.dynamicDuo || false,
         })
-
-        // Dynamic Duo Check (3 doubles win streak)
-        let doublesWinStreak = 0
-        for (const m of sortedUniqueMatches) {
-          if (m.match_type !== 'doubles') continue
-          const part = m.participants.find((p) => p.user_id === userId)
-          if (!part) continue
-          const scoreSets = m.score_sets || []
-          if (scoreSets.length === 0) continue
-
-          const t1 = scoreSets.filter((s) => s.team1_score > s.team2_score).length
-          const t2 = scoreSets.filter((s) => s.team2_score > s.team1_score).length
-          if (t1 === t2) continue
-
-          const won = part.team === (t1 > t2 ? 1 : 2)
-          if (won) {
-            doublesWinStreak++
-            if (doublesWinStreak >= 3) dynamicDuo = true
-          } else {
-            break
-          }
-        }
-
-        // Giant slayer & Clean Sweep check
-        for (const m of sortedUniqueMatches) {
-          const part = m.participants.find((p) => p.user_id === userId)
-          if (!part) continue
-          const scoreSets = m.score_sets || []
-          
-          // Clean Sweep Check
-          const hasCleanSweepSet = scoreSets.some(s => Math.abs(s.team1_score - s.team2_score) >= 10)
-          if (hasCleanSweepSet) cleanSweep = true
-
-          // Giant Slayer Check (Opponent has global singles Elo > 100 points higher)
-          const ELO_DIFF_GIANT_SLAYER = 100
-          const myRating = userProfileElo.singles_elo || 1200
-          if (part.team === (scoreSets.filter(s => s.team1_score > s.team2_score).length > scoreSets.filter(s => s.team2_score > s.team1_score).length ? 1 : 2)) {
-            const oppTeam = part.team === 1 ? 2 : 1
-            const opponentsList = m.participants.filter(p => p.team === oppTeam)
-            for (const opp of opponentsList) {
-              if (opp.user_id) {
-                const { data: oppProfile } = await supabase
-                  .from('profiles')
-                  .select('singles_elo')
-                  .eq('id', opp.user_id)
-                  .single()
-                
-                if (oppProfile && oppProfile.singles_elo && (oppProfile.singles_elo - myRating) >= ELO_DIFF_GIANT_SLAYER) {
-                  giantSlayer = true
-                  break
-                }
-              }
-            }
-          }
-          if (giantSlayer) break
-        }
-
-        setAchievements({ onFire, giantSlayer, cleanSweep, ironMan, dynamicDuo })
       }
     } catch (err) {
       console.error('Error loading profile data:', err)
@@ -414,7 +214,7 @@ export default function MemberProfilePage() {
     } finally {
       setLoading(false)
     }
-  }, [userId, currentUser, setMemberProfilesMap])
+  }, [userId, currentUser])
 
   // Calculate dynamic insights client-side
   const playerInsights = useMemo(() => {
@@ -490,7 +290,7 @@ export default function MemberProfilePage() {
     return (
       <Card className="mx-auto mt-6 max-w-sm">
         <CardContent className="space-y-4 pt-5 text-center">
-          <p className="text-sm text-red-600 font-semibold">{error || 'An error occurred.'}</p>
+          <p className="text-sm text-danger font-semibold">{error || 'An error occurred.'}</p>
           <Button onClick={() => navigate(-1)}>Go Back</Button>
         </CardContent>
       </Card>
@@ -608,7 +408,7 @@ export default function MemberProfilePage() {
             <section className="space-y-4 rounded-xl border border-[var(--arena-border)] bg-surface p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-sm font-bold text-[var(--arena-text)] flex items-center gap-2">
-                  <Trophy size={16} className="text-amber-500 shrink-0" />
+                  <Trophy size={16} className="text-warning shrink-0" />
                   Unlocked Achievements
                 </h2>
                 <p className="text-[11px] text-[var(--arena-text-dim)] mt-0.5">Badges earned by this player from club gameplay.</p>
@@ -620,40 +420,40 @@ export default function MemberProfilePage() {
                   title="On Fire"
                   description="3+ Win Streak"
                   icon="🔥"
-                  glowClass="shadow-orange-500/10 border-orange-200 bg-orange-50/50 text-orange-600"
-                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                  glowClass="shadow-warning/10 border-warning/20 bg-warning-soft text-warning"
+                  lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
                 />
                 <AchievementBadge
                   unlocked={achievements.giantSlayer}
                   title="Giant Slayer"
                   description="Beat a higher ELO player"
                   icon="🛡️"
-                  glowClass="shadow-blue-500/10 border-blue-200 bg-blue-50/50 text-blue-600"
-                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                  glowClass="shadow-info/10 border-info/20 bg-info-soft text-info"
+                  lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
                 />
                 <AchievementBadge
                   unlocked={achievements.cleanSweep}
                   title="Clean Sweep"
                   description="Win set by 10+ pts"
                   icon="🎯"
-                  glowClass="shadow-emerald-500/10 border-emerald-200 bg-[var(--arena-accent-soft)]/50 text-[var(--arena-accent)]"
-                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                  glowClass="shadow-success/10 border-success-soft bg-success-soft text-success"
+                  lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
                 />
                 <AchievementBadge
                   unlocked={achievements.ironMan}
                   title="Iron Man"
                   description="Play 3+ matches in 1 day"
                   icon="🚀"
-                  glowClass="shadow-purple-500/10 border-purple-200 bg-purple-50/50 text-purple-600"
-                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                  glowClass="shadow-danger/10 border-danger/20 bg-danger-soft text-danger"
+                  lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
                 />
                 <AchievementBadge
                   unlocked={achievements.dynamicDuo}
                   title="Dynamic Duo"
                   description="3+ doubles wins streak"
                   icon="🤝"
-                  glowClass="shadow-amber-500/10 border-amber-200 bg-amber-50/50 text-amber-600"
-                  lockedClass="border-slate-100 bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
+                  glowClass="shadow-warning/10 border-warning/20 bg-warning-soft text-warning"
+                  lockedClass="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-dim)] opacity-40"
                 />
               </div>
             </section>
@@ -662,7 +462,7 @@ export default function MemberProfilePage() {
           {!showFullProfile && (
             <div className="rounded-xl border border-dashed border-[var(--arena-border)] p-8 text-center bg-[var(--arena-surface-muted)] mt-4 space-y-3">
               <Shield size={36} className="text-[var(--arena-text-dim)] mx-auto" />
-              <h2 className="text-base font-bold text-slate-800">Stats are private</h2>
+              <h2 className="text-base font-bold text-[var(--arena-text)]">Stats are private</h2>
               <p className="text-sm text-[var(--arena-text-dim)] max-w-sm mx-auto">
                 This member has set their profile to private. Their stats, milestones, and match logs are hidden.
               </p>
@@ -689,7 +489,7 @@ export default function MemberProfilePage() {
                       <p className="text-[11px] text-[var(--arena-text-dim)] mt-0.5">Recent rating changes from club matches.</p>
                     </div>
 
-                  <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
+                  <div className="divide-y divide-[var(--arena-border)] max-h-60 overflow-y-auto pr-1">
                     {eloHistory.map((item) => {
                       const ratingDiff = item.delta
                       const isGain = ratingDiff >= 0
@@ -715,7 +515,7 @@ export default function MemberProfilePage() {
                               "inline-flex items-center justify-center font-extrabold px-1.5 py-0.5 rounded text-[10px] w-12 text-center",
                               isGain 
                                 ? "bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-[var(--arena-accent)]/20" 
-                                : "bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900/30"
+                                : "bg-danger-soft text-danger border border-danger/20"
                             )}>
                               {isGain ? `+${ratingDiff}` : ratingDiff}
                             </span>
@@ -752,7 +552,7 @@ export default function MemberProfilePage() {
           ) : (
             <div className="rounded-xl border border-dashed border-[var(--arena-border)] p-8 text-center bg-[var(--arena-surface-muted)] space-y-3">
               <Shield size={36} className="text-[var(--arena-text-dim)] mx-auto" />
-              <h2 className="text-base font-bold text-slate-800">Match log is private</h2>
+              <h2 className="text-base font-bold text-[var(--arena-text)]">Match log is private</h2>
               <p className="text-sm text-[var(--arena-text-dim)] max-w-sm mx-auto">
                 Matches and Elo history logs are hidden for private profiles.
               </p>
@@ -774,7 +574,7 @@ export default function MemberProfilePage() {
                 >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold text-sm text-white">{club.name}</h3>
+                      <h3 className="font-bold text-sm text-[var(--arena-text)]">{club.name}</h3>
                       <p className="text-xs text-[var(--arena-text-dim)] mt-0.5">{club.city || 'No Location'}</p>
                     </div>
                     {clubRanks[club.id] && (

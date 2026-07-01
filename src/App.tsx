@@ -79,7 +79,7 @@ function App() {
               <BrowserRouter>
                 <PrefetchRoutes />
                 <Layout>
-                  <Suspense fallback={<div className="p-4 text-sm text-slate-600">Loading...</div>}>
+                  <Suspense fallback={<div className="p-4 text-sm text-[var(--arena-text-muted)]">Loading...</div>}>
                     <Routes>
                       <Route path="/" element={<LandingPage />} />
                       <Route path="/login" element={<LoginPage />} />

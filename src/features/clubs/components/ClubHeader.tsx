@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Users, UserPlus, Settings } from 'lucide-react'
+import { MapPin, Users, UserPlus, Settings, Lock } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubMembers, useMyMembership } from '../hooks/useClubQueries'
 import { useRequestJoinClub } from '../../hooks/useMutations'
@@ -24,7 +24,7 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
   const joinMutation = useRequestJoinClub()
 
   if (clubLoading || !club) {
-    return <div className="h-40 sm:h-52 animate-pulse bg-slate-800 rounded-2xl" />
+    return <div className="h-40 sm:h-52 animate-pulse bg-[var(--arena-surface-muted)] rounded-2xl" />
   }
 
   const isAdmin = myMembership?.role === 'owner' || myMembership?.role === 'admin' || user?.role === 'superadmin'
@@ -58,7 +58,7 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
         } ${
           club.banner_url 
             ? 'bg-cover bg-center' 
-            : BANNER_PRESETS.find(p => p.id === club.banner_preset)?.gradient || 'bg-gradient-to-r from-emerald-600 to-emerald-800'
+            : BANNER_PRESETS.find(p => p.id === club.banner_preset)?.gradient || 'bg-gradient-to-r from-[var(--arena-accent)] to-[var(--arena-surface-elevated)]'
         }`}
         style={club.banner_url ? { backgroundImage: `url(${club.banner_url})` } : undefined}
       >
@@ -69,7 +69,7 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
           <Button
             variant="secondary"
             onClick={() => navigate(`/club/${clubId}/settings`)}
-            className="absolute top-3 right-3 h-8 w-8 p-0 rounded-full bg-slate-900/60 hover:bg-slate-800/80 text-white backdrop-blur-sm border border-white/10 shadow-sm transition-colors cursor-pointer"
+            className="absolute top-3 right-3 h-8 w-8 p-0 rounded-full bg-[var(--arena-surface-elevated)]/60 hover:bg-[var(--arena-surface-elevated)]/80 text-[var(--arena-text)] backdrop-blur-sm border border-[var(--arena-border)]/50 shadow-sm transition-colors cursor-pointer"
             title="Settings"
           >
             <Settings size={15} aria-hidden="true" />
@@ -85,7 +85,7 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
           <div className="flex items-center justify-between -mt-7 sm:-mt-8 mb-1 gap-3 flex-wrap pt-0 pb-1">
             <div className="flex items-center gap-3 min-w-0">
               {/* Floating Logo (Small) */}
-              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full ring-2 ring-[var(--arena-surface)] bg-slate-100 flex items-center justify-center overflow-hidden shadow-md shrink-0">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full ring-2 ring-[var(--arena-surface)] bg-[var(--arena-surface-muted)] flex items-center justify-center overflow-hidden shadow-md shrink-0">
                 {club.logo_url ? (
                   <img 
                     src={club.logo_url} 
@@ -102,16 +102,19 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
               {/* Title & Metadata inline */}
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-base sm:text-lg font-black leading-tight text-[var(--arena-text)] truncate">{club.name}</h1>
+                  <h1 className="text-base sm:text-lg font-black leading-tight text-[var(--arena-text)] truncate flex items-center gap-1.5">
+                    {club.name}
+                    {club.is_private && <Lock size={14} className="text-[var(--arena-text-dim)] shrink-0" />}
+                  </h1>
                   <span className="text-[10px] text-[var(--arena-text-dim)]">•</span>
                   <span className="text-xs font-semibold text-[var(--arena-text-muted)]">{memberCount} members</span>
                   {myMembership?.status === 'active' ? (
-                    <Badge className={`${theme.bgLight} ${theme.textDark} border-${accent}-200 capitalize font-bold text-[9px] px-1.5 py-0`}>
+                    <Badge className="bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-[var(--arena-accent)]/20 capitalize font-bold text-[9px] px-1.5 py-0">
                       {myMembership.role}
                     </Badge>
                   ) : null}
                   {isAdmin ? (
-                    <Badge className="border-blue-200 bg-blue-50 text-blue-800 font-bold text-[9px] px-1.5 py-0">
+                    <Badge className="border-info/30 bg-info-soft text-info-text font-bold text-[9px] px-1.5 py-0">
                       Admin
                     </Badge>
                   ) : null}
@@ -128,7 +131,7 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
             <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-10 sm:-mt-12 mb-4 gap-4">
               <div className="flex flex-col sm:flex-row sm:items-end gap-4 min-w-0">
                 {/* Floating Logo (Standard) */}
-                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-4 ring-[var(--arena-surface)] bg-slate-100 flex items-center justify-center overflow-hidden shadow-md shrink-0">
+                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-4 ring-[var(--arena-surface)] bg-[var(--arena-surface-muted)] flex items-center justify-center overflow-hidden shadow-md shrink-0">
                   {club.logo_url ? (
                     <img 
                       src={club.logo_url} 
@@ -145,14 +148,17 @@ export function ClubHeader({ clubId, setSuccessMessage, setActionError }: ClubHe
                 {/* Title & Metadata */}
                 <div className="min-w-0 pb-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${theme.text}`}>Club Workspace</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--arena-accent)]">Club Workspace</span>
                     {myMembership?.status === 'active' ? (
-                      <Badge className={`${theme.bgLight} ${theme.textDark} border-${accent}-200 capitalize font-bold text-[10px]`}>
+                      <Badge className="bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] border border-[var(--arena-accent)]/20 capitalize font-bold text-[10px]">
                         {myMembership.role}
                       </Badge>
                     ) : null}
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-black leading-tight text-[var(--arena-text)] mt-1 truncate">{club.name}</h1>
+                  <h1 className="text-xl sm:text-2xl font-black leading-tight text-[var(--arena-text)] mt-1 truncate flex items-center gap-1.5">
+                    {club.name}
+                    {club.is_private && <Lock size={18} className="text-[var(--arena-text-dim)] shrink-0" />}
+                  </h1>
                   <p className="mt-1 text-xs sm:text-sm text-[var(--arena-text-muted)] line-clamp-2 max-w-xl">
                     {club.description || 'Club workspace for events, members, scores, and activity.'}
                   </p>

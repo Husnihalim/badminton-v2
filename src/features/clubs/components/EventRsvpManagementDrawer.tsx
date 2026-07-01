@@ -107,7 +107,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
           placeholder="Search members..."
           value={rsvpSearchQuery}
           onChange={(e) => setRsvpSearchQuery(e.target.value)}
-          className={`min-h-9 text-xs flex-1 bg-[var(--arena-surface)] border-[var(--arena-border)] focus:border-${accentColor}-600 focus:ring-1 focus:ring-${accentColor}-600/20`}
+          className="min-h-9 text-xs flex-1 bg-[var(--arena-surface)] border-[var(--arena-border)] focus:border-[var(--arena-accent)] focus:ring-1 focus:ring-[var(--arena-accent)]/20"
         />
         {rsvpSearchQuery && (
           <Button
@@ -123,7 +123,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
       </div>
 
       {/* Member Attendance List */}
-      <div className="divide-y divide-slate-200/80 max-h-60 overflow-y-auto pr-0.5 space-y-1">
+      <div className="divide-y divide-[var(--arena-border)] max-h-60 overflow-y-auto pr-0.5 space-y-1">
         {filteredMembers.length ? (
           filteredMembers.map((member) => {
             const rsvp = eventRsvps.find((r) => r.user_id === member.user_id)
@@ -137,11 +137,11 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
             return (
               <Card key={member.user_id} className="flex items-center justify-between py-2 text-xs gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-6 h-6 shrink-0 rounded-full ${theme.bg} text-white flex items-center justify-center font-bold text-[10px] uppercase shadow-sm`}>
+                  <div className={`w-6 h-6 shrink-0 rounded-full ${theme.bg} text-[var(--arena-accent-text)] flex items-center justify-center font-bold text-[10px] uppercase shadow-sm`}>
                     {member.name ? member.name.slice(0, 2).toUpperCase() : 'M'}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-slate-800 truncate">{member.name || 'Anonymous'}</span>
+                    <span className="font-bold text-[var(--arena-text)] truncate">{member.name || 'Anonymous'}</span>
                     <span className="text-[9px] text-[var(--arena-text-dim)] capitalize">{member.role}</span>
                   </div>
                 </div>
@@ -160,7 +160,7 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
                             handleAdminRsvpUpdate(member.user_id, val, rsvp?.attended, rsvp?.paid)
                           }
                         }}
-                        className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-[var(--arena-border)] rounded-md w-20 font-bold bg-[var(--arena-surface)] text-slate-300 shadow-sm focus:outline-none focus:ring-1 focus:ring-${accentColor}-500`}
+                        className={`h-7 min-h-7 text-[10px] py-0.5 px-1 border border-[var(--arena-border)] rounded-md w-20 font-bold bg-[var(--arena-surface)] text-[var(--arena-text-muted)] shadow-sm focus:outline-none focus:ring-1 focus:ring-[var(--arena-accent)]`}
                       >
                         {rsvpStatus === 'no_response' && <option value="no_response">Pending</option>}
                         <option value="going">Going</option>
@@ -173,8 +173,8 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
                         type="button"
                         className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                           rsvp?.attended
-                            ? `${theme.bg} ${theme.border} text-white`
-                            : 'bg-[var(--arena-surface)] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
+                            ? `${theme.bg} ${theme.border} text-[var(--arena-accent-text)]`
+                            : 'bg-[var(--arena-surface)] text-[var(--arena-text-muted)] border-[var(--arena-border)] hover:bg-[var(--arena-surface-muted)]'
                         }`}
                         onClick={() => handleAdminRsvpUpdate(
                           member.user_id,
@@ -193,8 +193,8 @@ export function EventRsvpManagementDrawer({ event, clubId, accentColor = 'emeral
                         type="button"
                         className={`h-7 px-2 rounded-md text-[10px] font-extrabold border flex items-center gap-1 transition-all shadow-sm ${
                           rsvp?.paid
-                            ? 'bg-amber-500 border-amber-500 text-white'
-                            : 'bg-[var(--arena-surface)] text-slate-300 border-[var(--arena-border)] hover:bg-slate-700'
+                            ? 'bg-warning border-warning text-warning-text'
+                            : 'bg-[var(--arena-surface)] text-[var(--arena-text-muted)] border-[var(--arena-border)] hover:bg-[var(--arena-surface-muted)]'
                         }`}
                         onClick={() => handleAdminRsvpUpdate(
                           member.user_id,

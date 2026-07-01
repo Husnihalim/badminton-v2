@@ -54,9 +54,9 @@ export default function ForgotPasswordPage() {
     <section className="mx-auto mt-4 max-w-md sm:mt-10">
       <Card>
         <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Account recovery</p>
-          <h1 className="text-2xl font-bold leading-tight text-slate-950">Reset password</h1>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--arena-accent)]">Account recovery</p>
+          <h1 className="text-2xl font-bold leading-tight text-[var(--arena-text)]">Reset password</h1>
+          <p className="text-sm leading-6 text-[var(--arena-text-muted)]">
             Enter your account email and we will send a secure reset link.
           </p>
         </CardHeader>
@@ -68,8 +68,8 @@ export default function ForgotPasswordPage() {
                 role="status"
                 className={
                   message
-                    ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
-                    : 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
+                    ? 'rounded-lg border border-[var(--arena-success)]/20 bg-[var(--arena-success-soft)] px-3 py-2 text-sm text-[var(--arena-success)]'
+                    : 'rounded-lg border border-[var(--arena-danger)]/20 bg-[var(--arena-danger-soft)] px-3 py-2 text-sm text-[var(--arena-danger)]'
                 }
               >
                 {message || error || 'Supabase is not configured for this environment yet.'}
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="reset-email">Email</label>
+              <label className="text-sm font-semibold text-[var(--arena-text-muted)]" htmlFor="reset-email">Email</label>
               <Input
                 id="reset-email"
                 name="email"
@@ -96,8 +96,8 @@ export default function ForgotPasswordPage() {
             </Button>
           </form>
 
-          <p className="mt-5 text-sm text-slate-600">
-            Remembered it? <Link className="font-semibold text-emerald-700" to="/login">Log in</Link>
+          <p className="mt-5 text-sm text-[var(--arena-text-muted)]">
+            Remembered it? <Link className="font-semibold text-[var(--arena-accent)]" to="/login">Log in</Link>
           </p>
         </CardContent>
       </Card>

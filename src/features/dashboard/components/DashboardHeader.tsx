@@ -52,7 +52,7 @@ export default function DashboardHeader({
           rank={primaryRank}
           elo={primaryElo}
           isOwner={true}
-          className="bg-slate-955"
+          className="bg-[var(--arena-surface-muted)]"
         />
 
         <Card>

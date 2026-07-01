@@ -11,10 +11,10 @@ interface ClubCardProps {
 export default function ClubCard({ club }: ClubCardProps) {
   return (
     <Link to={`/club/${club.id}`} className="block">
-      <Card className="transition hover:border-emerald-300 hover:shadow-md">
+      <Card className="transition hover:border-[var(--arena-accent)]/40 hover:shadow-md">
         <CardContent className="space-y-3 pt-4 sm:pt-5">
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-slate-950">{club.name}</h3>
+            <h3 className="text-base font-bold text-[var(--arena-text)]">{club.name}</h3>
             <p className="line-clamp-2 text-sm leading-6 text-[var(--arena-text-muted)]">{club.description}</p>
           </div>
           <div className="flex flex-wrap gap-3 text-sm text-[var(--arena-text-muted)]">

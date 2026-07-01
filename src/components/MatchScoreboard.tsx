@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Share2, Palette, Check } from 'lucide-react'
+import { Share2, Palette, Check, Pencil, Trash2, Users } from 'lucide-react'
 import { Button } from './ui/button'
 import type { MatchWithDetails } from '../types'
 import { PlayerCard } from './PlayerCard'
@@ -39,12 +39,11 @@ export function MatchScoreboard({
 
   const team1 = match.participants.filter((p) => p.team === 1)
   const team2 = match.participants.filter((p) => p.team === 2)
-  const firstSet = match.score_sets?.[0]
-  const team1Score = firstSet ? String(firstSet.team1_score) : '0'
-  const team2Score = firstSet ? String(firstSet.team2_score) : '0'
   const scoreSets = match.score_sets || []
   const team1Sets = scoreSets.filter((s) => s.team1_score > s.team2_score).length
   const team2Sets = scoreSets.filter((s) => s.team2_score > s.team1_score).length
+  const team1Score = String(team1Sets)
+  const team2Score = String(team2Sets)
   const winner = team1Sets > team2Sets ? 1 : team2Sets > team1Sets ? 2 : 0
 
   useEffect(() => {
@@ -133,7 +132,7 @@ export function MatchScoreboard({
   )
 
   return (
-    <div className={cn('relative w-full max-w-[560px] mx-auto overflow-hidden rounded-2xl border shadow-lg', s.card, winner ? s.accentBorder : '')}>
+    <div className={cn('relative w-full overflow-hidden rounded-2xl border shadow-lg', s.card, winner ? s.accentBorder : '')}>
       <div className={cn('flex items-center justify-between gap-2 px-3 py-2', s.topBar)}>
         <div className="min-w-0 flex-1">
           <div className={cn('truncate text-[11px] font-black uppercase tracking-[0.22em]', s.label)}>{match.title || `${match.sport} Match`}</div>
@@ -151,26 +150,39 @@ export function MatchScoreboard({
               ))}
             </div>
           )}
-          <Button type="button" variant="ghost" size="icon" onClick={() => setShowLineup((v) => !v)} title="Lineup specs" className={cn('h-6 w-6 rounded-lg', s.actionBtn)}><span className="text-xs">👥</span></Button>
+          <Button type="button" variant="ghost" size="icon" onClick={() => setShowLineup((v) => !v)} title="Lineup specs" className={cn('h-6 w-6 rounded-lg', s.actionBtn)}><Users size={13} /></Button>
           {onShare && <Button type="button" variant="ghost" size="icon" onClick={() => onShare(match)} className={cn('h-6 w-6 rounded-lg', s.actionBtn)}><Share2 size={13} /></Button>}
-          {isAdmin && onEdit && <button type="button" onClick={() => onEdit(match)} className={cn('h-6 w-6 rounded-lg', s.actionBtn)}><span className="text-xs">✏️</span></button>}
-          {isAdmin && onDelete && <button type="button" onClick={() => onDelete(match.id)} className={cn('h-6 w-6 rounded-lg', s.actionBtnDelete)}><span className="text-xs">🗑️</span></button>}
+          {isAdmin && onEdit && <Button type="button" variant="ghost" size="icon" onClick={() => onEdit(match)} className={cn('h-6 w-6 rounded-lg', s.actionBtn)}><Pencil size={13} /></Button>}
+          {isAdmin && onDelete && <Button type="button" variant="ghost" size="icon" onClick={() => onDelete(match.id)} className={cn('h-6 w-6 rounded-lg', s.actionBtnDelete)}><Trash2 size={13} /></Button>}
         </div>
       </div>
 
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-3 sm:px-4 py-3 space-y-2">
         <div className="flex items-center justify-between gap-4">
           {teamLine(team1, winner === 1)}
-          <div className={cn('font-mono font-bold text-[12px] sm:text-[13px] leading-none shrink-0 text-right w-6', winner === 1 ? s.pairWinner : s.pair)}>
+          <div className={cn('font-mono font-bold text-lg sm:text-xl leading-none shrink-0 text-right min-w-[1.5rem]', winner === 1 ? s.pairWinner : s.pair)}>
             {team1Score}
           </div>
         </div>
         <div className="flex items-center justify-between gap-4">
           {teamLine(team2, winner === 2)}
-          <div className={cn('font-mono font-bold text-[12px] sm:text-[13px] leading-none shrink-0 text-right w-6', winner === 2 ? s.pairWinner : s.pair)}>
+          <div className={cn('font-mono font-bold text-lg sm:text-xl leading-none shrink-0 text-right min-w-[1.5rem]', winner === 2 ? s.pairWinner : s.pair)}>
             {team2Score}
           </div>
         </div>
+        {scoreSets.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--arena-text-dim)]">Sets:</span>
+            {scoreSets.map((set) => (
+              <span
+                key={set.id}
+                className="inline-flex items-center rounded border border-[var(--arena-border)] bg-[var(--arena-surface-muted)]/50 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-[var(--arena-text-muted)]"
+              >
+                {set.team1_score}-{set.team2_score}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {showLineup && (

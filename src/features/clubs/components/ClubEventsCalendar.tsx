@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, DollarSign, Share2, MessageCircle, Copy, ChevronLeft, ChevronRight, Users, Trophy, ClipboardPenLine } from 'lucide-react'
+import { Check, DollarSign, Share2, Copy, ChevronLeft, ChevronRight, Users, Trophy, ClipboardPenLine } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { useClub, useClubEvents, useMyMembership, useMyRsvps, useEventRsvps } from '../hooks/useClubQueries'
 import { useRsvpToEvent, useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../hooks/useMutations'
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '../../../components/ui/input'
 import { EventRsvpManagementDrawer } from './EventRsvpManagementDrawer'
 import { buildEventShareUrl, buildEventShareText } from '../../../lib/api/events'
+import { sharePayload, copyToClipboard } from '../../../lib/share'
 import type { ClubEvent, EventRsvp } from '../../../types'
 
 interface ClubEventsCalendarProps {
@@ -84,7 +85,6 @@ function EventCard({
   const { data: club } = useClub(clubId)
 
   const eventShareText = buildEventShareText({ ...event, clubName: club?.name || '' })
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(eventShareText)}`
 
   const [showManageRsvp, setShowManageRsvp] = useState(false)
 
@@ -100,25 +100,23 @@ function EventCard({
   }
 
   const handleNativeEventShare = async () => {
-    const shareUrl = buildEventShareUrl(event.id)
-    if (!navigator.share) {
-      await navigator.clipboard.writeText(shareUrl)
-      setSuccessMessage('Game day link copied.')
-      setTimeout(() => setSuccessMessage(''), 3000)
-      return
-    }
-
-    await navigator.share({
+    const result = await sharePayload({
       title: event.title,
       text: eventShareText,
-      url: shareUrl,
+      url: buildEventShareUrl(event.id),
     })
+    if (result === 'copied') {
+      setSuccessMessage('Game day link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    }
   }
 
   const handleCopyEventShareLink = async () => {
-    await navigator.clipboard.writeText(buildEventShareUrl(event.id))
-    setSuccessMessage('Game day link copied.')
-    setTimeout(() => setSuccessMessage(''), 3000)
+    const ok = await copyToClipboard(buildEventShareUrl(event.id))
+    if (ok) {
+      setSuccessMessage('Game day link copied.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    }
   }
 
   return (
@@ -129,7 +127,7 @@ function EventCard({
           <p className="text-xs text-[var(--arena-text-muted)]">{new Date(event.event_date).toLocaleString()}</p>
           {event.location ? <p className="text-xs text-[var(--arena-text-muted)]">{event.location}</p> : null}
           {formatEventCost(event) ? (
-            <p className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800">
+            <p className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--arena-text)]">
               <DollarSign size={13} aria-hidden="true" />
               {formatEventCost(event)}
             </p>
@@ -148,18 +146,15 @@ function EventCard({
       </div>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex flex-wrap gap-1.5">
-          <Badge className={event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'}>
+          <Badge className={event.signup_open ? undefined : 'border-danger/30 bg-danger-soft text-danger-text'}>
             {event.signup_open ? 'Open' : 'Closed'}
           </Badge>
-          {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-slate-300">{rsvpCount}/{event.max_participants} going</Badge> : null}
+          {event.max_participants ? <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface)] text-[var(--arena-text-muted)]">{rsvpCount}/{event.max_participants} going</Badge> : null}
         </div>
         <div className="flex items-center gap-1.5">
           <Button type="button" size="icon" variant="secondary" onClick={handleNativeEventShare} title="Share" className="h-7 w-7 min-h-0 rounded-full bg-[var(--arena-surface-elevated)] border-[var(--arena-border)]">
             <Share2 size={13} aria-hidden="true" />
           </Button>
-          <a className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] transition-all" href={whatsappUrl} target="_blank" rel="noreferrer" title="Share via WhatsApp">
-            <MessageCircle size={13} aria-hidden="true" />
-          </a>
           <Button type="button" size="icon" variant="secondary" onClick={handleCopyEventShareLink} title="Copy link" className="h-7 w-7 min-h-0 rounded-full bg-[var(--arena-surface-elevated)] border-[var(--arena-border)]">
             <Copy size={13} aria-hidden="true" />
           </Button>
@@ -190,11 +185,11 @@ function EventCard({
       {myRsvp ? (
         <p className="text-xs font-semibold text-[var(--arena-text-muted)]">Your response: {getRsvpLabel(myRsvp.status)}</p>
       ) : null}
-      {isFull ? <p className="text-xs font-semibold text-red-600">Session full</p> : null}
+      {isFull ? <p className="text-xs font-semibold text-danger">Session full</p> : null}
       <div className="space-y-1.5 rounded-lg border border-[var(--arena-border)] bg-[var(--arena-surface)] p-2">
         <div className="flex flex-wrap gap-1.5">
           <Badge className={`border-${theme.borderLight} ${theme.bgLight} ${theme.textDark} text-[10px] px-1.5 py-0.5`}>{acceptedRsvps.length} accepted</Badge>
-          <Badge className="border-amber-200 bg-amber-50 text-amber-800 text-[10px] px-1.5 py-0.5">{holdingRsvps.length} holding</Badge>
+          <Badge className="border-warning/30 bg-warning-soft text-warning-text text-[10px] px-1.5 py-0.5">{holdingRsvps.length} holding</Badge>
           <Badge className="border-[var(--arena-border)] bg-[var(--arena-surface-muted)] text-[var(--arena-text-muted)] text-[10px] px-1.5 py-0.5">{rejectedRsvps.length} rejected</Badge>
         </div>
         {acceptedRsvps.length ? (
@@ -208,7 +203,7 @@ function EventCard({
                     {r.avatar_url ? (
                       <img src={r.avatar_url} alt="" className="rounded-full object-cover shrink-0" style={{ height: '16px', width: '16px' }} />
                     ) : (
-                      <div className="flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-slate-700 text-[8px] font-bold uppercase text-[var(--arena-text-muted)]">
+                      <div className="flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[8px] font-bold uppercase text-[var(--arena-text-muted)]">
                         {name.charAt(0)}
                       </div>
                     )}
@@ -261,10 +256,10 @@ function EventCard({
         <Button
           type="button"
           size="sm"
-          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold flex items-center justify-center gap-1.5 shadow-sm border-0 min-h-8 text-xs"
+          className="bg-warning hover:bg-warning/90 text-white font-extrabold flex items-center justify-center gap-1.5 shadow-sm border-0 min-h-8 text-xs"
           onClick={() => onViewHighlights(event)}
         >
-          <Trophy size={13} className="text-amber-100" />
+          <Trophy size={13} className="text-warning-text" />
           View Highlights
         </Button>
         {isMember ? (
@@ -440,12 +435,12 @@ export function ClubEventsCalendar({
         <CardContent className="space-y-4 pt-4 sm:pt-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-[var(--arena-text)]">Upcoming game days</h2>
-            <div className="flex border border-[var(--arena-border)] rounded-lg p-0.5 bg-slate-100/80">
+            <div className="flex border border-[var(--arena-border)] rounded-lg p-0.5 bg-[var(--arena-surface-muted)]/80">
               <button
                 type="button"
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'list'
-                    ? 'bg-[var(--arena-surface)] text-slate-300 shadow-sm'
+                    ? 'bg-[var(--arena-surface)] text-[var(--arena-text)] shadow-sm'
                     : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]'
                 }`}
                 onClick={() => setEventsViewMode('list')}
@@ -456,7 +451,7 @@ export function ClubEventsCalendar({
                 type="button"
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   eventsViewMode === 'calendar'
-                    ? 'bg-[var(--arena-surface)] text-slate-300 shadow-sm'
+                    ? 'bg-[var(--arena-surface)] text-[var(--arena-text)] shadow-sm'
                     : 'text-[var(--arena-text-muted)] hover:text-[var(--arena-text)]'
                 }`}
                 onClick={() => setEventsViewMode('calendar')}
@@ -499,7 +494,7 @@ export function ClubEventsCalendar({
             <div className="space-y-4">
               {/* Calendar Month Header */}
               <div className="flex items-center justify-between px-1">
-                <span className="font-bold text-slate-800">
+                <span className="font-bold text-[var(--arena-text)]">
                   {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                 </span>
                 <div className="flex gap-1">
@@ -527,7 +522,7 @@ export function ClubEventsCalendar({
               </div>
 
               {/* Day of Week Headers */}
-              <div className="grid grid-cols-7 text-center text-xs font-bold text-[var(--arena-text-dim)] border-b border-slate-100 pb-2">
+              <div className="grid grid-cols-7 text-center text-xs font-bold text-[var(--arena-text-dim)] border-b border-[var(--arena-border)] pb-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
                   <div key={idx}>{day}</div>
                 ))}
@@ -554,8 +549,8 @@ export function ClubEventsCalendar({
                       onClick={() => setSelectedDate(cell.date)}
                       className={`relative flex flex-col items-center justify-between p-1 sm:p-2 min-h-10 sm:min-h-12 border rounded-lg transition-all ${
                         cell.isCurrentMonth 
-                          ? 'text-slate-300 bg-[var(--arena-surface)] border-[var(--arena-border)]/60' 
-                          : 'text-[var(--arena-text-dim)] bg-[var(--arena-surface-muted)]/50 border-slate-100'
+                          ? 'text-[var(--arena-text)] bg-[var(--arena-surface)] border-[var(--arena-border)]/60' 
+                          : 'text-[var(--arena-text-dim)] bg-[var(--arena-surface-muted)]/50 border-[var(--arena-border)]/30'
                       } ${
                         isSelected 
                           ? `ring-2 ${theme.ring} ${theme.bgLight}/20 ${theme.border}` 
@@ -573,7 +568,7 @@ export function ClubEventsCalendar({
                             <span 
                               key={i} 
                               className={`w-1.5 h-1.5 rounded-full ${
-                                isSelected ? theme.bg : 'bg-slate-400'
+                                isSelected ? theme.bg : 'bg-[var(--arena-text-dim)]'
                               }`} 
                             />
                           ))}
@@ -585,8 +580,8 @@ export function ClubEventsCalendar({
               </div>
 
               {/* Selected Date Header and List */}
-              <div className="border-t border-slate-100 pt-4 mt-2">
-                <h4 className="text-sm font-bold text-slate-800 mb-3">
+              <div className="border-t border-[var(--arena-border)] pt-4 mt-2">
+                <h4 className="text-sm font-bold text-[var(--arena-text)] mb-3">
                   Sessions on {selectedDate ? selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                 </h4>
                 

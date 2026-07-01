@@ -54,7 +54,7 @@ type ClubMessageProfileRow = ClubMessage & {
 export async function getClubs(): Promise<Club[]> {
   const { data, error } = await supabase
     .from('clubs')
-    .select('id, name, description, location, city, sport_focus, open_join, approval_required, invite_code, owner_id, created_at, updated_at, logo_url, banner_url, banner_preset, accent_color, announcement, announcement_updated_at')
+    .select('id, name, description, location, city, sport_focus, open_join, approval_required, invite_code, owner_id, created_at, updated_at, logo_url, banner_url, banner_preset, accent_color, announcement, announcement_updated_at, is_private')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -71,7 +71,7 @@ export async function getClub(id: string): Promise<Club | null> {
   }
   const { data, error } = await supabase
     .from('clubs')
-    .select('id, name, description, location, city, sport_focus, open_join, approval_required, invite_code, owner_id, created_at, updated_at, logo_url, banner_url, banner_preset, accent_color, announcement, announcement_updated_at')
+    .select('id, name, description, location, city, sport_focus, open_join, approval_required, invite_code, owner_id, created_at, updated_at, logo_url, banner_url, banner_preset, accent_color, announcement, announcement_updated_at, is_private')
     .eq('id', id)
     .single()
 
@@ -285,6 +285,7 @@ export async function updateClub(clubId: string, updates: {
   accent_color?: string | null
   announcement?: string | null
   announcement_updated_at?: string | null
+  is_private?: boolean | null
 }): Promise<Club | null> {
   const { data, error } = await supabase
     .from('clubs')

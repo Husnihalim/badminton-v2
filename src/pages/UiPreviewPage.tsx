@@ -117,7 +117,7 @@ export default function UiPreviewPage() {
           category="Rivalry watch"
           title="Amir still leads"
           body="Husni says he is not keeping count. The app, unfortunately for him, is."
-          proof="4-2 H2H"
+          proof="4-2 record"
           actionLabel="Share story"
         />
         <StoryCard
@@ -164,7 +164,7 @@ export default function UiPreviewPage() {
 
         <ShareCardPreview
           title="Husni / Faiz def Amir / Danial"
-          subtitle="Court 1. Game 1. Proof-backed scorecard ready for WhatsApp."
+          subtitle="Court 1. Game 1. Proof-backed share card ready for any platform."
           score="21-19"
         />
       </section>

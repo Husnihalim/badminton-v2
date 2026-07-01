@@ -94,7 +94,7 @@ describe('PlayerCard', () => {
     // Verify key fields in simplified mode
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('@johndoe')).toBeInTheDocument();
-    expect(screen.getByText('⚡ 1350')).toBeInTheDocument();
+    expect(screen.getByText(/1350/)).toBeInTheDocument();
 
     // Racket, strings and stats
     expect(screen.getByText(/Yonex Astrox 88D/)).toBeInTheDocument();

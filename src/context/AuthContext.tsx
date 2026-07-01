@@ -47,6 +47,10 @@ type ProfileRow = {
   is_private?: boolean | null
   social_links?: User['social_links'] | null
   gear?: User['gear'] | null
+  singles_elo?: number | null
+  doubles_elo?: number | null
+  singles_games?: number | null
+  doubles_games?: number | null
 }
 
 type AuthUserFallback = {
@@ -118,6 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               is_private: profile.is_private,
               social_links: profile.social_links,
               gear: profile.gear,
+              singles_elo: profile.singles_elo,
+              doubles_elo: profile.doubles_elo,
+              singles_games: profile.singles_games,
+              doubles_games: profile.doubles_games,
             }
           }
         } catch (profileError) {
@@ -154,6 +162,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       is_private: profile.is_private,
       social_links: profile.social_links,
       gear: profile.gear,
+      singles_elo: profile.singles_elo,
+      doubles_elo: profile.doubles_elo,
+      singles_games: profile.singles_games,
+      doubles_games: profile.doubles_games,
     }
   }, [])
 

@@ -96,7 +96,7 @@ describe('generateStoryMoments', () => {
     expect(moments.some((moment) => moment.type === 'best_partner')).toBe(true)
   })
 
-  it('builds WhatsApp-ready text with attached proof', () => {
+  it('builds share-ready text with attached proof', () => {
     const [moment] = generateStoryMoments({ user, matches: [match({ id: 'shareable' })] })
 
     expect(buildStoryMomentShareText(moment, 'Amir')).toContain(moment.proofLabel)

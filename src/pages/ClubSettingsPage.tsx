@@ -55,6 +55,7 @@ export default function ClubSettingsPage() {
   const [specificInviteUrl, setSpecificInviteUrl] = useState('')
   const [specificInvites, setSpecificInvites] = useState<SpecificClubInvite[]>([])
   const [inviteStatusTime, setInviteStatusTime] = useState(0)
+  const [isPrivate, setIsPrivate] = useState(false)
 
   // Custom branding states
   const [logoUrl, setLogoUrl] = useState('')
@@ -92,6 +93,7 @@ export default function ClubSettingsPage() {
       setOpenJoin(clubData.open_join !== false)
       setApprovalRequired(clubData.approval_required || false)
       setInviteToken(clubData.invite_code || '')
+      setIsPrivate(clubData.is_private || false)
       
       // Load custom branding fields
       setLogoUrl(clubData.logo_url || '')
@@ -184,6 +186,7 @@ export default function ClubSettingsPage() {
         accent_color: accentColor,
         announcement: announcement || null,
         announcement_updated_at: announcementChanged ? new Date().toISOString() : (club?.announcement_updated_at || null),
+        is_private: isPrivate,
       })
       
       setSuccessMessage('Club settings saved.')
@@ -547,6 +550,13 @@ export default function ClubSettingsPage() {
                   <span>
                     <span className="block text-sm font-semibold text-[var(--arena-text-muted)]">Require approval for strangers</span>
                     <span className="text-sm text-[var(--arena-text-muted)]">General invite links create requests. Specific invites can auto-approve one person.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 rounded-lg border border-slate-600 p-3">
+                  <input className="mt-1 h-4 w-4 accent-emerald-700" type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+                  <span>
+                    <span className="block text-sm font-semibold text-[var(--arena-text-muted)]">Private Club</span>
+                    <span className="text-sm text-[var(--arena-text-muted)]">Hide Notice Board, scores history, and leaderboards from public eyes and non-members.</span>
                   </span>
                 </label>
               </CardContent>

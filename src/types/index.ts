@@ -83,6 +83,7 @@ export interface Club {
   accent_color?: string | null
   announcement?: string | null
   announcement_updated_at?: string | null
+  is_private?: boolean | null
   // Computed/joined fields
   membersCount?: number
   role?: string
@@ -280,6 +281,9 @@ export interface PlayerDashboardData {
   clubs: (Club & {
     role: string
     singles_elo: number
+    doubles_elo: number
+    singles_games: number
+    doubles_games: number
     rank: { rank: number; total: number } | null
     members_count: number
     avg_elo: number

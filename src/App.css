@@ -88,13 +88,13 @@
 .nav-action {
   background: var(--arena-accent);
   color: var(--arena-accent-text);
-  box-shadow: 0 0 12px rgba(204, 255, 0, 0.15);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--arena-accent) 30%, transparent);
 }
 
 .nav-action:hover {
   background: var(--arena-accent);
   color: var(--arena-accent-text);
-  box-shadow: 0 0 20px rgba(204, 255, 0, 0.25);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--arena-accent) 40%, transparent);
 }
 
 /* User Profile Dropdown */
@@ -203,16 +203,16 @@
 }
 
 .nav-dropdown-role.superadmin {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--arena-danger-soft);
+  color: var(--arena-danger);
+  border: 1px solid var(--arena-border);
 }
 
 .nav-dropdown-role.owner,
 .nav-dropdown-role.admin {
   background: var(--arena-accent-soft);
   color: var(--arena-accent);
-  border: 1px solid rgba(204, 255, 0, 0.2);
+  border: 1px solid var(--arena-border);
 }
 
 .nav-dropdown-role.member {
@@ -260,12 +260,12 @@
 }
 
 .nav-dropdown-item.logout {
-  color: #f87171;
+  color: var(--arena-danger);
 }
 
 .nav-dropdown-item.logout:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
+  background: var(--arena-danger-soft);
+  color: var(--arena-danger);
 }
 
 @media (max-width: 760px) {
@@ -336,11 +336,11 @@
   bottom: 16px;
   z-index: 2000;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--arena-accent), #b3e600);
+  background: var(--arena-accent);
   color: var(--arena-accent-text);
   padding: 12px 16px;
   font-weight: 700;
-  box-shadow: var(--arena-shadow), 0 0 20px rgba(204, 255, 0, 0.15);
+  box-shadow: var(--arena-shadow), 0 0 20px color-mix(in srgb, var(--arena-accent) 25%, transparent);
 }
 
 /* Transition helpers */
@@ -517,13 +517,13 @@
   font-size: 0.95rem;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 0 12px rgba(204, 255, 0, 0.15);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--arena-accent) 20%, transparent);
   transition: all 0.2s ease;
 }
 
 .brand-button:hover {
   filter: brightness(1.1);
-  box-shadow: 0 0 20px rgba(204, 255, 0, 0.25);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--arena-accent) 35%, transparent);
 }
 
 .small-button {

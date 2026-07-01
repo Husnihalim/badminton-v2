@@ -1,7 +1,7 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { getPlayerDashboard } from '../../../lib/api/profiles'
 import { getClubs, getClubMembers } from '../../../lib/api/clubs'
-import { getClubMatches } from '../../../lib/api/matches'
+import { getClubMatches, getPlayerMatches } from '../../../lib/api/matches'
 
 export const usePlayerDashboard = (userId?: string) => useQuery({
   queryKey: ['dashboard', userId],
@@ -13,6 +13,13 @@ export const useDiscoverClubs = (isUserAuthenticated = false) => useQuery({
   queryKey: ['clubs', 'discoverable'],
   queryFn: () => getClubs(),
   enabled: isUserAuthenticated,
+})
+
+export const usePlayerMatches = (userId?: string, limit = 100) => useQuery({
+  queryKey: ['playerMatches', userId, limit],
+  queryFn: () => getPlayerMatches(userId!, limit),
+  enabled: !!userId,
+  staleTime: 30_000,
 })
 
 export const useClubsMatches = (clubIds: string[] = []) => useQueries({
@@ -32,4 +39,5 @@ export const useClubsMembers = (clubIds: string[] = []) => useQueries({
     staleTime: 30_000,
   })),
 })
+
 

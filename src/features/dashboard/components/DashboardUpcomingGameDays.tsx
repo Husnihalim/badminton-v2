@@ -1,4 +1,4 @@
-import { CalendarDays, Check, Copy, MessageCircle, Share2 } from 'lucide-react'
+import { CalendarDays, Check, Copy, Share2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '../../../components/ui/card'
 import { Badge } from '../../../components/ui/badge'
@@ -8,6 +8,7 @@ import { useRsvpToEvent } from '../../hooks/useMutations'
 import { useNotifications } from '../../../context/NotificationsContext'
 import { useAuth } from '../../../context/AuthContext'
 import { buildEventShareText, buildEventShareUrl } from '../../../lib/api/events'
+import { sharePayload, copyToClipboard } from '../../../lib/share'
 import type { ClubEvent, EventRsvp } from '../../../types'
 
 type DashboardEvent = ClubEvent & { clubName?: string }
@@ -74,28 +75,19 @@ function UpcomingEventCard({ event, myRsvp }: UpcomingEventCardProps) {
     event.max_participants && acceptedRsvps.length >= event.max_participants
   )
   const eventShareText = buildEventShareText(event)
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(eventShareText)}`
 
   const handleCopyEventShareLink = async () => {
-    await navigator.clipboard.writeText(buildEventShareUrl(event.id))
-    showToast('Game day link copied.', 'success')
+    const ok = await copyToClipboard(buildEventShareUrl(event.id))
+    if (ok) showToast('Game day link copied.', 'success')
   }
 
   const handleNativeEventShare = async () => {
-    const shareUrl = buildEventShareUrl(event.id)
-    const shareText = buildEventShareText(event)
-
-    if (!navigator.share) {
-      await navigator.clipboard.writeText(shareUrl)
-      showToast('Game day link copied.', 'success')
-      return
-    }
-
-    await navigator.share({
+    const result = await sharePayload({
       title: event.title,
-      text: shareText,
-      url: shareUrl,
+      text: eventShareText,
+      url: buildEventShareUrl(event.id),
     })
+    if (result === 'copied') showToast('Game day link copied.', 'success')
   }
 
   const handleRsvp = async (status: EventRsvp['status']) => {
@@ -125,12 +117,12 @@ function UpcomingEventCard({ event, myRsvp }: UpcomingEventCardProps) {
             </p>
             <p className="text-sm text-[var(--arena-text-muted)]">{event.location}</p>
             {formatEventCost(event) ? (
-              <p className="text-sm font-semibold text-slate-800">{formatEventCost(event)}</p>
+              <p className="text-sm font-semibold text-[var(--arena-text)]">{formatEventCost(event)}</p>
             ) : null}
             <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
               <Badge
                 className={
-                  event.signup_open ? undefined : 'border-red-200 bg-red-50 text-red-700'
+                  event.signup_open ? undefined : 'border-danger-soft bg-danger-soft text-danger'
                 }
               >
                 {event.signup_open ? 'Open for signup' : 'Closed'}
@@ -139,9 +131,6 @@ function UpcomingEventCard({ event, myRsvp }: UpcomingEventCardProps) {
                 <Button type="button" size="icon" variant="secondary" onClick={handleNativeEventShare} title="Share" className="h-7 w-7 min-h-0 rounded-full bg-[var(--arena-surface-elevated)] border-[var(--arena-border)]">
                   <Share2 size={13} aria-hidden="true" />
                 </Button>
-                <a className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] text-[var(--arena-text)] hover:bg-[var(--arena-accent-soft)] hover:text-[var(--arena-accent)] hover:border-[var(--arena-accent)] transition-all" href={whatsappUrl} target="_blank" rel="noreferrer" title="Share via WhatsApp">
-                  <MessageCircle size={13} aria-hidden="true" />
-                </a>
                 <Button type="button" size="icon" variant="secondary" onClick={handleCopyEventShareLink} title="Copy link" className="h-7 w-7 min-h-0 rounded-full bg-[var(--arena-surface-elevated)] border-[var(--arena-border)]">
                   <Copy size={13} aria-hidden="true" />
                 </Button>
@@ -188,7 +177,7 @@ function UpcomingEventCard({ event, myRsvp }: UpcomingEventCardProps) {
             <Badge className="border-[var(--arena-accent-soft)] bg-[var(--arena-accent-soft)] text-[var(--arena-accent)] text-[10px] px-1.5 py-0.5">
               {acceptedRsvps.length} accepted
             </Badge>
-            <Badge className="border-amber-200 bg-amber-50 text-amber-800 text-[10px] px-1.5 py-0.5">
+            <Badge className="border-warning-soft bg-warning-soft text-warning text-[10px] px-1.5 py-0.5">
               {holdingRsvps.length} holding
             </Badge>
             <Badge className="border-[var(--arena-border)] bg-surface text-[var(--arena-text-muted)] text-[10px] px-1.5 py-0.5">
@@ -206,7 +195,7 @@ function UpcomingEventCard({ event, myRsvp }: UpcomingEventCardProps) {
                       {r.avatar_url ? (
                         <img src={r.avatar_url} alt="" className="rounded-full object-cover shrink-0" style={{ height: '16px', width: '16px' }} />
                       ) : (
-                        <div className="flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-slate-700 text-[8px] font-bold uppercase text-[var(--arena-text-muted)]">
+                        <div className="flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[var(--arena-surface-muted)] text-[8px] font-bold uppercase text-[var(--arena-text-muted)]">
                           {name.charAt(0)}
                         </div>
                       )}

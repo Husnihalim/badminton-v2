@@ -811,3 +811,31 @@ export async function getMemberEloHistory(userId: string): Promise<EloHistory[]>
     match_date: row.matches?.match_date || row.matches?.created_at || row.created_at
   }))
 }
+
+export async function getPlayerMatches(userId: string, limit = 100): Promise<MatchWithDetails[]> {
+  if (userId && userId.startsWith('mock-')) {
+    const allMockMatches: MatchWithDetails[] = []
+    Object.values(mockMatches).forEach((list) => {
+      list.forEach((m: MatchWithDetails) => {
+        if (m.participants.some((p) => p.user_id === userId)) {
+          allMockMatches.push(m)
+        }
+      })
+    })
+    return allMockMatches.sort(
+      (a, b) => new Date(b.match_date || b.created_at).getTime() - new Date(a.match_date || a.created_at).getTime()
+    ).slice(0, limit)
+  }
+
+  const { data, error } = await supabase.rpc('get_player_matches', {
+    p_user_id: userId,
+    p_limit: limit
+  })
+
+  if (error) {
+    console.error('Error fetching player matches:', error)
+    return []
+  }
+
+  return (data || []) as MatchWithDetails[]
+}

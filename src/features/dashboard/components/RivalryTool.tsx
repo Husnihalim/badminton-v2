@@ -275,12 +275,12 @@ export default function RivalryTool({
           <Users size={18} className="text-[var(--arena-accent)] shrink-0" />
           {comparisonMode === 'partner'
             ? 'Doubles Partnership Checker'
-            : 'Head-to-Head Rivalry Checker'}
+            : 'Rivalry Checker'}
         </h2>
         <p className="app-section-subtitle">
           {comparisonMode === 'partner'
             ? 'Select a club member to analyze your performance playing together on the same team.'
-            : 'Select a club member to analyze your head-to-head match history.'}
+            : 'Select a club member to analyze your match record.'}
         </p>
       </div>
 
@@ -477,7 +477,7 @@ export default function RivalryTool({
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[var(--arena-text-dim)] font-medium">
-                      {comparisonMode === 'partner' ? 'Win Rate:' : 'Head-to-Head Streak:'}
+                      {comparisonMode === 'partner' ? 'Win Rate:' : 'Current Streak:'}
                     </span>
                     {comparisonMode === 'partner' ? (
                       <span className="text-[var(--arena-accent)] font-bold">

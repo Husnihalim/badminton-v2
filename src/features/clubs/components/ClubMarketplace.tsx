@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import {
   BadgeCheck,
-  Camera,
   Check,
   Filter,
+  ImagePlus,
   MessageCircle,
   Plus,
   Search,
@@ -42,8 +42,18 @@ interface MarketplaceListing {
   postedAt: string
   description: string
   imageClass: string
+  imageUrl?: string
   status: 'available' | 'reserved' | 'wanted'
   trustSignals: string[]
+}
+
+type DraftFormState = {
+  title: string
+  category: MarketplaceCategory
+  condition: MarketplaceCondition
+  price: string
+  location: string
+  description: string
 }
 
 const categoryLabels: Record<MarketplaceCategory | 'all', string> = {
@@ -133,6 +143,15 @@ const seedListings: MarketplaceListing[] = [
   },
 ]
 
+const initialDraftForm: DraftFormState = {
+  title: '',
+  category: 'gear',
+  condition: 'Good',
+  price: '',
+  location: '',
+  description: '',
+}
+
 function formatPrice(price: number | null) {
   return price === null ? 'Offer' : `RM ${price}`
 }
@@ -140,8 +159,13 @@ function formatPrice(price: number | null) {
 function ListingArtwork({ listing }: { listing: MarketplaceListing }) {
   return (
     <div className={`relative flex aspect-[4/3] min-h-[132px] items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br ${listing.imageClass}`}>
+      {listing.imageUrl ? (
+        <img src={listing.imageUrl} alt={listing.title} className="absolute inset-0 h-full w-full object-cover" />
+      ) : null}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_42%)]" />
-      <ShoppingBag className="relative h-12 w-12 text-white/80" aria-hidden="true" />
+      {!listing.imageUrl ? (
+        <ShoppingBag className="relative h-12 w-12 text-white/80" aria-hidden="true" />
+      ) : null}
       <span className="absolute bottom-2 left-2 rounded-md border border-white/10 bg-black/45 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white backdrop-blur">
         {categoryLabels[listing.category]}
       </span>
@@ -154,10 +178,17 @@ export function ClubMarketplace({ clubName, isMember }: { clubName: string; isMe
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<'fresh' | 'price-low' | 'price-high'>('fresh')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [draftListings, setDraftListings] = useState<MarketplaceListing[]>([])
+  const [draftForm, setDraftForm] = useState<DraftFormState>(initialDraftForm)
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | undefined>()
+  const [photoName, setPhotoName] = useState('')
+  const [formError, setFormError] = useState('')
+
+  const allListings = useMemo(() => [...draftListings, ...seedListings], [draftListings])
 
   const listings = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    const filtered = seedListings.filter((listing) => {
+    const filtered = allListings.filter((listing) => {
       const matchesCategory = category === 'all' || listing.category === category
       const matchesQuery = !normalizedQuery || [
         listing.title,
@@ -172,9 +203,84 @@ export function ClubMarketplace({ clubName, isMember }: { clubName: string; isMe
     return [...filtered].sort((a, b) => {
       if (sort === 'price-low') return (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER)
       if (sort === 'price-high') return (b.price ?? 0) - (a.price ?? 0)
-      return seedListings.findIndex((listing) => listing.id === a.id) - seedListings.findIndex((listing) => listing.id === b.id)
+      return allListings.findIndex((listing) => listing.id === a.id) - allListings.findIndex((listing) => listing.id === b.id)
     })
-  }, [category, query, sort])
+  }, [allListings, category, query, sort])
+
+  const updateDraftForm = <K extends keyof DraftFormState>(field: K, value: DraftFormState[K]) => {
+    setDraftForm((current) => ({ ...current, [field]: value }))
+    if (formError) setFormError('')
+  }
+
+  const resetDraftForm = () => {
+    setDraftForm(initialDraftForm)
+    setPhotoPreviewUrl(undefined)
+    setPhotoName('')
+    setFormError('')
+  }
+
+  const handleModalOpenChange = (open: boolean) => {
+    setShowCreateModal(open)
+    if (!open) resetDraftForm()
+  }
+
+  const handlePhotoChange = (file?: File) => {
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setFormError('Choose an image file.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError('Photo must be under 5MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setPhotoPreviewUrl(reader.result)
+        setPhotoName(file.name)
+        setFormError('')
+      }
+    }
+    reader.onerror = () => setFormError('Photo could not be read. Try a different image.')
+    reader.readAsDataURL(file)
+  }
+
+  const handleSaveDraft = () => {
+    const title = draftForm.title.trim()
+    if (!title) {
+      setFormError('Add a title before saving.')
+      return
+    }
+
+    const numericPrice = Number(draftForm.price.replace(/[^\d.]/g, ''))
+    const price = Number.isFinite(numericPrice) && numericPrice > 0 ? Math.round(numericPrice) : null
+    const isWanted = draftForm.category === 'wanted'
+
+    const newListing: MarketplaceListing = {
+      id: `draft-${Date.now()}`,
+      title,
+      category: draftForm.category,
+      price,
+      condition: isWanted ? 'Wanted' : draftForm.condition,
+      seller: 'You',
+      sellerBadge: 'Draft listing',
+      location: draftForm.location.trim() || 'Club meetup',
+      postedAt: 'Just now',
+      description: draftForm.description.trim() || 'Draft listing ready for club review.',
+      imageClass: photoPreviewUrl ? 'from-slate-900 via-slate-800 to-slate-950' : 'from-lime-300/35 via-sky-400/20 to-slate-900',
+      imageUrl: photoPreviewUrl,
+      status: isWanted ? 'wanted' : 'available',
+      trustSignals: photoPreviewUrl ? ['Photo added', 'Draft saved'] : ['Draft saved'],
+    }
+
+    setDraftListings((current) => [newListing, ...current])
+    setShowCreateModal(false)
+    resetDraftForm()
+  }
 
   return (
     <section className="space-y-4">
@@ -198,7 +304,7 @@ export function ClubMarketplace({ clubName, isMember }: { clubName: string; isMe
             <div className="grid gap-2 sm:grid-cols-3">
               {[
                 { icon: ShieldCheck, label: 'Club trust', text: 'Listings show member context.' },
-                { icon: MessageCircle, label: 'WhatsApp close', text: 'No payment risk in v1.' },
+                { icon: MessageCircle, label: 'Direct deal', text: 'No payment risk in v1.' },
                 { icon: Sparkles, label: 'Sports-only', text: 'Focused on real club needs.' },
               ].map((item) => {
                 const Icon = item.icon
@@ -218,7 +324,7 @@ export function ClubMarketplace({ clubName, isMember }: { clubName: string; isMe
               <p className="text-xs font-black uppercase tracking-wide text-[var(--arena-text-dim)]">Marketplace pulse</p>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-2xl font-black text-[var(--arena-text)]">5</p>
+                  <p className="text-2xl font-black text-[var(--arena-text)]">{allListings.length}</p>
                   <p className="text-[10px] text-[var(--arena-text-dim)]">Listings</p>
                 </div>
                 <div>
@@ -349,41 +455,100 @@ export function ClubMarketplace({ clubName, isMember }: { clubName: string; isMe
         </div>
       ) : null}
 
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+      <Dialog open={showCreateModal} onOpenChange={handleModalOpenChange}>
         <DialogContent className="border border-[var(--arena-border)] bg-[var(--arena-surface-elevated)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-[var(--arena-text)]">Create marketplace listing</DialogTitle>
             <DialogDescription>
-              First version captures listing intent for club review. Payments and delivery stay outside the app.
+              Create a club listing draft with photos, price, and pickup details.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3">
-            <Input placeholder="Item or request title" className="border-[var(--arena-border)] bg-[var(--arena-surface)]" />
+            <Input
+              value={draftForm.title}
+              onChange={(event) => updateDraftForm('title', event.target.value)}
+              placeholder="Item or request title"
+              className="border-[var(--arena-border)] bg-[var(--arena-surface)]"
+            />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Select className="border-[var(--arena-border)] bg-[var(--arena-surface)]" defaultValue="gear">
+              <Select
+                className="border-[var(--arena-border)] bg-[var(--arena-surface)]"
+                value={draftForm.category}
+                onChange={(event) => updateDraftForm('category', event.target.value as MarketplaceCategory)}
+              >
                 <option value="gear">Gear</option>
                 <option value="apparel">Kit</option>
                 <option value="court">Court slot</option>
                 <option value="coaching">Coaching</option>
                 <option value="wanted">Wanted</option>
               </Select>
-              <Input placeholder="Price, e.g. RM 120" className="border-[var(--arena-border)] bg-[var(--arena-surface)]" />
+              <Input
+                value={draftForm.price}
+                onChange={(event) => updateDraftForm('price', event.target.value)}
+                placeholder="Price, e.g. RM 120"
+                className="border-[var(--arena-border)] bg-[var(--arena-surface)]"
+              />
             </div>
-            <div className="rounded-lg border border-dashed border-[var(--arena-border)] bg-[var(--arena-surface)] p-4 text-center">
-              <Camera className="mx-auto h-6 w-6 text-[var(--arena-accent)]" aria-hidden="true" />
-              <p className="mt-2 text-xs font-bold text-[var(--arena-text)]">Add item photos</p>
-              <p className="mt-1 text-[11px] text-[var(--arena-text-dim)]">Photo upload connects in the database-backed version.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Select
+                className="border-[var(--arena-border)] bg-[var(--arena-surface)]"
+                value={draftForm.condition}
+                onChange={(event) => updateDraftForm('condition', event.target.value as MarketplaceCondition)}
+              >
+                <option value="New">New</option>
+                <option value="Like new">Like new</option>
+                <option value="Good">Good</option>
+                <option value="Well used">Well used</option>
+              </Select>
+              <Input
+                value={draftForm.location}
+                onChange={(event) => updateDraftForm('location', event.target.value)}
+                placeholder="Pickup or session location"
+                className="border-[var(--arena-border)] bg-[var(--arena-surface)]"
+              />
             </div>
+            <Input
+              value={draftForm.description}
+              onChange={(event) => updateDraftForm('description', event.target.value)}
+              placeholder="Condition notes, size, grip, timing"
+              className="border-[var(--arena-border)] bg-[var(--arena-surface)]"
+            />
+            <label className="block cursor-pointer rounded-lg border border-dashed border-[var(--arena-border)] bg-[var(--arena-surface)] p-3 text-center hover:border-[var(--arena-accent)]/50">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="sr-only"
+                onChange={(event) => handlePhotoChange(event.target.files?.[0])}
+              />
+              {photoPreviewUrl ? (
+                <div className="grid gap-3 sm:grid-cols-[112px_1fr] sm:text-left">
+                  <img src={photoPreviewUrl} alt="Listing preview" className="mx-auto aspect-square w-28 rounded-lg border border-[var(--arena-border)] object-cover sm:mx-0" />
+                  <div className="flex min-w-0 flex-col justify-center">
+                    <p className="truncate text-xs font-black text-[var(--arena-text)]">{photoName}</p>
+                    <p className="mt-1 text-[11px] text-[var(--arena-text-dim)]">Tap to replace photo.</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <ImagePlus className="mx-auto h-6 w-6 text-[var(--arena-accent)]" aria-hidden="true" />
+                  <p className="mt-2 text-xs font-bold text-[var(--arena-text)]">Add item photo</p>
+                  <p className="mt-1 text-[11px] text-[var(--arena-text-dim)]">JPG, PNG, WEBP, or GIF under 5MB.</p>
+                </>
+              )}
+            </label>
+            {formError ? (
+              <p className="rounded-lg border border-red-900/30 bg-red-950/40 px-3 py-2 text-xs font-bold text-red-400">{formError}</p>
+            ) : null}
           </div>
 
           <DialogFooter className="border-[var(--arena-border)] bg-[var(--arena-surface)]">
-            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
+            <Button type="button" variant="secondary" onClick={() => handleModalOpenChange(false)}>
               Cancel
             </Button>
             <Button
               type="button"
-              onClick={() => setShowCreateModal(false)}
+              onClick={handleSaveDraft}
               className="bg-[var(--arena-accent)] font-black text-[var(--arena-accent-text)] hover:bg-[var(--arena-accent)]/90"
             >
               Save draft
