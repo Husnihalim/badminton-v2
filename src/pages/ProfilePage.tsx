@@ -59,6 +59,10 @@ export default function ProfilePage() {
   const [gear, setGear] = useState<PlayerGear>({})
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isPrivate, setIsPrivate] = useState(false)
+  const [featuredPublic, setFeaturedPublic] = useState(false)
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [guardianConsent, setGuardianConsent] = useState(false)
+  const [guardianName, setGuardianName] = useState('')
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -95,6 +99,10 @@ export default function ProfilePage() {
       setGear(user.gear || {})
       setAvatarUrl(user.avatar_url || null)
       setIsPrivate(user.is_private || false)
+      setFeaturedPublic(Boolean(user.featured_public))
+      setDateOfBirth(user.date_of_birth || '')
+      setGuardianConsent(Boolean(user.guardian_feature_consent))
+      setGuardianName(user.guardian_name || '')
       loadMyClubs()
       if (searchParams.get('create_club') === 'true') {
         setShowCreateClubModal(true)
@@ -175,6 +183,10 @@ export default function ProfilePage() {
         social_links: cleanProfileObject(socialLinks),
         gear: cleanProfileObject(gear),
         is_private: isPrivate,
+        featured_public: featuredPublic,
+        date_of_birth: dateOfBirth || null,
+        guardian_feature_consent: guardianConsent,
+        guardian_name: guardianName.trim() || null,
       })
       await refreshUser()
       setProfileMessage('Profile saved.')
@@ -535,6 +547,73 @@ export default function ProfilePage() {
               <label htmlFor="is-private" className="text-sm font-semibold text-[var(--arena-text-muted)] select-none">
                 Make my profile private (only show basic info to other members)
               </label>
+            </div>
+
+            <div className="rounded-lg border border-[var(--arena-accent)]/30 bg-[var(--arena-accent-soft)]/10 p-3 space-y-3">
+              <div className="flex items-start gap-2">
+                <input
+                  id="featured-public"
+                  type="checkbox"
+                  checked={featuredPublic}
+                  onChange={(e) => setFeaturedPublic(e.target.checked)}
+                  disabled={isPrivate}
+                  className="mt-1 h-4 w-4 rounded border-slate-350 text-[var(--arena-accent)] focus:ring-emerald-700"
+                />
+                <label htmlFor="featured-public" className="text-sm font-semibold text-[var(--arena-text)] select-none">
+                  Feature me on the kelabsukan.com homepage
+                  <span className="block text-xs font-normal text-[var(--arena-text-muted)] mt-0.5">
+                    Lets your player card appear on the public "Faces of the Community" rail
+                    so athletes near you can discover and challenge you.
+                    {isPrivate ? ' Disabled because private profiles are hidden from the public.' : ''}
+                  </span>
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="text-xs font-semibold text-[var(--arena-text-muted)]">Date of birth (used only to gate minors)</span>
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  disabled={!featuredPublic}
+                  className="mt-1 block w-full rounded-md border border-slate-350 bg-transparent px-3 py-2 text-sm text-[var(--arena-text)] focus:border-[var(--arena-accent)] focus:outline-none disabled:opacity-50"
+                />
+              </label>
+
+              {featuredPublic && dateOfBirth && (() => {
+                const dob = new Date(dateOfBirth)
+                const nowMs = Number(new Date())
+                const isAdult = (nowMs - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25) >= 18
+                return !isAdult ? (
+                  <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-50/5 p-2">
+                    <div className="flex items-start gap-2">
+                      <input
+                        id="guardian-consent"
+                        type="checkbox"
+                        checked={guardianConsent}
+                        onChange={(e) => setGuardianConsent(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-slate-350 text-[var(--arena-accent)] focus:ring-emerald-700"
+                      />
+                      <label htmlFor="guardian-consent" className="text-xs font-semibold text-[var(--arena-text)] select-none">
+                        I confirm I am the parent/legal guardian and I consent to this
+                        junior's player card being featured publicly.
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Guardian full name"
+                      value={guardianName}
+                      onChange={(e) => setGuardianName(e.target.value)}
+                      disabled={!guardianConsent}
+                      className="block w-full rounded-md border border-slate-350 bg-transparent px-3 py-2 text-sm text-[var(--arena-text)] focus:border-[var(--arena-accent)] focus:outline-none disabled:opacity-50"
+                    />
+                    <p className="text-[11px] text-[var(--arena-text-dim)]">
+                      Required for under-18s. Junior cards only appear when both this consent
+                      is set AND the player's club has opted into public featuring.
+                    </p>
+                  </div>
+                ) : null
+              })()}
             </div>
 
             <div className="flex justify-end">

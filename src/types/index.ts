@@ -19,6 +19,11 @@ export interface User {
   doubles_elo?: number | null
   singles_games?: number | null
   doubles_games?: number | null
+  // Homepage featuring consent (Phase 3)
+  featured_public?: boolean | null
+  date_of_birth?: string | null
+  guardian_feature_consent?: boolean | null
+  guardian_name?: string | null
 }
 
 export type PlayerSocialLinks = {
@@ -84,9 +89,92 @@ export interface Club {
   announcement?: string | null
   announcement_updated_at?: string | null
   is_private?: boolean | null
+  // Home base location (Phase 2 — homepage geo)
+  home_lat?: number | null
+  home_lng?: number | null
+  home_postcode?: string | null
+  featured_public?: boolean | null
   // Computed/joined fields
   membersCount?: number
   role?: string
+}
+
+// ============================================
+// Homepage geo feed (Phase 2)
+// ============================================
+export interface HomepageClubCard {
+  id: string
+  name: string
+  city: string | null
+  home_postcode: string | null
+  sport_focus: string[]
+  accent_color?: string | null
+  logo_url?: string | null
+  banner_preset?: string | null
+  open_join: boolean
+  approval_required: boolean
+  is_private: boolean | null
+  featured_public: boolean
+  membersCount: number
+  distance_km: number | null
+}
+
+export interface HomepageFeed {
+  has_coords: boolean
+  radius_km: number
+  clubs_near: HomepageClubCard[]
+  featured_clubs: HomepageClubCard[]
+}
+
+// ============================================
+// Homepage players feed (Phase 3)
+// ============================================
+export interface HomepagePlayerCard {
+  id: string
+  display_name: string
+  avatar_url: string | null
+  city: string | null
+  preferred_sport: string | null
+  singles_elo: number | null
+  doubles_elo: number | null
+  singles_games: number | null
+  doubles_games: number | null
+  club_id: string | null
+  club_name: string | null
+  club_accent: string | null
+  is_adult: boolean
+}
+
+export interface HomepagePlayersFeed {
+  players: HomepagePlayerCard[]
+}
+
+// ============================================
+// Homepage marketplace feed (Phase 4)
+// ============================================
+export interface HomepageMarketplaceCard {
+  id: string
+  title: string
+  description: string | null
+  category: string
+  condition_label: string
+  price: number | null
+  status: string
+  image_url: string | null
+  image_class: string | null
+  trust_signals: string[]
+  location_label: string | null
+  club_id: string
+  club_name: string | null
+  club_accent: string | null
+  distance_km: number | null
+}
+
+export interface HomepageMarketplaceFeed {
+  has_coords: boolean
+  radius_km: number
+  deals_near: HomepageMarketplaceCard[]
+  deals_recent: HomepageMarketplaceCard[]
 }
 
 // Database Membership type

@@ -56,6 +56,7 @@ export default function ClubSettingsPage() {
   const [specificInvites, setSpecificInvites] = useState<SpecificClubInvite[]>([])
   const [inviteStatusTime, setInviteStatusTime] = useState(0)
   const [isPrivate, setIsPrivate] = useState(false)
+  const [featuredPublic, setFeaturedPublic] = useState(false)
 
   // Custom branding states
   const [logoUrl, setLogoUrl] = useState('')
@@ -94,6 +95,7 @@ export default function ClubSettingsPage() {
       setApprovalRequired(clubData.approval_required || false)
       setInviteToken(clubData.invite_code || '')
       setIsPrivate(clubData.is_private || false)
+      setFeaturedPublic(Boolean(clubData.featured_public))
       
       // Load custom branding fields
       setLogoUrl(clubData.logo_url || '')
@@ -187,6 +189,7 @@ export default function ClubSettingsPage() {
         announcement: announcement || null,
         announcement_updated_at: announcementChanged ? new Date().toISOString() : (club?.announcement_updated_at || null),
         is_private: isPrivate,
+        featured_public: featuredPublic,
       })
       
       setSuccessMessage('Club settings saved.')
@@ -557,6 +560,16 @@ export default function ClubSettingsPage() {
                   <span>
                     <span className="block text-sm font-semibold text-[var(--arena-text-muted)]">Private Club</span>
                     <span className="text-sm text-[var(--arena-text-muted)]">Hide Notice Board, scores history, and leaderboards from public eyes and non-members.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 rounded-lg border border-emerald-700/40 bg-emerald-50/5 p-3">
+                  <input className="mt-1 h-4 w-4 accent-[var(--arena-accent)]" type="checkbox" checked={featuredPublic} onChange={(e) => setFeaturedPublic(e.target.checked)} disabled={isPrivate} />
+                  <span>
+                    <span className="block text-sm font-semibold text-[var(--arena-text-muted)]">Feature on kelabsukan.com homepage</span>
+                    <span className="text-sm text-[var(--arena-text-muted)]">
+                      Lets your club appear on the public homepage's "Find Your Scene" featured wall so new athletes near you can discover it.
+                      {isPrivate ? ' Disabled because private clubs are hidden from the public.' : ''}
+                    </span>
                   </span>
                 </label>
               </CardContent>

@@ -47,7 +47,7 @@ export async function getProfile(userId: string) {
   }
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, name, role, display_name, phone, city, bio, preferred_sport, avatar_url, is_private, social_links, gear, singles_elo, doubles_elo, singles_games, doubles_games')
+    .select('id, email, name, role, display_name, phone, city, bio, preferred_sport, avatar_url, is_private, social_links, gear, singles_elo, doubles_elo, singles_games, doubles_games, featured_public, date_of_birth, guardian_feature_consent, guardian_name')
     .eq('id', userId)
     .single()
 
@@ -69,6 +69,10 @@ export type ProfileUpdates = {
   is_private?: boolean | null
   social_links?: PlayerSocialLinks | null
   gear?: PlayerGear | null
+  featured_public?: boolean | null
+  date_of_birth?: string | null
+  guardian_feature_consent?: boolean | null
+  guardian_name?: string | null
 }
 
 export async function updateProfile(userId: string, updates: ProfileUpdates) {

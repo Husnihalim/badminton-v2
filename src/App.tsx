@@ -39,6 +39,7 @@ const InviteRedirect = () => {
 
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
+const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const ClubHomePage = lazy(() => import('./pages/ClubHomePage'))
@@ -90,6 +91,7 @@ function App() {
                       <Route path="/dashboard" element={<Navigate to="/my-court" replace />} />
                       <Route path="/player-home-preview" element={<PlayerHomePreviewPage />} />
                       <Route path="/ui-preview" element={<UiPreviewPage />} />
+                      <Route path="/playground" element={<PlaygroundPage />} />
                       <Route path="/profile" element={<ProfilePage />} />
                       <Route path="/member/:userId" element={<MemberProfilePage />} />
                       <Route path="/invite/:inviteToken" element={<InviteJoinPage />} />
